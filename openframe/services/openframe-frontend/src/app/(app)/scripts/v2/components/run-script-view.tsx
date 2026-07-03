@@ -188,7 +188,7 @@ function RunScriptContent({ scriptId, script }: RunScriptContentProps) {
 
   const handleViewHistory = useCallback(() => {
     setShowExecutionModal(false);
-    router.push(`/scripts-v2/details/${scriptId}?tab=executions`);
+    router.push(`/scripts-v2/details?id=${scriptId}&tab=executions`);
   }, [router, scriptId]);
 
   const actions = useMemo<PageActionButton[]>(
@@ -206,7 +206,7 @@ function RunScriptContent({ scriptId, script }: RunScriptContentProps) {
 
   return (
     <>
-      <ScriptPageChrome title="Run Script" backFallback={`/scripts-v2/details/${scriptId}`} actions={actions}>
+      <ScriptPageChrome title="Run Script" backFallback={`/scripts-v2/details?id=${scriptId}`} actions={actions}>
         {script ? (
           <ScriptSummaryCard
             name={script.name}

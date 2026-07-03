@@ -76,7 +76,7 @@ export function useDeviceActionsMenu(
     return normalizeOSType(osType) === 'WINDOWS';
   }, [device]);
 
-  const runScriptHref = `/devices/details/${deviceId}?action=runScript`;
+  const runScriptHref = `/devices/details?id=${deviceId}&action=runScript`;
 
   const handleRunScript = useCallback(() => {
     if (onRunScript) {

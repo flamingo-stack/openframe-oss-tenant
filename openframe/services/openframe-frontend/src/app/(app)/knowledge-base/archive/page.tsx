@@ -49,5 +49,3 @@ export default function ArchivePage() {
     </PageLayout>
   );
 }
-
-export const dynamic = 'force-dynamic';

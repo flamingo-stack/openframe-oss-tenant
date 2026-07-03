@@ -73,7 +73,7 @@ const WINDOWS_SHELLS = [
 ] as const;
 
 function buildRemoteShellItem(ctx: DeviceMenuItemContext): ActionsMenuItem {
-  const baseHref = `/devices/details/${ctx.deviceId}/remote-shell`;
+  const baseHref = `/devices/details/remote-shell?id=${ctx.deviceId}`;
   const disabled = !ctx.availability?.remoteShellEnabled;
   const icon = <TerminalIcon className={iconClass(ctx)} />;
 
@@ -116,14 +116,14 @@ function buildRemoteShellItem(ctx: DeviceMenuItemContext): ActionsMenuItem {
 export function buildDeviceMenuItems(ctx: DeviceMenuItemContext): DeviceMenuItems {
   const remoteShell = buildRemoteShellItem(ctx);
 
-  const remoteControlHref = `/devices/details/${ctx.deviceId}/remote-desktop`;
+  const remoteControlHref = `/devices/details/remote-desktop?id=${ctx.deviceId}`;
   const remoteControlDisabled = !ctx.availability?.remoteControlEnabled;
 
-  const manageFilesHref = `/devices/details/${ctx.deviceId}/file-manager`;
+  const manageFilesHref = `/devices/details/file-manager?id=${ctx.deviceId}`;
   const manageFilesDisabled = !ctx.availability?.manageFilesEnabled;
 
-  const deviceDetailsHref = `/devices/details/${ctx.deviceId}`;
-  const deviceLogsHref = `/devices/details/${ctx.deviceId}?tab=overview`;
+  const deviceDetailsHref = `/devices/details?id=${ctx.deviceId}`;
+  const deviceLogsHref = `/devices/details?id=${ctx.deviceId}&tab=overview`;
 
   return {
     deviceDetails: {

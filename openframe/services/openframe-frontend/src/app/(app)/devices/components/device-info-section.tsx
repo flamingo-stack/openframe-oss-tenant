@@ -47,7 +47,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
   const assignedUser = { username: null, imageUrl: null };
   const assignedUserImageUrl = getFullImageUrl(assignedUser?.imageUrl);
   const customerImageUrl = getFullImageUrl(device.organizationImageUrl, device.organizationImageHash);
-  const customerHref = device.organizationId ? `/customers/details/${device.organizationId}` : undefined;
+  const customerHref = device.organizationId ? `/customers/details?id=${device.organizationId}` : undefined;
 
   // Cells defined once and reused across both responsive layouts below.
   // Icons: 16px on mobile, 24px on tablet+ (matches the responsive design).

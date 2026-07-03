@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { getTabComponent } from '@flamingo-stack/openframe-frontend-core';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { CUSTOMERS_TABS, CustomersTabNavigation } from './components/customers-tabs';

@@ -33,7 +33,7 @@ interface Resolved {
 
 async function resolvePolicy(id: string): Promise<Resolved> {
   const res = await fleetApiClient.getPolicy(Number(id));
-  return { label: (res.ok && res.data?.policy?.name) || id, href: `/monitoring/policy/${id}` };
+  return { label: (res.ok && res.data?.policy?.name) || id, href: `/monitoring/policy?id=${id}` };
 }
 
 async function resolveQuery(id: string): Promise<Resolved> {
@@ -42,7 +42,7 @@ async function resolveQuery(id: string): Promise<Resolved> {
   // under `policy`) — read the nested name, not a flat `res.data.name` (which is
   // always undefined → chip would show the bare id). See `use-query-details.ts`.
   const name = res.ok ? (res.data as unknown as { query?: { name?: string } }).query?.name : undefined;
-  return { label: name || id, href: `/monitoring/query/${id}` };
+  return { label: name || id, href: `/monitoring/query?id=${id}` };
 }
 
 async function resolveUser(id: string): Promise<Resolved> {
@@ -60,7 +60,7 @@ async function resolveScript(id: string): Promise<Resolved> {
   // an unknown id 404s (degrades to the chip's `fallbackLabel`/id via `res.ok`).
   const res = await tacticalApiClient.getScript(id);
   const name = res.ok ? (res.data?.name as string | undefined) : undefined;
-  return { label: name || id, href: `/scripts/details/${id}` };
+  return { label: name || id, href: `/scripts/details?id=${id}` };
 }
 
 interface TicketEnvelope {

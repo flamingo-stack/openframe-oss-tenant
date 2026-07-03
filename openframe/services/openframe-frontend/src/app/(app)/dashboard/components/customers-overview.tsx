@@ -76,7 +76,7 @@ export function CustomersOverviewSection() {
           <OrganizationCard
             organization={org}
             fetchedImageUrl={fullImageUrl}
-            href={`/customers/details/${org.organizationId}`}
+            href={`/customers/details?id=${org.organizationId}`}
             deviceCount={org.total}
           />
 

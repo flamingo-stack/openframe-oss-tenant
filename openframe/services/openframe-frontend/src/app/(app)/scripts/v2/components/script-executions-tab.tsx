@@ -174,7 +174,7 @@ function ScriptExecutionsContent({
     if (hasNext && !isLoadingNext) loadNext(PAGE_SIZE);
   }, [hasNext, isLoadingNext, loadNext]);
 
-  const executionHref = useCallback((execution: UiExecution) => `/scripts-v2/executions/${execution.id}`, []);
+  const executionHref = useCallback((execution: UiExecution) => `/scripts-v2/executions?id=${execution.id}`, []);
 
   const renderRowActions = useCallback(
     (execution: UiExecution) => {

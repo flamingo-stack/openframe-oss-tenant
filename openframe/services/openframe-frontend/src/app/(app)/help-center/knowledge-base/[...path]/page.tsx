@@ -1,7 +1,13 @@
 import { normalizeDocPath } from '@flamingo-stack/openframe-frontend-core/utils';
 import { KnowledgeBaseDocsView } from '../knowledge-base-docs-view';
 
-export const dynamic = 'force-dynamic';
+// Doc paths are runtime/CMS content (not build-enumerable). `output: 'export'`
+// rejects an empty param list, so we prerender a single placeholder shell; real
+// doc paths are served by the native shell's SPA fallback (the web/standalone
+// build serves them dynamically). See docs/static-export-migration.md.
+export function generateStaticParams(): { path: string[] }[] {
+  return [{ path: ['index'] }];
+}
 
 /**
  * Deep-link route for an individual doc (`/help-center/knowledge-base/<path>`).

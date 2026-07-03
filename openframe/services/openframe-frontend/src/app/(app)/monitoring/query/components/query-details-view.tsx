@@ -82,7 +82,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
   const handleBack = useSafeBack('/monitoring?tab=queries');
 
   const handleEditQuery = () => {
-    router.push(`/monitoring/query/edit/${queryId}`);
+    router.push(`/monitoring/query/edit?id=${queryId}`);
   };
 
   const handleDeleteQuery = () => {

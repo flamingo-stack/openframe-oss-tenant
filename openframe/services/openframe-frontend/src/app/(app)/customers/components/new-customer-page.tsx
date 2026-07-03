@@ -94,7 +94,7 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
   const { updateOrganization } = useUpdateCustomer();
   const { organization } = useCustomerDetails(organizationId);
 
-  const handleBack = useSafeBack(organizationId ? `/customers/details/${organizationId}` : '/customers');
+  const handleBack = useSafeBack(organizationId ? `/customers/details?id=${organizationId}` : '/customers');
 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [preserved, setPreserved] = useState<PreservedFields>(DEFAULT_PRESERVED);
@@ -318,7 +318,7 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
         description: `${form.name} has been ${organizationId ? 'updated' : 'created'}`,
       });
       if (organizationId) {
-        safeBackOrReplace(router, `/customers/details/${organizationId}`);
+        safeBackOrReplace(router, `/customers/details?id=${organizationId}`);
       } else {
         router.replace('/customers');
       }

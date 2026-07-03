@@ -18,7 +18,7 @@ export function DevicesGrid({ devices, isLoading, hasNextPage, isFetchingNextPag
   const handleDeviceClick = (device: Device) => {
     const id = device.machineId || device.id;
     if (id) {
-      router.push(`/devices/details/${id}`);
+      router.push(`/devices/details?id=${id}`);
     }
   };
 

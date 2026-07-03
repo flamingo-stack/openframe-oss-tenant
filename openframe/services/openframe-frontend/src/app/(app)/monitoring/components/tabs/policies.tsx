@@ -96,7 +96,7 @@ export function Policies() {
     (policy: Policy) => [
       {
         label: 'Policy Details',
-        onClick: () => router.push(`/monitoring/policy/${policy.id}`),
+        onClick: () => router.push(`/monitoring/policy?id=${policy.id}`),
       },
       {
         label: 'Delete Policy',
@@ -133,7 +133,7 @@ export function Policies() {
           // Temporarily hidden along with the Platform column. Restore to re-enable.
           // platforms: parsePlatforms(policy.platform),
           actions: rowActions(policy),
-          href: `/monitoring/policy/${policy.id}`,
+          href: `/monitoring/policy?id=${policy.id}`,
         };
       }),
     [visiblePolicies, rowActions],
@@ -142,7 +142,7 @@ export function Policies() {
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddPolicy = useCallback(() => {
-    router.push('/monitoring/policy/edit/new');
+    router.push('/monitoring/policy/edit?id=new');
   }, [router]);
 
   const actions = useMemo(

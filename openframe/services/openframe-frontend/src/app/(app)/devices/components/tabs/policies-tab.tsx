@@ -51,8 +51,8 @@ export function PoliciesTab({ device }: PoliciesTabProps) {
         severityLabel: policy.critical ? 'Critical' : 'Low',
         status: toStatus(policy.response),
         platforms: parsePlatforms(policy.platform),
-        actions: [{ label: 'Policy Details', onClick: () => router.push(`/monitoring/policy/${policy.id}`) }],
-        href: `/monitoring/policy/${policy.id}`,
+        actions: [{ label: 'Policy Details', onClick: () => router.push(`/monitoring/policy?id=${policy.id}`) }],
+        href: `/monitoring/policy?id=${policy.id}`,
       }));
   }, [policies, search, router]);
 

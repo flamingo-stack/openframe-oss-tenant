@@ -102,7 +102,7 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
           row.original.machineId ? (
             <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
               <Button
-                onClick={openInNewTab(`/devices/details/${row.original.machineId}`)}
+                onClick={openInNewTab(`/devices/details?id=${row.original.machineId}`)}
                 variant="outline"
                 size="icon"
                 leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -126,7 +126,7 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
   });
 
   const policyDeviceRowHref = useCallback(
-    (row: PolicyDeviceRow) => (row.machineId ? `/devices/details/${row.machineId}` : undefined),
+    (row: PolicyDeviceRow) => (row.machineId ? `/devices/details?id=${row.machineId}` : undefined),
     [],
   );
 

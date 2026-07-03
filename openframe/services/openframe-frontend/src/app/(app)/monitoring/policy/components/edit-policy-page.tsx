@@ -127,7 +127,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   }, [policyDetails, isExistingPolicy, reset]);
 
   const handleBack = useSafeBack(
-    isExistingPolicy && numericId ? `/monitoring/policy/${numericId}` : '/monitoring?tab=policies',
+    isExistingPolicy && numericId ? `/monitoring/policy?id=${numericId}` : '/monitoring?tab=policies',
   );
 
   const onSubmit = useCallback(
@@ -149,7 +149,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             } catch {
               // Policy saved but hosts failed — error toast shown by mutation hook
             }
-            safeBackOrReplace(router, `/monitoring/policy/${numericId}`);
+            safeBackOrReplace(router, `/monitoring/policy?id=${numericId}`);
           },
         });
       } else {

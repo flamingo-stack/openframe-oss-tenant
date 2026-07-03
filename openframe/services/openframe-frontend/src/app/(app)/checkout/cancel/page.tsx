@@ -3,8 +3,6 @@
 import { XCircle } from 'lucide-react';
 import { CheckoutResultCard } from '../components/checkout-result-card';
 
-export const dynamic = 'force-dynamic';
-
 export default function CheckoutCancelPage() {
   return (
     <CheckoutResultCard

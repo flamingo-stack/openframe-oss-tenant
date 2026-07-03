@@ -81,9 +81,9 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       // Clear the action param to avoid re-triggering
       const newParams = new URLSearchParams(searchParams.toString());
       newParams.delete('action');
-      router.replace(`/devices/details/${deviceId}${newParams.toString() ? `?${newParams.toString()}` : ''}`);
+      router.replace(`/devices/details${newParams.toString() ? `?${newParams.toString()}` : ''}`);
     }
-  }, [searchParams, isLoading, deviceId, router]);
+  }, [searchParams, isLoading, router]);
 
   const normalizedDevice = deviceDetails;
 

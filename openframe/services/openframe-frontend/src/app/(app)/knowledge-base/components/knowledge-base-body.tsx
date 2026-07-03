@@ -520,7 +520,7 @@ function RootBodyContent() {
 
 function FolderBodyContent({ parentId }: { parentId: string }) {
   const folder = useKnowledgeBaseItem(parentId);
-  const parentUrl = folder?.parentId ? `/knowledge-base/folders/${folder.parentId}` : '/knowledge-base';
+  const parentUrl = folder?.parentId ? `/knowledge-base/folders?id=${folder.parentId}` : '/knowledge-base';
   const handleBack = useSafeBack(parentUrl);
 
   if (!folder || folder.type !== 'FOLDER') {

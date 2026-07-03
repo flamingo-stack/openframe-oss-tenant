@@ -41,8 +41,8 @@ export function QueriesTab({ device }: QueriesTabProps) {
         name: r.name,
         description: r.description,
         frequencyLabel: formatQueryInterval(intervalById.get(r.report_id) ?? 0),
-        actions: [{ label: 'Query Details', onClick: () => router.push(`/monitoring/query/${r.report_id}`) }],
-        href: `/monitoring/query/${r.report_id}`,
+        actions: [{ label: 'Query Details', onClick: () => router.push(`/monitoring/query?id=${r.report_id}`) }],
+        href: `/monitoring/query?id=${r.report_id}`,
       }));
   }, [hostReports, intervalById, search, router]);
 

@@ -2,10 +2,14 @@
 
 import { useLocalStorage, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { isSaasSharedMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
+import { nativeLogin } from '@/lib/native-login';
+import { isNativeShell } from '@/lib/native-shell';
 import { runtimeEnv } from '@/lib/runtime-config';
+import { isBearerAuthMode } from '@/lib/token-store';
 import { AUTH_ERROR_CODE } from '../constants/auth-error-codes';
 import { useAuthStore } from '../stores/auth-store';
 import { authSessionQueryKey } from './use-auth-session';
@@ -50,6 +54,7 @@ interface SsoRegisterRequest {
 export function useAuth() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { setTenantId } = useAuthStore();
   const { clearTokens } = useTokenStorage();
@@ -223,6 +228,15 @@ export function useAuth() {
       if (tenantInfo?.tenantId) {
         setTenantId(tenantInfo.tenantId);
 
+        if (isNativeShell()) {
+          // System-browser login sheet; tokens land in the Keychain.
+          await nativeLogin({ tenantId: tenantInfo.tenantId, provider });
+          triggerAuthRecheck();
+          router.push('/dashboard');
+          setIsLoading(false);
+          return;
+        }
+
         const getReturnUrl = () => {
           const hostname = window.location.hostname;
           const protocol = window.location.protocol;
@@ -249,10 +263,20 @@ export function useAuth() {
     }
   };
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     const { tenantId: storeTenantId, user: currentUser } = useAuthStore.getState();
     const effectiveTenantId =
       storeTenantId || currentUser?.tenantId || currentUser?.organizationId || tenantInfo?.tenantId;
+
+    // In the native shell revoke server-side BEFORE clearing local tokens —
+    // logoutAsync needs the stored refresh token to send the Refresh-Token header.
+    if (isNativeShell()) {
+      try {
+        await authApiClient.logoutAsync(effectiveTenantId);
+      } catch {
+        // Best-effort revocation; local sign-out proceeds regardless.
+      }
+    }
 
     const { logout: storeLogout } = useAuthStore.getState();
     storeLogout();
@@ -260,9 +284,8 @@ export function useAuth() {
     // Clear React Query auth cache
     queryClient.removeQueries({ queryKey: authSessionQueryKey });
 
-    const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-    if (isDevTicketEnabled) {
-      clearTokens();
+    if (isBearerAuthMode()) {
+      await clearTokens();
     }
 
     setEmail('');
@@ -271,6 +294,11 @@ export function useAuth() {
     setDiscoveryAttempted(false);
     setAvailableProviders([]);
     setIsLoading(false);
+
+    if (isNativeShell()) {
+      // No browser redirect in the shell — the route guard shows the sign-in screen.
+      return;
+    }
 
     if (effectiveTenantId) {
       authApiClient.logout(effectiveTenantId);

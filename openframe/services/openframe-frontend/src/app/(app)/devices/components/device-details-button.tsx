@@ -29,7 +29,7 @@ export function DeviceDetailsButton({
   }
 
   return (
-    <Button variant={variant} href={`/devices/details/${id}`} openInNewTab={openInNewTab} className={className}>
+    <Button variant={variant} href={`/devices/details?id=${id}`} openInNewTab={openInNewTab} className={className}>
       {label}
     </Button>
   );

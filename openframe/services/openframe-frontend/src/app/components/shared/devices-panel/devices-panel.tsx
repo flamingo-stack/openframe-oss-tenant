@@ -209,7 +209,7 @@ export function DevicesPanel({
     return [
       {
         label: 'Add Customer',
-        href: '/customers/edit/new',
+        href: '/customers/edit?id=new',
         icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
         variant: 'outline',
       },

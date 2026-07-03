@@ -161,7 +161,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
           loading: isChecking,
         };
 
-    const editHref = `/customers/edit/${id}`;
+    const editHref = `/customers/edit?id=${id}`;
     const editAction: PageActionButton = {
       label: 'Edit Customer',
       variant: 'outline',

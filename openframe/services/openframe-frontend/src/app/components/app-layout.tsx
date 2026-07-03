@@ -17,9 +17,11 @@ import { useLogoutConfirmStore } from '@/app/(auth)/auth/stores/logout-confirm-s
 import { LogoutConfirmModal } from '@/app/components/shared/logout-confirm-modal';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
+import { isNativeShell } from '@/lib/native-shell';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
 import { AppShellSkeleton } from './app-shell-skeleton';
+import { ChatDrawerErrorBoundary } from './chat-drawer-error-boundary';
 import { type UnreadCountsByCategory, UnreadCountsHydrator } from './notifications/unread-counts-hydrator';
 import { OpenframeEmbeddableChatEntry } from './openframe-embeddable-chat-entry';
 import { SubscriptionGuard } from './subscription-lock/subscription-guard';
@@ -61,7 +63,11 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   // opens the chat at all.
   const [chatIdentityEnabled, setChatIdentityEnabled] = useState(false);
   useEffect(() => {
-    if (chatOpen) setChatIdentityEnabled(true);
+    // In the native shell, identity rides the `/content` proxy which
+    // `embedAuthedFetch` refuses from the capacitor:// origin — a SYNCHRONOUS
+    // throw inside the resolver effect that unmounts the whole shell. Leave
+    // identity disabled there; the lib's designed fallback is anon identity.
+    if (chatOpen && !isNativeShell()) setChatIdentityEnabled(true);
   }, [chatOpen]);
 
   const handleNavigate = useCallback(
@@ -202,7 +208,9 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
         >
           {/* No AppLayoutDrawerHeader/Title — EmbeddableChat renders its own
               header + X button; a wrapper header would double it up. */}
-          <OpenframeEmbeddableChatEntry open={chatOpen} onOpenChange={setChatOpen} />
+          <ChatDrawerErrorBoundary>
+            <OpenframeEmbeddableChatEntry open={chatOpen} onOpenChange={setChatOpen} />
+          </ChatDrawerErrorBoundary>
         </AppLayoutDrawerContent>
       </AppLayoutDrawer>
     </ChatIdentityProvider>

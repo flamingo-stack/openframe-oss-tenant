@@ -16,8 +16,6 @@ import type { ComponentType } from 'react';
 import { SettingMenuItem } from '../settings/components/setting-menu-item';
 import { HELP_CENTER_BASE } from './endpoints';
 
-export const dynamic = 'force-dynamic';
-
 type Item = {
   href: string;
   title: string;

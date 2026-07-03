@@ -179,7 +179,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
               }
 
               toast({ title: 'Success', description: 'Article updated', variant: 'success' });
-              safeBackOrReplace(router, `/knowledge-base/details/${articleId}`);
+              safeBackOrReplace(router, `/knowledge-base/details?id=${articleId}`);
             } else {
               const targetConnectionId = getKnowledgeBaseArticlesConnectionId({
                 parentId: folderId,
@@ -218,7 +218,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                 });
               }
               toast({ title: 'Success', description: 'Article created', variant: 'success' });
-              router.replace(`/knowledge-base/details/${result.id}`);
+              router.replace(`/knowledge-base/details?id=${result.id}`);
             }
           } catch {
           } finally {

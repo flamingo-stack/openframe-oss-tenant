@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';

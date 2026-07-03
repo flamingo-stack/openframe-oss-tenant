@@ -196,8 +196,8 @@ function ScriptDetailsTabSkeleton() {
  * resets a tripped not-found instead of latching it.
  */
 export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
-  const editHref = `/scripts-v2/edit/${scriptId}`;
-  const runHref = `/scripts-v2/details/${scriptId}/run`;
+  const editHref = `/scripts-v2/edit?id=${scriptId}`;
+  const runHref = `/scripts-v2/details/run?id=${scriptId}`;
 
   const actions = useMemo(
     () => [

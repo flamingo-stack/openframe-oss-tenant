@@ -167,7 +167,7 @@ function EditScriptForm({ scriptId, initialValues, initialTags, loading = false 
     <>
       <ScriptPageChrome
         title={isEditMode ? 'Edit Script' : 'New Script'}
-        backFallback={isEditMode ? `/scripts-v2/details/${scriptId}` : '/scripts-v2'}
+        backFallback={isEditMode ? `/scripts-v2/details?id=${scriptId}` : '/scripts-v2'}
         actions={actions}
         className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       >

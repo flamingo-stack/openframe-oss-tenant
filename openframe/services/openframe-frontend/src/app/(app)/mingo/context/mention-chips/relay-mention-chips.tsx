@@ -86,13 +86,13 @@ const SCRIPT_QUERY = graphql`
 function hrefFor(kind: ContextEntityKind, rawId: string, globalId: string): string | undefined {
   switch (kind) {
     case CONTEXT_ENTITY_KIND.DEVICE:
-      return `/devices/details/${rawId}`;
+      return `/devices/details?id=${rawId}`;
     case CONTEXT_ENTITY_KIND.ORGANIZATION:
-      return `/customers/details/${rawId}`;
+      return `/customers/details?id=${rawId}`;
     case CONTEXT_ENTITY_KIND.KB_ARTICLE:
-      return `/knowledge-base/details/${globalId}`;
+      return `/knowledge-base/details?id=${globalId}`;
     case CONTEXT_ENTITY_KIND.SCRIPT:
-      return `/scripts-v2/details/${globalId}`;
+      return `/scripts-v2/details?id=${globalId}`;
     default:
       return undefined;
   }

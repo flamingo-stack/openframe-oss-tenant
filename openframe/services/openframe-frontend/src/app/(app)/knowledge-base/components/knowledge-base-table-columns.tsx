@@ -41,7 +41,7 @@ const STATUS_VARIANT: Record<'DRAFT' | 'ARCHIVED', 'warning' | 'grey'> = {
 };
 
 export const knowledgeBaseRowHref = (item: KnowledgeBaseRow): string =>
-  item.type === 'ARTICLE' ? `/knowledge-base/details/${item.id}` : `/knowledge-base/folders/${item.id}`;
+  item.type === 'ARTICLE' ? `/knowledge-base/details?id=${item.id}` : `/knowledge-base/folders?id=${item.id}`;
 
 export const KNOWLEDGE_BASE_OPEN_COLUMN: ColumnDef<KnowledgeBaseRow> = {
   id: 'open',

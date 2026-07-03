@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ActivityIcon,

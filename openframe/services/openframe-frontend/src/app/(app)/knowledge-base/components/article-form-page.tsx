@@ -32,7 +32,7 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
     initialArticle,
   });
 
-  const backToArticle = useSafeBack(`/knowledge-base/details/${articleId ?? ''}`);
+  const backToArticle = useSafeBack(`/knowledge-base/details?id=${articleId ?? ''}`);
   const backToKb = useSafeBack('/knowledge-base');
   const backButton = useMemo(
     () => (isEditMode && articleId ? { label: 'Back', onClick: backToArticle } : { label: 'Back', onClick: backToKb }),

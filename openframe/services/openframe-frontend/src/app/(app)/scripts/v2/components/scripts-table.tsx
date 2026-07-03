@@ -214,8 +214,8 @@ function ScriptsTableContent({
 
   const renderRowActions = useCallback(
     (script: UiScriptEntry) => {
-      const runHref = `/scripts-v2/details/${script.id}/run`;
-      const editHref = `/scripts-v2/edit/${script.id}`;
+      const runHref = `/scripts-v2/details/run?id=${script.id}`;
+      const editHref = `/scripts-v2/edit?id=${script.id}`;
       const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
       const mutating = isArchiving || isUnarchiving;
 
@@ -461,7 +461,7 @@ function ScriptsTableContent({
         cell: ({ row }: { row: Row<UiScriptEntry> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              onClick={openInNewTab(`/scripts-v2/details/${row.original.id}`)}
+              onClick={openInNewTab(`/scripts-v2/details?id=${row.original.id}`)}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -515,7 +515,7 @@ function ScriptsTableContent({
     onColumnFiltersChange: handleColumnFiltersChange,
   });
 
-  const scriptRowHref = useCallback((script: UiScriptEntry) => `/scripts-v2/details/${script.id}`, []);
+  const scriptRowHref = useCallback((script: UiScriptEntry) => `/scripts-v2/details?id=${script.id}`, []);
 
   const hasActiveFilters = hasTagFilter || Object.values(tableFilters).some(values => values.length > 0);
   const showEmptyState = !debouncedSearch && !hasActiveFilters && !isPending && transformedScripts.length === 0;

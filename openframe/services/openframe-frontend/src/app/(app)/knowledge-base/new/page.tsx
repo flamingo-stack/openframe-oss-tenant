@@ -9,5 +9,3 @@ export default function NewArticlePageWrapper() {
   const folderId = searchParams.get('folderId');
   return <ArticleFormPage articleId={null} initialFolderId={folderId} />;
 }
-
-export const dynamic = 'force-dynamic';

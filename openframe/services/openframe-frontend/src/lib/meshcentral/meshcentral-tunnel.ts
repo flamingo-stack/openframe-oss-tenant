@@ -1,4 +1,4 @@
-import { runtimeEnv } from '../runtime-config';
+import { getAccessTokenSync, isBearerAuthMode } from '../token-store';
 import { buildWsUrl } from './meshcentral-config';
 import { WebSocketManager } from './websocket-manager';
 
@@ -59,14 +59,9 @@ export class MeshTunnel {
 
       let url = buildWsUrl(`/meshrelay.ashx?${qs.toString()}`);
 
-      try {
-        const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-        if (isDevTicketEnabled && typeof window !== 'undefined') {
-          const token = localStorage.getItem('of_access_token');
-          if (token) url += `&authorization=${encodeURIComponent(token)}`;
-        }
-      } catch (_error) {
-        // noop
+      if (isBearerAuthMode()) {
+        const token = getAccessTokenSync();
+        if (token) url += `&authorization=${encodeURIComponent(token)}`;
       }
 
       return url;

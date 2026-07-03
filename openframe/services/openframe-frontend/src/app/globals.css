@@ -83,3 +83,29 @@ input[type="number"] {
 .fae-chat-preview div.flex.flex-col.gap-2 {
   padding-left: 2.5rem;
 }
+
+/*
+ * Native shell (Capacitor) safe areas — activated via the data attribute that
+ * NativeShellInitializer sets; browsers never get it, so the web layout is
+ * untouched. The shell draws edge-to-edge (viewport-fit=cover, no native
+ * content insets): paint an opaque band over the status-bar inset so scrolled
+ * content passes under it, and start the sticky app header below that band.
+ */
+html[data-native-shell] body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--native-safe-top, env(safe-area-inset-top));
+  background: var(--ods-card, #212121);
+  z-index: 60;
+}
+
+/* The header keeps sticking at the viewport top but grows by the inset so
+   its own ods-card background fills the status-bar area — seamless with the
+   band and no double offset. (h-12 = 3rem at phone widths.) */
+html[data-native-shell] header.sticky {
+  padding-top: var(--native-safe-top, env(safe-area-inset-top));
+  height: calc(3rem + var(--native-safe-top, env(safe-area-inset-top)));
+}

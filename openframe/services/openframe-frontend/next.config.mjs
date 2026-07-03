@@ -4,17 +4,30 @@ import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 
+// Build target selector. `export` produces a static SPA bundle for the native
+// shells (Capacitor mobile / Tauri desktop); anything else keeps the SSR
+// `standalone` server build used by the web deployment. Gating on env lets ONE
+// codebase serve browser + desktop + mobile — see docs/static-export-migration.md.
+// Build-time only (not NEXT_PUBLIC_): never shipped to the client bundle.
+const isStaticExport = process.env.OPENFRAME_BUILD_TARGET === 'export';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  outputFileTracingRoot: projectRoot,
+  output: isStaticExport ? 'export' : 'standalone',
+  // `outputFileTracingRoot` only matters for the standalone Node server bundle;
+  // it has no meaning under `output: 'export'`.
+  ...(isStaticExport ? {} : { outputFileTracingRoot: projectRoot }),
   transpilePackages: ['@flamingo-stack/openframe-frontend-core'],
   trailingSlash: true,
-  // Keep `trailingSlash` link generation but suppress the automatic
-  // /x -> /x/ redirect, which otherwise 308s `/content/*` chat requests
-  // (adding a slash) before the rewrite below can proxy them — sending a
-  // trailing-slash path the gateway doesn't recognize.
-  skipTrailingSlashRedirect: true,
+  // `skipTrailingSlashRedirect` suppresses the automatic /x -> /x/ redirect.
+  // It exists ONLY for the standalone `/content/*` chat proxy (so the gateway
+  // sees the un-slashed path before the rewrite). Under `output: export` it is
+  // harmful: it makes the App Router navigate to slash-less paths (`/dashboard`)
+  // that a static file host (capacitor://localhost) can't resolve to
+  // `dashboard/index.html`, so client navigation AND its hard-nav fallback fail
+  // ("Failed to fetch RSC payload … Load failed"). Standalone-only so the export
+  // build uses the canonical `/dashboard/` form the webview can serve.
+  ...(isStaticExport ? {} : { skipTrailingSlashRedirect: true }),
   distDir: 'dist',
   images: {
     unoptimized: true,
@@ -38,13 +51,21 @@ const nextConfig = {
   // `/content/*` directly. The rewrite exists for LOCAL `next dev` / `next build`
   // (and any image built with the host set), where the dev/build-time env
   // supplies the gateway so chat works without the dev-only cross-origin hatch.
-  async rewrites() {
-    const tenantHost = (process.env.NEXT_PUBLIC_TENANT_HOST_URL || '').replace(/\/+$/, '');
-    if (!tenantHost) return [];
-    return {
-      beforeFiles: [{ source: '/content/:path*', destination: `${tenantHost}/content/:path*` }],
-    };
-  },
+  //
+  // `rewrites()` is unsupported under `output: 'export'` (no server to run
+  // them), so it is omitted in export mode; the embedded-chat proxy is replaced
+  // there by absolute gateway URLs + Bearer + CORS (migration item 7).
+  ...(isStaticExport
+    ? {}
+    : {
+        async rewrites() {
+          const tenantHost = (process.env.NEXT_PUBLIC_TENANT_HOST_URL || '').replace(/\/+$/, '');
+          if (!tenantHost) return [];
+          return {
+            beforeFiles: [{ source: '/content/:path*', destination: `${tenantHost}/content/:path*` }],
+          };
+        },
+      }),
 };
 
 export default phase => {

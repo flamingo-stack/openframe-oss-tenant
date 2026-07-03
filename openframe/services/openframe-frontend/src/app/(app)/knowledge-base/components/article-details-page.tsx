@@ -167,7 +167,7 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
       : [
           {
             label: 'Edit Article',
-            href: `/knowledge-base/edit/${article.id}`,
+            href: `/knowledge-base/edit?id=${article.id}`,
             icon: <PenEditIcon size={24} className="text-ods-text-secondary" />,
             variant: 'outline',
           },

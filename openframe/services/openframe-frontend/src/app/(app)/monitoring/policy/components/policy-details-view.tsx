@@ -52,7 +52,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
   const handleBack = useSafeBack('/monitoring?tab=policies');
 
   const handleEditPolicy = () => {
-    router.push(`/monitoring/policy/edit/${policyId}`);
+    router.push(`/monitoring/policy/edit?id=${policyId}`);
   };
 
   const handleDeletePolicy = () => {

@@ -1,23 +1,19 @@
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { TicketDetailsView } from '../components/ticket-details-view';
 
-// Force dynamic rendering due to useSearchParams in AppLayout
-export const dynamic = 'force-dynamic';
+export default function TicketDetailsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const id = searchParams.get('id') ?? undefined;
 
-import { redirect } from 'next/navigation';
+  useEffect(() => {
+    if (!id) router.replace('/tickets');
+  }, [id, router]);
 
-interface TicketDetailsPageProps {
-  searchParams: Promise<{
-    id?: string;
-  }>;
-}
-
-export default async function TicketDetailsPage({ searchParams }: TicketDetailsPageProps) {
-  const params = await searchParams;
-  const { id } = params;
-
-  if (!id) {
-    redirect('/tickets');
-  }
+  if (!id) return null;
 
   return <TicketDetailsView ticketId={id} />;
 }

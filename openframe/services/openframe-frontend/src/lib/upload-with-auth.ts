@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { runtimeEnv } from './runtime-config';
+import { getAccessTokenSync, isBearerAuthMode } from './token-store';
 
 /**
  * Upload a file with authentication (cookies + optional auth headers)
@@ -10,14 +11,10 @@ export async function uploadWithAuth(endpoint: string, file: File, fieldName: st
 
   const headers: Record<string, string> = {};
 
-  if (runtimeEnv.enableDevTicketObserver()) {
-    try {
-      const accessToken = localStorage.getItem('of_access_token');
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-      }
-    } catch (_error) {
-      // Silently continue without token
+  if (isBearerAuthMode()) {
+    const accessToken = getAccessTokenSync();
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
     }
   }
 
@@ -64,14 +61,10 @@ export async function deleteWithAuth(endpoint: string): Promise<void> {
     'Content-Type': 'application/json',
   };
 
-  if (runtimeEnv.enableDevTicketObserver()) {
-    try {
-      const accessToken = localStorage.getItem('of_access_token');
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-      }
-    } catch (_error) {
-      // Silently continue without token
+  if (isBearerAuthMode()) {
+    const accessToken = getAccessTokenSync();
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
     }
   }
 

@@ -166,9 +166,9 @@ export function ScriptsTable() {
   const visibleScripts = useMemo(() => filteredScripts.slice(0, visibleCount), [filteredScripts, visibleCount]);
 
   const renderRowActions = useCallback((script: UiScriptEntry) => {
-    const runHref = `/scripts/details/${script.id}/run`;
-    const editHref = `/scripts/edit/${script.id}`;
-    const detailsHref = `/scripts/details/${script.id}`;
+    const runHref = `/scripts/details/run?id=${script.id}`;
+    const editHref = `/scripts/edit?id=${script.id}`;
+    const detailsHref = `/scripts/details?id=${script.id}`;
     const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
 
     const groups: ActionsMenuGroup[] = [
@@ -303,7 +303,7 @@ export function ScriptsTable() {
         cell: ({ row }: { row: Row<UiScriptEntry> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              onClick={openInNewTab(`/scripts/details/${row.original.id}`)}
+              onClick={openInNewTab(`/scripts/details?id=${row.original.id}`)}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -357,7 +357,7 @@ export function ScriptsTable() {
     onColumnFiltersChange: handleColumnFiltersChange,
   });
 
-  const scriptRowHref = useCallback((script: UiScriptEntry) => `/scripts/details/${script.id}`, []);
+  const scriptRowHref = useCallback((script: UiScriptEntry) => `/scripts/details?id=${script.id}`, []);
 
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + pageSize), []);
 

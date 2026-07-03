@@ -654,7 +654,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
             ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
             : undefined) ||
           '—',
-        href: machineId ? `/devices/details/${machineId}` : undefined,
+        href: machineId ? `/devices/details?id=${machineId}` : undefined,
       },
     },
     {
@@ -973,7 +973,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   : undefined) ||
                 'Unassigned',
               icon: <MonitorIcon className="size-4" />,
-              onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
+              onClick: machineId ? () => router.push(`/devices/details?id=${machineId}`) : undefined,
             }}
             {...statusInfoProps}
             onExpand={() => setIsTicketInfoExpanded(!ticketInfoExpanded)}
@@ -1057,7 +1057,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                         : undefined) ||
                       'Unassigned',
                     icon: <MonitorIcon className="size-4" />,
-                    onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
+                    onClick: machineId ? () => router.push(`/devices/details?id=${machineId}`) : undefined,
                   }}
                   {...statusInfoProps}
                   expanded={true}

@@ -81,7 +81,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     }
   }, [scriptDetails, reset]);
 
-  const handleBack = useSafeBack(`/scripts/details/${scriptId}`);
+  const handleBack = useSafeBack(`/scripts/details?id=${scriptId}`);
 
   const onSubmit = useCallback(
     async (data: RunFormData) => {

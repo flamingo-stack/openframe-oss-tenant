@@ -105,7 +105,7 @@ export const CUSTOMERS_COLUMNS: ColumnDef<UiCustomerEntry>[] = [
     cell: ({ row }: { row: Row<UiCustomerEntry> }) => (
       <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
         <Button
-          onClick={openInNewTab(`/customers/details/${row.original.organizationId}`)}
+          onClick={openInNewTab(`/customers/details?id=${row.original.organizationId}`)}
           variant="outline"
           size="icon"
           leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -119,7 +119,7 @@ export const CUSTOMERS_COLUMNS: ColumnDef<UiCustomerEntry>[] = [
   },
 ];
 
-export const customerRowHref = (row: UiCustomerEntry) => `/customers/details/${row.organizationId}`;
+export const customerRowHref = (row: UiCustomerEntry) => `/customers/details?id=${row.organizationId}`;
 
 interface CustomersSearchInputProps {
   value: string;

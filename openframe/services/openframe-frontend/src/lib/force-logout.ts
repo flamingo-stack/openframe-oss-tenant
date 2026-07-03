@@ -1,5 +1,5 @@
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/app/(auth)/auth/hooks/use-token-storage';
 import { getDefaultRedirectPath, isSaasTenantMode } from './app-mode';
+import { clearTokens, hasTokensSync } from './token-store';
 
 export interface ForceLogoutOptions {
   reason?: string;
@@ -18,10 +18,9 @@ export async function forceLogout(options: ForceLogoutOptions = {}): Promise<voi
   const isAuthPage = currentPath.startsWith('/auth');
 
   try {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    await clearTokens();
   } catch (error) {
-    console.error('[Force Logout] Failed to clear tokens from localStorage:', error);
+    console.error('[Force Logout] Failed to clear tokens:', error);
   }
 
   try {
@@ -58,28 +57,9 @@ export async function forceLogout(options: ForceLogoutOptions = {}): Promise<voi
 }
 
 export function hasStoredTokens(): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  try {
-    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    return !!(accessToken || refreshToken);
-  } catch {
-    return false;
-  }
+  return hasTokensSync();
 }
 
 export function clearStoredTokens(): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-  } catch (error) {
-    console.error('[Token Clear] Failed to clear tokens:', error);
-  }
+  void clearTokens();
 }

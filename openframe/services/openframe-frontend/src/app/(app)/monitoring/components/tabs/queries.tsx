@@ -67,7 +67,7 @@ export function Queries() {
     (query: Query) => [
       {
         label: 'Query Details',
-        onClick: () => router.push(`/monitoring/query/${query.id}`),
+        onClick: () => router.push(`/monitoring/query?id=${query.id}`),
       },
       {
         label: 'Delete Query',
@@ -86,7 +86,7 @@ export function Queries() {
         description: query.description,
         frequencyLabel: formatQueryInterval(query.interval),
         actions: rowActions(query),
-        href: `/monitoring/query/${query.id}`,
+        href: `/monitoring/query?id=${query.id}`,
       })),
     [visibleQueries, rowActions],
   );
@@ -94,7 +94,7 @@ export function Queries() {
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddQuery = useCallback(() => {
-    router.push('/monitoring/query/edit/new');
+    router.push('/monitoring/query/edit?id=new');
   }, [router]);
 
   // Show the empty state instead of the search bar + table only when there is

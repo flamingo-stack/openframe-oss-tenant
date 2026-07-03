@@ -67,7 +67,7 @@ export function TicketsStep() {
       toast({ title: 'Select a device', description: 'Choose a device to connect to', variant: 'destructive' });
       return;
     }
-    router.push(`/devices/details/${deviceId}/remote-shell`);
+    router.push(`/devices/details/remote-shell?id=${deviceId}`);
   };
 
   return (
