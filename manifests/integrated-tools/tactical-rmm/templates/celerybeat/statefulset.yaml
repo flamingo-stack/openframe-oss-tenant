@@ -48,6 +48,8 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
+        - secretRef:
+            name: tactical-secret
         livenessProbe:
           exec:
             command:
