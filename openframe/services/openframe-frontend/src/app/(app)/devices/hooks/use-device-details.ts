@@ -178,8 +178,8 @@ function createDevice(
     // Core Identifiers
     id: node.id,
     machineId: node.machineId,
-    hostname: fleetData?.hostname || node.hostname,
-    displayName: node.displayName || fleetData?.display_name || node.hostname,
+    hostname: node.hostname,
+    displayName: node.displayName || node.hostname,
 
     // Hardware - CPU
     cpu_brand: fleetData?.cpu_brand,

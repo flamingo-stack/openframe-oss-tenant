@@ -19,8 +19,9 @@ import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
-import { DEFAULT_VISIBLE_STATUSES, DEVICE_STATUS } from '../constants/device-statuses';
+import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
 import type { Device, DeviceFilters } from '../types/device.types';
+import { getDeviceName } from '../utils/device-name';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceActionsDropdown } from './device-actions-dropdown';
 
@@ -67,6 +68,8 @@ interface DevicesTableBodyProps {
   actionsColumn?: ColumnDef<Device>;
   /** Column ids to drop from the base table columns (e.g. ['organization'] when scoped to a single org). */
   hideColumns?: string[];
+  /** Column ids whose header filter is dropped while the column stays visible (e.g. ['status'] on the archive page). */
+  disableColumnFilters?: string[];
   /** Server-side total (for paginated lists). Falls back to loaded-row count when omitted. */
   totalCount?: number;
 }
@@ -83,13 +86,17 @@ export function DevicesTableBody({
   onColumnFiltersChange,
   actionsColumn,
   hideColumns,
+  disableColumnFilters,
   totalCount,
 }: DevicesTableBodyProps) {
   const columns = useMemo<ColumnDef<Device>[]>(() => {
     const hidden = new Set(hideColumns ?? []);
-    const base = getDeviceTableColumns(deviceFilters ?? null).filter(c => !c.id || !hidden.has(c.id));
+    const unfiltered = new Set(disableColumnFilters ?? []);
+    const base = getDeviceTableColumns(deviceFilters ?? null)
+      .filter(c => !c.id || !hidden.has(c.id))
+      .map(c => (c.id && unfiltered.has(c.id) ? { ...c, meta: { ...c.meta, filter: undefined } } : c));
     return actionsColumn ? [...base, actionsColumn, DEVICE_OPEN_COLUMN] : [...base, DEVICE_OPEN_COLUMN];
-  }, [deviceFilters, actionsColumn, hideColumns]);
+  }, [deviceFilters, actionsColumn, hideColumns, disableColumnFilters]);
 
   const table = useDataTable<Device>({
     data: devices,
@@ -154,20 +161,14 @@ export function getDeviceFilterColumns(deviceFilters?: DeviceFilters | null): De
       filterable: true,
       filterOptions: (() => {
         const statuses = deviceFilters?.statuses || [];
-        // Show only DEFAULT_VISIBLE_STATUSES (excludes ARCHIVED and DELETED)
-        const normalStatuses = statuses.filter(s => (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(s.value));
-
-        return normalStatuses
+        // Show only DEFAULT_VISIBLE_STATUSES (ARCHIVED lives on /devices/archive, DELETED hidden)
+        return statuses
+          .filter(s => (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(s.value))
           .map(status => ({
             id: status.value,
             label: getDeviceStatusConfig(status.value).label,
             value: status.value,
-          }))
-          .sort((a, b) => {
-            if (a.value === DEVICE_STATUS.ARCHIVED) return 1;
-            if (b.value === DEVICE_STATUS.ARCHIVED) return -1;
-            return 0;
-          });
+          }));
       })(),
     },
     {
@@ -201,12 +202,7 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Col
     const statuses = deviceFilters?.statuses || [];
     return statuses
       .filter(s => (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(s.value))
-      .map(s => ({ id: s.value, label: getDeviceStatusConfig(s.value).label, value: s.value }))
-      .sort((a, b) => {
-        if (a.value === DEVICE_STATUS.ARCHIVED) return 1;
-        if (b.value === DEVICE_STATUS.ARCHIVED) return -1;
-        return 0;
-      });
+      .map(s => ({ id: s.value, label: getDeviceStatusConfig(s.value).label, value: s.value }));
   })();
 
   const osFilterOptions = deviceFilters?.osTypes?.map(os => ({ id: os.value, label: os.value, value: os.value })) ?? [];
@@ -231,7 +227,7 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Col
                 })}
             </div>
             <div className="flex-1 min-w-0">
-              <TruncateText>{device.displayName || device.hostname}</TruncateText>
+              <TruncateText>{getDeviceName(device)}</TruncateText>
             </div>
           </div>
         );

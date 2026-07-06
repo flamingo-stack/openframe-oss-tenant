@@ -11,7 +11,7 @@ export function createDeviceListItem(node: DevicesGraphQlNode): Device {
     // Core Identifiers
     id: node.id,
     machineId: node.machineId || '',
-    hostname: node.hostname || node.displayName || '',
+    hostname: node.hostname || '',
     displayName: node.displayName || node.hostname,
 
     // Hardware - CPU (not available in list view)

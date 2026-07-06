@@ -21,6 +21,13 @@ export function canArchiveDevice(status: string | undefined): boolean {
 }
 
 /**
+ * Check if a device can be unarchived (restored from the archive)
+ */
+export function canUnarchiveDevice(status: string | undefined): boolean {
+  return status?.toUpperCase() === 'ARCHIVED';
+}
+
+/**
  * Check if a device can be deleted
  */
 export function canDeleteDevice(status: string | undefined): boolean {
@@ -71,6 +78,7 @@ export interface DeviceActionAvailability {
   manageFilesEnabled: boolean;
   runScriptEnabled: boolean;
   archiveEnabled: boolean;
+  unarchiveEnabled: boolean;
   deleteEnabled: boolean;
 
   // Tool IDs (for handlers)
@@ -104,6 +112,9 @@ export function getDeviceActionAvailability(device: Device): DeviceActionAvailab
 
     // Archive: device must not be already archived or deleted
     archiveEnabled: canArchiveDevice(device.status),
+
+    // Unarchive: only archived devices can be restored
+    unarchiveEnabled: canUnarchiveDevice(device.status),
 
     // Delete: device must not be already deleted
     deleteEnabled: canDeleteDevice(device.status),

@@ -19,6 +19,7 @@ import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useDeviceActionsMenu } from '../hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../hooks/use-device-details';
+import { getDeviceName } from '../utils/device-name';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceDetailsSkeleton } from './device-details-skeleton';
 import { RunScriptModal } from './run-script/run-script-modal';
@@ -94,7 +95,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       ? {
           type: CONTEXT_ENTITY_KIND.DEVICE,
           id: deviceId,
-          label: normalizedDevice.displayName || normalizedDevice.hostname || deviceId,
+          label: getDeviceName(normalizedDevice) || deviceId,
         }
       : null,
   );
@@ -120,6 +121,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     if (actionAvailability?.runScriptEnabled) primaryItems.push(deviceMenuItems.runScript);
     if (actionAvailability?.manageFilesEnabled) primaryItems.push(deviceMenuItems.manageFiles);
     if (deviceMenuItems.archive) destructiveItems.push(deviceMenuItems.archive);
+    if (deviceMenuItems.unarchive) destructiveItems.push(deviceMenuItems.unarchive);
     if (deviceMenuItems.delete) destructiveItems.push(deviceMenuItems.delete);
 
     if (primaryItems.length > 0) {
@@ -163,8 +165,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     { ...deviceMenuItems.remoteShell, variant: 'outline' },
   ];
 
-  const title =
-    normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device';
+  const title = getDeviceName(normalizedDevice) || 'Unknown Device';
   const lastUpdated = normalizedDevice.updatedAt || normalizedDevice.lastSeen;
   const subtitle = lastUpdated ? `Updated ${formatRelativeTime(lastUpdated)}` : undefined;
   const statusConfig = getDeviceStatusConfig(normalizedDevice.status);

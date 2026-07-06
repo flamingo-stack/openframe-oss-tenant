@@ -10,10 +10,11 @@ import type { DeviceFilterInput } from '../types/device.types';
 interface UseDevicesUrlParamsOptions {
   /**
    * Default statuses applied when the user hasn't picked any.
-   * - omitted → `DEFAULT_DEVICES_LIST_STATUSES` (ONLINE / OFFLINE / ARCHIVED;
-   *   PENDING is unselected by default, DELETED hidden). Used on the main Devices
-   *   page and the Customer devices tab.
-   * - `[]` → no default, every status (including PENDING / DELETED) returned.
+   * - omitted → `DEFAULT_DEVICES_LIST_STATUSES` (ONLINE / OFFLINE; PENDING is
+   *   opt-in via the filter, ARCHIVED lives on /devices/archive, DELETED
+   *   hidden). Used on the main Devices page and the Customer devices tab.
+   * - `[]` → no default, every status (including ARCHIVED / DELETED) returned;
+   *   pair with `lockedFilters` to scope the query (e.g. the archive page).
    */
   defaultStatuses?: string[];
 }
@@ -48,13 +49,33 @@ export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
     [params.tags],
   );
 
-  // When the user hasn't explicitly picked statuses, fall back to the defaults
-  // (PENDING excluded). Shared by the API query and the filter UI so the shown
-  // checkmarks match what's actually queried (online/offline/archived checked,
-  // pending unchecked by default).
+  // Selecting exactly the default status set is the same as no selection —
+  // collapse it to [] so the URL stays clean (`?statuses=` is dropped) and it
+  // never reads as an active filter. Applied on both read (a URL that spells
+  // out the defaults) and write (Apply with all defaults checked).
+  const normalizeStatuses = useCallback(
+    (statuses: string[]) =>
+      statuses.length === defaultStatuses.length && defaultStatuses.every(s => statuses.includes(s)) ? [] : statuses,
+    [defaultStatuses],
+  );
+
+  const selectedStatuses = useMemo(() => normalizeStatuses(params.statuses), [params.statuses, normalizeStatuses]);
+
+  const normalizedParams = useMemo(() => ({ ...params, statuses: selectedStatuses }), [params, selectedStatuses]);
+
+  const setParamsNormalized = useCallback(
+    (next: Record<string, any>) =>
+      setParams('statuses' in next ? { ...next, statuses: normalizeStatuses(next.statuses || []) } : next),
+    [setParams, normalizeStatuses],
+  );
+
+  // When the user hasn't explicitly picked statuses, the QUERY falls back to the
+  // defaults (online/offline). This is query-only: the filter UI shows just the
+  // explicit selection (`selectedStatuses`), so nothing looks checked in the
+  // default state.
   const effectiveStatuses = useMemo(
-    () => (params.statuses.length > 0 ? params.statuses : defaultStatuses),
-    [params.statuses, defaultStatuses],
+    () => (selectedStatuses.length > 0 ? selectedStatuses : defaultStatuses),
+    [selectedStatuses, defaultStatuses],
   );
 
   const filters: DeviceFilterInput = useMemo(
@@ -69,11 +90,11 @@ export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
 
   const tableFilters = useMemo(
     () => ({
-      status: effectiveStatuses,
+      status: selectedStatuses,
       os: params.osTypes,
       organization: params.organizationIds,
     }),
-    [effectiveStatuses, params.osTypes, params.organizationIds],
+    [selectedStatuses, params.osTypes, params.organizationIds],
   );
 
   const tagOptions: TagSearchOption<string>[] = useMemo(
@@ -83,14 +104,14 @@ export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
 
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, any[]>) => {
-      setParams({
+      setParamsNormalized({
         statuses: columnFilters.status || [],
         osTypes: columnFilters.os || [],
         organizationIds: columnFilters.organization || [],
       });
       document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
     },
-    [setParams],
+    [setParamsNormalized],
   );
 
   const handleTagRemove = useCallback(
@@ -121,14 +142,13 @@ export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
   );
 
   return {
-    params,
+    params: normalizedParams,
     setParam,
-    setParams,
+    setParams: setParamsNormalized,
     localSearch,
     setLocalSearch,
     debouncedSearch,
     filters,
-    effectiveStatuses,
     tableFilters,
     tagOptions,
     handleFilterChange,

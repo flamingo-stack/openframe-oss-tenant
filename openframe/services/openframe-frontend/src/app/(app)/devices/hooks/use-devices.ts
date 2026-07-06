@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api-client';
 import { GET_DEVICES_QUERY } from '../queries/devices-queries';
 import type { Device, DeviceFilterInput, DevicesGraphQlNode, GraphQlResponse } from '../types/device.types';
 import { createDeviceListItem } from '../utils/device-transform';
+import { deviceQueryKeys } from '../utils/query-keys';
 
 const DEVICES_PAGE_SIZE = 20;
 
@@ -21,9 +22,12 @@ interface DevicesPage {
   filteredCount: number;
 }
 
+// Derived from the canonical deviceQueryKeys registry so cache invalidation
+// (which targets deviceQueryKeys roots) stays linked by reference, not by a
+// duplicated 'devices' string literal.
 export const devicesQueryKeys = {
-  all: ['devices'] as const,
-  list: (filters: DeviceFilterInput, search: string) => ['devices', 'list', filters, search] as const,
+  all: deviceQueryKeys.all,
+  list: (filters: DeviceFilterInput, search: string) => [...deviceQueryKeys.lists(), filters, search] as const,
 };
 
 export function useDevices(filters: DeviceFilterInput = {}, search = '') {
