@@ -51,8 +51,6 @@ export function TicketsFilterModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Filter Tickets"
-      // Hard width cap: autocomplete content must never stretch the panel past the viewport.
-      className="min-w-0 max-w-[calc(100vw-2rem)] md:max-w-md"
       footer={
         <>
           <Button variant="outline" className="flex-1 h-11" onClick={handleReset}>
