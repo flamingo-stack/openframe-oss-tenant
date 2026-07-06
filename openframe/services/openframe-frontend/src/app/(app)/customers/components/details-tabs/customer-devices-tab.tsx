@@ -14,9 +14,6 @@ export function CustomerDevicesTab({ organizationId }: CustomerDevicesTabProps) 
     <DevicesPanel
       embedded
       addDeviceHref={`/devices/new?organizationId=${organizationId}`}
-      // Archived devices live on the dedicated archive page; deep-link with the
-      // customer preselected (organizationIds is a URL-driven filter there).
-      archiveHref={`/devices/archive?organizationIds=${organizationId}`}
       lockedFilters={lockedFilters}
       hideColumns={['organization']}
       hideFilters={['organization']}
