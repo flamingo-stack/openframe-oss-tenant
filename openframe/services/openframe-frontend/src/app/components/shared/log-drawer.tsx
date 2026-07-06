@@ -99,7 +99,9 @@ export function LogDrawer({
         <DrawerHeader>
           <DrawerTitle>Log Details</DrawerTitle>
 
-          {description && <DrawerDescription>{description}</DrawerDescription>}
+          {description && (
+            <DrawerDescription className="text-h4 leading-6 text-ods-text-primary">{description}</DrawerDescription>
+          )}
 
           {(statusTag || timestamp) && (
             <div className="flex items-center gap-2">

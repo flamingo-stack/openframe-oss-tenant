@@ -11,6 +11,7 @@ import { DeviceInfoSection } from '@/app/components/shared';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { formatDateTime } from '@/lib/format-date';
+import { formatLogDetailsForCopy } from '../../logs-page/utils/format-log-details';
 import { useLogDetails } from '../hooks/use-log-details';
 import { DetailsSection } from './details-section';
 import { FullInformationSection } from './full-information-section';
@@ -60,8 +61,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
 
   const handleCopyLogDetails = () => {
     if (logDetails) {
-      const details = `Log ID: ${logDetails.toolEventId}\nStatus: ${logDetails.severity}\nTimestamp: ${logDetails.timestamp}\nTool Type: ${logDetails.toolType}\nEvent Type: ${logDetails.eventType}\nMessage: ${logDetails.message || 'No message available'}\nDetails: ${logDetails.details || 'No details available'}`;
-      copy(details);
+      copy(formatLogDetailsForCopy(logDetails));
     }
   };
 
