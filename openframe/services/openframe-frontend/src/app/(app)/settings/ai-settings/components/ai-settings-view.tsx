@@ -158,7 +158,7 @@ export function AiSettings() {
   });
 
   return (
-    <AiSettingsLayout actions={hasLoadError ? undefined : actions} mobileBottomActions={isEditMode}>
+    <AiSettingsLayout actions={isLoading || hasLoadError ? undefined : actions} mobileBottomActions={isEditMode}>
       <AiSettingsTabs activeTab={effectiveTab} onTabChange={handleTabChange}>
         {activeId => {
           // Keep the tab bar visible; show skeletons while the tab config loads.
