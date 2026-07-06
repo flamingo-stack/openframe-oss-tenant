@@ -10,9 +10,9 @@ import {
   Button,
   CheckboxBlock,
   ColorPickerInput,
-  CompactPageLoader,
   ImageUploader,
   Input,
+  Skeleton,
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -140,7 +140,7 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push('/settings/ai-settings')}
+          onClick={() => router.push('/settings/ai-settings?tab=customer&edit=true')}
           className="shrink-0"
         >
           <PenEditIcon className="size-5 text-ods-text-secondary" />
@@ -164,7 +164,7 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
         <div className="flex flex-col gap-[var(--spacing-system-l)]">
           {header}
           {toggle}
-          <CompactPageLoader />
+          <Skeleton className="h-64 w-full rounded-md" />
         </div>
       );
     }

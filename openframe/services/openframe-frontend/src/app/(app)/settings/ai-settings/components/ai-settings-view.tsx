@@ -2,6 +2,7 @@
 
 import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import {
   useAdminAiConfig,
@@ -34,13 +35,19 @@ const FORM_ID_BY_TAB: Record<AiSettingsTabId, string> = {
 
 export function AiSettings() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
   // Tabs are feature-flag gated; default to the first one that's visible.
   const visibleTabs = getVisibleAiSettingsTabs();
   const firstTabId = (visibleTabs[0]?.id as AiSettingsTabId | undefined) ?? 'guardrails';
 
-  const [activeTab, setActiveTab] = useState<AiSettingsTabId>(firstTabId);
-  const [isEditMode, setIsEditMode] = useState(false);
+  // Deep-link support: `?tab=<id>&edit=true` opens a tab in edit mode
+  // (e.g. "Edit Default Appearance" on the customer edit page).
+  const tabParam = searchParams.get('tab') as AiSettingsTabId | null;
+  const initialTab = tabParam && visibleTabs.some(tab => tab.id === tabParam) ? tabParam : firstTabId;
+
+  const [activeTab, setActiveTab] = useState<AiSettingsTabId>(initialTab);
+  const [isEditMode, setIsEditMode] = useState(searchParams.get('edit') === 'true');
 
   // Fall back to a visible tab if the active one is hidden by a flag.
   const effectiveTab: AiSettingsTabId = visibleTabs.some(tab => tab.id === activeTab) ? activeTab : firstTabId;
