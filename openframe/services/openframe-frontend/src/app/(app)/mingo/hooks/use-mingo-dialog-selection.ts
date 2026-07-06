@@ -11,6 +11,7 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useApprovalNotificationReader } from '@/app/components/notifications/use-approval-notification-reader';
 import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { apiClient } from '@/lib/api-client';
 import { foldPendingApprovalsEnvelope } from '@/lib/chat-history';
@@ -43,6 +44,9 @@ export function useMingoDialogSelection() {
 
   const approveRequestMutation = useApproveRequestMutation();
   const rejectRequestMutation = useRejectRequestMutation();
+  // Clears the approval-request notification when the user decides it in the chat (drawer has no URL,
+  // so the location auto-reader can't). Same effect as resolving it from Notifications › Approvals.
+  const markApprovalNotificationRead = useApprovalNotificationReader();
 
   const handleApprove = useCallback(
     async (requestId?: string) => {
@@ -62,6 +66,7 @@ export function useMingoDialogSelection() {
 
       try {
         await approveRequestMutation.mutateAsync(requestId);
+        markApprovalNotificationRead(requestId);
         trackDashboardActivity(EVENT_SUBTYPE.APPROVE_MINGO_COMMAND);
       } catch (error) {
         toast({
@@ -72,7 +77,7 @@ export function useMingoDialogSelection() {
         });
       }
     },
-    [approveRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages],
+    [approveRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages, markApprovalNotificationRead],
   );
 
   const handleReject = useCallback(
@@ -87,6 +92,7 @@ export function useMingoDialogSelection() {
 
       try {
         await rejectRequestMutation.mutateAsync(requestId);
+        markApprovalNotificationRead(requestId);
         trackDashboardActivity(EVENT_SUBTYPE.REJECT_MINGO_COMMAND);
       } catch (error) {
         toast({
@@ -97,7 +103,7 @@ export function useMingoDialogSelection() {
         });
       }
     },
-    [rejectRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages],
+    [rejectRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages, markApprovalNotificationRead],
   );
 
   const handleApproveRef = useRef(handleApprove);
