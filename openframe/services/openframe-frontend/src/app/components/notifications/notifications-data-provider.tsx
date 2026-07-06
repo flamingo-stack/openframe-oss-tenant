@@ -433,7 +433,7 @@ function NotificationsDataInner({
  * every entity type a notification can carry, and routes through the context's `markRead` so
  * the drawer list, the unread connection and the sidebar bucket all update together. Pending
  * approval requests are left unread — opening the entity isn't acting on them; they clear only
- * once approved/rejected.
+ * once approved/rejected (handled imperatively at the decision site — see useApprovalNotificationReader).
  */
 function EntityViewAutoReader() {
   const pathname = usePathname();
