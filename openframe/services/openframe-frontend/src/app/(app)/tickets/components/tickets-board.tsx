@@ -43,6 +43,8 @@ interface TicketsBoardProps {
   onAssigneeIdsChange?: (ids: string[]) => void;
   labelIds?: string[];
   onLabelIdsChange?: (ids: string[]) => void;
+  /** Applies organization+assignee filters atomically (mobile filter modal). */
+  onFiltersChange?: (filters: { organizationIds: string[]; assigneeIds: string[] }) => void;
   search: string;
   onSearchChange: (value: string) => void;
 }
@@ -86,6 +88,7 @@ export function TicketsBoard({
   onAssigneeIdsChange,
   labelIds,
   onLabelIdsChange,
+  onFiltersChange,
   search,
   onSearchChange,
 }: TicketsBoardProps) {
@@ -331,9 +334,8 @@ export function TicketsBoard({
           isOpen={mobileFiltersOpen}
           onClose={() => setMobileFiltersOpen(false)}
           organizationIds={organizationIds ?? []}
-          onOrganizationIdsChange={ids => onOrganizationIdsChange?.(ids)}
           assigneeIds={assigneeIds ?? []}
-          onAssigneeIdsChange={ids => onAssigneeIdsChange?.(ids)}
+          onApply={filters => onFiltersChange?.(filters)}
         />
 
         {showEmptyState ? (

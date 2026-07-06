@@ -10,9 +10,9 @@ interface TicketsFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   organizationIds: string[];
-  onOrganizationIdsChange: (ids: string[]) => void;
   assigneeIds: string[];
-  onAssigneeIdsChange: (ids: string[]) => void;
+  /** Applies both filters in one call — two sequential URL writes would clobber each other. */
+  onApply: (filters: { organizationIds: string[]; assigneeIds: string[] }) => void;
 }
 
 /**
@@ -23,9 +23,8 @@ export function TicketsFilterModal({
   isOpen,
   onClose,
   organizationIds,
-  onOrganizationIdsChange,
   assigneeIds,
-  onAssigneeIdsChange,
+  onApply,
 }: TicketsFilterModalProps) {
   const [localOrganizationIds, setLocalOrganizationIds] = useState(organizationIds);
   const [localAssigneeIds, setLocalAssigneeIds] = useState(assigneeIds);
@@ -38,14 +37,12 @@ export function TicketsFilterModal({
   }, [isOpen, organizationIds, assigneeIds]);
 
   const handleReset = () => {
-    onOrganizationIdsChange([]);
-    onAssigneeIdsChange([]);
+    onApply({ organizationIds: [], assigneeIds: [] });
     onClose();
   };
 
   const handleApply = () => {
-    onOrganizationIdsChange(localOrganizationIds);
-    onAssigneeIdsChange(localAssigneeIds);
+    onApply({ organizationIds: localOrganizationIds, assigneeIds: localAssigneeIds });
     onClose();
   };
 
@@ -54,6 +51,8 @@ export function TicketsFilterModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Filter Tickets"
+      // Hard width cap: autocomplete content must never stretch the panel past the viewport.
+      className="min-w-0 max-w-[calc(100vw-2rem)] md:max-w-md"
       footer={
         <>
           <Button variant="outline" className="flex-1 h-11" onClick={handleReset}>

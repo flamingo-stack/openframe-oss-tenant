@@ -11,7 +11,7 @@ import { CurrentTickets } from './tickets-table';
 type ViewMode = 'table' | 'board';
 
 export function TicketsView() {
-  const { params, setParam } = useApiParams({
+  const { params, setParam, setParams } = useApiParams({
     status: { type: 'array', default: [] },
     organizationIds: { type: 'array', default: [] },
     assigneeIds: { type: 'array', default: [] },
@@ -31,6 +31,11 @@ export function TicketsView() {
   const handleOrganizationIdsChange = useCallback((ids: string[]) => setParam('organizationIds', ids), [setParam]);
   const handleAssigneeIdsChange = useCallback((ids: string[]) => setParam('assigneeIds', ids), [setParam]);
   const handleLabelIdsChange = useCallback((ids: string[]) => setParam('labelIds', ids), [setParam]);
+  // Single URL write: two sequential setParam calls read the same snapshot and clobber each other.
+  const handleFiltersChange = useCallback(
+    (filters: { organizationIds: string[]; assigneeIds: string[] }) => setParams(filters),
+    [setParams],
+  );
 
   const tabs = useMemo(
     () => (
@@ -56,6 +61,7 @@ export function TicketsView() {
         onAssigneeIdsChange={handleAssigneeIdsChange}
         labelIds={params.labelIds}
         onLabelIdsChange={handleLabelIdsChange}
+        onFiltersChange={handleFiltersChange}
         search={search}
         onSearchChange={setSearch}
       />
