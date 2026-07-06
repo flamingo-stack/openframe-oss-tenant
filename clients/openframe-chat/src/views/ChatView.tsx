@@ -31,7 +31,7 @@ import { useApplyAiAppearance } from '../hooks/useApplyAiAppearance';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
-import { useTenantInfoQuery } from '../hooks/useTenantInfoQuery';
+import { useMspOrganization } from '../hooks/useMspOrganization';
 import { type TicketDetails, useTickets } from '../hooks/useTickets';
 import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
 import { type DialogTokenUsage, dialogGraphQlService } from '../services/dialogGraphQLService';
@@ -163,9 +163,16 @@ export function ChatView() {
   const { status, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
 
-  // Header shows the MSP company name (from tenant info) in place of the tenant domain.
-  const { data: tenantInfo } = useTenantInfoQuery({ enabled: true });
-  const mspCompanyName = tenantInfo?.name?.trim() || undefined;
+  // MSP branding (from tenant info): the company name replaces the tenant
+  // domain next to the assistant, and the header's MSP organization bar
+  // (logo + name + website) uses the same source as the welcome screen.
+  const {
+    name: mspCompanyName,
+    website: mspWebsite,
+    logoUrl: mspLogoUrl,
+    isLoading: isMspLoading,
+    openWebsite: openMspWebsite,
+  } = useMspOrganization();
 
   // Connected: fire-and-forget so ChatInput clears the draft immediately. Returning
   // sendMessage's promise would make the lib defer clearing until it resolves (once
@@ -442,6 +449,19 @@ export function ChatView() {
         serverUrl={mspCompanyName}
         onBack={hasMessages ? handleNewChat : undefined}
         ticketInfo={ticketInfo}
+        // MSP branding bar — home screen (chats list) only; on open-chat
+        // screens this slot is used by the ticket details row.
+        mspOrganization={
+          !isDialogActive && mspCompanyName
+            ? {
+                name: mspCompanyName,
+                website: mspWebsite,
+                logoUrl: mspLogoUrl,
+                onOpenWebsite: openMspWebsite,
+              }
+            : undefined
+        }
+        isMspLoading={!isDialogActive && isMspLoading}
         headerActions={
           <>
             {!hasMessages && (
