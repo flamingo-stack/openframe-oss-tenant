@@ -24,8 +24,16 @@ interface TicketsTabProps {
   device: Device | null;
 }
 
-/** Match a ticket to this device across the several ids the ticket payload can carry. */
-function ticketBelongsToDevice(ticket: Dialog, deviceIds: string[], hostname?: string): boolean {
+// TEMPORARY: the tickets API has no device filter (TicketFilterInput only
+// supports statuses/organizations/assignees/labels), so we fetch the largest
+// page the backend allows (100) and match tickets to this device client-side.
+// Replace with a server-side `filter: { machineIds }` once the backend
+// supports it.
+const DEVICE_TICKETS_PAGE_SIZE = 100;
+
+/** Match a ticket to this device strictly by machine id — never by hostname
+ *  (hostnames are not unique or stable across Fleet/GraphQL sources). */
+function ticketBelongsToDevice(ticket: Dialog, deviceIds: string[]): boolean {
   if (deviceIds.length === 0) return false;
   if (ticket.deviceId && deviceIds.includes(ticket.deviceId)) return true;
 
@@ -39,7 +47,6 @@ function ticketBelongsToDevice(ticket: Dialog, deviceIds: string[], hostname?: s
     if (deviceIds.includes((owner as ClientDialogOwner).machineId)) return true;
   }
 
-  if (hostname && ticket.deviceHostname && ticket.deviceHostname === hostname) return true;
   return false;
 }
 
@@ -58,6 +65,7 @@ export function TicketsTab({ device }: TicketsTabProps) {
   } = useTicketsQuery({
     archived: false,
     search: debouncedSearch,
+    pageSize: DEVICE_TICKETS_PAGE_SIZE,
   });
 
   // The device is identified by its machineId (the detail route param) — keep `id` too as a fallback.
@@ -66,17 +74,23 @@ export function TicketsTab({ device }: TicketsTabProps) {
     [device?.machineId, device?.id],
   );
 
-  const deviceTickets = useMemo(
-    () => tickets.filter(t => ticketBelongsToDevice(t, deviceIds, device?.hostname)),
-    [tickets, deviceIds, device?.hostname],
-  );
+  const deviceTickets = useMemo(() => tickets.filter(t => ticketBelongsToDevice(t, deviceIds)), [tickets, deviceIds]);
 
   // Reuse the shared ticket columns, but drop the device/source column — it's redundant on a
   // device-scoped list — and keep the trailing open-in-new-tab action.
   const columns = useMemo<ColumnDef<Dialog>[]>(() => {
-    const base = getTicketTableColumns({ isArchived: false }).filter(
-      column => (column as { accessorKey?: string }).accessorKey !== 'source',
-    );
+    const base = getTicketTableColumns({ isArchived: false })
+      .filter(column => (column as { accessorKey?: string }).accessorKey !== 'source')
+      .map(column => {
+        // With SOURCE dropped, STATUS becomes the last data column: anchor its
+        // filter dropdown to the header's right edge so it doesn't overflow
+        // past the table (the shared default is bottom-start).
+        if ((column as { accessorKey?: string }).accessorKey !== 'status' || !column.meta?.filter) return column;
+        return {
+          ...column,
+          meta: { ...column.meta, filter: { ...column.meta.filter, placement: 'bottom-end' as const } },
+        };
+      });
     return [...base, getTicketOpenColumn()];
   }, []);
 
