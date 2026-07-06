@@ -78,18 +78,31 @@ export function TicketsTab({ device }: TicketsTabProps) {
 
   // Reuse the shared ticket columns, but drop the device/source column — it's redundant on a
   // device-scoped list — and keep the trailing open-in-new-tab action.
+  // With SOURCE dropped the shared flex widths drift, so pin ASSIGNEE/STATUS to
+  // the same fixed widths as DeviceDetailsSkeleton's tickets variant — the
+  // page-level skeleton, the tab's own loading skeleton and the loaded table
+  // then share one layout (no header jump between loading phases).
   const columns = useMemo<ColumnDef<Dialog>[]>(() => {
     const base = getTicketTableColumns({ isArchived: false })
       .filter(column => (column as { accessorKey?: string }).accessorKey !== 'source')
       .map(column => {
-        // With SOURCE dropped, STATUS becomes the last data column: anchor its
-        // filter dropdown to the header's right edge so it doesn't overflow
-        // past the table (the shared default is bottom-start).
-        if ((column as { accessorKey?: string }).accessorKey !== 'status' || !column.meta?.filter) return column;
-        return {
-          ...column,
-          meta: { ...column.meta, filter: { ...column.meta.filter, placement: 'bottom-end' as const } },
-        };
+        const key = (column as { accessorKey?: string }).accessorKey;
+        if (key === 'assignee') {
+          return { ...column, meta: { ...column.meta, width: 'w-[280px]' } };
+        }
+        if (key === 'status' && column.meta?.filter) {
+          // STATUS is the last data column here: anchor its filter dropdown to
+          // the header's right edge so it doesn't overflow past the table.
+          return {
+            ...column,
+            meta: {
+              ...column.meta,
+              width: 'w-[160px]',
+              filter: { ...column.meta.filter, placement: 'bottom-end' as const },
+            },
+          };
+        }
+        return column;
       });
     return [...base, getTicketOpenColumn()];
   }, []);

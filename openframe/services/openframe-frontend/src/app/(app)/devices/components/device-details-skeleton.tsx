@@ -272,10 +272,12 @@ const QUERIES_SKELETON_COLUMNS: SkeletonColumn[] = [
   { id: 'open', header: '', width: 'w-12 shrink-0 flex-none' },
 ];
 
+// Widths must stay 1:1 with the real tickets-tab columns (see tickets-tab.tsx)
+// so the page-level skeleton and the tab's own loading table don't jump.
 const TICKETS_SKELETON_COLUMNS: SkeletonColumn[] = [
   { id: 'title', header: 'Title', width: 'flex-1' },
-  { id: 'assignee', header: 'Assignee', width: 'w-[160px]' },
-  { id: 'status', header: 'Status', width: 'w-[120px]' },
+  { id: 'assignee', header: 'Assignee', width: 'w-[280px]' },
+  { id: 'status', header: 'Status', width: 'w-[160px]' },
   { id: 'open', header: '', width: 'w-12 shrink-0 flex-none' },
 ];
 
@@ -531,42 +533,46 @@ function SecurityTabSkeleton() {
  * wrapping an InfoCard with pt-16 to make room. */
 function AgentsTabSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="relative flex flex-col">
-          <div className="absolute top-4 left-4 z-10">
-            <Skeleton className="h-6 w-24 rounded-[6px]" />
-          </div>
-          <div className="absolute top-4 right-4 z-10">
-            <Skeleton className="h-4 w-4 rounded-full" />
-          </div>
-          <div className="bg-ods-card border border-ods-border rounded-[6px] p-4 pt-16 flex flex-col flex-1">
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2 items-center w-full">
-                <Skeleton className="h-5 w-14 shrink-0" />
-                <div className="flex-1 h-px bg-ods-border" />
-                <Skeleton className="h-5 w-20 shrink-0" />
-              </div>
-              <div className="flex gap-2 items-center w-full">
-                <Skeleton className="h-5 w-20 shrink-0" />
-                <div className="flex-1 h-px bg-ods-border" />
-                <Skeleton className="h-5 w-32 shrink-0" />
-              </div>
-              <div className="flex gap-2 items-center w-full">
-                <Skeleton className="h-5 w-8 shrink-0" />
-                <div className="flex-1 h-px bg-ods-border" />
-                <Skeleton className="h-5 w-40 shrink-0" />
-              </div>
-              <div className="flex gap-2 items-center w-full">
-                <Skeleton className="h-5 w-16 shrink-0" />
-                <div className="flex-1 h-px bg-ods-border" />
-                <Skeleton className="h-5 w-14 shrink-0" />
+    <section className="flex flex-col gap-[var(--spacing-system-xxs)]">
+      {/* Matches the real "Agent Versions" heading (`h3.text-h5`). */}
+      <TextSkeleton typography="text-h5" width="w-32" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[var(--spacing-system-l)] items-stretch">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="relative flex flex-col">
+            <div className="absolute top-4 left-4 z-10">
+              <Skeleton className="h-6 w-24 rounded-[6px]" />
+            </div>
+            <div className="absolute top-4 right-4 z-10">
+              <Skeleton className="h-4 w-4 rounded-full" />
+            </div>
+            <div className="bg-ods-card border border-ods-border rounded-[6px] p-4 pt-16 flex flex-col flex-1">
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 items-center w-full">
+                  <Skeleton className="h-5 w-14 shrink-0" />
+                  <div className="flex-1 h-px bg-ods-border" />
+                  <Skeleton className="h-5 w-20 shrink-0" />
+                </div>
+                <div className="flex gap-2 items-center w-full">
+                  <Skeleton className="h-5 w-20 shrink-0" />
+                  <div className="flex-1 h-px bg-ods-border" />
+                  <Skeleton className="h-5 w-32 shrink-0" />
+                </div>
+                <div className="flex gap-2 items-center w-full">
+                  <Skeleton className="h-5 w-8 shrink-0" />
+                  <div className="flex-1 h-px bg-ods-border" />
+                  <Skeleton className="h-5 w-40 shrink-0" />
+                </div>
+                <div className="flex gap-2 items-center w-full">
+                  <Skeleton className="h-5 w-16 shrink-0" />
+                  <div className="flex-1 h-px bg-ods-border" />
+                  <Skeleton className="h-5 w-14 shrink-0" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
