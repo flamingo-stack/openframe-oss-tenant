@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { ScriptEntry } from '../stores/scripts-store';
 
 // ============ Query Keys ============
@@ -12,14 +11,11 @@ export const scriptsQueryKeys = {
 
 // ============ API Functions ============
 
+// TODO(openframe-rmm): Tactical RMM removed — the scripts list has no backend until
+// the OpenFrame RMM scripts API is wired up. Returns an empty list so the `/scripts`
+// UI still renders (its "No scripts yet" empty state). See scripts-migration.ts.
 async function fetchAllScripts(): Promise<ScriptEntry[]> {
-  const response = await tacticalApiClient.getScripts();
-
-  if (!response.ok) {
-    throw new Error(response.error || `Request failed with status ${response.status}`);
-  }
-
-  return response.data ?? [];
+  return [];
 }
 
 const EMPTY_SCRIPTS: ScriptEntry[] = [];

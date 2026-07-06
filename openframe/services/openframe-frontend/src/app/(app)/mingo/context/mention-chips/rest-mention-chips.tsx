@@ -23,7 +23,6 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { type ReactNode, Suspense } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { fleetApiClient } from '@/lib/fleet-api-client';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { MentionErrorBoundary, MentionTag, MentionTagSkeleton } from './mention-tag';
 
 interface Resolved {
@@ -55,12 +54,11 @@ async function resolveUser(id: string): Promise<Resolved> {
 }
 
 async function resolveScript(id: string): Promise<Resolved> {
-  // Legacy/Tactical single-script endpoint (`GET /scripts/{id}/`) — direct fetch
-  // by id. Only reached for numeric Tactical ids (see render-mention dispatch);
-  // an unknown id 404s (degrades to the chip's `fallbackLabel`/id via `res.ok`).
-  const res = await tacticalApiClient.getScript(id);
-  const name = res.ok ? (res.data?.name as string | undefined) : undefined;
-  return { label: name || id, href: `/scripts/details?id=${id}` };
+  // TODO(openframe-rmm): Tactical RMM removed — the legacy single-script endpoint is gone.
+  // Numeric (legacy) script ids can no longer resolve a name, so degrade to the id + link
+  // (the caller's `fallbackLabel` is preferred over the raw id in `RestInner`). New scripts
+  // resolve via the Relay `GraphqlMentionChip`. See render-mention.tsx dispatch.
+  return { label: id, href: `/scripts/details?id=${id}` };
 }
 
 interface TicketEnvelope {

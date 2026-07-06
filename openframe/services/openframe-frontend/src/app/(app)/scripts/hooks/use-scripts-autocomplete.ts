@@ -3,33 +3,18 @@
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { rejectScriptsMigrationPending } from '../lib/scripts-migration';
 import type { ScriptEntry } from '../stores/scripts-store';
 
-const PAGE_SIZE = 25;
-
-async function fetchScriptsV2(search: string, platforms: string[]): Promise<ScriptEntry[]> {
-  const response = await tacticalApiClient.getScriptsV2({
-    search: search || undefined,
-    page_size: PAGE_SIZE,
-    supported_platforms: platforms.length ? platforms.join(',') : undefined,
-  });
-
-  if (!response.ok) {
-    throw new Error(response.error || `Request failed with status ${response.status}`);
-  }
-
-  return response.data?.results ?? [];
+// TODO(openframe-rmm): Tactical RMM removed — script autocomplete has no backend until
+// the OpenFrame RMM scripts API is wired up. Search returns an empty list; the edit-mode
+// preselect fetch rejects (migration pending). See scripts-migration.ts.
+async function fetchScriptsV2(_search: string, _platforms: string[]): Promise<ScriptEntry[]> {
+  return [];
 }
 
-async function fetchScriptById(id: number): Promise<ScriptEntry> {
-  const response = await tacticalApiClient.getScript(String(id));
-
-  if (!response.ok) {
-    throw new Error(response.error || `Request failed with status ${response.status}`);
-  }
-
-  return response.data as ScriptEntry;
+async function fetchScriptById(_id: number): Promise<ScriptEntry> {
+  return rejectScriptsMigrationPending();
 }
 
 /**

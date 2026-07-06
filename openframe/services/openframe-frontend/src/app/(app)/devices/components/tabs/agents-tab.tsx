@@ -16,19 +16,13 @@ interface AgentsTabProps {
 
 const agentTypeToToolType: Record<string, string> = {
   'fleetmdm-agent': 'FLEET_MDM',
-  'tacticalrmm-agent': 'TACTICAL_RMM',
   'meshcentral-agent': 'MESHCENTRAL',
   'openframe-chat': 'OPENFRAME_CHAT',
   'openframe-client': 'OPENFRAME_CLIENT',
   osqueryd: 'OSQUERY',
 };
 
-const AGENT_TYPES_WITH_STATUS = new Set(['TACTICAL_RMM', 'FLEET_MDM', 'MESHCENTRAL']);
-
-/** Tactical RMM: "online" → online, "overdue" | "offline" | other → offline */
-function parseTacticalAgentStatus(raw: string | undefined): 'online' | 'offline' {
-  return raw?.toLowerCase() === 'online' ? 'online' : 'offline';
-}
+const AGENT_TYPES_WITH_STATUS = new Set(['FLEET_MDM', 'MESHCENTRAL']);
 
 /** Fleet MDM: "online" → online, "offline" | "mia" → offline */
 function parseFleetAgentStatus(raw: string | undefined): 'online' | 'offline' {
@@ -42,8 +36,6 @@ function parseMeshCentralAgentStatus(raw: string | undefined): 'online' | 'offli
 
 function getAgentDisplayStatus(toolType: string, raw: string | undefined): 'online' | 'offline' {
   switch (toolType) {
-    case 'TACTICAL_RMM':
-      return parseTacticalAgentStatus(raw);
     case 'FLEET_MDM':
       return parseFleetAgentStatus(raw);
     case 'MESHCENTRAL':

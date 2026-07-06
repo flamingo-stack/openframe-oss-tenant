@@ -12,7 +12,9 @@ interface ScheduleDevicesTabProps {
   scheduleId: string;
 }
 
-/** Adapt the agent shape returned by TacticalRMM to the Device shape DeviceSelector renders. */
+// TODO(openframe-rmm): Tactical RMM removed — `useScriptScheduleAgents` now returns an empty
+// list, so this tab renders no assigned devices until the OpenFrame RMM schedule API is wired
+// up. Adapts a schedule-agent shape to the Device shape DeviceSelector renders.
 function agentToDevice(agent: ScriptScheduleAgent): Device {
   return {
     id: agent.agent_id,

@@ -39,7 +39,7 @@ export function canDeleteDevice(status: string | undefined): boolean {
  */
 export function getToolConnection(
   toolConnections: ToolConnection[] | undefined,
-  toolType: 'MESHCENTRAL' | 'TACTICAL_RMM' | 'FLEET_MDM',
+  toolType: 'MESHCENTRAL' | 'FLEET_MDM',
 ): ToolConnection | undefined {
   return toolConnections?.find(tc => tc.toolType === toolType);
 }
@@ -49,13 +49,6 @@ export function getToolConnection(
  */
 export function getMeshCentralAgentId(device: Device): string | undefined {
   return getToolConnection(device.toolConnections, 'MESHCENTRAL')?.agentToolId;
-}
-
-/**
- * Get Tactical RMM agent ID
- */
-export function getTacticalAgentId(device: Device): string | undefined {
-  return getToolConnection(device.toolConnections, 'TACTICAL_RMM')?.agentToolId;
 }
 
 /**
@@ -83,7 +76,6 @@ export interface DeviceActionAvailability {
 
   // Tool IDs (for handlers)
   meshcentralAgentId: string | undefined;
-  tacticalAgentId: string | undefined;
 
   // Device state
   isOnline: boolean;
@@ -97,7 +89,6 @@ export function getDeviceActionAvailability(device: Device): DeviceActionAvailab
   const meshcentralConnection = getToolConnection(device.toolConnections, 'MESHCENTRAL');
   const meshcentralAgentId = meshcentralConnection?.agentToolId;
   const meshcentralOffline = meshcentralConnection?.status?.toLowerCase() === 'offline';
-  const tacticalAgentId = getTacticalAgentId(device);
   const isOnline = isDeviceOnline(device.status);
 
   const meshcentralReady = Boolean(meshcentralAgentId) && isOnline && !meshcentralOffline;
@@ -107,8 +98,9 @@ export function getDeviceActionAvailability(device: Device): DeviceActionAvailab
     remoteControlEnabled: meshcentralReady,
     manageFilesEnabled: meshcentralReady,
 
-    // Run Script: requires Tactical RMM agent AND device must be online
-    runScriptEnabled: Boolean(tacticalAgentId) && isOnline,
+    // Run Script (native scripts-v2 flow): only requires the device to be online.
+    // TODO(openframe-rmm): gate on an OpenFrame RMM agent once run-script is wired.
+    runScriptEnabled: isOnline,
 
     // Archive: device must not be already archived or deleted
     archiveEnabled: canArchiveDevice(device.status),
@@ -121,7 +113,6 @@ export function getDeviceActionAvailability(device: Device): DeviceActionAvailab
 
     // Pass through tool IDs for handlers
     meshcentralAgentId,
-    tacticalAgentId,
 
     // Device state
     isOnline,

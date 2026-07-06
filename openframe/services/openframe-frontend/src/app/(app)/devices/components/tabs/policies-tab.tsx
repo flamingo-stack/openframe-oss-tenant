@@ -90,7 +90,6 @@ export function PoliciesTab({ device }: PoliciesTabProps) {
 
       <PoliciesTable
         rows={rows}
-        showPlatform
         stickyHeader
         stickyHeaderOffset={stickyHeaderOffset}
         rowAsLink
