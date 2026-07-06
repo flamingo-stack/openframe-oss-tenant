@@ -50,6 +50,7 @@ import { transformOrganizationFilters } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import type { LogFilterInput } from '../types/log.types';
+import { LogCopyButton } from './log-copy-button';
 
 // ----------------------------------------------------------------
 // GraphQL definitions
@@ -426,6 +427,16 @@ function LogsTableContent({
         meta: { width: 'flex-1', hideAt: 'lg' },
       },
       {
+        id: 'copy',
+        cell: ({ row }: { row: Row<UiLogEntry> }) => (
+          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+            <LogCopyButton log={row.original.originalLogEntry} />
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none ml-auto', align: 'right' },
+      },
+      {
         id: 'quickView',
         cell: ({ row }: { row: Row<UiLogEntry> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
@@ -440,7 +451,7 @@ function LogsTableContent({
           </div>
         ),
         enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none ml-auto', align: 'right' },
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
       {
         id: 'open',
@@ -668,9 +679,14 @@ export function LogsTableSkeleton() {
         meta: { width: 'flex-1', hideAt: 'lg' },
       },
       {
-        id: 'quickView',
+        id: 'copy',
         enableSorting: false,
         meta: { width: 'w-12 shrink-0 flex-none ml-auto', align: 'right' },
+      },
+      {
+        id: 'quickView',
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
       {
         id: 'open',
