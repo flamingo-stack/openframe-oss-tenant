@@ -2,11 +2,13 @@
 
 import { InfoCard, Tag } from '@flamingo-stack/openframe-frontend-core';
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
+import { TerminalBrowserIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { formatRelativeTime, normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { formatDateTime } from '@/lib/format-date';
 import type { Device, InstalledAgent, ToolConnection } from '../../types/device.types';
 import { getAgentFooter } from '../../utils/agent-footer';
 import { getDeviceStatusConfig } from '../../utils/device-status';
+import { TabEmptyState } from './tab-empty-state';
 
 interface AgentsTabProps {
   device: Device;
@@ -120,9 +122,11 @@ export function AgentsTab({ device }: AgentsTabProps) {
 
   if (!hasAgents) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No agents found for this device</div>
-      </div>
+      <TabEmptyState
+        icon={<TerminalBrowserIcon />}
+        title="No agents found"
+        description="Agents installed on this device will appear here."
+      />
     );
   }
 

@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { PoliciesTable, type PolicyTableRow } from '@/app/components/shared';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import type { Device, DevicePolicy } from '../../types/device.types';
+import { TabEmptyState } from './tab-empty-state';
 
 interface PoliciesTabProps {
   device: Device | null;
@@ -58,9 +59,11 @@ export function PoliciesTab({ device }: PoliciesTabProps) {
 
   if (!device) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-h4">No device data available</div>
-      </div>
+      <TabEmptyState
+        icon={<FolderShieldIcon />}
+        title="No policies applied"
+        description="Compliance policies for this device will appear here."
+      />
     );
   }
 
