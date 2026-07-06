@@ -1,7 +1,8 @@
 'use client';
 
-import { Button, CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import {
   useAdminAiConfig,
@@ -34,13 +35,19 @@ const FORM_ID_BY_TAB: Record<AiSettingsTabId, string> = {
 
 export function AiSettings() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
   // Tabs are feature-flag gated; default to the first one that's visible.
   const visibleTabs = getVisibleAiSettingsTabs();
   const firstTabId = (visibleTabs[0]?.id as AiSettingsTabId | undefined) ?? 'guardrails';
 
-  const [activeTab, setActiveTab] = useState<AiSettingsTabId>(firstTabId);
-  const [isEditMode, setIsEditMode] = useState(false);
+  // Deep-link support: `?tab=<id>&edit=true` opens a tab in edit mode
+  // (e.g. "Edit Default Appearance" on the customer edit page).
+  const tabParam = searchParams.get('tab') as AiSettingsTabId | null;
+  const initialTab = tabParam && visibleTabs.some(tab => tab.id === tabParam) ? tabParam : firstTabId;
+
+  const [activeTab, setActiveTab] = useState<AiSettingsTabId>(initialTab);
+  const [isEditMode, setIsEditMode] = useState(searchParams.get('edit') === 'true');
 
   // Fall back to a visible tab if the active one is hidden by a flag.
   const effectiveTab: AiSettingsTabId = visibleTabs.some(tab => tab.id === activeTab) ? activeTab : firstTabId;
@@ -157,35 +164,42 @@ export function AiSettings() {
     onSave: handleSave,
   });
 
-  if (isLoading) {
-    return (
-      <AiSettingsLayout actions={actions}>
-        <CompactPageLoader />
-      </AiSettingsLayout>
-    );
-  }
-
-  // Failed to load and nothing cached: show an error + retry instead of editable
-  // defaults, so the user can't accidentally overwrite real settings on save.
-  if (hasLoadError) {
-    return (
-      <AiSettingsLayout>
-        <div className="flex flex-col items-start gap-[var(--spacing-system-m)]">
-          <p className="text-ods-text-secondary">
-            Couldn't load AI settings. The service may be temporarily unavailable.
-          </p>
-          <Button variant="outline" onClick={refetchActive}>
-            Retry
-          </Button>
-        </div>
-      </AiSettingsLayout>
-    );
-  }
+  // Disabled (not hidden) while loading to avoid a flash; hidden on load error.
+  const headerActions = hasLoadError
+    ? undefined
+    : isLoading
+      ? actions.map(action => ({ ...action, disabled: true }))
+      : actions;
 
   return (
-    <AiSettingsLayout actions={actions} mobileBottomActions={isEditMode}>
+    <AiSettingsLayout actions={headerActions} mobileBottomActions={isEditMode}>
       <AiSettingsTabs activeTab={effectiveTab} onTabChange={handleTabChange}>
         {activeId => {
+          // Keep the tab bar visible; show skeletons while the tab config loads.
+          if (isLoading) {
+            return (
+              <div className="flex flex-col gap-[var(--spacing-system-l)]">
+                <Skeleton className="h-20 w-full rounded-md" />
+                <Skeleton className="h-64 w-full rounded-md" />
+              </div>
+            );
+          }
+
+          // Load failed with nothing cached: error + retry instead of editable
+          // defaults, so real settings can't be overwritten on save.
+          if (hasLoadError) {
+            return (
+              <div className="flex flex-col items-start gap-[var(--spacing-system-m)]">
+                <p className="text-ods-text-secondary">
+                  Couldn't load AI settings. The service may be temporarily unavailable.
+                </p>
+                <Button variant="outline" onClick={refetchActive}>
+                  Retry
+                </Button>
+              </div>
+            );
+          }
+
           if (activeId === 'guardrails') {
             return <GuardrailsTab isEditMode={isEditMode} onSaved={() => setIsEditMode(false)} />;
           }
