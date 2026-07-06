@@ -1,6 +1,6 @@
 'use client';
 
-import { DashboardInfoCard, OrganizationCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { DashboardInfoCard, OrganizationCard, Skeleton, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
 import { IdCardIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useMemo } from 'react';
 import { EmptyState } from '@/app/components/shared';
@@ -76,7 +76,7 @@ export function CustomersOverviewSection() {
           <OrganizationCard
             organization={org}
             fetchedImageUrl={fullImageUrl}
-            href={`/customers/details/${org.organizationId}`}
+            href={`/customers/details?id=${org.organizationId}`}
             deviceCount={org.total}
           />
 
@@ -88,7 +88,7 @@ export function CustomersOverviewSection() {
             showProgress
             progressVariant="success"
             percentageDisplay="plain"
-            progressSize={{ base: 24, lg: 56 }}
+            progressSize={{ base: 24, md: 56 }}
             href={
               org.active > 0
                 ? `/devices?organizationIds=${org.organizationId}&statuses=ONLINE`
@@ -104,7 +104,7 @@ export function CustomersOverviewSection() {
             showProgress
             progressVariant="error"
             percentageDisplay="plain"
-            progressSize={{ base: 24, lg: 56 }}
+            progressSize={{ base: 24, md: 56 }}
             href={
               org.inactive > 0
                 ? `/devices?organizationIds=${org.organizationId}&statuses=OFFLINE`
@@ -118,14 +118,11 @@ export function CustomersOverviewSection() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-h2 text-ods-text-primary">Customers Overview</h2>
-        {loading ? (
-          <Skeleton className="h-5 w-48" />
-        ) : (
-          <p className="text-h6 text-ods-text-secondary">{totalOrganizations.toLocaleString()} Customers in Total</p>
-        )}
-      </div>
+      <TitleBlock
+        title="Customers Overview"
+        subtitle={loading ? undefined : `${totalOrganizations.toLocaleString()} Customers in Total`}
+        className="pt-0 mb-0 [&_p]:hidden lg:[&_p]:block"
+      />
 
       <div className="flex flex-col gap-3">{organizationRows}</div>
     </div>

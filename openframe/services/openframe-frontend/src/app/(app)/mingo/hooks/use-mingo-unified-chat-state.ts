@@ -35,6 +35,7 @@ import type {
 } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAiModelStatus } from '@/app/hooks/use-ai-model';
+import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { featureFlags } from '@/lib/feature-flags';
 import { CONTEXT_ITEMS_MAX, RECENT_VIEWS_MAX } from '../context/context-types';
 import { useMingoContextStore } from '../stores/mingo-context-store';
@@ -265,7 +266,12 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
       resetUnread(newId);
       subscribeToDialog(newId);
       selectDialogMut(newId);
-      await sendMingoMessage(trimmed, newId, context);
+      // Mirror the standalone /mingo page: a successful send is a tracked
+      // dashboard-activity event (relayed to HubSpot by the backend). This
+      // covers every new-dialog send — draft composer, launcher prompts, and
+      // quick-action chips — so the embeddable chat matches the page 1:1.
+      const sent = await sendMingoMessage(trimmed, newId, context);
+      if (sent) trackDashboardActivity(EVENT_SUBTYPE.SEND_MINGO_MESSAGE);
     },
     [createDialog, addMessage, setActiveDialogId, resetUnread, subscribeToDialog, selectDialogMut, sendMingoMessage],
   );
@@ -307,11 +313,16 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
       const context = buildSendContext(options);
 
       if (!activeDialogId) {
+        // The draft branch delegates to `sendInNewDialog`, which already fires
+        // SEND_MINGO_MESSAGE on success — don't double-track here.
         await sendInNewDialog(trimmed, context);
         return;
       }
 
-      await sendMingoMessage(trimmed, undefined, context);
+      // Existing-dialog send: track on success, same as the /mingo page's
+      // active-dialog branch.
+      const sent = await sendMingoMessage(trimmed, undefined, context);
+      if (sent) trackDashboardActivity(EVENT_SUBTYPE.SEND_MINGO_MESSAGE);
     },
     [activeDialogId, sendInNewDialog, sendMingoMessage, buildSendContext],
   );

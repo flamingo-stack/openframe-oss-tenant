@@ -181,7 +181,7 @@ export function QueryDevicesTable({ queryId }: QueryDevicesTableProps) {
           row.original.machineId ? (
             <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
               <Button
-                onClick={openInNewTab(`/devices/details/${row.original.machineId}`)}
+                onClick={openInNewTab(`/devices/details?id=${row.original.machineId}`)}
                 variant="outline"
                 size="icon"
                 leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -206,7 +206,7 @@ export function QueryDevicesTable({ queryId }: QueryDevicesTableProps) {
   });
 
   const rowHref = useCallback(
-    (row: QueryDeviceRow) => (row.machineId ? `/devices/details/${row.machineId}` : undefined),
+    (row: QueryDeviceRow) => (row.machineId ? `/devices/details?id=${row.machineId}` : undefined),
     [],
   );
 

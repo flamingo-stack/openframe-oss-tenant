@@ -3,8 +3,6 @@
 import { FaqDocumentPage } from '@flamingo-stack/openframe-frontend-core/components/help-center-pages';
 import { CONTENT_API_BASE, HELP_CENTER_BASE } from '../endpoints';
 
-export const dynamic = 'force-dynamic';
-
 /**
  * FAQs — one-line mount of the lib's ready-made `<FaqDocumentPage>`. It routes
  * the title + subtitle through the unified `PageLayout` header (`titleSize="h1"`,

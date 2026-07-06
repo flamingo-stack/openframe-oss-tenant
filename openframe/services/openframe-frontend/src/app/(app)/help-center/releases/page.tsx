@@ -3,8 +3,6 @@
 import { ProductReleasesListPage } from '@flamingo-stack/openframe-frontend-core/components/help-center-pages';
 import { EP, HELP_CENTER_BASE } from '../endpoints';
 
-export const dynamic = 'force-dynamic';
-
 /**
  * Releases LIST — one-line mount of the lib's ready-made `<ProductReleasesListPage>`.
  * Card → detail navigation flows through the section's `composeContentUrl`

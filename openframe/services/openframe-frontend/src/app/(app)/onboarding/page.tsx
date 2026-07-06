@@ -19,5 +19,3 @@ export default function OnboardingPage() {
     </Suspense>
   );
 }
-
-export const dynamic = 'force-dynamic';

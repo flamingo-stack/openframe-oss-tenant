@@ -1,6 +1,6 @@
 'use client';
 
-import { CompactPageLoader, EntityImage } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { EntityImage, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { AiSettingsPreviews } from '@/app/(app)/settings/ai-settings/components/previews/ai-settings-previews';
 import { useClientView } from '@/app/(app)/settings/ai-settings/hooks/use-client-view';
@@ -24,7 +24,12 @@ export function CustomerCustomAiAssistantTab({ organizationId }: CustomerCustomA
   const { view, isLoading } = useClientView(organizationId);
 
   if (isLoading) {
-    return <CompactPageLoader />;
+    return (
+      <div className="flex flex-col gap-[var(--spacing-system-l)]">
+        <Skeleton className="h-40 w-full rounded-md" />
+        <Skeleton className="h-64 w-full rounded-md" />
+      </div>
+    );
   }
 
   // The tab is only mounted when an override exists, but guard defensively.

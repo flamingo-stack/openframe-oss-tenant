@@ -115,7 +115,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
     setIsInitialized(true);
   }
 
-  const handleBack = useSafeBack(`/scripts/schedules/${scheduleId}`);
+  const handleBack = useSafeBack(`/scripts/schedules?id=${scheduleId}`);
 
   const handleSave = useCallback(async () => {
     const selectedDevices = allDevices.filter(d => selectedAgentIds.has(getDevicePrimaryId(d)));
@@ -140,7 +140,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
         description: `${agentIds.length} device(s) assigned to schedule.`,
         variant: 'success',
       });
-      safeBackOrReplace(router, `/scripts/schedules/${scheduleId}?tab=schedule-devices`);
+      safeBackOrReplace(router, `/scripts/schedules?id=${scheduleId}&tab=schedule-devices`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to save devices';
       toast({ title: 'Save failed', description: msg, variant: 'destructive' });

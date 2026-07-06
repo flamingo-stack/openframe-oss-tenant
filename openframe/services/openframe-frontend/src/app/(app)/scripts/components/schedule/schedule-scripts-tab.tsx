@@ -35,7 +35,7 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
   }, []);
 
   const handleScriptDetails = useCallback(() => {
-    router.push(`/scripts/details/${scriptId}`);
+    router.push(`/scripts/details?id=${scriptId}`);
   }, [router, scriptId]);
 
   const argsData =

@@ -17,11 +17,14 @@ interface ScriptsTagFilterProps {
   onTagIdsChange: (ids: string[]) => void;
   /** Mobile filter button rendered next to the search input. */
   filterButton?: ReactNode;
+  /** Archived list → scope tags to archived scripts (`archived: true`); otherwise active. */
+  archived?: boolean;
 }
 
 /**
  * Scripts list tag filter — the shared `TagFilterBar` fed by `scriptsTags` (tags
- * actually assigned to scripts). `archived: null` scopes it to active scripts.
+ * actually assigned to scripts). `archived` scopes the set: `true` → tags on
+ * archived scripts (the Archived page), null → tags on active scripts.
  * Suspends on the tag list; render inside `<Suspense fallback={<ScriptsTagFilterSkeleton/>}>`.
  */
 export function ScriptsTagFilter({
@@ -30,10 +33,11 @@ export function ScriptsTagFilter({
   tagIds,
   onTagIdsChange,
   filterButton,
+  archived = false,
 }: ScriptsTagFilterProps) {
   const data = useLazyLoadQuery<ScriptTagsFilterQueryType>(
     scriptTagsRelayFilterQuery,
-    { archived: null },
+    { archived: archived ? true : null },
     { fetchPolicy: 'store-and-network' },
   );
   const tags = useMemo(() => data.scriptsTags.map(t => ({ id: t.id, key: t.key })), [data.scriptsTags]);

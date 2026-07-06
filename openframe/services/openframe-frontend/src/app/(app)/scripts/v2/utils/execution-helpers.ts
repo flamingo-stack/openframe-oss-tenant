@@ -1,14 +1,13 @@
 // Value import: the generated module exports each enum as both a `const` and a
 // `type` under the same name, so these stand in for hardcoded literals.
 import { PrivilegeLevel, ScriptExecutionStatus } from '@/generated/schema-enums';
-import { formatDate } from '@/lib/format-date';
+import { formatDate, formatTime } from '@/lib/format-date';
 
-/** "06/26/26, 14:31" — en-US short date + 24h time, matching the design. */
+/** "date, time" in the user's local format (e.g. "6/26/26, 2:31 PM"). */
 export function formatExecutionTimestamp(input: string | number | Date | null | undefined): string {
   if (!input) return '—';
   const date = new Date(input);
-  const time = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  return `${formatDate(date)}, ${time}`;
+  return `${formatDate(date)}, ${formatTime(date)}`;
 }
 
 /**

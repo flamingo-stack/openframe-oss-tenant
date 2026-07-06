@@ -166,7 +166,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
   }, [queryDetails, isExistingQuery, reset]);
 
   const handleBack = useSafeBack(
-    isExistingQuery && numericId ? `/monitoring/query/${numericId}` : '/monitoring?tab=queries',
+    isExistingQuery && numericId ? `/monitoring/query?id=${numericId}` : '/monitoring?tab=queries',
   );
 
   const onSubmit = useCallback(
@@ -188,7 +188,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             } catch {
               // Query saved but hosts failed — error toast shown by mutation hook
             }
-            safeBackOrReplace(router, `/monitoring/query/${numericId}`);
+            safeBackOrReplace(router, `/monitoring/query?id=${numericId}`);
           },
         });
       } else {

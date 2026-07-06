@@ -82,7 +82,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
   const handleBack = useSafeBack('/monitoring?tab=queries');
 
   const handleEditQuery = () => {
-    router.push(`/monitoring/query/edit/${queryId}`);
+    router.push(`/monitoring/query/edit?id=${queryId}`);
   };
 
   const handleDeleteQuery = () => {
@@ -169,7 +169,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
 
       {/* Tabs: Query Results / Assigned Devices */}
       <div className="mt-6">
-        <TabNavigation tabs={QUERY_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+        <TabNavigation tabs={QUERY_TABS} activeTab={activeTab} onTabChange={handleTabChange}>
           {tabId => (
             <div className="mt-6">
               {tabId === 'devices' ? (

@@ -25,7 +25,7 @@ export function useDevTicketExchange() {
           throw new Error(`DevTicket exchange failed with status ${response.status}`);
         }
 
-        const tokens = storeTokensFromHeaders(response.headers);
+        const tokens = await storeTokensFromHeaders(response.headers);
 
         if (tokens.accessToken || tokens.refreshToken) {
           // Trigger auth session recheck — useAuthSession will handle

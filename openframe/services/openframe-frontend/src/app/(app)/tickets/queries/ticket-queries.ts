@@ -237,6 +237,10 @@ export const GET_TICKETS_QUERY = `
           deviceHostname
           organizationId
           organizationName
+          organizationImage {
+            imageUrl
+            hash
+          }
           assignedTo
           assignedName
           assigneeImage {

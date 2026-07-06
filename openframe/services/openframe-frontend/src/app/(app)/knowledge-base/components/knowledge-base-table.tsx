@@ -150,7 +150,7 @@ export function KnowledgeBaseItemsListView(props: ListViewProps) {
                   id: 'edit',
                   label: 'Edit',
                   icon: <PenEditIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-                  href: `/knowledge-base/edit/${item.id}`,
+                  href: `/knowledge-base/edit?id=${item.id}`,
                 },
                 {
                   id: 'move',

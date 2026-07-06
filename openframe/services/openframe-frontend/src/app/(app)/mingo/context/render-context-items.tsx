@@ -13,10 +13,11 @@
 
 import type { ContextItemsRenderArgs } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import type { ReactNode } from 'react';
-import { ScriptItems, UserItems } from './batch-items';
+import { featureFlags } from '@/lib/feature-flags';
+import { LegacyScriptItems, UserItems } from './batch-items';
 import { CONTEXT_ENTITY_KIND } from './context-types';
 import type { ContextItemsProps } from './items-shared';
-import { DeviceItems, KnowledgeBaseItems, OrganizationItems } from './relay-items';
+import { DeviceItems, KnowledgeBaseItems, OrganizationItems, ScriptItems } from './relay-items';
 import { PolicyItems, QueryItems, TicketItems } from './rest-items';
 
 const COMPONENTS: Record<string, (p: ContextItemsProps) => ReactNode> = {
@@ -26,7 +27,6 @@ const COMPONENTS: Record<string, (p: ContextItemsProps) => ReactNode> = {
   [CONTEXT_ENTITY_KIND.TICKET]: TicketItems,
   [CONTEXT_ENTITY_KIND.POLICY]: PolicyItems,
   [CONTEXT_ENTITY_KIND.QUERY]: QueryItems,
-  [CONTEXT_ENTITY_KIND.SCRIPT]: ScriptItems,
   [CONTEXT_ENTITY_KIND.USER]: UserItems,
 };
 
@@ -37,7 +37,17 @@ export function renderMingoContextItems({
   onToggle,
   atLimit,
 }: ContextItemsRenderArgs): ReactNode {
-  const Component = COMPONENTS[type];
+  // Only the manually-added SCRIPT dropdown source follows the `scripts-v2`
+  // flag: ON → native OpenFrame `scripts(...)` (Relay, ACTIVE only); OFF →
+  // legacy Tactical list. The mention chips + passive (open-view/history)
+  // context always resolve via the new scripts, regardless of the flag —
+  // evaluated at render time so a late-loading flag value is respected.
+  const Component =
+    type === CONTEXT_ENTITY_KIND.SCRIPT
+      ? featureFlags.scriptsV2.enabled()
+        ? ScriptItems
+        : LegacyScriptItems
+      : COMPONENTS[type];
   if (!Component) return null;
   return <Component key={type} query={query} selectedKeys={selectedKeys} onToggle={onToggle} atLimit={atLimit} />;
 }

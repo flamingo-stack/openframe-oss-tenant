@@ -10,15 +10,20 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, FeatureList, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { getReadableTextColor } from '@flamingo-stack/openframe-frontend-core/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useCallback } from 'react';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useAuthenticatedImage } from '../hooks/useAuthenticatedImage';
+import { useChatConfig } from '../hooks/useChatConfig';
 import { useTenantInfoQuery } from '../hooks/useTenantInfoQuery';
 import { getFullImageUrl } from '../utils/image-url';
 import { isTauri } from '../utils/runtime';
 
 const ICON_COLOR = 'var(--ods-flamingo-pink-base)';
+
+// ODS default accent (flamingo app-type), used when AiSettings has no override.
+const DEFAULT_ACCENT_COLOR = '#f357bb';
 
 const features = [
   {
@@ -53,6 +58,10 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
   const { toast } = useToast();
+
+  // Legible label color for the "Get Started" button on any accent.
+  const { aiSettings } = useChatConfig();
+  const getStartedTextColor = getReadableTextColor(aiSettings?.accentColor || DEFAULT_ACCENT_COLOR);
 
   // Assistant identity (name + avatar) from AiSettings. Both are undefined while
   // settings resolve, so gate the hero on `isBrandingLoading` to avoid a blank
@@ -125,7 +134,7 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
           />
         ) : null}
 
-        <Button variant="accent" size="default" onClick={onGetStarted}>
+        <Button variant="accent" size="default" onClick={onGetStarted} style={{ color: getStartedTextColor }}>
           Get Started
         </Button>
       </div>

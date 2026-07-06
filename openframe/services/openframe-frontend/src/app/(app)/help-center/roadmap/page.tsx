@@ -3,8 +3,6 @@
 import { RoadmapPage } from '@flamingo-stack/openframe-frontend-core/components/help-center-pages';
 import { EP, HELP_CENTER_BASE } from '../endpoints';
 
-export const dynamic = 'force-dynamic';
-
 /**
  * Roadmap — one-line mount of the lib's ready-made `<RoadmapPage>` (PageLayout
  * chrome + hero + search/status + the self-fetching `RoadmapView`). This page

@@ -1,23 +1,13 @@
-'use client';
+import { OnboardingGuideDetailClient } from './onboarding-guide-detail-client';
 
-import { OnboardingGuideDetailView } from '@flamingo-stack/openframe-frontend-core/components/onboarding-guides';
-import { useParams } from 'next/navigation';
-import { EP, HELP_CENTER_BASE } from '../../endpoints';
+// Guide slugs are runtime/CMS content (not build-enumerable). `output: 'export'`
+// rejects an empty param list, so we prerender a single placeholder shell; real
+// guide slugs are served by the native shell's SPA fallback (the web/standalone
+// build serves them dynamically). See docs/static-export-migration.md.
+export function generateStaticParams(): { slug: string }[] {
+  return [{ slug: 'index' }];
+}
 
-export const dynamic = 'force-dynamic';
-
-/**
- * Onboarding guide detail — config-only. The lib view self-fetches the guide
- * from `EP.onboardingBySlug`; this page supplies only the route slug + base path.
- */
 export default function OnboardingGuideDetailRoute() {
-  const { slug = '' } = useParams<{ slug: string }>();
-  return (
-    <OnboardingGuideDetailView
-      shell={false}
-      slug={slug}
-      guideEndpoint={EP.onboardingBySlug}
-      basePath={`${HELP_CENTER_BASE}/onboarding-guides`}
-    />
-  );
+  return <OnboardingGuideDetailClient />;
 }

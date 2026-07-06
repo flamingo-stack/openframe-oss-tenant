@@ -37,7 +37,6 @@ export function createDeviceListItem(node: DevicesGraphQlNode): Device {
     percent_disk_space_available: undefined,
     gigs_total_disk_space: undefined,
     disk_encryption_enabled: undefined,
-    disks: undefined,
 
     // Network
     primary_ip: node.ip,
@@ -103,8 +102,5 @@ export function createDeviceListItem(node: DevicesGraphQlNode): Device {
     // Reference IDs
     fleetId: undefined,
     tacticalAgentId: tactical?.agentToolId,
-
-    // Graphics
-    graphics: undefined,
   };
 }

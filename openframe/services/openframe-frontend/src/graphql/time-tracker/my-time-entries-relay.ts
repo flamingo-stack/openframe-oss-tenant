@@ -10,7 +10,8 @@ export const myTimeEntriesRelayFragment = graphql`
   fragment myTimeEntriesRelay_query on Query
     @refetchable(queryName: "myTimeEntriesRelayPaginationQuery")
     @argumentDefinitions(first: { type: "Int", defaultValue: 3 }, after: { type: "String" }) {
-    myTimeEntries(first: $first, after: $after) @connection(key: "MyTimeEntries_myTimeEntries") {
+    myTimeEntries(sort: { field: "startedAt", direction: DESC }, first: $first, after: $after)
+      @connection(key: "MyTimeEntries_myTimeEntries") {
       edges {
         cursor
         node {

@@ -92,6 +92,8 @@ impl ToolInstallationService {
     #[tracing::instrument(skip_all, fields(tool_id = %tool_installation_message.tool_agent_id))]
     pub async fn install(&self, tool_installation_message: ToolInstallationMessage) -> Result<()> {
         let tool_agent_id = tool_installation_message.tool_agent_id.clone();
+        let tool_lock = self.tool_run_manager.tool_lock(&tool_agent_id).await;
+        let _guard = tool_lock.lock().await;
         self.tool_run_manager.mark_updating(&tool_agent_id).await;
         let result = self.install_inner(tool_installation_message).await;
         self.tool_run_manager.clear_updating(&tool_agent_id).await;
@@ -176,9 +178,10 @@ impl ToolInstallationService {
                     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 }
 
-                let installed_agent_path = self.directory_manager
-                    .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
-                if let Err(e) = self.tool_kill_service.stop_tool_by_path(&installed_agent_path.to_string_lossy()).await {
+                // Match the tool folder path (not just agent.exe) so child processes like the
+                // orbit-spawned osqueryd are killed too; on Windows their locked binaries would
+                // otherwise block the directory removal below with "Access is denied".
+                if let Err(e) = self.tool_kill_service.stop_tool_by_path(&tool_folder_path.to_string_lossy()).await {
                     warn!("Failed to kill processes locking tool directory for {}: {:#}", tool_agent_id, e);
                 }
 
@@ -194,10 +197,12 @@ impl ToolInstallationService {
                     warn!("Failed to remove tool connection: {:#}", e);
                 }
 
-                // Clear from both manager tracking sets to allow tool restart after reinstall
                 self.tool_connection_processing_manager.clear_running_tool(&installed_tool.tool_id).await;
-                self.tool_run_manager.clear_running_tool(&installed_tool.tool_agent_id).await;
-                
+                // Do NOT clear tool_run_manager's tracking entry: the existing supervisor loop
+                // resumes with the new binary on its own. Clearing it makes the post-install
+                // run_new_tool spawn a second supervisor, causing two osqueryd to fight over the
+                // osquery.db lock (permanent crash loop).
+
                 info!("Previous installation of tool {} was uninstalled", tool_agent_id);
             } else {
                 let agent_path = self.directory_manager
@@ -222,6 +227,9 @@ impl ToolInstallationService {
             }
             let orbit_dir = crate::platform::orbit_dir();
             if orbit_dir.exists() {
+                if let Err(e) = self.tool_kill_service.stop_tool_by_path(&orbit_dir.to_string_lossy()).await {
+                    warn!("Failed to stop processes under Orbit directory {}: {:#}", orbit_dir.display(), e);
+                }
                 info!("Removing leftover Orbit directory: {}", orbit_dir.display());
                 if let Err(e) = crate::platform::remove_directory_with_retry(&orbit_dir, 5).await {
                     warn!("Failed to remove Orbit directory {}: {:#}", orbit_dir.display(), e);

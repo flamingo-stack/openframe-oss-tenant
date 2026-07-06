@@ -1,27 +1,26 @@
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { LogDetailsView } from './components/log-details-view';
 
-// Force dynamic rendering due to useSearchParams in AppLayout
-export const dynamic = 'force-dynamic';
+export default function LogDetailsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-import { redirect } from 'next/navigation';
+  const id = searchParams.get('id') ?? undefined;
+  const ingestDay = searchParams.get('ingestDay') ?? undefined;
+  const toolType = searchParams.get('toolType') ?? undefined;
+  const eventType = searchParams.get('eventType') ?? undefined;
+  const timestamp = searchParams.get('timestamp') ?? undefined;
 
-interface LogDetailsPageProps {
-  searchParams: Promise<{
-    id?: string;
-    ingestDay?: string;
-    toolType?: string;
-    eventType?: string;
-    timestamp?: string;
-  }>;
-}
+  const missing = !id || !ingestDay || !toolType || !eventType || !timestamp;
 
-export default async function LogDetailsPage({ searchParams }: LogDetailsPageProps) {
-  const params = await searchParams;
-  const { id, ingestDay, toolType, eventType, timestamp } = params;
+  useEffect(() => {
+    if (missing) router.replace('/logs-page');
+  }, [missing, router]);
 
-  if (!id || !ingestDay || !toolType || !eventType || !timestamp) {
-    redirect('/logs-page');
-  }
+  if (missing) return null;
 
   return (
     <LogDetailsView logId={id} ingestDay={ingestDay} toolType={toolType} eventType={eventType} timestamp={timestamp} />

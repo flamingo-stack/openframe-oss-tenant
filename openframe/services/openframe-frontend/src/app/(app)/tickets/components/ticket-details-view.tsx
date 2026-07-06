@@ -62,6 +62,8 @@ import { useAuthStore } from '@/stores';
 import { useDeviceActionsMenu } from '../../devices/hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../../devices/hooks/use-device-details';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
+import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
+import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import {
   APPROVAL_STATUS,
   ASSISTANT_CONFIG,
@@ -91,6 +93,7 @@ import { TICKET_STATUS_KIND } from '../utils/ticket-statistics';
 import { TicketAttachmentsSection } from './ticket-attachments-section';
 import { TicketDetailsSkeleton } from './ticket-details-skeleton';
 import { TicketDialogSubscription } from './ticket-dialog-subscription';
+import { TicketNotesSection } from './ticket-notes-section';
 import { TicketTagsSection } from './ticket-tags-section';
 
 interface TicketDetailsViewProps {
@@ -136,6 +139,13 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
   const queryClient = useQueryClient();
   const { ticket: dialog, isPending: isLoading, error: dialogError } = useTicketDetail(ticketId);
+
+  // Register the open ticket as the Mingo "open view" so it rides on the sidebar
+  // chat's context. `dialog.id` is the raw db id the backend TICKET resolver /
+  // `@ticket:id` marker expects (TICKET is REST-resolved — no global-id round-trip).
+  useTrackOpenView(
+    dialog ? { type: CONTEXT_ENTITY_KIND.TICKET, id: dialog.id, label: dialog.title || dialog.id } : null,
+  );
 
   // Device referenced by the ticket. Same hook & availability utility used by
   // the Devices view, so remote-action gating stays in sync across views.
@@ -644,7 +654,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
             ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
             : undefined) ||
           '—',
-        href: machineId ? `/devices/details/${machineId}` : undefined,
+        href: machineId ? `/devices/details?id=${machineId}` : undefined,
       },
     },
     {
@@ -838,6 +848,13 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       <InfoSection title="Ticket Details" rows={infoRows} />
       <TicketAttachmentsSection ticketId={dialog.id} attachments={dialog.attachments ?? []} />
       <TicketTagsSection ticketId={dialog.id} labels={dialog.labels ?? []} />
+      <TicketNotesSection
+        notes={uiNotes}
+        isAddingNote={addNoteMutation.isPending}
+        onAddNote={text => addNoteMutation.mutate({ content: text })}
+        onEditNote={(id, text) => updateNoteMutation.mutate({ id, content: text })}
+        onDeleteNote={setNoteToDelete}
+      />
     </>
   );
 
@@ -956,7 +973,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   : undefined) ||
                 'Unassigned',
               icon: <MonitorIcon className="size-4" />,
-              onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
+              onClick: machineId ? () => router.push(`/devices/details?id=${machineId}`) : undefined,
             }}
             {...statusInfoProps}
             onExpand={() => setIsTicketInfoExpanded(!ticketInfoExpanded)}
@@ -1040,7 +1057,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                         : undefined) ||
                       'Unassigned',
                     icon: <MonitorIcon className="size-4" />,
-                    onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
+                    onClick: machineId ? () => router.push(`/devices/details?id=${machineId}`) : undefined,
                   }}
                   {...statusInfoProps}
                   expanded={true}

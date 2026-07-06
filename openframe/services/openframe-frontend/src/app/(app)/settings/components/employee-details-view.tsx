@@ -11,6 +11,8 @@ import { InfoCell } from '@/app/components/shared/info-cell';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
+import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
+import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useUser } from '../hooks/use-user';
 import { UserStatus, useDeleteUser, useUpdateProfile } from '../hooks/use-users';
 import { ConfirmDeleteUserModal } from './confirm-delete-user-modal';
@@ -64,6 +66,19 @@ export function EmployeeDetailsView({ userId }: EmployeeDetailsViewProps) {
   const updateProfile = useUpdateProfile();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  // Register the open employee as the Mingo "open view". `user.id` is the raw db
+  // id the backend USER resolver / `@user:id` marker expects (USER is REST-resolved
+  // — no global-id round-trip). Called before the early returns to keep hooks order stable.
+  useTrackOpenView(
+    user
+      ? {
+          type: CONTEXT_ENTITY_KIND.USER,
+          id: user.id,
+          label: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        }
+      : null,
+  );
 
   if (error) {
     return <LoadError message={`Error loading employee: ${error}`} />;

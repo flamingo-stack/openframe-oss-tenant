@@ -76,7 +76,7 @@ export function useEditScriptForm({ scriptId, initialValues, isEditMode }: UseEd
           variables: { input: { id: scriptId, ...input } },
           onCompleted: () => {
             toast({ title: 'Success', description: 'Script updated successfully', variant: 'success' });
-            safeBackOrReplace(router, `/scripts-v2/details/${scriptId}`);
+            safeBackOrReplace(router, `/scripts-v2/details?id=${scriptId}`);
           },
           onError: err => {
             toast({
@@ -94,7 +94,7 @@ export function useEditScriptForm({ scriptId, initialValues, isEditMode }: UseEd
         onCompleted: response => {
           toast({ title: 'Success', description: 'Script created successfully', variant: 'success' });
           const newId = response.createScript?.id;
-          router.replace(newId ? `/scripts-v2/details/${newId}` : '/scripts-v2');
+          router.replace(newId ? `/scripts-v2/details?id=${newId}` : '/scripts-v2');
         },
         onError: err => {
           toast({

@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { notFound } from 'next/navigation';
 import { featureFlags } from '@/lib/feature-flags';
 import { NotificationsPageView } from './components/notifications-page-view';

@@ -1,7 +1,8 @@
 import { clearMingoContext } from '@/app/(app)/mingo/stores/mingo-context-store';
 import { authApiClient } from '@/lib/auth-api-client';
-import { clearStoredTokens } from '@/lib/force-logout';
+import { isNativeShell } from '@/lib/native-shell';
 import { runtimeEnv } from '@/lib/runtime-config';
+import { clearTokens, isBearerAuthMode } from '@/lib/token-store';
 import { useAuthStore } from '../stores/auth-store';
 
 /**
@@ -21,8 +22,17 @@ export async function performLogout() {
   // session on a shared browser (it's persisted in localStorage + rides out on
   // every Mingo message).
   clearMingoContext();
-  if (runtimeEnv.enableDevTicketObserver()) {
-    clearStoredTokens();
+  if (isBearerAuthMode()) {
+    // Awaited: in the native shell this is an async Keychain clear, and the
+    // navigation below must not race it.
+    await clearTokens();
+  }
+
+  if (isNativeShell()) {
+    // An external navigation would bounce to the system browser. Reload the
+    // SPA root instead — with tokens cleared it boots to the sign-in screen.
+    window.location.href = '/';
+    return;
   }
 
   const sharedHostUrl = runtimeEnv.sharedHostUrl();

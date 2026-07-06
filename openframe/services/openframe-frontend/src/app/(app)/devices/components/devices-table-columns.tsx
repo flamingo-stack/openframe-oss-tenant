@@ -33,7 +33,7 @@ export function getDeviceTableRowActions(onRefresh?: () => void): (device: Devic
   return DeviceRowActions;
 }
 
-export const deviceRowHref = (device: Device): string => `/devices/details/${device.machineId || device.id}`;
+export const deviceRowHref = (device: Device): string => `/devices/details?id=${device.machineId || device.id}`;
 
 export const DEVICE_OPEN_COLUMN: ColumnDef<Device> = {
   id: 'open',
