@@ -1,0 +1,46 @@
+name: 'Resolve Version'
+description: 'Resolves the release version: patch+1 auto bump when empty, provided version used as-is'
+
+inputs:
+  version:
+    description: 'Requested version (x.y.z). Leave empty for auto patch bump'
+    required: false
+    default: ''
+
+outputs:
+  version:
+    description: 'Resolved release version'
+    value: ${{ steps.resolve.outputs.version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Resolve version
+      id: resolve
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+
+        latest=$(gh release view --json tagName --jq '.tagName' 2>/dev/null || echo "")
+        latest=${latest:-0.0.0}
+        if ! [[ "$latest" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          latest="0.0.0"
+        fi
+        IFS='.' read -r cur_major cur_minor cur_patch <<< "$latest"
+
+        if [ -z "$INPUT_VERSION" ]; then
+          version="${cur_major}.${cur_minor}.$((cur_patch + 1))"
+          echo "No version provided, auto patch bump: ${latest} -> ${version}"
+        else
+          if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format: ${INPUT_VERSION} (expected x.y.z)"
+            exit 1
+          fi
+          version="$INPUT_VERSION"
+          echo "Using provided version: ${version}"
+        fi
+
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
