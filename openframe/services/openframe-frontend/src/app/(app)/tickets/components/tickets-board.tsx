@@ -7,8 +7,8 @@ import {
   type BoardColumnDef,
   type BoardTicket,
 } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Filter02Icon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Button, PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
@@ -28,6 +28,7 @@ import { BoardAssigneePicker } from './board-assignee-picker';
 import { BoardColumnSubscriber, type BoardColumnUpdate } from './board-column-subscriber';
 import { OrganizationFilter } from './organization-filter';
 import { TicketTagFilter } from './ticket-label-filter';
+import { TicketsFilterModal } from './tickets-filter-modal';
 
 // TODO(unread-from-entity): re-enable per-ticket unread highlighting once the backend exposes
 // unread counts on the ticket entity itself. Matching unread notifications to tickets by id is a
@@ -89,6 +90,7 @@ export function TicketsBoard({
   onSearchChange,
 }: TicketsBoardProps) {
   const debouncedSearch = useDebounce(search, 300);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const { data: statusesData, isLoading: statusesLoading, error: statusesError } = useTicketStatusesQuery();
   const { data: transitionRules } = useTicketStatusTransitionRules();
@@ -298,9 +300,20 @@ export function TicketsBoard({
               onSearchChange={onSearchChange}
               labelIds={labelIds ?? []}
               onLabelIdsChange={ids => onLabelIdsChange?.(ids)}
+              filterButton={
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => setMobileFiltersOpen(true)}
+                  aria-label="Open filters"
+                  leftIcon={<Filter02Icon />}
+                />
+              }
             />
           </div>
-          <div className="grid grid-cols-4 gap-[var(--spacing-system-l)]">
+          {/* Mobile keeps these filters in the modal next to the search input. */}
+          <div className="hidden md:grid grid-cols-4 gap-[var(--spacing-system-l)]">
             <OrganizationFilter
               value={organizationIds ?? []}
               onChange={ids => onOrganizationIdsChange?.(ids)}
@@ -313,6 +326,15 @@ export function TicketsBoard({
             />
           </div>
         </div>
+
+        <TicketsFilterModal
+          isOpen={mobileFiltersOpen}
+          onClose={() => setMobileFiltersOpen(false)}
+          organizationIds={organizationIds ?? []}
+          onOrganizationIdsChange={ids => onOrganizationIdsChange?.(ids)}
+          assigneeIds={assigneeIds ?? []}
+          onAssigneeIdsChange={ids => onAssigneeIdsChange?.(ids)}
+        />
 
         {showEmptyState ? (
           <EmptyState
