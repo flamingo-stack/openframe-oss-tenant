@@ -157,8 +157,15 @@ export function AiSettings() {
     onSave: handleSave,
   });
 
+  // Disabled (not hidden) while loading to avoid a flash; hidden on load error.
+  const headerActions = hasLoadError
+    ? undefined
+    : isLoading
+      ? actions.map(action => ({ ...action, disabled: true }))
+      : actions;
+
   return (
-    <AiSettingsLayout actions={isLoading || hasLoadError ? undefined : actions} mobileBottomActions={isEditMode}>
+    <AiSettingsLayout actions={headerActions} mobileBottomActions={isEditMode}>
       <AiSettingsTabs activeTab={effectiveTab} onTabChange={handleTabChange}>
         {activeId => {
           // Keep the tab bar visible; show skeletons while the tab config loads.
