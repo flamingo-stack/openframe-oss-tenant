@@ -31,8 +31,9 @@ npm run type-check           # tsc --noEmit
 npm run lint:biome           # Biome check (lint + format)
 npm run lint:biome:fix       # Biome auto-fix
 npm run format:fix           # Biome formatter
-npm run icons                # Regenerate app icons via scripts/generate-icons.js
 ```
+
+Rust side: `make lint` (rustfmt + clippy -D warnings) gates `src-tauri/` — Biome does not cover it.
 
 ## Core rules
 
@@ -122,7 +123,16 @@ npm run lint:biome     # must pass
 
 ## Backend integration
 
-The chat client talks to the OpenFrame backend (`openframe-api` / `openframe-gateway`). Auth uses the same JWT-in-HTTP-only-cookie scheme as the web frontend — see the parent `openframe-oss-tenant/CLAUDE.md` for the full flow. Cookie storage in a Tauri webview behaves like a normal browser webview; do not roll a custom token store unless there's a concrete reason.
+The chat client talks to the AI chat backend (saas-ai-agent) through the gateway: GraphQL at `{serverUrl}/chat/graphql` (tickets, dialog messages, AI settings, tenant info, feature flags) and REST at `{serverUrl}/chat/api/v1/*` (create dialog, send message, stop, approve).
+
+**Auth is NOT cookies** — every request carries `Authorization: Bearer <token>`. The token lifecycle is daemon-driven:
+1. The openframe-client agent daemon writes an AES-256-GCM-encrypted token file and rotates it; config (token path, secret, serverUrl, machineId) comes from macOS CFPreferences `com.openframe.chat` / Windows registry / CLI args (`src-tauri/src/config_reader.rs`).
+2. Rust decrypts on demand (`src-tauri/src/token_decryption_service.rs`), polls the file every 1s, and emits `token-update` to the webview (`src-tauri/src/token_watcher.rs`).
+3. The JS `tokenService` singleton (`src/services/tokenService.ts`) caches it and feeds all API clients. Vite-only dev fallback: `VITE_TOKEN` / `VITE_SERVER_URL`.
+
+Do not add a parallel token store — extend `tokenService`.
+
+**Realtime is NATS only (SSE removed).** In the Tauri shell, Rust owns the NATS WebSocket connection (`src-tauri/src/nats_bridge/`) — JetStream OrderedConsumers on stream `CHAT_CHUNKS`, subject `chat.<dialogId>.message`, plus OS notifications from `machine.<machineId>.notification`; the webview consumes via Tauri IPC (`src/services/natsTauri.ts`). Under `npm run frontend:dev` (no Tauri), the core-lib browser WS hooks (`useJetStreamDialogSubscription`) take over — keep both paths behaviorally aligned.
 
 ## What NOT to do
 

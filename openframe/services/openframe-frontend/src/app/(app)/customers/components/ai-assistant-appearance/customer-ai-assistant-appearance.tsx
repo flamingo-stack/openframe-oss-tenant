@@ -10,11 +10,12 @@ import {
   Button,
   CheckboxBlock,
   ColorPickerInput,
-  CompactPageLoader,
   ImageUploader,
   Input,
+  Skeleton,
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -52,7 +53,7 @@ export interface CustomerAppearanceHandle {
  * It owns no Save button — the page's "Save Customer" drives persistence via the
  * `validate()` / `commit()` ref handle. "Use the default AI-Assistant appearance"
  * on means the customer inherits the tenant default (an existing override is
- * removed on save via resetClientView); off edits a per-customer override.
+ * deleted immediately once the user confirms); off edits a per-customer override.
  */
 export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle, CustomerAiAssistantAppearanceProps>(
   function CustomerAiAssistantAppearance({ organizationId }, ref) {
@@ -65,7 +66,8 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
     // Opt out of auto-invalidation: commit() refetches once after the avatar
     // upload, so the preview never flickers the pre-upload image.
     const { update } = useUpdateClientView(organizationId, { invalidateOnSuccess: false });
-    const { reset } = useResetClientView(organizationId);
+    const { reset, isPending: isResetting } = useResetClientView(organizationId);
+    const { toast } = useToast();
 
     const [useDefault, setUseDefault] = useState(true);
     const [confirmResetOpen, setConfirmResetOpen] = useState(false);
@@ -125,8 +127,7 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
         setUseDefault(false);
         return;
       }
-      // Switching to default: confirm before dropping an existing override (the
-      // actual delete happens on "Save Customer").
+      // Switching to default: confirm first; the override is deleted on confirm.
       if (orgView) {
         setConfirmResetOpen(true);
         return;
@@ -140,7 +141,7 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push('/settings/ai-settings')}
+          onClick={() => router.push('/settings/ai-settings?tab=customer&edit=true')}
           className="shrink-0"
         >
           <PenEditIcon className="size-5 text-ods-text-secondary" />
@@ -164,7 +165,7 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
         <div className="flex flex-col gap-[var(--spacing-system-l)]">
           {header}
           {toggle}
-          <CompactPageLoader />
+          <Skeleton className="h-64 w-full rounded-md" />
         </div>
       );
     }
@@ -249,12 +250,28 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
           open={confirmResetOpen}
           onOpenChange={setConfirmResetOpen}
           title="Use default appearance?"
-          description="The custom AI-Assistant appearance for this customer will be removed when you save. They will use the tenant default instead."
+          description="The custom AI-Assistant appearance for this customer will be removed. They will use the tenant default instead."
           confirmLabel="Use default"
           variant="destructive"
-          onConfirm={() => {
-            setUseDefault(true);
-            setConfirmResetOpen(false);
+          isPending={isResetting}
+          pendingLabel="Removing..."
+          onConfirm={async () => {
+            try {
+              await reset();
+              setUseDefault(true);
+              setConfirmResetOpen(false);
+              toast({
+                title: 'Saved',
+                description: 'Customer now uses the default AI-Assistant appearance',
+                variant: 'success',
+              });
+            } catch (err) {
+              toast({
+                title: 'Save failed',
+                description: err instanceof Error ? err.message : 'Failed to remove the custom appearance',
+                variant: 'destructive',
+              });
+            }
           }}
         />
       </div>

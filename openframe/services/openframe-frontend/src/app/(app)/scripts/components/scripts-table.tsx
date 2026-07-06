@@ -371,7 +371,7 @@ export function ScriptsTable() {
   }, [params.search]);
 
   const handleNewScript = useCallback(() => {
-    router.push('/scripts/create');
+    router.push('/scripts/new');
   }, [router]);
 
   const handleMobileFilterChange = useCallback(

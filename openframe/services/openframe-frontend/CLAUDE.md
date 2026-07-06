@@ -1,6 +1,6 @@
 # OpenFrame Frontend - Claude Development Guide
 
-**Next.js 16 + React 19 + TypeScript 5.8 + @flamingo-stack/openframe-frontend-core (v0.0.46)**
+**Next.js 16 + React 19 + TypeScript 5.8 + @flamingo-stack/openframe-frontend-core (^0.0.360)**
 
 > Comprehensive instructions for Claude when working with the OpenFrame Frontend service.
 
@@ -28,11 +28,12 @@ Access: http://localhost:3000
 ### All Commands
 | Command | Purpose |
 |---------|----------|
-| `npm run dev` | Dev server with webpack (port 3000) |
-| `npm run dev:turbo` | Dev server with Turbopack (port 3000) |
-| `npm run build` | Production build |
+| `npm run dev` | Dev server (port 3000, `PORT` env to override) |
+| `npm run build` | Production build (`generate-enums` + `relay-compiler` + `next build`; standalone output in `dist/`) |
+| `npm run build:export` | Static-export build (`OPENFRAME_BUILD_TARGET=export`) — SPA bundle for Capacitor/Tauri native shells |
 | `npm run build:local` | Production build with webpack |
 | `npm run start` | Start production server |
+| `npm run start:standalone` | Serve the standalone build (`dist/standalone/server.js`) |
 | `npm run type-check` | TypeScript validation (`tsc --noEmit`) |
 | `npm run relay` | Relay compiler — regenerates `src/__generated__/` artifacts |
 | `npm run relay:watch` | Relay compiler in watch mode |
@@ -43,13 +44,10 @@ Access: http://localhost:3000
 | `npm run lint:biome:fix` | Biome auto-fix |
 | `npm run format` | Biome format check |
 | `npm run format:fix` | Biome auto-format |
+| `npm run core:link` / `core:unlink` | yalc-link/unlink the core library for local lib development |
 
 ### Pre-commit Hooks
-Husky runs on every commit:
-```bash
-npm run lint:biome && npm run type-check
-```
-Both must pass before commits are accepted.
+Husky (`.husky/pre-commit`) is **staged-file-scoped**: it runs Biome check on the staged frontend files and `tsc --noEmit` with errors filtered to staged files only. A clean commit does not require the whole repo to pass — but don't rely on that; keep `npm run lint:biome` and `npm run type-check` green.
 
 ### Environment Variables
 
@@ -65,22 +63,22 @@ NEXT_PUBLIC_SHARED_HOST_URL=https://auth.openframe.ai   # Shared auth host
 NEXT_PUBLIC_GTM_CONTAINER_ID=GTM-XXXXXXX                # Google Tag Manager
 ```
 
-**Feature flags:**
+**Dev auth:**
 ```bash
-NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=true   # Dev ticket auth mode
-NEXT_PUBLIC_FEATURE_SCRIPT_SCHEDULE=false       # Script scheduling (default: false)
-NEXT_PUBLIC_FEATURE_MONITORING=false            # Monitoring pages (default: false)
+NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=true   # Dev ticket auth mode (Bearer tokens instead of cookies)
 ```
+
+Feature flags are **not** env vars — they are server-loaded via GraphQL (see Feature Flags below). Native-shell env split is documented in `.env.export.example`.
 
 ## Architecture & Structure
 
 ### Technology Stack
 | Category | Technology | Version |
 |----------|-----------|---------|
-| Framework | Next.js | 16 (^16.0.10) |
+| Framework | Next.js | 16 (^16.2.4) |
 | UI Library | React | 19 (^19.2.0) |
 | Type System | TypeScript | 5.8 (^5.8.3) |
-| Component Library | @flamingo-stack/openframe-frontend-core | 0.0.46 |
+| Component Library | @flamingo-stack/openframe-frontend-core | ^0.0.360 (npm registry) |
 | GraphQL Data Fetching | react-relay + relay-runtime + relay-compiler | 20.1 |
 | REST / Legacy Data Fetching | @tanstack/react-query | 5.90 |
 | Forms | react-hook-form + @hookform/resolvers | 7.71 + 5.2 |
@@ -102,24 +100,20 @@ NEXT_PUBLIC_FEATURE_MONITORING=false            # Monitoring pages (default: fal
 
 **Key Facts:**
 - **Source repo**: `openframe-oss-lib/openframe-frontend-core/`
-- **Ownership**: Shared across Flamingo Stack projects (OpenFrame, Flamingo, TMCG)
-- **Connection**: Published via **yalc** for local development
-- **Production**: Installed as `@flamingo-stack/openframe-frontend-core` npm package
+- **Ownership**: Shared across Flamingo Stack projects (OpenFrame, OpenMSP, Flamingo, TMCG, hubs, openframe-chat)
+- **Normal state**: installed from the **npm registry** (`"@flamingo-stack/openframe-frontend-core": "^0.0.360"`); the lib repo's own `package.json` version lags the registry (CI bumps at publish)
+- **Local lib development**: link via **yalc** — `npm run core:link` here, and in the lib repo `npm run build && yalc push` after every change (consumers see `dist/`, not `src/`)
 - **Updates**: Changes affect ALL Flamingo Stack projects
 
 **yalc Workflow:**
 ```bash
-# In openframe-frontend-core repo:
-yalc publish
+# In openframe-frontend-core repo (after each change):
+npm run build && yalc push
 
-# In openframe-frontend:
-yalc add @flamingo-stack/openframe-frontend-core
+# In openframe-frontend (once, to link):
+npm run core:link   # = yalc add @flamingo-stack/openframe-frontend-core
 npm install
-```
-
-**package.json reference:**
-```json
-"@flamingo-stack/openframe-frontend-core": "0.0.46"
+npm run core:unlink # when done — restore the registry version
 ```
 
 **NEVER:**
@@ -141,60 +135,62 @@ Helper functions: `isOssTenantMode()`, `isSaasTenantMode()`, `isSaasSharedMode()
 
 ### Feature Flags
 
-Defined in `src/lib/feature-flags.ts`:
-- `featureFlags.monitoring.enabled()` — monitoring pages visibility
+Flags are **server-loaded**, not env-based. Names defined in `src/lib/feature-flags.ts` (e.g. `billings`, `help-center`, `notifications`, `time-tracker`, `scripts-v2`, `mingo-sidebar`, `new-onboarding`, `cancel-subscription`); fetched via the `feFeatureFlags(names:)` GraphQL query (`src/app/hooks/use-feature-flags-query.ts`) into `src/stores/feature-flags-store.ts`. `src/components/feature-flags-gate.tsx` blocks app render until flags load for authenticated users.
 
 ### Application Modules
+
+Routes live under the `(app)` / `(auth)` route groups. **Detail pages use query params** (`/x/details?id=`), not dynamic segments (static-export constraint; read via `useRequiredIdParam`).
+
 - **Authentication** (`/auth`) — Multi-provider SSO, signup, login, password reset, invite
-- **Dashboard** (`/dashboard`) — System overview, real-time metrics, onboarding
-- **Devices** (`/devices`) — Fleet MDM + Tactical RMM, detail pages, remote shell/desktop, file manager
-- **Logs** (`/logs-page`, `/log-details`) — Streaming, search, filtering, export
-- **Scripts** (`/scripts`) — Script management, editing (Monaco), execution, scheduling
-- **Organizations** (`/organizations`) — Multi-org management, detail/edit pages
-- **Monitoring** (`/monitoring`) — Queries, policies (feature-flagged)
-- **Tickets** (`/tickets`) — Ticket management, dialog view
-- **Mingo** (`/mingo`) — MongoDB-like query builder (SaaS only)
-- **Settings** (`/settings`) — Application settings
+- **Dashboard** (`/dashboard`) — Overview stats + onboarding; standalone `/onboarding` behind flag `new-onboarding`
+- **Devices** (`/devices`) — Fleet MDM + Tactical RMM, detail pages, MeshCentral remote shell/desktop/file manager
+- **Logs** (`/logs-page`, `/log-details`) — Streaming, search, filtering
+- **Scripts** (`/scripts` legacy Tactical REST; `/scripts-v2` Relay, behind flag `scripts-v2` — implementation lives in `src/app/(app)/scripts/v2/components/`)
+- **Customers** (`/customers`) — Customer/organization CRM (route renamed from `/organizations`; sidebar item id is still `organizations`)
+- **Monitoring** (`/monitoring`) — Fleet osquery queries + policies (not feature-flagged)
+- **Tickets** (`/tickets`) — Ticket board + AI chat dialogs (saas-tenant only; talks to `/chat/graphql`)
+- **Mingo** (`/mingo`) — Admin AI assistant chat (saas-tenant only; legacy page, superseded by the in-layout drawer when flag `mingo-sidebar` is on)
+- **Knowledge Base** (`/knowledge-base`) — Articles/folders (fully Relay)
+- **Help Center** (`/help-center/*`) — Content pages via core-lib `help-center-pages` (flag `help-center`)
+- **Worktime** (`/worktime`) — Time entries (flag `time-tracker`)
+- **Notifications** (`/notifications`) — Relay reference implementation (flag `notifications`)
+- **Settings** (`/settings/*`) — ai-settings, api-keys, architecture (OSS-only), billing-usage (flag `billings`), employees, sso
+- **Checkout** (`/checkout/success|cancel`) — Stripe checkout result pages
 
 ### Project Structure
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── auth/              # Authentication (login, signup, invite, password-reset)
-│   ├── dashboard/         # Main dashboard
-│   ├── devices/           # Device management
-│   │   ├── components/tabs/   # hardware-tab, network-tab, users-tab
-│   │   ├── types/             # fleet.types.ts, device.types.ts
-│   │   ├── utils/             # normalize-device.ts
-│   │   ├── hooks/             # useDevices, etc.
-│   │   ├── details/[deviceId]/ # Detail, remote-shell, remote-desktop, file-manager
-│   │   └── new/               # Add device
-│   ├── logs-page/         # Log analysis
-│   ├── log-details/       # Log detail view
-│   ├── scripts/           # Script management + scheduling
-│   ├── organizations/     # Organization management
-│   ├── monitoring/        # Queries + policies (feature-flagged)
-│   ├── tickets/           # Ticket system
-│   ├── mingo/             # Query interface (SaaS only)
-│   ├── settings/          # Settings
-│   ├── hooks/             # Shared hooks
-│   └── components/        # Shared components (app-layout, route-guard, etc.)
-├── components/            # Root-level shared components
-├── stores/                # Zustand stores (devices-store, auth re-exports)
+├── proxy.ts               # Next 16 middleware — server-side app-mode route blocking
+├── app/                   # Next.js App Router (route groups)
+│   ├── (auth)/auth/       # Authentication (login, signup, invite, password-reset, stores/auth-store.ts)
+│   ├── (app)/             # All app pages, wrapped by AppLayout in (app)/layout.tsx
+│   │   ├── dashboard/  onboarding/  devices/  logs-page/  log-details/
+│   │   ├── scripts/       # legacy + v2 implementation in scripts/v2/components/
+│   │   ├── scripts-v2/    # thin route wrappers over scripts/v2 (flag-gated layout)
+│   │   ├── customers/  monitoring/  tickets/  mingo/  knowledge-base/
+│   │   ├── help-center/  worktime/  notifications/  settings/  checkout/
+│   ├── hooks/             # Shared hooks (use-feature-flags-query, use-required-id-param, …)
+│   └── components/        # Shared components (notifications provider, subscription-lock, shared tables)
+├── components/            # Root-level shared (route-guard, feature-flags-gate, assignments/)
+├── stores/                # Zustand stores (feature-flags-store, devices-store [mostly unused])
+├── graphql/               # Relay operations by domain (notifications/, scripts/, time-tracker/)
+├── __generated__/         # Relay artifacts (owned by relay-compiler — never import enums from here)
+├── generated/             # schema-enums.ts (from npm run generate-enums)
 ├── lib/                   # Utilities & config
-│   ├── api-client.ts          # Centralized REST API client (singleton)
-│   ├── auth-api-client.ts     # Auth-specific API client
-│   ├── fleet-api-client.ts    # Fleet MDM API client
-│   ├── tactical-api-client.ts # Tactical RMM API client
-│   ├── graphql-client.ts      # GraphQL introspection setup
-│   ├── app-mode.ts            # App mode helpers
-│   ├── runtime-config.ts      # Runtime env var access
-│   ├── feature-flags.ts       # Feature flag definitions
-│   ├── openframe-core-ui.tsx  # Client boundary re-export
-│   ├── query-client-provider.tsx # TanStack QueryClient
-│   ├── fonts.ts               # DM Sans + Azeret Mono
-│   ├── handle-api-error.ts    # Error extraction utility
-│   ├── meshcentral/           # MeshCentral remote management
+│   ├── api-client.ts          # Centralized REST API client (singleton, 401 refresh queue)
+│   ├── auth-api-client.ts     # Auth endpoints against NEXT_PUBLIC_SHARED_HOST_URL
+│   ├── fleet-api-client.ts    # Fleet MDM via /tools/fleetmdm-server
+│   ├── tactical-api-client.ts # Tactical RMM via /tools/tactical-rmm
+│   ├── relay/                 # Relay environment + provider (singleton, 401 refresh)
+│   ├── relay-id.ts            # toGlobalId / global-id normalization
+│   ├── token-store.ts  token-refresh-manager.ts  force-logout.ts  # auth token plumbing
+│   ├── app-mode.ts  runtime-config.ts  feature-flags.ts
+│   ├── nats/                  # NatsAppProvider + WS URL config
+│   ├── native-shell.ts  native-login.ts  # Capacitor/Tauri shell bridge
+│   ├── register-embed-shims.ts  navigation-config.tsx  navigation-sidebar-state.ts
+│   ├── subscription-lock-signal.ts  analytics.ts  openframe-core-ui.tsx
+│   ├── query-client-provider.tsx  fonts.ts  handle-api-error.ts
+│   ├── meshcentral/           # MeshCentral control/tunnel/desktop/file-manager protocol
 │   └── platform-configs/      # Platform-specific config
 ```
 
@@ -234,11 +230,10 @@ import {
 // Hooks — CRITICAL: useToast is MANDATORY for all API operations
 import {
   useToast,           // REQUIRED for all API feedback
-  useApiParams,       // URL state management for REST APIs
+  useApiParams,       // URL state management
   useDebounce,
   useLocalStorage,
   useTablePagination,
-  introspector,       // GraphQL schema introspection
 } from '@flamingo-stack/openframe-frontend-core/hooks';
 
 // Utilities
@@ -339,10 +334,11 @@ export function MyComponent() {
 
 The app is **gradually migrating GraphQL data fetching to react-relay**. The rules:
 
-1. **New GraphQL code → react-relay.** Queries, fragments, mutations, pagination — all through Relay.
+1. **New GraphQL code against `/api/graphql` → react-relay.** Queries, fragments, mutations, pagination — all through Relay.
 2. **REST APIs → `@tanstack/react-query`** with `apiClient` (this is not changing).
 3. **Legacy GraphQL** (raw POST through `apiClient` or react-query wrappers) still exists — leave it working, but migrate it to Relay when touching it substantially. Do not add new code in that style.
-4. No Apollo Client anywhere.
+4. **Exception — the `/chat/graphql` domain (tickets, mingo, AI settings)**: it talks to the saas-ai-agent service whose schema is NOT in `schema.graphql`, so it stays on raw-POST permanently. Extending raw-POST there is correct, not a violation.
+5. No Apollo Client anywhere.
 
 ### GraphQL with react-relay (preferred)
 
@@ -452,9 +448,9 @@ const response = await apiClient.post('/api/graphql', {
   variables: { limit: 20, cursor: null },
 });
 ```
-This style is being migrated to react-relay. Don't write new code like this; when substantially reworking a feature that uses it, migrate it to Relay.
+This style is being migrated to react-relay. Don't write new code like this; when substantially reworking a feature that uses it, migrate it to Relay. The exception is the `/chat/graphql` domain (tickets/mingo/AI settings) — permanently raw-POST, see Data Fetching Strategy.
 
-The GraphQL endpoint is determined at runtime: `${window.location.origin}/api/graphql` (the Relay environment resolves the same endpoint).
+The GraphQL endpoint is determined at runtime: `${NEXT_PUBLIC_TENANT_HOST_URL || window.location.origin}/api/graphql` (the Relay environment resolves the same endpoint).
 
 ### API Error Handling with useToast
 
@@ -537,7 +533,7 @@ export function MyForm() {
 }
 ```
 
-**Real example:** See `src/app/scripts/hooks/use-edit-script-form.ts` and `src/app/scripts/types/edit-script.types.ts`.
+**Real example:** See `src/app/(app)/scripts/hooks/use-edit-script-form.ts` and `src/app/(app)/scripts/types/edit-script.types.ts`.
 
 ### State Management with Zustand
 
@@ -563,9 +559,10 @@ export const useMyStore = create<MyState>()(
 ```
 
 **Existing stores:**
-- `useAuthStore` — authentication state (in `src/app/auth/stores/auth-store.ts`)
-- `useDevicesStore` — device list state (in `src/stores/devices-store.ts`)
-- Central re-exports from `src/stores/index.ts`
+- `useAuthStore` — authentication state (`src/app/(auth)/auth/stores/auth-store.ts`; persist key `auth-storage`)
+- `useFeatureFlagsStore` — server-loaded feature flags (`src/stores/feature-flags-store.ts`)
+- `useDevicesStore` — `src/stores/devices-store.ts` (persist key `devices-store`; mostly unused — devices flow through react-query)
+- Domain stores live in their modules (tickets, mingo, scripts); central re-exports from `src/stores/index.ts`
 
 ### Code Quality with Biome
 
@@ -589,31 +586,10 @@ npm run lint:biome:fix   # Auto-fix
 npm run format:fix       # Auto-format
 ```
 
-## URL State Management (Runtime Schema-Driven)
+## URL State Management (useApiParams)
 
-OpenFrame uses a **runtime schema-driven URL state management system** from the core library that automatically syncs pagination, filtering, and search parameters with URL params.
+URL state (pagination, filters, search) uses the core library's `useApiParams` with a manual schema — for GraphQL-backed and REST-backed tables alike. The old runtime-introspection `useQueryParams` system is no longer used in this app.
 
-### Core Features
-- **Runtime Introspection**: Fetches GraphQL schema behind auth (no build-time codegen)
-- **Auto-Flattening**: Nested input types flattened to simple URL params
-- **Bidirectional Sync**: URL params <-> GraphQL variables
-- **Zero Build Dependencies**: No GraphQL CodeGen needed
-
-### GraphQL URL State (useQueryParams)
-
-```typescript
-import { useQueryParams } from '@flamingo-stack/openframe-frontend-core/hooks';
-
-const { variables, setParam } = useQueryParams(GET_LOGS_QUERY, {
-  defaultValues: { limit: 20 },
-});
-// URL: /logs?search=error&severity=critical&limit=20
-// variables: { search: 'error', filter: { severity: ['critical'] }, limit: 20 }
-```
-
-### REST API URL State (useApiParams)
-
-For non-GraphQL APIs, use `useApiParams` with a manual schema:
 ```typescript
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 
@@ -624,20 +600,7 @@ const { params, setParam, setParams } = useApiParams({
 });
 ```
 
-**Used in:** LogsTable, OrganizationsTable, DevicesView, ScriptsTable, ScriptSchedulesTable, MonitoringQueries/Policies, TicketsView
-
-### Introspection Initialization
-
-Must be initialized after authentication (handled in `GraphQlIntrospectionInitializer`):
-```typescript
-import { initializeGraphQlIntrospection } from '@/lib/graphql-client';
-
-useEffect(() => {
-  if (isAuthenticated) {
-    initializeGraphQlIntrospection();
-  }
-}, [isAuthenticated]);
-```
+**Used in:** LogsTable, DevicesView, ScriptsTable, customers/monitoring/tickets tables (~22 files).
 
 ## Root Layout & Provider Stack
 
@@ -646,21 +609,22 @@ The root layout (`src/app/layout.tsx`) establishes the global provider hierarchy
 ```
 <html> (dark mode, font variables)
   <head>
-    <PublicEnvScript />              <!-- next-runtime-env -->
+    <PublicEnvScript />              <!-- next-runtime-env (skipped in export builds) -->
+    (sidebar-width FOUC script)
   </head>
   <body>
     <GoogleTagManager />             <!-- Analytics (if GTM ID set) -->
-    <EmbedShimRegistration />
+    <EmbedShimRegistration />        <!-- registers Next router/Link/Image into core-lib embed-shims -->
     <DeploymentInitializer />        <!-- Runtime detection -->
+    <NativeShellInitializer />       <!-- Capacitor/Tauri shell bridge -->
     <RelayProvider>                  <!-- react-relay environment (singleton) -->
       <QueryClientProvider>          <!-- TanStack React Query -->
         <DevTicketObserver />        <!-- Dev auth (if auth enabled) -->
-        <GraphQlIntrospectionInitializer />  <!-- Schema cache -->
         <NatsAppProvider>            <!-- NATS live updates -->
-          <FeatureFlagsGate>
+          <FeatureFlagsGate>         <!-- blocks render until server flags load -->
             <NotificationsDataProvider>  <!-- Notifications drawer/popups (Relay) -->
               <RouteGuard>           <!-- App mode route filtering -->
-                <Suspense>
+                <Suspense fallback={AppShellSkeleton}>
                   {children}         <!-- Page content -->
                 </Suspense>
               </RouteGuard>
@@ -676,7 +640,7 @@ The root layout (`src/app/layout.tsx`) establishes the global provider hierarchy
 
 **Fonts:** DM Sans (body) + Azeret Mono (code) — loaded via `next/font/google`
 
-**Rendering:** `export const dynamic = 'force-dynamic'` on the root layout (prevents SSG issues with `useSearchParams`).
+**Rendering:** dual output — `standalone` (default) or full static `export` (`OPENFRAME_BUILD_TARGET=export`); `trailingSlash: true` everywhere, `skipTrailingSlashRedirect` only in standalone (export builds break without trailing slashes). This is why detail pages use `?id=` query params instead of dynamic segments.
 
 ## Fleet MDM Integration
 
@@ -689,13 +653,19 @@ OpenFrame integrates device monitoring data from multiple sources with normaliza
 2. **Fleet MDM** — Accurate hardware specs, battery health, users
 3. **Tactical RMM** — Legacy device monitoring data
 
-**Normalization Strategy** (in `src/app/devices/utils/normalize-device.ts`):
+**Merge logic locations** (there is no `normalize-device.ts`):
+- Detail page: `createDevice()` in `src/app/(app)/devices/hooks/use-device-details.ts` — raw-POST GraphQL node + fan-out to Tactical agent, Fleet host, and Mesh deviceStatus
+- List page: `createDeviceListItem()` in `src/app/(app)/devices/utils/device-transform.ts` — GraphQL node only, no external fan-out
+
+**Priority rules** (in `createDevice()`):
 ```
-Core Hardware/System:  Fleet MDM -> GraphQL -> Tactical RMM
-Agent Version:         GraphQL -> Tactical RMM -> Fleet MDM
-IP Addresses:          Unified array with Fleet first
-Users:                 Unified type (Fleet + Tactical)
-Public IP:             Filtered (excludes private IPs)
+Hardware (CPU/RAM/storage/battery/software/users/mdm):  Fleet only
+Serial/manufacturer/model/OS:  Fleet -> GraphQL node
+Status:                        GraphQL node -> Fleet
+Last seen:                     Fleet -> GraphQL node
+Agent version:                 GraphQL node -> Fleet osquery_version
+Public IP:                     filtered by isPrivateIp (10/172.16-31/192.168/127/169.254/fe80/fc00/fd00/::1)
+Local IPs:                     dedup [fleet.primary_ip, fleet.public_ip-if-public, node.ip]
 ```
 
 ### Key Types
@@ -727,12 +697,11 @@ export interface UnifiedUser {
 ```
 
 ### Key Files
-- `src/app/devices/types/fleet.types.ts` — Complete Fleet MDM types
-- `src/app/devices/types/device.types.ts` — Unified device + user types
-- `src/app/devices/utils/normalize-device.ts` — Multi-source normalization
-- `src/app/devices/components/tabs/hardware-tab.tsx` — Battery, CPU, disk, RAM
-- `src/app/devices/components/tabs/network-tab.tsx` — Unified IPs
-- `src/app/devices/components/tabs/users-tab.tsx` — Unified users
+- `src/app/(app)/devices/types/fleet.types.ts` — Complete Fleet MDM types
+- `src/app/(app)/devices/types/device.types.ts` — Unified device types (flat `Device`, all fields at root)
+- `src/app/(app)/devices/hooks/use-device-details.ts` — Multi-source merge (`createDevice()`)
+- `src/app/(app)/devices/utils/device-transform.ts` — List-item transform
+- `src/app/(app)/devices/components/tabs/` — hardware/network/users/os/software/… tabs
 - `src/lib/fleet-api-client.ts` — Fleet API integration
 - `src/lib/tactical-api-client.ts` — Tactical RMM API integration
 
@@ -796,14 +765,15 @@ lsof -i:3000                    # Check port usage
 PORT=3001 npm run dev           # Use different port
 ```
 
-**Core Library Issues:**
+**Core Library Issues (when yalc-linked):**
 ```bash
-# Re-link via yalc
+# In the lib repo — rebuild + push into linked consumers
 cd ~/flamingo/openframe-oss-lib/openframe-frontend-core
-yalc publish
-cd ~/flamingo/openframe-oss-tenant/openframe/services/openframe-frontend
-yalc add @flamingo-stack/openframe-frontend-core
-npm install
+npm run build && yalc push
+
+# In this repo — (re)link / unlink
+npm run core:link && npm install
+npm run core:unlink   # back to the registry version
 ```
 
 **Biome Errors:**
@@ -821,16 +791,17 @@ npm run format:fix        # Fix formatting
 ```javascript
 // Clear corrupted localStorage
 localStorage.removeItem('devices-store');
-localStorage.removeItem('auth-store');
+localStorage.removeItem('auth-storage');
 ```
 
 ## Key Integration Points
 
-### Backend Services
-- **API Gateway** — `/api` — Primary API access
-- **GraphQL** — `/api/graphql` — Data queries
-- **WebSocket** — `/api/ws` — Live updates
-- **Authentication** — `/api/oauth/*` — OAuth2/OpenID Connect
+### Backend Services (all via the gateway)
+- **REST** — `/api/*` — openframe-api
+- **GraphQL** — `/api/graphql` — openframe-api (Relay + legacy); `/chat/graphql` — saas-ai-agent (tickets/mingo, raw-POST, SaaS only)
+- **Live updates** — NATS over WebSocket at `/ws/nats-api` (notifications, chat chunks); tool WS at `/ws/tools/{toolId}`
+- **Authentication** — `/oauth/*` (gateway BFF: login/callback/refresh/logout/dev-exchange); registration via `/sas/oauth/*`
+- **Tool proxies** — `/tools/{toolId}/*` (Fleet, Tactical; API keys injected by the gateway)
 
 ### API Client Architecture
 
@@ -852,7 +823,7 @@ if (response.ok) {
 ```
 
 ### External Dependencies
-- **Core Library** — `@flamingo-stack/openframe-frontend-core` (via yalc)
+- **Core Library** — `@flamingo-stack/openframe-frontend-core` (npm registry; yalc for local lib dev)
 - **Terminal** — @xterm/xterm 6.0 integration
 - **Code Editor** — Monaco Editor for script editing
 - **Fleet MDM** — Device monitoring integration
@@ -869,4 +840,4 @@ if (response.ok) {
 5. **Use react-relay for GraphQL** (gradual migration — prefer it wherever possible); **TanStack React Query for REST** — no Apollo Client, no new raw-POST GraphQL
 6. **Use react-hook-form + zod** for forms
 7. **Biome is the primary linter** — must pass before commits
-8. **Normalize multi-source data** — Fleet -> GraphQL -> Tactical priority
+8. **Normalize multi-source device data** — Fleet-first priority; merge logic in `use-device-details.ts` `createDevice()`

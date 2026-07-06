@@ -1,9 +1,10 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useRequiredIdParam } from '@/app/hooks/use-required-id-param';
 import { ScheduleCreateView } from '../../components/schedule/schedule-create-view';
 
 export default function EditSchedulePage() {
-  const id = useSearchParams().get('id') ?? '';
+  const id = useRequiredIdParam('/scripts/schedules', '/scripts/schedules/new');
+  if (!id) return null;
   return <ScheduleCreateView scheduleId={id} />;
 }
