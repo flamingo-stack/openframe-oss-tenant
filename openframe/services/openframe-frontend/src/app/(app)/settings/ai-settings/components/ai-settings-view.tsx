@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useState } from 'react';
 import {
@@ -157,35 +157,35 @@ export function AiSettings() {
     onSave: handleSave,
   });
 
-  if (isLoading) {
-    return (
-      <AiSettingsLayout actions={actions}>
-        <CompactPageLoader />
-      </AiSettingsLayout>
-    );
-  }
-
-  // Failed to load and nothing cached: show an error + retry instead of editable
-  // defaults, so the user can't accidentally overwrite real settings on save.
-  if (hasLoadError) {
-    return (
-      <AiSettingsLayout>
-        <div className="flex flex-col items-start gap-[var(--spacing-system-m)]">
-          <p className="text-ods-text-secondary">
-            Couldn't load AI settings. The service may be temporarily unavailable.
-          </p>
-          <Button variant="outline" onClick={refetchActive}>
-            Retry
-          </Button>
-        </div>
-      </AiSettingsLayout>
-    );
-  }
-
   return (
-    <AiSettingsLayout actions={actions} mobileBottomActions={isEditMode}>
+    <AiSettingsLayout actions={hasLoadError ? undefined : actions} mobileBottomActions={isEditMode}>
       <AiSettingsTabs activeTab={effectiveTab} onTabChange={handleTabChange}>
         {activeId => {
+          // Keep the tab bar visible; show skeletons while the tab config loads.
+          if (isLoading) {
+            return (
+              <div className="flex flex-col gap-[var(--spacing-system-l)]">
+                <Skeleton className="h-20 w-full rounded-md" />
+                <Skeleton className="h-64 w-full rounded-md" />
+              </div>
+            );
+          }
+
+          // Load failed with nothing cached: error + retry instead of editable
+          // defaults, so real settings can't be overwritten on save.
+          if (hasLoadError) {
+            return (
+              <div className="flex flex-col items-start gap-[var(--spacing-system-m)]">
+                <p className="text-ods-text-secondary">
+                  Couldn't load AI settings. The service may be temporarily unavailable.
+                </p>
+                <Button variant="outline" onClick={refetchActive}>
+                  Retry
+                </Button>
+              </div>
+            );
+          }
+
           if (activeId === 'guardrails') {
             return <GuardrailsTab isEditMode={isEditMode} onSaved={() => setIsEditMode(false)} />;
           }
