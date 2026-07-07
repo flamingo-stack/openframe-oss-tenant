@@ -1,0 +1,56 @@
+{{- /*
+Tenant tier — a single Application (OSS is single-tenant; no fleet repo, no
+ApplicationSet) sourcing the manifests/tenant umbrella chart into
+.Values.tenant.namespace. The umbrella creates its own namespace.
+*/ -}}
+
+{{- if .Values.tenant.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tenant
+  annotations:
+    argocd.argoproj.io/sync-wave: '{{ .Values.tenant.syncWave | default "2" }}'
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: {{ .Values.tenant.project }}
+
+  sources:
+    - repoURL: {{ .Values.repository.URL }}
+      targetRevision: {{ .Values.repository.branch }}
+      path: "{{ .Values.repository.baseDir }}/tenant"
+      helm:
+        valueFiles:
+          - "values-{{ .Values.environment }}.yaml"
+        ignoreMissingValueFiles: true
+        values: |
+          environment: {{ .Values.environment }}
+          tenant:
+            id: "{{ .Values.tenant.id }}"
+            uuid: "{{ .Values.tenant.uuid }}"
+            namespace: "{{ .Values.tenant.namespace }}"
+          # deployment + tenant.values (image tag etc.); tenant.values
+          # deep-merges over the deployment defaults (tenant.values wins per key)
+{{ mergeOverwrite (dict "deployment" (deepCopy .Values.deployment)) (deepCopy (.Values.tenant.values | default dict)) | toYaml | indent 10 }}
+
+  destination:
+    name: in-cluster
+    namespace: "{{ .Values.tenant.namespace }}"
+
+  syncPolicy:
+    retry:
+      limit: 3
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 1m
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=false
+      - RespectIgnoreDifferences=false
+{{- end }}

@@ -32,7 +32,7 @@ spec:
 
       containers:
         - name: mongodb
-          image: "{{ default .Values.image.registry .Values.global.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 27017
           envFrom:
@@ -62,7 +62,7 @@ spec:
 
         {{- if .Values.metrics.enabled }}
         - name: mongodb-exporter
-          image: "{{ default .Values.metrics.image.registry .Values.global.image.registry }}/{{ .Values.metrics.image.repository }}:{{ .Values.metrics.image.tag }}"
+          image: "{{ .Values.metrics.image.registry }}/{{ .Values.metrics.image.repository }}:{{ .Values.metrics.image.tag }}"
           args:
             - --mongodb.uri=mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin
             - --collect-all

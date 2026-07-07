@@ -1,0 +1,21 @@
+{{- $saas := index .Values "openframe-saas" -}}
+{{- $svc := index $saas "management" -}}
+{{- if and $saas.enabled $svc.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: openframe-management
+  labels:
+    app: openframe-management
+spec:
+  selector:
+    app: openframe-management
+  ports:
+    - port: 8095
+      targetPort: 8095
+      name: http
+    - port: 8096
+      targetPort: 8096
+      name: management
+  type: ClusterIP
+{{- end }}

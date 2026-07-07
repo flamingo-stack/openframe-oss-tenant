@@ -571,7 +571,18 @@ pub fn run() {
                     &PredefinedMenuItem::separator(app)?,
                     &quit_to_tray_i,
                 ])?;
-                let app_menu = Menu::with_items(app, &[&app_submenu])?;
+                // Edit submenu is required on macOS: WKWebView routes ⌘X/⌘C/⌘V/⌘A
+                // through these menu items. Without it, paste into inputs is dead.
+                let edit_submenu = Submenu::with_items(app, "Edit", true, &[
+                    &PredefinedMenuItem::undo(app, None)?,
+                    &PredefinedMenuItem::redo(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::cut(app, None)?,
+                    &PredefinedMenuItem::copy(app, None)?,
+                    &PredefinedMenuItem::paste(app, None)?,
+                    &PredefinedMenuItem::select_all(app, None)?,
+                ])?;
+                let app_menu = Menu::with_items(app, &[&app_submenu, &edit_submenu])?;
                 app.set_menu(app_menu)?;
 
                 app.on_menu_event(|app, event| {

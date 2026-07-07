@@ -1,0 +1,241 @@
+
+deployment:
+  mongodbReplicas: 1
+  meshMongodbReplicas: 1
+  redisClusterNodes: 3
+  # Ingress toggles (localhost via nginx, or ngrok for external access)
+  ingress:
+    localhost:
+      enabled: true
+    ngrok:
+      enabled: false
+      credentials:
+        apiKey: ""
+        authtoken: ""
+
+tenant:
+  id: "tenant-XXX-X-X"
+  uuid: "tenant-XXX-X-X"
+  namespace: "tenant"
+
+initImage:
+  registry: ghcr.io/flamingo-stack/registry
+  repository: curlimages/curl
+  tag: "8.9.1"
+
+
+
+fleet:
+  enabled: true
+  fullnameOverride: fleet  # avoid <release>-fleet prefix
+  replicas: 1
+  revisionHistoryLimit: 2
+  imageRepository: ghcr.io/flamingo-stack/fleetmdm/fleet
+  imageTag: "latest"
+
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+
+  fleet:
+    # secretName: fleet
+    autoApplySQLMigrations: true
+    migrationJobAnnotations:
+      argocd.argoproj.io/sync-options: Replace=true,Force=true
+    tls:
+      enabled: false
+    setup:
+      adminEmail: "admin@openframe.local"
+      openframeMode: "1"
+      adminPassword:
+        existingSecret: "fleet-server"
+        secretKeyKey: "FLEET_SETUP_ADMIN_PASSWORD"
+
+  database:
+    existingConfigMap: "fleetmdm-mysql"
+    existingSecret: "fleetmdm-mysql"
+    hostKey: "FLEET_MYSQL_HOST"
+    portKey: "FLEET_MYSQL_PORT"
+    databaseKey: "MYSQL_DATABASE"
+    usernameKey: "MYSQL_USER"
+    passwordKey: "MYSQL_PASSWORD"
+
+  cache:
+    existingConfigMap: "tenant"
+    addressKey: "REDIS_CLUSTER_NODES"
+    keyPrefixKey: "TENANT_ID"
+    usePassword: false
+
+  osquery:
+    logging:
+      filesystem:
+        enableRotation: true
+        enableCompression: true
+        volumeSize: 5Gi
+
+  mysql:
+    enabled: false
+  redis:
+    enabled: false
+
+
+
+meshcentral:
+  enabled: true
+  restartPod: "2"  # Bump to rollout (any string works)
+  image:
+    registry: ghcr.io/flamingo-stack/meshcentral
+    repository: meshcentral
+    tag: "latest"
+  revisionHistoryLimit: 2
+  deploymentAnnotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+    keel.sh/match-tag: "true"
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8383"
+    prometheus.io/path: "/metrics"
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+  mongodb:
+    # user/password come from the meshcentral-mongodb Secret (rendered by this chart)
+    existingSecret: "meshcentral-mongodb"
+    # HOST/PORT/DATABASE/AUTH_SOURCE come from the meshcentral-mongodb ConfigMap
+    existingConfigMap: "meshcentral-mongodb"
+  credentials:
+    existingSecret: "meshcentral"
+    meshUserKey: "MESHCENTRAL_USER"
+    meshPassKey: "MESHCENTRAL_PASSWORD"
+    meshConfigKeyKey: "MESHCENTRAL_CONFIG_KEY"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "300m"
+      memory: "512Mi"
+
+
+
+# Umbrella for the OpenFrame application services. openframe-saas.enabled gates
+# all of them; each service also has its own enabled flag (both must be true).
+openframe-saas:
+  enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+    # shared default tag; a per-service image.tag (when set) overrides it
+    tag: latest
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+
+  api:
+    enabled: true
+    image:
+      repository: openframe-api
+      tag: ""
+    resources:
+      requests:
+        cpu: "350m"
+        memory: "512Mi"
+      limits:
+        cpu: "650m"
+        memory: "1Gi"
+
+  authorization-server:
+    enabled: true
+    image:
+      repository: openframe-authorization-server
+      tag: ""
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+
+  client:
+    enabled: true
+    image:
+      repository: openframe-client
+      tag: ""
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+
+  external-api:
+    enabled: true
+    image:
+      repository: openframe-external-api
+      tag: ""
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+
+  frontend:
+    enabled: true
+    image:
+      repository: openframe-frontend
+      tag: ""
+    # frontend has no /metrics endpoint; only ship logs
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+
+  gateway:
+    enabled: true
+    image:
+      repository: openframe-gateway
+      tag: ""
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+
+  management:
+    enabled: true
+    image:
+      repository: openframe-management
+      tag: ""
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+
+  stream:
+    enabled: true
+    image:
+      repository: openframe-stream
+      tag: ""
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"

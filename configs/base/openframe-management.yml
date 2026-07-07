@@ -8,9 +8,6 @@ spring:
       enabled: true
     cassandra:
       enabled: false
-    redis:
-      host: redis-master.datasources.svc.cluster.local
-      port: 6379
   cloud:
     config:
       fail-fast: false

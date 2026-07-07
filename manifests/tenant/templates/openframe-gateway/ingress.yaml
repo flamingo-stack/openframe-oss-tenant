@@ -1,0 +1,63 @@
+{{- $saas := index .Values "openframe-saas" -}}
+{{- $gw := index $saas "gateway" -}}
+{{- if and $saas.enabled $gw.enabled .Values.deployment.ingress.localhost.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openframe-gateway
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openframe-gateway
+                port:
+                  name: http
+     # add catch-all for IP access / other hosts
+    - http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: openframe-gateway
+              port:
+                name: http
+  tls:
+  - hosts:
+    - localhost
+    {{- if include "chart.localhost.hasTLS" . }}
+    secretName: localhost-tls
+    {{- end }}
+{{- end }}
+
+{{- if and $saas.enabled $gw.enabled .Values.deployment.ingress.ngrok.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openframe-gateway
+  {{- if .Values.deployment.ingress.ngrok.allowedIPs }}
+  annotations:
+    k8s.ngrok.com/traffic-policy: openframe-gateway
+  {{- end }}
+spec:
+  ingressClassName: ngrok
+  rules:
+    - host: {{ required "deployment.ingress.ngrok.url is required for ngrok ingress" .Values.deployment.ingress.ngrok.url | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openframe-gateway
+                port:
+                  number: 8100
+{{- end }}

@@ -1,0 +1,14 @@
+{{- if .Values.meshcentral.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meshcentral-mongodb
+data:
+  MC_MONGO_HOSTS: "{{- range $i, $_ := until (int $.Values.deployment.meshMongodbReplicas) }}{{- if $i }},{{ end }}meshcentral-mongodb-{{ $i }}.meshcentral-mongodb.datasources.svc.cluster.local:27017{{- end }}"
+  # OSS meshcentral-mongodb runs without TLS (keyfile auth only)
+  MC_MONGO_URI_OPTIONS: "&readPreference=secondaryPreferred&maxPoolSize=5&minPoolSize=0"
+  MC_MONGO_REPLICA_SET: "rs0"
+  MC_MONGO_DATABASE: "meshcentral"
+  MC_MONGO_AUTH_SOURCE: "admin"
+  MESH_LOGGING: "DEBUG"
+{{- end }}
