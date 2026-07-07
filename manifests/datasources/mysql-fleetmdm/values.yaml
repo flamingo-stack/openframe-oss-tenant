@@ -1,0 +1,25 @@
+
+mysql:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: mysql
+    tag: "8.0.35"
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9104"
+    prometheus.io/path: "/metrics"
+
+  metrics:
+    enabled: true
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: prom/mysqld-exporter
+      tag: "v0.18.0"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi

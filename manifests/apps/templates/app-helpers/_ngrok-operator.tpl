@@ -6,8 +6,8 @@
 
 {{/* Get credentials: deployment first, then root fallback */}}
 {{- $creds := dict -}}
-{{- if and $vals.deployment $vals.deployment.oss $vals.deployment.oss.ingress $vals.deployment.oss.ingress.ngrok $vals.deployment.oss.ingress.ngrok.credentials $vals.deployment.oss.ingress.ngrok.credentials.authtoken -}}
-  {{- $creds = $vals.deployment.oss.ingress.ngrok.credentials -}}
+{{- if dig "ingress" "ngrok" "credentials" "authtoken" "" ($vals.deployment | default dict) -}}
+  {{- $creds = dig "ingress" "ngrok" "credentials" (dict) $vals.deployment -}}
 {{- else if hasKey $vals "ngrok-operator" -}}
   {{- if index $vals "ngrok-operator" "credentials" -}}
     {{- $creds = index $vals "ngrok-operator" "credentials" -}}

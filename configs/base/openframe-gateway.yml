@@ -51,9 +51,11 @@ spring:
             allow-credentials: true
             max-age: 3600
       httpclient:
-        # The reason of the fix is that gateway close SSE connections in 30 sec by default
+        connect-timeout: 3000
+        # NOTE: gateway closes SSE connections at response-timeout (default 30s). This was
+        # previously raised to 5m to keep SSE streams open, but is intentionally set to 20s.
         # TODO: find better solution how to handle it. It should be possible to configure for only SSE routings.
-        response-timeout: 5m
+        response-timeout: 20s
         ssl:
           useInsecureTrustManager: true
         websocket:

@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant
+data:
+  # openframe-config (Spring Cloud Config) location. Adjust the namespace if the
+  # config server is not reachable at this address.
+  SPRING_CONFIG_URL: "http://openframe-config.platform.svc.cluster.local:8888"
+
+  # Kafka values (OSS runs a single kafka; the tenant listener points at it too)
+  KAFKA_HOST: "kafka.datasources.svc.cluster.local"
+  KAFKA_PORT: "9092"
+  KAFKA_TENANT_HOST: "kafka.datasources.svc.cluster.local"
+  KAFKA_TENANT_PORT: "9092"
+
+  # Pinot values
+  PINOT_CONTROLLER_HOST: "pinot-controller.datasources.svc.cluster.local"
+  PINOT_CONTROLLER_PORT: "9000"
+  PINOT_BROKER_HOST: "pinot-broker.datasources.svc.cluster.local"
+  PINOT_BROKER_PORT: "8099"
+
+  # Cassandra values
+  CASSANDRA_HOST: "cassandra.datasources.svc.cluster.local"
+  CASSANDRA_PORT: "9042"
+
+  # Redis values
+  REDIS_CLUSTER_NODES: "{{- range $i := until (.Values.deployment.redisClusterNodes | int) }}{{- if $i }},{{- end }}redis-cluster-{{ $i }}.redis-cluster-headless.datasources.svc.cluster.local:6379{{- end }}"
+
+  # Nats values
+  NATS_HOST: "nats.datasources.svc.cluster.local"
+  NATS_PORT: "4222"
+
+  # MongoDB values (per-pod DNS through the mongodb headless service)
+  MONGODB_HOSTS: "{{- range $i := until (.Values.deployment.mongodbReplicas | int) }}{{- if $i }},{{- end }}mongodb-{{ $i }}.mongodb.datasources.svc.cluster.local:27017{{- end }}"
+
+  TENANT_ID: "{{ .Values.tenant.uuid }}"
+  TENANT_UUID: "{{ .Values.tenant.uuid }}"
+  TENANT_NS: "{{ .Values.tenant.namespace }}"

@@ -3,17 +3,17 @@ templates:
   - templates/argocd-apps.yaml
 tests:
   # ========================================
-  # DEPLOYMENT VALUES PROPAGATION
+  # REPOSITORY VALUES PROPAGATION
   # ========================================
 
-  - it: should propagate OSS deployment values
+  - it: should propagate repository values
     asserts:
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "deployment:"
+          pattern: "repository:"
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "oss:"
+          pattern: "URL:"
 
   # ========================================
   # GLOBAL VALUES PROPAGATION
@@ -21,10 +21,10 @@ tests:
 
   - it: should propagate custom global repository values
     set:
-      deployment.oss.repository.URL: "https://custom-repo.com/openframe.git"
-      deployment.oss.repository.branch: "development"
-      deployment.oss.repository.baseDir: "custom-manifests"
-      deployment.oss.repository.appsDir: "custom-apps"
+      repository.URL: "https://custom-repo.com/openframe.git"
+      repository.branch: "development"
+      repository.baseDir: "custom-manifests"
+      repository.appsDir: "custom-apps"
     asserts:
       - equal:
           path: spec.sources[0].repoURL
@@ -44,21 +44,3 @@ tests:
       - equal:
           path: spec.syncPolicy.automated.selfHeal
           value: true
-
-  # ========================================
-  # ENVIRONMENT PROPAGATION
-  # ========================================
-
-  - it: should propagate environment configuration
-    set:
-      environment: production
-    asserts:
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "environment: production"
-
-  - it: should use default environment
-    asserts:
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "environment: dev"

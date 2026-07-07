@@ -1,0 +1,63 @@
+{{- $saas := index .Values "openframe-saas" -}}
+{{- $svc := index $saas "frontend" -}}
+{{- if and $saas.enabled $svc.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-frontend
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: openframe-frontend
+  template:
+    metadata:
+      labels:
+        app: openframe-frontend
+      {{- with (default $saas.podAnnotations $svc.podAnnotations) }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+
+      containers:
+        - name: openframe-frontend
+          image: "{{ default $saas.image.registry $svc.image.registry }}/{{ $svc.image.repository }}:{{ default $saas.image.tag $svc.image.tag }}"
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NEXT_PUBLIC_AUTH_CHECK_INTERVAL
+              value: "30000"
+          envFrom:
+            - configMapRef:
+                name: tenant
+
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 48
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+{{- end }}
