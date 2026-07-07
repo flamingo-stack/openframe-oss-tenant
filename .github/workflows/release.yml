@@ -44,7 +44,6 @@ jobs:
     uses: ./.github/workflows/version.yml
     with:
       version: ${{ inputs.version }}
-      is-release: ${{ github.event_name == 'workflow_dispatch' }}
 
   changes:
     name: Detect Changes

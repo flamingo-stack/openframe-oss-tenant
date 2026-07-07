@@ -8,11 +8,6 @@ on:
         required: false
         type: string
         default: ''
-      is-release:
-        description: "true on workflow_dispatch (resolve/bump); false on push (returns latest)"
-        required: false
-        type: string
-        default: 'true'
     outputs:
       version:
         description: "Resolved release version"
@@ -33,11 +28,11 @@ jobs:
         id: version
         env:
           INPUT_VERSION: ${{ inputs.version }}
-          IS_RELEASE: ${{ inputs.is-release }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
 
-          if [ "$IS_RELEASE" != "true" ]; then
+          if [ "$EVENT_NAME" != "workflow_dispatch" ]; then
             echo "push event: version resolves to latest"
             echo "version=latest" >> "$GITHUB_OUTPUT"
             exit 0
