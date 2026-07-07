@@ -33,4 +33,6 @@ data:
   # MongoDB values (per-pod DNS through the mongodb headless service)
   MONGODB_HOSTS: "{{- range $i := until (.Values.deployment.mongodbReplicas | int) }}{{- if $i }},{{- end }}mongodb-{{ $i }}.mongodb.datasources.svc.cluster.local:27017{{- end }}"
 
+  TENANT_ID: "{{ .Values.tenant.uuid }}"
+  TENANT_UUID: "{{ .Values.tenant.uuid }}"
   TENANT_NS: "{{ .Values.tenant.namespace }}"
