@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { rejectScriptsMigrationPending } from '../lib/scripts-migration';
 import { scriptScheduleQueryKeys } from './use-script-schedule';
 
 // ============ Types ============
@@ -48,27 +48,15 @@ export const scheduledTasksQueryKeys = {
 
 // ============ API Functions ============
 
-async function fetchScheduledTasksByScript(scriptId: string): Promise<ScheduledTask[]> {
-  const res = await tacticalApiClient.getScheduledTasks();
-
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to load scheduled tasks (${res.status})`);
-  }
-
-  const allTasks: ScheduledTask[] = res.data || [];
-  const scriptIdNum = parseInt(scriptId, 10);
-
-  // Filter tasks that have at least one action referencing this script
-  return allTasks.filter(task =>
-    task.actions.some(action => action.type === 'script' && action.script === scriptIdNum),
-  );
+// TODO(openframe-rmm): Tactical RMM removed — scheduled tasks have no backend until the
+// OpenFrame RMM scripts API is wired up. Reads return empty; deletes reject (migration
+// pending). See scripts-migration.ts.
+async function fetchScheduledTasksByScript(_scriptId: string): Promise<ScheduledTask[]> {
+  return [];
 }
 
-async function deleteScheduledTaskApi(taskId: string): Promise<void> {
-  const res = await tacticalApiClient.deleteScheduledTask(taskId);
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to delete scheduled task (${res.status})`);
-  }
+async function deleteScheduledTaskApi(_taskId: string): Promise<void> {
+  rejectScriptsMigrationPending();
 }
 
 // ============ Hook ============

@@ -1,9 +1,14 @@
 'use client';
 
-import { AlertTriangleIcon, CheckCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  AlertTriangleIcon,
+  CheckCircleIcon,
+  ShieldIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { formatDateTime } from '@/lib/format-date';
 import type { Device } from '../../types/device.types';
+import { TabEmptyState } from './tab-empty-state';
 
 interface SecurityTabProps {
   device: Device | null;
@@ -219,9 +224,11 @@ function buildSections(device: Device): SecuritySection[] {
 export function SecurityTab({ device }: SecurityTabProps) {
   if (!device) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No device data available</div>
-      </div>
+      <TabEmptyState
+        icon={<ShieldIcon />}
+        title="No security data found"
+        description="Security details for this device will appear here."
+      />
     );
   }
 
@@ -229,9 +236,11 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
   if (sections.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No security data available for this device</div>
-      </div>
+      <TabEmptyState
+        icon={<ShieldIcon />}
+        title="No security data found"
+        description="Security details for this device will appear here."
+      />
     );
   }
 

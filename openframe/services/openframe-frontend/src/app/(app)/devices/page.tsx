@@ -18,6 +18,7 @@ export default function Devices() {
   return (
     <DevicesPanel
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+      archiveHref="/devices/archive"
       // Only treat the tenant as having no customers once the check resolves, so the
       // "Add a customer" banner doesn't flash during loading. While checking, the
       // panel still keeps "Add Device" disabled via isCheckingOrganizations.

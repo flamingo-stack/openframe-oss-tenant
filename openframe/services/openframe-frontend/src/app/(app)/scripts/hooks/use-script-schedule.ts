@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { rejectScriptsMigrationPending } from '../lib/scripts-migration';
 import type {
   ScriptScheduleAgent,
   ScriptScheduleDetail,
@@ -23,40 +23,28 @@ export const scriptScheduleQueryKeys = {
 
 // ============ API Functions ============
 
+// TODO(openframe-rmm): Tactical RMM removed — script schedules have no backend until the
+// OpenFrame RMM scripts API is wired up. List/agents reads return empty; single-schedule
+// and history reads reject so their pages show a not-found/empty state. See
+// scripts-migration.ts.
 async function fetchScriptSchedules(): Promise<ScriptScheduleListItem[]> {
-  const res = await tacticalApiClient.getScriptSchedules();
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to load schedules (${res.status})`);
-  }
-  return res.data ?? [];
+  return [];
 }
 
-async function fetchScriptSchedule(id: string): Promise<ScriptScheduleDetail> {
-  const res = await tacticalApiClient.getScriptSchedule(id);
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to load schedule (${res.status})`);
-  }
-  return res.data;
+async function fetchScriptSchedule(_id: string): Promise<ScriptScheduleDetail> {
+  return rejectScriptsMigrationPending();
 }
 
-async function fetchScriptScheduleAgents(id: string): Promise<ScriptScheduleAgent[]> {
-  const res = await tacticalApiClient.getScriptScheduleAgents(id);
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to load agents (${res.status})`);
-  }
-  return res.data ?? [];
+async function fetchScriptScheduleAgents(_id: string): Promise<ScriptScheduleAgent[]> {
+  return [];
 }
 
 async function fetchScriptScheduleHistory(
-  id: string,
-  limit: number,
-  offset: number,
+  _id: string,
+  _limit: number,
+  _offset: number,
 ): Promise<ScriptScheduleHistoryResponse> {
-  const res = await tacticalApiClient.getScriptScheduleHistory(id, { limit, offset });
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to load history (${res.status})`);
-  }
-  return res.data;
+  return rejectScriptsMigrationPending();
 }
 
 const EMPTY_SCHEDULES: ScriptScheduleListItem[] = [];

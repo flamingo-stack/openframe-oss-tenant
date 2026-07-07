@@ -1,9 +1,11 @@
 'use client';
 
 import { InfoCard } from '@flamingo-stack/openframe-frontend-core';
+import { HardDrivesIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import type { ReactNode } from 'react';
 import { formatDateTime } from '@/lib/format-date';
 import type { Device } from '../../types/device.types';
+import { TabEmptyState } from './tab-empty-state';
 
 interface HardwareTabProps {
   device: Device | null;
@@ -58,13 +60,19 @@ function Block({ heading, children }: { heading?: string; children: ReactNode })
   );
 }
 
+function HardwareEmptyState() {
+  return (
+    <TabEmptyState
+      icon={<HardDrivesIcon />}
+      title="No hardware data found"
+      description="Hardware details for this device will appear here."
+    />
+  );
+}
+
 export function HardwareTab({ device }: HardwareTabProps) {
   if (!device) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No device data available</div>
-      </div>
-    );
+    return <HardwareEmptyState />;
   }
 
   // SYSTEM — hardware identity from Fleet (currently unused on this tab).
@@ -115,6 +123,12 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
   // BATTERY — macOS battery health from Fleet.
   const batteries = device.batteries || [];
+
+  const hasAnyData =
+    hasSystem || bootItems.length > 0 || hasCpu || memoryItems.length > 0 || hasFleetStorage || batteries.length > 0;
+  if (!hasAnyData) {
+    return <HardwareEmptyState />;
+  }
 
   return (
     <div className="flex flex-col gap-[var(--spacing-system-l)]">

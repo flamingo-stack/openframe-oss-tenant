@@ -2,9 +2,9 @@
 
 import { InfoCard } from '@flamingo-stack/openframe-frontend-core';
 import { Hierarchy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { NoData } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ReactNode } from 'react';
 import type { Device } from '../../types/device.types';
+import { TabEmptyState } from './tab-empty-state';
 
 interface NetworkTabProps {
   device: Device | null;
@@ -42,9 +42,11 @@ function Labeled({ title, children }: { title: string; children: ReactNode }) {
 export function NetworkTab({ device }: NetworkTabProps) {
   if (!device) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No device data available</div>
-      </div>
+      <TabEmptyState
+        icon={<Hierarchy02Icon />}
+        title="No network data found"
+        description="Network details for this device will appear here."
+      />
     );
   }
 
@@ -81,18 +83,12 @@ export function NetworkTab({ device }: NetworkTabProps) {
   const hasIpv6 = sortedIpv6.length > 0;
 
   if (interfaceItems.length === 0 && locationItems.length === 0 && !hasIpv4 && !hasIpv6) {
-    // Exact copy of the `DataTable.Body` empty state: the same wrapper + `NoData` with the
-    // same `py-[--spacing-system-xxl]` padding `DataTableEmpty` applies — so this tab is
-    // pixel-identical to the table tabs.
     return (
-      <div className="flex flex-col gap-[var(--spacing-system-xsf)] w-full">
-        <NoData
-          icon={<Hierarchy02Icon />}
-          title="No network data found"
-          description="Network details for this device will appear here."
-          className="py-[var(--spacing-system-xxl)]"
-        />
-      </div>
+      <TabEmptyState
+        icon={<Hierarchy02Icon />}
+        title="No network data found"
+        description="Network details for this device will appear here."
+      />
     );
   }
 

@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import type { Device } from '../types/device.types';
 import { buildUninstallCommand, normalizeDevicePlatform } from '../utils/device-command-utils';
+import { getDeviceName } from '../utils/device-name';
 import { useDeviceActions } from './use-device-actions';
 import { useReleaseVersion } from './use-release-version';
 
@@ -21,6 +22,10 @@ interface UseDeviceConfirmationDialogsResult {
   dialogs: ReactNode;
   isArchiving: boolean;
   isDeleting: boolean;
+  /** Re-exported from the hook's internal useDeviceActions instance so callers
+   *  (e.g. useDeviceActionsMenu) don't have to instantiate a second one. */
+  unarchiveDevice: (deviceId: string, deviceName?: string) => Promise<boolean>;
+  isUnarchiving: boolean;
 }
 
 export function useDeviceConfirmationDialogs(
@@ -31,12 +36,12 @@ export function useDeviceConfirmationDialogs(
     successDescription: 'Uninstall command copied to clipboard',
     errorDescription: 'Could not copy command to clipboard',
   });
-  const { archiveDevice, deleteDevice, isArchiving, isDeleting } = useDeviceActions();
+  const { archiveDevice, unarchiveDevice, deleteDevice, isArchiving, isUnarchiving, isDeleting } = useDeviceActions();
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { releaseVersion } = useReleaseVersion({ enabled: showDeleteConfirm });
 
-  const deviceName = device?.displayName || device?.hostname || 'this device';
+  const deviceName = getDeviceName(device) || 'this device';
   const deviceId = device?.machineId || device?.id || '';
 
   const devicePlatform = useMemo(
@@ -121,5 +126,5 @@ export function useDeviceConfirmationDialogs(
     </>
   );
 
-  return { openArchive, openDelete, dialogs, isArchiving, isDeleting };
+  return { openArchive, openDelete, dialogs, isArchiving, isDeleting, unarchiveDevice, isUnarchiving };
 }

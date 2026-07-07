@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { rejectScriptsMigrationPending } from '../lib/scripts-migration';
 import { EDIT_SCRIPT_DEFAULT_VALUES, type EditScriptFormData, editScriptSchema } from '../types/edit-script.types';
 import type { ScriptDetails } from './use-script-details';
 import { scriptDetailsQueryKeys } from './use-script-details';
@@ -34,20 +34,15 @@ interface ScriptPayload {
 
 // ============ API Functions ============
 
-async function createScriptApi(payload: ScriptPayload) {
-  const response = await tacticalApiClient.createScript(payload);
-  if (!response.ok) {
-    throw new Error(response.error || 'Failed to create script');
-  }
-  return response.data;
+// TODO(openframe-rmm): Tactical RMM removed — creating/updating scripts has no backend
+// until the OpenFrame RMM scripts API is wired up. Both reject so the form shows a clear
+// "migration pending" toast instead of a silent no-op. See scripts-migration.ts.
+async function createScriptApi(_payload: ScriptPayload): Promise<{ id?: number }> {
+  return rejectScriptsMigrationPending();
 }
 
-async function updateScriptApi(params: { id: string; payload: ScriptPayload }) {
-  const response = await tacticalApiClient.updateScript(params.id, params.payload);
-  if (!response.ok) {
-    throw new Error(String(response.data) || response.error || 'Failed to update script');
-  }
-  return response.data;
+async function updateScriptApi(_params: { id: string; payload: ScriptPayload }): Promise<void> {
+  rejectScriptsMigrationPending();
 }
 
 // ============ Hook ============

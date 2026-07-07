@@ -24,8 +24,6 @@ interface RunScriptModalProps {
  *      per-run variables (timeout, privilege, args, env), then `batchRunScript`
  *      to this one device.
  *   3. Scripts Running — post-run confirmation pointing to the device logs.
- * Flag-gated at the call site: rendered only when `scriptsV2` is enabled (the
- * legacy `ScriptsModal` / Tactical flow is used otherwise).
  */
 export function RunScriptModal({ isOpen, onClose, machineId, onViewDeviceLogs }: RunScriptModalProps) {
   const [step, setStep] = useState<'select' | 'config'>('select');
