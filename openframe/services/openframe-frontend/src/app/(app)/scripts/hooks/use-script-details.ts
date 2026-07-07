@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { rejectScriptsMigrationPending } from '../lib/scripts-migration';
 
 export interface ScriptDetails {
   id: number;
@@ -29,14 +29,11 @@ export const scriptDetailsQueryKeys = {
 
 // ============ API Functions ============
 
-async function fetchScriptDetails(scriptId: string): Promise<ScriptDetails> {
-  const response = await tacticalApiClient.getScript(scriptId);
-
-  if (!response.ok || !response.data) {
-    throw new Error(response.error || 'Failed to fetch script details');
-  }
-
-  return response.data;
+// TODO(openframe-rmm): Tactical RMM removed — no script-details backend until the
+// OpenFrame RMM scripts API is wired up. Rejects so detail/edit/run pages show their
+// not-found state. See scripts-migration.ts.
+async function fetchScriptDetails(_scriptId: string): Promise<ScriptDetails> {
+  return rejectScriptsMigrationPending();
 }
 
 // ============ Hook ============

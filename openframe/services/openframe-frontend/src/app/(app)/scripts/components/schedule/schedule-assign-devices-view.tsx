@@ -11,7 +11,6 @@ import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
 import type { Device, DevicesGraphQlNode, GraphQlResponse } from '../../../devices/types/device.types';
-import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
 import { createDeviceListItem } from '../../../devices/utils/device-transform';
 import { useScriptSchedule, useScriptScheduleAgents } from '../../hooks/use-script-schedule';
 import { useReplaceScheduleAgents } from '../../hooks/use-script-schedule-mutations';
@@ -68,7 +67,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
   const router = useRouter();
   const { toast } = useToast();
   const { schedule, isLoading: isLoadingSchedule, error: scheduleError } = useScriptSchedule(scheduleId);
-  const { agents: currentAgents, isLoading: isLoadingAgents } = useScriptScheduleAgents(scheduleId);
+  const { isLoading: isLoadingAgents } = useScriptScheduleAgents(scheduleId);
   const replaceAgentsMutation = useReplaceScheduleAgents();
 
   const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set());
@@ -82,53 +81,26 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
     enabled: Boolean(scheduleId) && Boolean(schedule),
   });
 
-  const allDevices = useMemo(() => {
-    const all = devicesQuery.data ?? [];
-    const withTactical: Device[] = [];
-    const withoutTactical: Device[] = [];
-    for (const d of all) {
-      if (getTacticalAgentId(d)) {
-        withTactical.push(d);
-      } else {
-        withoutTactical.push(d);
-      }
-    }
-    return [...withTactical, ...withoutTactical];
-  }, [devicesQuery.data]);
+  // TODO(openframe-rmm): Tactical RMM removed — devices were previously sorted by, and the
+  // current selection seeded from, Tactical agent IDs. Restore an OpenFrame-RMM-agent
+  // mapping once the schedule/assign API is wired up.
+  const allDevices = useMemo(() => devicesQuery.data ?? [], [devicesQuery.data]);
 
-  // Initialize selected devices from current agent assignment
-  // Map tactical agent IDs back to device primary IDs
-  if (!isInitialized && !isLoadingAgents && allDevices.length > 0) {
-    const agentIdSet = new Set(currentAgents.map(a => a.agent_id));
-    const ids = new Set(
-      allDevices
-        .filter(d => {
-          const tacticalId = getTacticalAgentId(d);
-          return tacticalId && agentIdSet.has(tacticalId);
-        })
-        .map(d => getDevicePrimaryId(d)),
-    );
-    setSelectedAgentIds(ids);
-    setIsInitialized(true);
-  }
-  if (!isInitialized && !isLoadingAgents && currentAgents.length === 0 && !devicesQuery.isLoading) {
+  // `currentAgents` is empty until the OpenFrame RMM schedule API exists, so nothing is
+  // pre-selected; just mark the view initialized once the agent load settles.
+  if (!isInitialized && !isLoadingAgents && !devicesQuery.isLoading) {
     setIsInitialized(true);
   }
 
   const handleBack = useSafeBack(`/scripts/schedules?id=${scheduleId}`);
 
   const handleSave = useCallback(async () => {
+    // TODO(openframe-rmm): Tactical RMM removed — assigning devices to a schedule mapped
+    // selection to Tactical agent IDs. Until the OpenFrame RMM schedule API is wired up we
+    // pass the device primary ids; the mutation itself rejects (migration pending) and the
+    // catch surfaces a clear toast. See scripts-migration.ts.
     const selectedDevices = allDevices.filter(d => selectedAgentIds.has(getDevicePrimaryId(d)));
-    const agentIds = selectedDevices.map(d => getTacticalAgentId(d)).filter((id): id is string => !!id);
-
-    if (agentIds.length === 0) {
-      toast({
-        title: 'No compatible agents',
-        description: 'Selected devices have no Tactical agent IDs.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    const agentIds = selectedDevices.map(getDevicePrimaryId);
 
     try {
       await replaceAgentsMutation.mutateAsync({
@@ -196,7 +168,6 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
           getDeviceKey={getDeviceKey}
           onSelectionChange={setSelectedAgentIds}
           addAllBehavior="replace"
-          isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
           headerContent={
             <ScheduleInfoBarFromData
               name={schedule.name}

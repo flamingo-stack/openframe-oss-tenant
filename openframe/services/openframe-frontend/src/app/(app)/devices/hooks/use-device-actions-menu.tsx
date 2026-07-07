@@ -5,6 +5,7 @@ import { normalizeOSType } from '@flamingo-stack/openframe-frontend-core';
 import {
   BoxArchiveIcon,
   BracketCurlyIcon,
+  InboxArrowUpIcon,
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useRouter } from 'next/navigation';
@@ -12,6 +13,8 @@ import { type ReactNode, useCallback, useMemo } from 'react';
 import type { Device } from '../types/device.types';
 import { type DeviceActionAvailability, getDeviceActionAvailability } from '../utils/device-action-utils';
 import { buildDeviceMenuItems } from '../utils/device-menu-items';
+import { getDeviceName } from '../utils/device-name';
+import { useDeviceActions } from './use-device-actions';
 import { useDeviceConfirmationDialogs } from './use-device-confirmation-dialogs';
 
 const DEFAULT_ICON_SIZE = 'w-6 h-6';
@@ -35,6 +38,7 @@ export interface DeviceActionsMenuItems {
   runScript: ActionsMenuItem;
   deviceLogs: ActionsMenuItem;
   archive: ActionsMenuItem | null;
+  unarchive: ActionsMenuItem | null;
   delete: ActionsMenuItem | null;
 }
 
@@ -63,10 +67,18 @@ export function useDeviceActionsMenu(
     if (navigateOnDestructive) router.push('/devices');
   }, [onActionComplete, navigateOnDestructive, router]);
 
-  const { openArchive, openDelete, dialogs } = useDeviceConfirmationDialogs(device, {
+  const { openArchive, openDelete, dialogs, unarchiveDevice, isUnarchiving } = useDeviceConfirmationDialogs(device, {
     onArchived: handleDestructiveSuccess,
     onDeleted: handleDestructiveSuccess,
   });
+
+  // Unarchive is non-destructive and instantly reversible — no confirm dialog,
+  // just the action + toast. The device stays valid, so no navigation either.
+  const handleUnarchive = useCallback(async () => {
+    if (!device) return;
+    const success = await unarchiveDevice(deviceId, getDeviceName(device));
+    if (success) onActionComplete?.();
+  }, [device, deviceId, unarchiveDevice, onActionComplete]);
 
   const actionAvailability = useMemo(() => (device ? getDeviceActionAvailability(device) : null), [device]);
 
@@ -114,6 +126,16 @@ export function useDeviceActionsMenu(
         }
       : null;
 
+    const unarchive: ActionsMenuItem | null = actionAvailability?.unarchiveEnabled
+      ? {
+          id: 'unarchive',
+          label: 'Unarchive Device',
+          icon: <InboxArrowUpIcon className={`${iconSize} text-ods-text-secondary`} />,
+          disabled: isUnarchiving,
+          onClick: handleUnarchive,
+        }
+      : null;
+
     const deleteItem: ActionsMenuItem | null = actionAvailability?.deleteEnabled
       ? {
           id: 'delete',
@@ -131,9 +153,20 @@ export function useDeviceActionsMenu(
       runScript,
       deviceLogs: base.deviceLogs,
       archive,
+      unarchive,
       delete: deleteItem,
     };
-  }, [deviceId, actionAvailability, isWindows, iconSize, handleRunScript, openArchive, openDelete]);
+  }, [
+    deviceId,
+    actionAvailability,
+    isWindows,
+    iconSize,
+    handleRunScript,
+    openArchive,
+    openDelete,
+    handleUnarchive,
+    isUnarchiving,
+  ]);
 
   return { items, dialogs, actionAvailability };
 }

@@ -10,6 +10,9 @@ export interface DialogsQueryParams {
   organizationIds?: string[];
   assigneeIds?: string[];
   labelIds?: string[];
+  /** Page size override (default 20). Part of the query key — lists fetched
+   *  with different page sizes must not share a cache entry. */
+  pageSize?: number;
 }
 
 export const dialogsQueryKeys = {
@@ -31,6 +34,7 @@ export const dialogsQueryKeys = {
         organizationIds: params.organizationIds || [],
         assigneeIds: params.assigneeIds || [],
         labelIds: params.labelIds || [],
+        pageSize: params.pageSize ?? 20,
       },
     ] as const,
 

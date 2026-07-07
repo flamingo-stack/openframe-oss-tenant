@@ -1,10 +1,9 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatTime } from '@/lib/format-date';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
-
 import type { TestRunData } from '../components/script/test-run-card';
 import type { SelectedTestDevice } from '../components/script/test-script-modal';
+import { rejectScriptsMigrationPending } from '../lib/scripts-migration';
 import type { EditScriptFormData } from '../types/edit-script.types';
 
 let runIdCounter = 0;
@@ -82,71 +81,13 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
       startTimer(startTime);
 
       try {
-        const response = await tacticalApiClient.post(
-          `/scripts/${device.agentToolId}/test/`,
-          {
-            shell: formValues.shell,
-            code: formValues.script_body,
-            timeout: formValues.default_timeout,
-            run_as_user: formValues.run_as_user,
-            args: formValues.args.filter(a => a.key.trim() !== '').map(a => (a.value ? `${a.key} ${a.value}` : a.key)),
-            env_vars: formValues.env_vars.filter(e => e.key.trim() !== '').map(e => `${e.key}=${e.value}`),
-          },
-          { signal: controller.signal },
-        );
-
+        // TODO(openframe-rmm): Tactical RMM removed — test-run execution has no backend
+        // until the OpenFrame RMM scripts API is wired up. Reject so the catch below shows
+        // a clear "migration pending" error in the run output + toast. Keep `formValues`
+        // referenced so the (frozen) UI still validates. See scripts-migration.ts.
+        void formValues;
         if (controller.signal.aborted) return;
-
-        stopTimer();
-        abortControllerRef.current = null;
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-
-        if (!response.ok) {
-          throw new Error(response.error || 'Script execution failed');
-        }
-
-        const outputLines: string[] = [];
-        const result = response.data;
-
-        if (typeof result === 'string') {
-          outputLines.push(...result.split('\n'));
-        } else if (Array.isArray(result)) {
-          outputLines.push(...result.map(String));
-        } else if (result && typeof result === 'object') {
-          if (result.retcode !== undefined) {
-            outputLines.push(`Exit code: ${result.retcode}`);
-          }
-          if (result.stdout) {
-            outputLines.push(...String(result.stdout).split('\n'));
-          }
-          if (result.stderr) {
-            outputLines.push(...String(result.stderr).split('\n'));
-          }
-          if (!result.stdout && !result.stderr && !result.retcode) {
-            outputLines.push(JSON.stringify(result, null, 2));
-          }
-        }
-
-        if (outputLines.length === 0) {
-          outputLines.push('Script completed with no output.');
-        }
-
-        setTestRun(prev =>
-          prev?.id === runId
-            ? {
-                ...prev,
-                elapsedSeconds: elapsed,
-                status: 'completed',
-                output: outputLines,
-              }
-            : prev,
-        );
-
-        toast({
-          title: 'Test Complete',
-          description: `${device.deviceName}: Script executed successfully`,
-          variant: 'success',
-        });
+        rejectScriptsMigrationPending();
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
 
