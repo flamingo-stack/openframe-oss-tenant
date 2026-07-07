@@ -8,6 +8,11 @@ on:
         required: false
         type: string
         default: ''
+      is-release:
+        description: "true on workflow_dispatch (resolve/bump); false on push (returns latest)"
+        required: false
+        type: string
+        default: 'true'
     outputs:
       version:
         description: "Resolved release version"
@@ -28,8 +33,15 @@ jobs:
         id: version
         env:
           INPUT_VERSION: ${{ inputs.version }}
+          IS_RELEASE: ${{ inputs.is-release }}
         run: |
           set -euo pipefail
+
+          if [ "$IS_RELEASE" != "true" ]; then
+            echo "push event: version resolves to latest"
+            echo "version=latest" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           latest=$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
           latest=${latest:-0.0.0}
