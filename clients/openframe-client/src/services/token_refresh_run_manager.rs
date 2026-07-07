@@ -6,18 +6,18 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::AgentAuthService;
 use crate::utils::jwt;
 
-/// Refresh this long before the access token's `exp` so the meshagent never reads an expired token.
+/// Refresh this long before `exp` under normal TTLs.
 const REFRESH_MARGIN: Duration = Duration::from_secs(5 * 60);
-/// Cadence used when the token's `exp` can't be decoded (≈ TTL/2 for a 1h token).
+/// Lead for a short-lived token (TTL <= margin) so it doesn't refresh every loop.
+const MIN_LEAD: Duration = Duration::from_secs(15);
+/// Used when the token's `exp` can't be decoded.
 const FALLBACK_INTERVAL: Duration = Duration::from_secs(30 * 60);
-/// Delay after a failed refresh so an expiring token gets another attempt soon.
+/// Delay between refresh attempts after a failure.
 const RETRY_INTERVAL: Duration = Duration::from_secs(60);
 /// Cap on a single `reauthenticate()` call.
 const REAUTH_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Keeps `shared_token.enc` valid independent of NATS by proactively refreshing the access
-/// token before it expires. Without this the file is only rewritten on NATS reconnect, so a
-/// frozen token leaves the meshagent presenting an expired JWT and the gateway rejects it.
+/// Proactively refreshes the access token before `exp` so `shared_token.enc` stays valid without a NATS reconnect.
 #[derive(Clone)]
 pub struct TokenRefreshRunManager {
     auth_service: AgentAuthService,
@@ -49,8 +49,7 @@ impl TokenRefreshRunManager {
                 }
                 sleep(wait).await;
 
-                // Retry on the short interval until a refresh succeeds, so a failure never falls
-                // back into the long scheduling delay (e.g. for an undecodable token).
+                // Retry on the short interval until a refresh succeeds.
                 loop {
                     match timeout(REAUTH_TIMEOUT, auth_service.reauthenticate()).await {
                         Ok(Ok(_)) => {
@@ -74,8 +73,7 @@ impl TokenRefreshRunManager {
     }
 }
 
-/// Time to wait before the next refresh: `exp - margin` of the current access token, clamped to
-/// zero (refresh immediately) when the token is already at/near expiry, missing, or undecodable.
+/// Delay until the next refresh; zero when the token is at/near expiry, missing, or undecodable.
 async fn next_refresh_delay(config_service: &AgentConfigurationService) -> Duration {
     let token = match config_service.get_access_token().await {
         Ok(t) if !t.is_empty() => t,
@@ -91,11 +89,14 @@ async fn next_refresh_delay(config_service: &AgentConfigurationService) -> Durat
         return FALLBACK_INTERVAL;
     };
 
-    // Saturating math: a malformed/negative `exp` must never underflow into a huge sleep (or
-    // panic in debug builds) — treat any non-positive result as "refresh now".
-    let secs_until_refresh = exp
-        .saturating_sub(Utc::now().timestamp())
-        .saturating_sub(REFRESH_MARGIN.as_secs() as i64);
+    // Full margin normally; MIN_LEAD for short-lived tokens. Saturating so a bad `exp` can't underflow.
+    let secs_to_exp = exp.saturating_sub(Utc::now().timestamp());
+    let lead = if secs_to_exp > REFRESH_MARGIN.as_secs() as i64 {
+        REFRESH_MARGIN.as_secs() as i64
+    } else {
+        MIN_LEAD.as_secs() as i64
+    };
+    let secs_until_refresh = secs_to_exp.saturating_sub(lead);
     if secs_until_refresh <= 0 {
         Duration::ZERO
     } else {
