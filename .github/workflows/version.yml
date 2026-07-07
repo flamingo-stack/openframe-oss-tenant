@@ -18,14 +18,14 @@ jobs:
     name: Resolve version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.resolve.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Resolve version
-        id: resolve
+        id: version
         uses: ./.github/steps/resolve-version
         with:
           version: ${{ inputs.version }}
