@@ -52,7 +52,7 @@ runs:
         # Function to set image tags
         set_image_tag() {
           local path="$1"
-          if yq eval ".apps.$path = \"$COMMIT_SHA\"" -i "$HELM_VALUES_FILE" 2>/dev/null; then
+          if yq eval "$path = \"$COMMIT_SHA\"" -i "$HELM_VALUES_FILE" 2>/dev/null; then
             echo "Updated $path with image tag: $COMMIT_SHA"
           else
             echo "Failed to update $path" >&2
@@ -66,17 +66,19 @@ runs:
           changed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
 
           [ "$changed" = "true" ] || continue
-          
-          # Add image tag to the app's helm values
+
+          # Add image tag to the app's helm values: openframe-config is a
+          # platform-tier Application; every other service lives in the
+          # tenant umbrella under openframe-saas.<name without prefix>
           case "$name" in
-            authentik-postgresql)
-              set_image_tag "authentik.values.postgres.image.tag"
+            openframe-config)
+              set_image_tag ".platform.apps.openframe-config.values.image.tag"
               ;;
-            fleetmdm | meshcentral)
-              set_image_tag "$name.values.server.image.tag"
+            openframe-*)
+              set_image_tag ".tenant.values.openframe-saas.${name#openframe-}.image.tag"
               ;;
             *)
-              set_image_tag "$name.values.image.tag"
+              echo "No helm values mapping for $name, skipping" >&2
               ;;
           esac
 
@@ -90,6 +92,6 @@ runs:
         BRANCH_NAME: '${{ inputs.branch-name }}'
       run: |
         set -euo pipefail
-        yq eval ".deployment.oss.repository.branch = \"$BRANCH_NAME\"" -i "$HELM_VALUES_FILE"
-        echo "Updated deployment.oss.repository.branch to: $BRANCH_NAME"
+        yq eval ".repository.branch = \"$BRANCH_NAME\"" -i "$HELM_VALUES_FILE"
+        echo "Updated repository.branch to: $BRANCH_NAME"
         cat "$HELM_VALUES_FILE"
