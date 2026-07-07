@@ -10,10 +10,13 @@ export interface SsoProvider {
 
 interface InviteProvidersResponse {
   providers: string[];
+  /** Invited email, when the endpoint returns it (shown read-only on the accept screen). */
+  email?: string;
 }
 
 export function useInviteProviders(invitationId: string | null) {
   const [providers, setProviders] = useState<SsoProvider[]>([]);
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(!!invitationId);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +40,7 @@ export function useInviteProviders(invitationId: string | null) {
             enabled: true,
           }));
           setProviders(formattedProviders);
+          setEmail(response.data.email ?? '');
         } else {
           setProviders([]);
           const errorMessage = (response.data as any)?.message || response.error || 'Failed to fetch providers';
@@ -57,6 +61,7 @@ export function useInviteProviders(invitationId: string | null) {
 
   return {
     providers,
+    email,
     loading,
     error,
   };
