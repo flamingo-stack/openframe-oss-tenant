@@ -1,0 +1,21 @@
+{{- $saas := index .Values "openframe-saas" -}}
+{{- $svc := index $saas "authorization-server" -}}
+{{- if and $saas.enabled $svc.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: openframe-authorization-server
+  labels:
+    app: openframe-authorization-server
+spec:
+  selector:
+    app: openframe-authorization-server
+  ports:
+    - port: 9005
+      targetPort: 9005
+      name: http
+    - port: 9006
+      targetPort: 9006
+      name: management
+  type: ClusterIP
+{{- end }}

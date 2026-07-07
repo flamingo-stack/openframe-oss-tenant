@@ -1,0 +1,40 @@
+{{- $saas := index .Values "openframe-saas" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: post-tenant-register
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
+    "argocd.argoproj.io/sync-options": Replace=true
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+
+      containers:
+      - name: register
+        image: {{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering Cluster..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.{{ .Values.tenant.namespace }}.svc.cluster.local:8096/management/{{ $saas.image.tag }}/health; do
+              echo "Still waiting..."
+              sleep 10
+            done
+            curl --verbose --show-error --fail \
+              -X POST http://openframe-management.{{ .Values.tenant.namespace }}.svc.cluster.local:8095/v1/cluster-registrations \
+              -H "Content-Type: application/json" \
+              -d '{
+                  "imageTagVersion": "{{ $saas.image.tag }}"
+              }' \
+              --retry 20 \
+              --retry-delay 15 \
+              --retry-all-errors
+            echo "Cluster Registration complete."
+
+            echo "Keeping pod alive..." && sleep infinity

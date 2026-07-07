@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant
+data:
+  # openframe-config (Spring Cloud Config) location. Adjust the namespace if the
+  # config server is not reachable at this address.
+  SPRING_CONFIG_URL: "http://openframe-config.platform.svc.cluster.local:8888"
+
+  # Kafka values
+  KAFKA_HOST: "kafka.{{ .Values.deployment.privateDomain }}"
+  KAFKA_PORT: "{{ .Values.deployment.externalKafkaPort }}"
+  KAFKA_TENANT_HOST: "kafka-tenant.{{ .Values.deployment.privateDomain }}"
+  KAFKA_TENANT_PORT: "{{ .Values.deployment.externalKafkaPort }}"
+
+  # Pinot values
+  PINOT_CONTROLLER_HOST: "pinot-controller.{{ .Values.deployment.privateDomain }}"
+  PINOT_CONTROLLER_PORT: "{{ .Values.deployment.pinotControllerPort }}"
+  PINOT_BROKER_HOST: "pinot-broker.{{ .Values.deployment.privateDomain }}"
+  PINOT_BROKER_PORT: "{{ .Values.deployment.pinotBrokerPort }}"
+
+  # Cassandra values
+  CASSANDRA_HOST: "cassandra.{{ .Values.deployment.privateDomain }}"
+  CASSANDRA_PORT: "{{ .Values.deployment.cassandraPort }}"
+
+  # Redis values
+  REDIS_CLUSTER_NODES: "{{- range $i := until (.Values.deployment.redisClusterNodes | int) }}{{- if $i }},{{- end }}redis-cluster-{{ $i }}.{{ $.Values.deployment.privateDomain }}:{{ $.Values.deployment.redisPort }}{{- end }}"
+
+  # Nats values
+  NATS_HOST: "nats.{{ .Values.deployment.privateDomain }}"
+  NATS_PORT: "{{ .Values.deployment.natsPort }}"
+
+  # MongoDB values
+  MONGODB_HOSTS: "{{- range $i := until (.Values.deployment.mongodbReplicas | int) }}{{- if $i }},{{- end }}mongodb-{{ $i }}.{{ $.Values.deployment.privateDomain }}:{{ $.Values.deployment.mongodbPort }}{{- end }}"
+
+  SHARED_HOST_URL: "{{ .Values.deployment.publicDomain }}"
+  TENANT_ID: "{{ .Values.tenant.uuid }}"
+  TENANT_UUID: "{{ .Values.tenant.uuid }}"
+  TENANT_NS: "{{ .Values.tenant.namespace }}"
