@@ -17,3 +17,4 @@ spec:
       targetPort: 9216
     {{- end }}
   clusterIP: None  # Headless service for StatefulSet
+  publishNotReadyAddresses: true  # publish per-pod DNS before readiness

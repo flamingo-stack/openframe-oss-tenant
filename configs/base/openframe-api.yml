@@ -111,4 +111,4 @@ oauth:
 
 fleet:
   api:
-    url: http://fleetmdm-server.integrated-tools.svc.cluster.local:8070
+    url: http://fleet-service.tenant.svc.cluster.local:8080

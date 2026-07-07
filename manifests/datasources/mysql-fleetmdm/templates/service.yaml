@@ -4,6 +4,7 @@ metadata:
   name: fleetmdm-mysql
 spec:
   clusterIP: None
+  publishNotReadyAddresses: true  # publish per-pod DNS before readiness
   selector:
     app: fleetmdm-mysql
   ports:
