@@ -94,3 +94,4 @@ tenant:
   # Extra values for the tenant umbrella (e.g. openframe-saas.image.tag);
   # deep-merged over the deployment block (tenant.values wins per key).
   values: {}
+
