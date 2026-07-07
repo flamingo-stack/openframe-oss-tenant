@@ -12,7 +12,7 @@ To add a new helper:
 {{- $vals := index . 2 -}}
 
 {{/* Apps with helpers - update this list when adding new helper files */}}
-{{- $availableHelpers := list "ngrok-operator" -}}
+{{- $availableHelpers := list "ngrok-operator" "openframe-config" -}}
 
 {{- if has $name $availableHelpers -}}
   {{- $helper := printf "app-helpers.%s" $name -}}
