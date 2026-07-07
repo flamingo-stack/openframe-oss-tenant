@@ -22,11 +22,15 @@ function toExternalHref(site: string): string {
 export function useMspOrganization() {
   const { toast } = useToast();
 
-  const { data: tenantInfo, isLoading } = useTenantInfoQuery({ enabled: true });
+  const { data: tenantInfo, isLoading: isTenantLoading } = useTenantInfoQuery({ enabled: true });
   const rawLogoUrl = tenantInfo?.image ? getFullImageUrl(tenantInfo.image.imageUrl, tenantInfo.image.hash) : undefined;
-  const { url: logoUrl } = useAuthenticatedImage(rawLogoUrl);
+  const { url: logoUrl, isLoading: isLogoLoading } = useAuthenticatedImage(rawLogoUrl);
   const name = tenantInfo?.name?.trim() || undefined;
   const website = tenantInfo?.website?.trim() || undefined;
+
+  // Stay loading until both tenant info and the logo blob resolve, so consumers
+  // keep the skeleton instead of rendering the card before the logo arrives.
+  const isLoading = isTenantLoading || isLogoLoading;
 
   // Open the MSP website in the system browser. The Tauri WKWebview ignores
   // window.open, so use the opener plugin there (toasting on failure); fall back
