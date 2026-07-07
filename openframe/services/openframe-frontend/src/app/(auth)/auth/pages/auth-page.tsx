@@ -1,13 +1,23 @@
 'use client';
 
+import { AuthShell } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { TabSelector } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { AuthChoiceSection } from '@/app/(auth)/auth/components/choice-section';
+import { CreateOrganizationSection } from '@/app/(auth)/auth/components/create-organization-section';
 import { useAuth } from '@/app/(auth)/auth/hooks/use-auth';
 import { AuthLayout } from '@/app/(auth)/auth/layouts';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
-import { isAuthOnlyMode } from '@/lib/app-mode';
+import { isAuthOnlyMode, isSaasSharedMode } from '@/lib/app-mode';
+
+const AUTH_MOBILE_TAGLINE = (
+  <>
+    <p>All your MSP ops in one place.</p>
+    <p>Open-source, AI-ready, no vendor tax.</p>
+  </>
+);
 
 export default function AuthPage() {
   const router = useRouter();
@@ -44,9 +54,32 @@ export default function AuthPage() {
     }
   };
 
+  // saas-shared keeps the existing two-card flow (access code / waitlist) until its own redesign.
+  if (isSaasSharedMode()) {
+    return (
+      <AuthLayout>
+        <AuthChoiceSection onCreateOrganization={handleCreateOrganization} onSignIn={handleSignIn} />
+      </AuthLayout>
+    );
+  }
+
+  const tabs = (
+    <TabSelector
+      value="signup"
+      onValueChange={value => {
+        if (value === 'login') router.push('/auth/login');
+      }}
+      variant="primary"
+      items={[
+        { id: 'signup', label: 'Sign Up' },
+        { id: 'login', label: 'Login' },
+      ]}
+    />
+  );
+
   return (
-    <AuthLayout>
-      <AuthChoiceSection onCreateOrganization={handleCreateOrganization} onSignIn={handleSignIn} />
-    </AuthLayout>
+    <AuthShell tabs={tabs} mobileTagline={AUTH_MOBILE_TAGLINE}>
+      <CreateOrganizationSection onCreateOrganization={handleCreateOrganization} />
+    </AuthShell>
   );
 }
