@@ -10,7 +10,6 @@ import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
 import type { Device, DevicesGraphQlNode, GraphQlResponse } from '../../../devices/types/device.types';
-import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
 import { createDeviceListItem } from '../../../devices/utils/device-transform';
 import { getDevicePrimaryId } from '../../utils/device-helpers';
 import { mapPlatformsToOsTypes } from '../../utils/script-utils';
@@ -61,18 +60,7 @@ async function fetchDevicesForTest(supportedPlatforms: string[]): Promise<Device
   }
 
   const nodes = graphqlResponse.data.devices.edges.map(e => e.node);
-  const all = nodes.map(createDeviceListItem);
-
-  const withTactical: Device[] = [];
-  const withoutTactical: Device[] = [];
-  for (const d of all) {
-    if (getTacticalAgentId(d)) {
-      withTactical.push(d);
-    } else {
-      withoutTactical.push(d);
-    }
-  }
-  return [...withTactical, ...withoutTactical];
+  return nodes.map(createDeviceListItem);
 }
 
 export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPlatforms }: TestScriptModalProps) {
@@ -99,18 +87,11 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
     const selectedDevice = devices.find(d => selectedIds.has(getDevicePrimaryId(d)));
     if (!selectedDevice) return;
 
-    const agentToolId = getTacticalAgentId(selectedDevice);
-    if (!agentToolId) {
-      toast({
-        title: 'No Tactical Agent',
-        description: 'This device has no Tactical RMM agent connected.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
+    // TODO(openframe-rmm): Tactical RMM removed — `agentToolId` was the Tactical agent id.
+    // Fall back to the device primary id until the OpenFrame RMM test-run API is wired up
+    // (the test run itself currently rejects — see use-test-runs.ts).
     onDeviceSelected({
-      agentToolId,
+      agentToolId: getDevicePrimaryId(selectedDevice),
       deviceName: selectedDevice.displayName || selectedDevice.hostname,
     });
     setSelectedIds(new Set());
@@ -154,7 +135,6 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
           showSelectionModeRadio={false}
           addAllBehavior="replace"
           singleSelect
-          isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
         />
       )}
     </SimpleModal>

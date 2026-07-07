@@ -14,6 +14,7 @@ import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMemo, useState } from 'react';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import type { Device } from '../../types/device.types';
+import { TabEmptyState } from './tab-empty-state';
 
 interface UsersTabProps {
   device: Device | null;
@@ -147,17 +148,21 @@ export function UsersTab({ device }: UsersTabProps) {
 
   if (!device) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-h4">No device data available</div>
-      </div>
+      <TabEmptyState
+        icon={<UsersIcon />}
+        title="No users found"
+        description="User accounts on this device will appear here."
+      />
     );
   }
 
   if (rows.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-h4">No users found for this device</div>
-      </div>
+      <TabEmptyState
+        icon={<UsersIcon />}
+        title="No users found"
+        description="User accounts on this device will appear here."
+      />
     );
   }
 

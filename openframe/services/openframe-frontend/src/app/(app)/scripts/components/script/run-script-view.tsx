@@ -16,14 +16,13 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
-import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { useRunScriptData } from '../../hooks/use-run-script-data';
+import { rejectScriptsMigrationPending } from '../../lib/scripts-migration';
 import { scriptArgumentSchema } from '../../types/edit-script.types';
-import { getDevicePrimaryId, resolveOsTypeFromDevices, resolveShellForExecution } from '../../utils/device-helpers';
-import { parseKeyValues, serializeKeyValues } from '../../utils/script-key-values';
+import { getDevicePrimaryId } from '../../utils/device-helpers';
+import { parseKeyValues } from '../../utils/script-key-values';
 import { ExecutionStartedModal } from './execution-started-modal';
 
 interface RunScriptViewProps {
@@ -84,7 +83,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
   const handleBack = useSafeBack(`/scripts/details?id=${scriptId}`);
 
   const onSubmit = useCallback(
-    async (data: RunFormData) => {
+    async (_data: RunFormData) => {
       if (selectedIds.size === 0) {
         toast({
           title: 'No devices selected',
@@ -94,57 +93,18 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         return;
       }
 
+      // TODO(openframe-rmm): Tactical RMM removed — running scripts on devices has no
+      // backend until the OpenFrame RMM run API is wired up. Reject so the user gets a
+      // clear "migration pending" toast instead of a silent no-op. See scripts-migration.ts.
       try {
-        const selectedDevices = allDevices.filter(d => selectedIds.has(getDevicePrimaryId(d)));
-        const selectedAgentIds = selectedDevices.map(d => getTacticalAgentId(d)).filter((id): id is string => !!id);
-
-        if (selectedAgentIds.length === 0) {
-          toast({
-            title: 'No compatible agents',
-            description: 'Selected devices have no Tactical agent IDs.',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        const osType = resolveOsTypeFromDevices(selectedDevices);
-        const shell = resolveShellForExecution(osType, scriptDetails?.shell);
-
-        const payload = {
-          mode: 'script',
-          target: 'agents',
-          monType: 'all',
-          osType,
-          cmd: '',
-          shell,
-          custom_shell: null,
-          custom_field: null,
-          collector_all_output: false,
-          save_to_agent_note: false,
-          patchMode: 'scan',
-          offlineAgents: false,
-          client: null,
-          site: null,
-          agents: selectedAgentIds,
-          script: Number(scriptDetails?.id),
-          timeout: data.timeout,
-          args: serializeKeyValues(data.scriptArgs, ' '),
-          env_vars: serializeKeyValues(data.envVars),
-          run_as_user: Boolean(scriptDetails?.run_as_user) || false,
-        };
-
-        const res = await tacticalApiClient.runBulkAction(payload);
-        if (!res.ok) {
-          throw new Error(res.error || `Bulk action failed with status ${res.status}`);
-        }
-
+        rejectScriptsMigrationPending();
         setShowExecutionModal(true);
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Failed to submit script';
         toast({ title: 'Submission failed', description: msg, variant: 'destructive' });
       }
     },
-    [allDevices, selectedIds, scriptDetails, toast],
+    [selectedIds, toast],
   );
 
   const handleCloseExecutionModal = useCallback(() => {
@@ -267,7 +227,6 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
             onSelectionChange={setSelectedIds}
             showSelectionModeRadio={false}
             addAllBehavior="replace"
-            isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
           />
         </div>
       </div>

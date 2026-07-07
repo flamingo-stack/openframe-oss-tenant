@@ -1,7 +1,10 @@
 'use client';
 
-import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { ChatsIcon, ShieldCheckIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  ChatsIcon,
+  MingoMonochromeIcon,
+  ShieldCheckIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ReactNode } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
@@ -11,7 +14,7 @@ export type AiSettingsTabId = (typeof AI_SETTINGS_TAB_IDS)[number];
 
 export const AI_SETTINGS_TABS: TabItem[] = [
   { id: 'customer', label: 'Customer AI Assistant', icon: ChatsIcon },
-  { id: 'mingo', label: 'Mingo AI Chat', icon: MingoIcon },
+  { id: 'mingo', label: 'Mingo AI Chat', icon: MingoMonochromeIcon },
   { id: 'guardrails', label: 'Guardrails', icon: ShieldCheckIcon },
 ];
 

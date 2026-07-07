@@ -1,3 +1,13 @@
+import {
+  comboToSequence,
+  encodeKeyEvent,
+  encodeUnicodeKey,
+  IS_MAC_BROWSER,
+  isAltGraphPressed,
+  isExtendedKey,
+  keyboardEventToVk,
+} from './meshcentral-keys';
+
 export interface DisplayInfo {
   id: number;
   x: number;
@@ -73,7 +83,7 @@ export class MeshDesktop implements DesktopInputHandlers {
   private flushMetaBuffer(): void {
     if (this.bufferedMetaKey) {
       this.pressedKeys.unshift({ vk: this.bufferedMetaKey.vk, extended: this.bufferedMetaKey.extended });
-      this.send(this.encodeKeyEvent(1, this.bufferedMetaKey.vk, this.bufferedMetaKey.extended));
+      this.send(encodeKeyEvent(1, this.bufferedMetaKey.vk, this.bufferedMetaKey.extended));
       this.bufferedMetaKey = null;
     }
     if (this.metaBufferTimer !== null) {
@@ -93,9 +103,33 @@ export class MeshDesktop implements DesktopInputHandlers {
   private releaseMetaSafely(vk: number, extended: boolean): void {
     // Ctrl+Win chord trick: Windows treats Win+Ctrl as a chord, not a lone Win tap,
     // so the Start menu does NOT open.
-    this.send(this.encodeKeyEvent(1, 0x11, false)); // Ctrl DOWN
-    this.send(this.encodeKeyEvent(2, vk, extended)); // Win UP
-    this.send(this.encodeKeyEvent(2, 0x11, false)); // Ctrl UP
+    this.send(encodeKeyEvent(1, 0x11, false)); // Ctrl DOWN
+    this.send(encodeKeyEvent(2, vk, extended)); // Win UP
+    this.send(encodeKeyEvent(2, 0x11, false)); // Ctrl UP
+  }
+
+  // A modifier keyup can be consumed outside the page (global hotkeys, screen recorders),
+  // leaving the remote host with the modifier stuck down so every keystroke becomes a chord.
+  // Event modifier flags are ground truth — release any tracked modifier the browser says is up.
+  private syncModifiersFromEvent(e: KeyboardEvent | MouseEvent, exceptVk?: number): void {
+    if (this.bufferedMetaKey && !e.metaKey) this.cancelMetaBuffer();
+    if (this.pressedKeys.length === 0) return;
+    const stale = this.pressedKeys.filter(
+      k =>
+        k.vk !== exceptVk &&
+        ((k.vk === 0x10 && !e.shiftKey) ||
+          (k.vk === 0x11 && !e.ctrlKey) ||
+          (k.vk === 0x12 && !e.altKey) ||
+          ((k.vk === 0x5b || k.vk === 0x5c) && !e.metaKey)),
+    );
+    for (const k of stale) {
+      this.pressedKeys.splice(this.pressedKeys.indexOf(k), 1);
+      if (k.vk === 0x5b || k.vk === 0x5c) {
+        this.releaseMetaSafely(k.vk, k.extended);
+      } else {
+        this.send(encodeKeyEvent(2, k.vk, k.extended));
+      }
+    }
   }
 
   attach(canvas: HTMLCanvasElement) {
@@ -112,6 +146,7 @@ export class MeshDesktop implements DesktopInputHandlers {
       if (this.viewOnly) return;
       if (!this.canvas) return;
       this.canvas.focus?.();
+      this.syncModifiersFromEvent(e);
       const { x, y } = this.getRemoteXy(e);
       const buttonDown = this.mapMouseButton(e.button);
       if (buttonDown == null) return;
@@ -149,15 +184,22 @@ export class MeshDesktop implements DesktopInputHandlers {
     const onKeyDown = (e: KeyboardEvent) => {
       if (this.viewOnly) return;
       if (isTypingTarget(e.target)) return;
+      // Dead keys compose into the next keydown's e.key — sending their VK would type a stray char.
+      if (e.key === 'Dead') {
+        e.preventDefault();
+        return;
+      }
 
-      const keyCode = this.convertKeyCode(e) ?? this.mapKeyToVirtualKey(e) ?? (e as any).keyCode;
+      const keyCode = keyboardEventToVk(e);
       if (keyCode == null) return;
 
-      const isExt = this.isExtendedKey(e);
+      this.syncModifiersFromEvent(e, keyCode);
+
+      const isExt = isExtendedKey(e);
 
       if (e.code === 'CapsLock') {
-        this.send(this.encodeKeyEvent(1, keyCode, isExt));
-        this.send(this.encodeKeyEvent(2, keyCode, isExt));
+        this.send(encodeKeyEvent(1, keyCode, isExt));
+        if (IS_MAC_BROWSER) this.send(encodeKeyEvent(2, keyCode, isExt));
         e.preventDefault();
         return;
       }
@@ -187,7 +229,7 @@ export class MeshDesktop implements DesktopInputHandlers {
               if (k.vk === 0x5b || k.vk === 0x5c) {
                 this.releaseMetaSafely(k.vk, k.extended);
               } else {
-                this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+                this.send(encodeKeyEvent(2, k.vk, k.extended));
               }
             }
             const letterVk = lowerKey.toUpperCase().charCodeAt(0);
@@ -210,7 +252,7 @@ export class MeshDesktop implements DesktopInputHandlers {
               if (k.vk === 0x5b || k.vk === 0x5c) {
                 this.releaseMetaSafely(k.vk, k.extended);
               } else {
-                this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+                this.send(encodeKeyEvent(2, k.vk, k.extended));
               }
             }
             const letterVk = lowerKey.toUpperCase().charCodeAt(0);
@@ -229,11 +271,12 @@ export class MeshDesktop implements DesktopInputHandlers {
       }
 
       if (this.isUnicodeEligible(e)) {
+        if ((e.ctrlKey || e.altKey) && isAltGraphPressed(e)) this.releaseHeldCtrlAlt();
         const codepoint = e.key.charCodeAt(0);
         if (!e.repeat && !this.pressedKeys.some(k => k.vk === keyCode)) {
           this.pressedKeys.unshift({ vk: keyCode, extended: isExt, codepoint });
         }
-        this.send(this.encodeUnicodeKey(1, codepoint));
+        this.send(encodeUnicodeKey(1, codepoint));
         e.preventDefault();
         return;
       }
@@ -242,7 +285,7 @@ export class MeshDesktop implements DesktopInputHandlers {
         this.pressedKeys.unshift({ vk: keyCode, extended: isExt });
       }
 
-      this.send(this.encodeKeyEvent(1, keyCode, isExt));
+      this.send(encodeKeyEvent(1, keyCode, isExt));
 
       if (this.shouldPreventDefault(e)) {
         e.preventDefault();
@@ -254,14 +297,20 @@ export class MeshDesktop implements DesktopInputHandlers {
     const onKeyUp = (e: KeyboardEvent) => {
       if (this.viewOnly) return;
       if (isTypingTarget(e.target)) return;
+      if (e.key === 'Dead') {
+        e.preventDefault();
+        return;
+      }
 
       // If Meta was buffered and never sent, flush then release
       if ((e.code === 'MetaLeft' || e.code === 'MetaRight') && this.bufferedMetaKey) {
         this.flushMetaBuffer();
       }
 
-      const keyCode = this.convertKeyCode(e) ?? this.mapKeyToVirtualKey(e) ?? (e as any).keyCode;
+      const keyCode = keyboardEventToVk(e);
       if (keyCode == null) return;
+
+      this.syncModifiersFromEvent(e, keyCode);
 
       if (this.suppressedKeys.has(keyCode)) {
         this.suppressedKeys.delete(keyCode);
@@ -271,11 +320,11 @@ export class MeshDesktop implements DesktopInputHandlers {
         return;
       }
 
-      const isExt = this.isExtendedKey(e);
+      const isExt = isExtendedKey(e);
 
       if (e.code === 'CapsLock') {
-        this.send(this.encodeKeyEvent(1, keyCode, isExt));
-        this.send(this.encodeKeyEvent(2, keyCode, isExt));
+        if (IS_MAC_BROWSER) this.send(encodeKeyEvent(1, keyCode, isExt));
+        this.send(encodeKeyEvent(2, keyCode, isExt));
         const idx = this.pressedKeys.findIndex(k => k.vk === keyCode);
         if (idx !== -1) this.pressedKeys.splice(idx, 1);
         e.preventDefault();
@@ -288,9 +337,9 @@ export class MeshDesktop implements DesktopInputHandlers {
         this.pressedKeys.splice(idx, 1);
         this.sendKeyEntryUp(storedKey);
       } else if (this.isUnicodeEligible(e)) {
-        this.send(this.encodeUnicodeKey(2, e.key.charCodeAt(0)));
+        this.send(encodeUnicodeKey(2, e.key.charCodeAt(0)));
       } else {
-        this.send(this.encodeKeyEvent(2, keyCode, isExt));
+        this.send(encodeKeyEvent(2, keyCode, isExt));
       }
 
       e.preventDefault();
@@ -520,190 +569,31 @@ export class MeshDesktop implements DesktopInputHandlers {
   }
 
   private isUnicodeEligible(e: KeyboardEvent): boolean {
-    return (
-      !this.useRemoteKeyboardMap &&
-      typeof e.key === 'string' &&
-      e.key.length === 1 &&
-      e.key !== 'Dead' &&
-      !e.ctrlKey &&
-      !e.altKey &&
-      !e.metaKey &&
-      !(e as KeyboardEvent & { isComposing?: boolean }).isComposing
-    );
+    if (this.useRemoteKeyboardMap) return false;
+    if (typeof e.key !== 'string' || e.key.length !== 1) return false;
+    if ((e as KeyboardEvent & { isComposing?: boolean }).isComposing) return false;
+    if (e.metaKey) return false;
+    // AltGr chars arrive with ctrl+alt flags set (Windows browsers) — they are typing, not shortcuts.
+    if (e.ctrlKey || e.altKey) return isAltGraphPressed(e);
+    return true;
+  }
+
+  // Before typing an AltGr char via unicode, release Ctrl/Alt already sent to the remote —
+  // otherwise the remote app sees Ctrl+char / Alt+char shortcuts instead of the character.
+  private releaseHeldCtrlAlt(): void {
+    const held = this.pressedKeys.filter(k => k.vk === 0x11 || k.vk === 0x12);
+    for (const k of held) {
+      this.pressedKeys.splice(this.pressedKeys.indexOf(k), 1);
+      this.send(encodeKeyEvent(2, k.vk, k.extended));
+    }
   }
 
   private sendKeyEntryUp(k: { vk: number; extended: boolean; codepoint?: number }): void {
     if (k.codepoint != null) {
-      this.send(this.encodeUnicodeKey(2, k.codepoint));
+      this.send(encodeUnicodeKey(2, k.codepoint));
     } else {
-      this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+      this.send(encodeKeyEvent(2, k.vk, k.extended));
     }
-  }
-
-  private encodeUnicodeKey(action: number, codepoint: number): Uint8Array {
-    const buf = new Uint8Array(7);
-    buf[0] = 0x00;
-    buf[1] = 0x55; // Command: MNG_KVM_KEYUNICODE (InputType.KEYUNICODE = 85)
-    buf[2] = 0x00;
-    buf[3] = 0x07;
-    buf[4] = (action - 1) & 0xff;
-    buf[5] = (codepoint >> 8) & 0xff;
-    buf[6] = codepoint & 0xff;
-    return buf;
-  }
-
-  private encodeKeyEvent(action: number, vk: number, extended: boolean): Uint8Array {
-    let protocolAction = action - 1;
-
-    if (extended) {
-      if (protocolAction === 0) protocolAction = 4;
-      if (protocolAction === 1) protocolAction = 3;
-    }
-
-    const buf = new Uint8Array(6);
-    buf[0] = 0x00;
-    buf[1] = 0x01; // Command: MNG_KVM_KEY
-    buf[2] = 0x00;
-    buf[3] = 0x06; // Total message size: 6 bytes
-    buf[4] = protocolAction & 0xff; // Protocol action (0=DOWN, 1=UP, 3=EXUP, 4=EXDOWN)
-    buf[5] = vk & 0xff; // Virtual key code
-
-    return buf;
-  }
-
-  private mapKeyToVirtualKey(e: KeyboardEvent): number | null {
-    const key = e.key;
-
-    const map: Record<string, number> = {
-      // Modifier key names
-      Shift: 0x10,
-      Control: 0x11,
-      Alt: 0x12,
-      Meta: 0x5b,
-
-      // Special character keys by name
-      ' ': 0x20,
-      Backspace: 0x08,
-      Tab: 0x09,
-      Enter: 0x0d,
-      Escape: 0x1b,
-      Esc: 0x1b,
-      Delete: 0x2e,
-      Insert: 0x2d,
-
-      // Navigation by name
-      Home: 0x24,
-      End: 0x23,
-      PageUp: 0x21,
-      PageDown: 0x22,
-      ArrowLeft: 0x25,
-      ArrowUp: 0x26,
-      ArrowRight: 0x27,
-      ArrowDown: 0x28,
-
-      // Lock keys
-      CapsLock: 0x14,
-      NumLock: 0x90,
-      ScrollLock: 0x91,
-    };
-
-    return map[key] || null;
-  }
-
-  private extendedKeyTable: string[] = [
-    'ShiftRight',
-    'AltRight',
-    'ControlRight',
-    'Home',
-    'End',
-    'Insert',
-    'Delete',
-    'PageUp',
-    'PageDown',
-    'NumpadDivide',
-    'NumpadEnter',
-    'NumLock',
-    'Pause',
-  ];
-
-  private convertKeyCode(e: KeyboardEvent): number | undefined {
-    if (e.code && e.code.startsWith('Key') && e.code.length === 4) return e.code.charCodeAt(3);
-    if (e.code && e.code.startsWith('Digit') && e.code.length === 6) return e.code.charCodeAt(5);
-    if (e.code && /^F([1-9]|1[0-2])$/.test(e.code)) {
-      const n = parseInt(e.code.substring(1), 10);
-      return 111 + n; // F1=112 (0x70) to F12=123 (0x7B)
-    }
-    if (e.code && e.code.startsWith('Numpad') && e.code.length === 7 && /[0-9]/.test(e.code.charAt(6))) {
-      return parseInt(e.code.charAt(6)) + 96; // Numpad 0-9 are 96-105
-    }
-
-    const t: Record<string, number> = {
-      // Modifier keys
-      ShiftLeft: 0x10,
-      ShiftRight: 0x10,
-      ControlLeft: 0x11,
-      ControlRight: 0x11,
-      AltLeft: 0x12,
-      AltRight: 0x12,
-      MetaLeft: 0x5b,
-      MetaRight: 0x5c,
-
-      // Special keys
-      Pause: 0x13,
-      CapsLock: 0x14,
-      Space: 0x20,
-      Quote: 0xde,
-      Minus: 0xbd,
-      Comma: 0xbc,
-      Period: 0xbe,
-      Slash: 0xbf,
-      Semicolon: 0xba,
-      Equal: 0xbb,
-      BracketLeft: 0xdb,
-      Backslash: 0xdc,
-      BracketRight: 0xdd,
-      Backquote: 0xc0,
-
-      // Numpad operations
-      NumpadMultiply: 0x6a,
-      NumpadAdd: 0x6b,
-      NumpadSubtract: 0x6d,
-      NumpadDecimal: 0x6e,
-      NumpadDivide: 0x6f,
-      NumLock: 0x90,
-
-      // System keys
-      ScrollLock: 0x91,
-      PrintScreen: 0x2c,
-      Backspace: 0x08,
-      Tab: 0x09,
-      Enter: 0x0d,
-      NumpadEnter: 0x0d,
-      Escape: 0x1b,
-      ContextMenu: 0x5d,
-
-      // Navigation keys
-      Delete: 0x2e,
-      Home: 0x24,
-      End: 0x23,
-      PageUp: 0x21,
-      PageDown: 0x22,
-      ArrowLeft: 0x25,
-      ArrowUp: 0x26,
-      ArrowRight: 0x27,
-      ArrowDown: 0x28,
-      Insert: 0x2d,
-    };
-    return (e.code && t[e.code]) || undefined;
-  }
-
-  private isExtendedKey(e: KeyboardEvent): boolean {
-    if (!e.code) return false;
-    if (e.code.startsWith('Arrow')) return true;
-    if (e.code === 'MetaLeft' || e.code === 'MetaRight') return true;
-    if (e.code === 'ShiftRight' || e.code === 'AltRight' || e.code === 'ControlRight') return true;
-
-    return this.extendedKeyTable.includes(e.code);
   }
 
   private shouldPreventDefault(e: KeyboardEvent): boolean {
@@ -785,110 +675,14 @@ export class MeshDesktop implements DesktopInputHandlers {
   }
 
   sendKeyCombo(combo: string) {
-    const sequences: Record<string, Array<{ action: number; keyCode: number; extended: boolean }>> = {
-      'ctrl+c': [
-        { action: 1, keyCode: 0x11, extended: false },
-        { action: 1, keyCode: 0x43, extended: false },
-        { action: 2, keyCode: 0x43, extended: false },
-        { action: 2, keyCode: 0x11, extended: false },
-      ],
-      'ctrl+v': [
-        { action: 1, keyCode: 0x11, extended: false },
-        { action: 1, keyCode: 0x56, extended: false },
-        { action: 2, keyCode: 0x56, extended: false },
-        { action: 2, keyCode: 0x11, extended: false },
-      ],
-      'ctrl+a': [
-        { action: 1, keyCode: 0x11, extended: false },
-        { action: 1, keyCode: 0x41, extended: false },
-        { action: 2, keyCode: 0x41, extended: false },
-        { action: 2, keyCode: 0x11, extended: false },
-      ],
-      'ctrl+x': [
-        { action: 1, keyCode: 0x11, extended: false },
-        { action: 1, keyCode: 0x58, extended: false },
-        { action: 2, keyCode: 0x58, extended: false },
-        { action: 2, keyCode: 0x11, extended: false },
-      ],
-      'ctrl+z': [
-        { action: 1, keyCode: 0x11, extended: false },
-        { action: 1, keyCode: 0x5a, extended: false },
-        { action: 2, keyCode: 0x5a, extended: false },
-        { action: 2, keyCode: 0x11, extended: false },
-      ],
-      'ctrl+w': [
-        { action: 1, keyCode: 0x11, extended: false },
-        { action: 1, keyCode: 0x57, extended: false },
-        { action: 2, keyCode: 0x57, extended: false },
-        { action: 2, keyCode: 0x11, extended: false },
-      ],
-      'alt+f4': [
-        { action: 1, keyCode: 0x12, extended: false },
-        { action: 1, keyCode: 0x73, extended: false },
-        { action: 2, keyCode: 0x73, extended: false },
-        { action: 2, keyCode: 0x12, extended: false },
-      ],
-      'alt+tab': [
-        { action: 1, keyCode: 0x12, extended: false },
-        { action: 1, keyCode: 0x09, extended: false },
-        { action: 2, keyCode: 0x09, extended: false },
-        { action: 2, keyCode: 0x12, extended: false },
-      ],
-      'win+l': [
-        { action: 1, keyCode: 0x5b, extended: true },
-        { action: 1, keyCode: 0x4c, extended: false },
-        { action: 2, keyCode: 0x4c, extended: false },
-        { action: 2, keyCode: 0x5b, extended: true },
-      ],
-      'win+m': [
-        { action: 1, keyCode: 0x5b, extended: true },
-        { action: 1, keyCode: 0x4d, extended: false },
-        { action: 2, keyCode: 0x4d, extended: false },
-        { action: 2, keyCode: 0x5b, extended: true },
-      ],
-      'win+r': [
-        { action: 1, keyCode: 0x5b, extended: true },
-        { action: 1, keyCode: 0x52, extended: false },
-        { action: 2, keyCode: 0x52, extended: false },
-        { action: 2, keyCode: 0x5b, extended: true },
-      ],
-      'win+up': [
-        { action: 1, keyCode: 0x5b, extended: true },
-        { action: 1, keyCode: 0x26, extended: false },
-        { action: 2, keyCode: 0x26, extended: false },
-        { action: 2, keyCode: 0x5b, extended: true },
-      ],
-      'win+down': [
-        { action: 1, keyCode: 0x5b, extended: true },
-        { action: 1, keyCode: 0x28, extended: false },
-        { action: 2, keyCode: 0x28, extended: false },
-        { action: 2, keyCode: 0x5b, extended: true },
-      ],
-      'shift+win+m': [
-        { action: 1, keyCode: 0x10, extended: false },
-        { action: 1, keyCode: 0x5b, extended: true },
-        { action: 1, keyCode: 0x4d, extended: false },
-        { action: 2, keyCode: 0x4d, extended: false },
-        { action: 2, keyCode: 0x5b, extended: true },
-        { action: 2, keyCode: 0x10, extended: false },
-      ],
-      'ctrl+shift+esc': [
-        { action: 1, keyCode: 0x11, extended: false },
-        { action: 1, keyCode: 0x10, extended: false },
-        { action: 1, keyCode: 0x1b, extended: false },
-        { action: 2, keyCode: 0x1b, extended: false },
-        { action: 2, keyCode: 0x10, extended: false },
-        { action: 2, keyCode: 0x11, extended: false },
-      ],
-    };
-
-    const sequence = sequences[combo.toLowerCase()];
-    if (sequence) {
-      for (const key of sequence) {
-        this.send(this.encodeKeyEvent(key.action, key.keyCode, key.extended));
-      }
-    } else if (combo.toLowerCase() === 'ctrl+alt+del') {
+    if (combo.toLowerCase() === 'ctrl+alt+del') {
       this.sendCtrlAltDel();
+      return;
+    }
+    const sequence = comboToSequence(combo);
+    if (!sequence) return;
+    for (const key of sequence) {
+      this.send(encodeKeyEvent(key.action, key.vk, key.extended));
     }
   }
 

@@ -79,7 +79,10 @@ export function DevicesOverviewSection() {
             progressVariant={card.progressVariant}
             percentageDisplay="plain"
             progressSize={{ base: 24, md: 56 }}
-            href={`/devices?statuses=${card.status}`}
+            href={
+              // Archived devices live on their own page; /devices only lists the rest.
+              card.status === DEVICE_STATUS.ARCHIVED ? '/devices/archive' : `/devices?statuses=${card.status}`
+            }
           />
         ))}
       </div>

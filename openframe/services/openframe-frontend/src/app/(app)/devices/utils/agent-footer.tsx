@@ -7,7 +7,6 @@ import type { ToolType } from '../types/device.types';
 const AGENT_REPO_LINKS: Record<ToolType, string> = {
   FLEET_MDM: 'https://github.com/flamingo-stack/fleetmdm',
   MESHCENTRAL: 'https://github.com/flamingo-stack/meshagent',
-  TACTICAL_RMM: 'https://github.com/flamingo-stack/tacticalrmm',
 };
 
 function isLinkedToolType(toolType: string): toolType is ToolType {

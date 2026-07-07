@@ -1,6 +1,11 @@
 'use client';
 
-import { GridIcon, PlusCircleIcon, TableCellIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  BoxArchiveIcon,
+  GridIcon,
+  PlusCircleIcon,
+  TableCellIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Alert,
   type ColumnDef,
@@ -36,14 +41,26 @@ import { EMBEDDED_PAGE_OFFSET } from '../embedded-page';
 export interface DevicesPanelProps {
   /** Page title shown in the PageLayout header. */
   title?: string;
+  /** Back button rendered above the title (e.g. on the archive page). */
+  backButton?: { label?: string; onClick: () => void };
   /** Destination of the "Add Device" button. */
   addDeviceHref?: string;
+  /** When false, drops the "Add Device" header button (e.g. on the archive page). */
+  showAddDevice?: boolean;
+  /** When set, shows an "Archive" header button linking to the archived-devices page. */
+  archiveHref?: string;
   /** Filters merged on top of URL-driven filters (e.g. lock to a single organization). */
   lockedFilters?: Partial<DeviceFilterInput>;
   /** Column ids to drop from the table (e.g. 'organization' when scoped to one org). */
   hideColumns?: string[];
-  /** Filter keys to drop from the FilterModal (e.g. 'organization' when scoped to one org). */
+  /**
+   * Filter keys to drop from the filter UI — the FilterModal, the grid filter
+   * row, and the table column-header filter (the column itself stays visible),
+   * e.g. 'organization' when scoped to one org, or 'status' on the archive page.
+   */
   hideFilters?: string[];
+  /** Message shown when the list is empty (with search/filters active or no `emptyState` given). */
+  emptyMessage?: string;
   /**
    * Default statuses applied when the user hasn't picked any. Pass `[]` to disable
    * the default and return devices of all statuses (e.g. when scoped to one customer).
@@ -83,10 +100,14 @@ export interface DevicesPanelProps {
 
 export function DevicesPanel({
   title = 'Devices',
+  backButton,
   addDeviceHref = '/devices/new',
+  showAddDevice = true,
+  archiveHref,
   lockedFilters,
   hideColumns,
   hideFilters,
+  emptyMessage = 'No devices found. Try adjusting your search or filters.',
   defaultStatuses,
   className = '',
   embedded = false,
@@ -104,7 +125,6 @@ export function DevicesPanel({
     setLocalSearch,
     debouncedSearch,
     filters: urlFilters,
-    effectiveStatuses,
     tableFilters,
     tagOptions,
     handleFilterChange,
@@ -115,8 +135,10 @@ export function DevicesPanel({
 
   const filters = useMemo<DeviceFilterInput>(() => ({ ...urlFilters, ...lockedFilters }), [urlFilters, lockedFilters]);
 
-  const { devices, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error, refetch, filteredCount } =
-    useDevices(filters, debouncedSearch);
+  const { devices, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error, filteredCount } = useDevices(
+    filters,
+    debouncedSearch,
+  );
 
   const { data: deviceFilters, isLoading: isDeviceFiltersLoading } = useDeviceFilters(filters);
 
@@ -135,15 +157,19 @@ export function DevicesPanel({
     const hidden = new Set(hideFilters ?? []);
     return getDeviceFilterColumns(deviceFilters ?? null).filter(c => !hidden.has(c.key));
   }, [deviceFilters, hideFilters]);
-  const renderRowActions = useMemo(() => getDeviceTableRowActions(() => refetch()), [refetch]);
+  // Post-action list refresh is handled centrally: useDeviceActions invalidates
+  // the device query roots, so no per-row refetch callback is needed.
+  const renderRowActions = useMemo(() => getDeviceTableRowActions(), []);
 
+  // The status column reflects only the user's explicit selection — the default
+  // statuses are a query-side fallback and must not render as checked filters.
   const columnFilters = useMemo<ColumnFiltersState>(
     () => [
-      ...(effectiveStatuses.length > 0 ? [{ id: 'status', value: effectiveStatuses }] : []),
+      ...(params.statuses.length > 0 ? [{ id: 'status', value: params.statuses }] : []),
       ...(params.osTypes.length > 0 ? [{ id: 'os', value: params.osTypes }] : []),
       ...(params.organizationIds.length > 0 ? [{ id: 'organization', value: params.organizationIds }] : []),
     ],
-    [effectiveStatuses, params.osTypes, params.organizationIds],
+    [params.statuses, params.osTypes, params.organizationIds],
   );
 
   const onColumnFiltersChange = useCallback<OnChangeFn<ColumnFiltersState>>(
@@ -197,25 +223,34 @@ export function DevicesPanel({
   // and surface an "Add Customer" action that routes to the new-customer form.
   // While the org check is still in flight, keep "Add Device" disabled too.
   const actions = useMemo<PageActionButton[]>(() => {
+    const result: PageActionButton[] = [];
+    if (archiveHref) {
+      result.push({
+        label: 'Archive',
+        href: archiveHref,
+        icon: <BoxArchiveIcon className="w-5 h-5 text-ods-text-secondary" />,
+        variant: 'outline',
+      });
+    }
+    if (!showAddDevice) return result;
     const accent = showEmptyState && !noOrganizations;
-    const addDevice: PageActionButton = {
+    if (noOrganizations) {
+      result.push({
+        label: 'Add Customer',
+        href: '/customers/new',
+        icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
+        variant: 'outline',
+      });
+    }
+    result.push({
       label: 'Add Device',
       onClick: () => router.push(addDeviceHref),
       disabled: noOrganizations || isCheckingOrganizations,
       icon: <PlusCircleIcon className={`w-5 h-5 ${accent ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}`} />,
       variant: accent ? 'accent' : 'outline',
-    };
-    if (!noOrganizations) return [addDevice];
-    return [
-      {
-        label: 'Add Customer',
-        href: '/customers/new',
-        icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
-        variant: 'outline',
-      },
-      addDevice,
-    ];
-  }, [showEmptyState, noOrganizations, isCheckingOrganizations, router, addDeviceHref]);
+    });
+    return result;
+  }, [archiveHref, showAddDevice, showEmptyState, noOrganizations, isCheckingOrganizations, router, addDeviceHref]);
 
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
@@ -234,6 +269,7 @@ export function DevicesPanel({
     <>
       <PageLayout
         title={title}
+        backButton={backButton}
         actionsVariant="icon-buttons"
         className={cn(embedded && EMBEDDED_PAGE_OFFSET, className)}
         selector={
@@ -286,7 +322,7 @@ export function DevicesPanel({
               <DevicesTableBody
                 devices={devices}
                 isLoading={isLoading || isDeviceFiltersLoading}
-                emptyMessage="No devices found. Try adjusting your search or filters."
+                emptyMessage={emptyMessage}
                 skeletonRows={10}
                 stickyHeaderOffset="top-[96px]"
                 deviceFilters={deviceFilters ?? null}
@@ -294,6 +330,7 @@ export function DevicesPanel({
                 onColumnFiltersChange={onColumnFiltersChange}
                 actionsColumn={actionsColumn}
                 hideColumns={hideColumns}
+                disableColumnFilters={hideFilters}
                 totalCount={filteredCount}
                 footerSlot={
                   <DataTable.InfiniteFooter
@@ -318,6 +355,7 @@ export function DevicesPanel({
                   hasNextPage={hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
                   sentinelRef={gridSentinelRef}
+                  emptyMessage={emptyMessage}
                 />
               </>
             )}

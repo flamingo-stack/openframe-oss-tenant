@@ -110,7 +110,7 @@ export interface DeviceTag {
 /**
  * Tool Type enum
  */
-export type ToolType = 'MESHCENTRAL' | 'TACTICAL_RMM' | 'FLEET_MDM';
+export type ToolType = 'MESHCENTRAL' | 'FLEET_MDM';
 
 /**
  * Tool Connection type
@@ -259,8 +259,6 @@ export interface Device {
 
   // Reference IDs (NOT nested data)
   fleetId?: number;
-  /** Tactical RMM agent id (from tool connections) — used to run scripts on the device. */
-  tacticalAgentId?: string;
   agent_id?: string; // Alias for device/agent id
 
   // Legacy fields for backward compatibility

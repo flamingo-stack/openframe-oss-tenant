@@ -95,7 +95,9 @@ export function ScriptsTable() {
       name: script.name,
       description: script.description,
       shellType: script.shell,
-      addedBy: normalizeToolTypeWithFallback('tactical'),
+      // TODO(openframe-rmm): Tactical RMM removed — "Added By" was always the Tactical tool
+      // badge. Populate from the real source once the OpenFrame RMM scripts API is wired up.
+      addedBy: normalizeToolTypeWithFallback(''),
       supportedPlatforms: script.supported_platforms || [],
       category: script.category || 'General',
       timeout: script.default_timeout || 300,

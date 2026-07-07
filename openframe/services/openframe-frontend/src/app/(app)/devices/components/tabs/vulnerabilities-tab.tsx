@@ -20,6 +20,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { formatDate } from '@/lib/format-date';
 import type { Device, Software, Vulnerability } from '../../types/device.types';
+import { TabEmptyState } from './tab-empty-state';
 
 interface VulnerabilitiesTabProps {
   device: Device | null;
@@ -208,9 +209,11 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
 
   if (!device) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No device data available</div>
-      </div>
+      <TabEmptyState
+        icon={<BracketSquareCheckIcon />}
+        title="No vulnerabilities found"
+        description="Detected vulnerabilities for this device will appear here."
+      />
     );
   }
 

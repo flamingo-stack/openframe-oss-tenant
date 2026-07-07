@@ -36,6 +36,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
     const destructiveItems: ActionsMenuItem[] = [];
     if (items.archive) destructiveItems.push(items.archive);
+    if (items.unarchive) destructiveItems.push(items.unarchive);
     if (items.delete) destructiveItems.push(items.delete);
 
     if (destructiveItems.length > 0) {
