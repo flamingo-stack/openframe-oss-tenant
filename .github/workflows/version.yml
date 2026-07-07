@@ -1,0 +1,31 @@
+name: Resolve Version
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to release (x.y.z). Leave empty for auto patch bump."
+        required: false
+        type: string
+        default: ''
+    outputs:
+      version:
+        description: "Resolved release version"
+        value: ${{ jobs.version.outputs.version }}
+
+jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: resolve
+        uses: ./.github/steps/resolve-version
+        with:
+          version: ${{ inputs.version }}
