@@ -1,17 +1,15 @@
 
 deployment:
-  privateDomain: "internal.example.com"
   publicDomain: "example.com"
-  externalKafkaPort: "9095"
+  kafkaPort: "9092"
   natsPort: "4222"
   cassandraPort: "9042"
   redisPort: "6379"
   pinotControllerPort: "9000"
   pinotBrokerPort: "8099"
   mongodbPort: "27017"
-  mongodbReplicas: 3
-  meshMongodbReplicas: 3
-  redisClusterNodes: 6
+  mongodbReplicas: 1
+  meshMongodbReplicas: 1
   # Ingress toggles (localhost via nginx, or ngrok for external access)
   ingress:
     localhost:

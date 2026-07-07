@@ -4,8 +4,9 @@ kind: ConfigMap
 metadata:
   name: meshcentral-mongodb
 data:
-  MC_MONGO_HOSTS: "{{- range $i, $_ := until (int $.Values.deployment.meshMongodbReplicas) }}{{- if $i }},{{ end }}meshcentral-mongodb-{{ $i }}.{{ $.Values.deployment.privateDomain }}:{{ $.Values.deployment.mongodbPort }}{{- end }}"
-  MC_MONGO_URI_OPTIONS: "&tls=true&readPreference=secondaryPreferred&maxPoolSize=5&minPoolSize=0"
+  MC_MONGO_HOSTS: "{{- range $i, $_ := until (int $.Values.deployment.meshMongodbReplicas) }}{{- if $i }},{{ end }}meshcentral-mongodb-{{ $i }}.meshcentral-mongodb.datasources.svc.cluster.local:{{ $.Values.deployment.mongodbPort }}{{- end }}"
+  # OSS meshcentral-mongodb runs without TLS (keyfile auth only)
+  MC_MONGO_URI_OPTIONS: "&readPreference=secondaryPreferred&maxPoolSize=5&minPoolSize=0"
   MC_MONGO_REPLICA_SET: "rs0"
   MC_MONGO_DATABASE: "meshcentral"
   MC_MONGO_AUTH_SOURCE: "admin"
