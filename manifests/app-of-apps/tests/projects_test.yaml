@@ -9,7 +9,7 @@ tests:
   - it: should generate all required ArgoCD projects
     asserts:
       - hasDocuments:
-          count: 5
+          count: 3
       # Validate all projects are generated with correct names
       - equal:
           path: metadata.name
@@ -21,23 +21,15 @@ tests:
         documentIndex: 1
       - equal:
           path: metadata.name
-          value: microservices
+          value: tenant
         documentIndex: 2
-      - equal:
-          path: metadata.name
-          value: integrated-tools
-        documentIndex: 3
-      - equal:
-          path: metadata.name
-          value: client-tools
-        documentIndex: 4
       # Validate all are AppProject kind
       - isKind:
           of: AppProject
         documentIndex: 0
       - isKind:
           of: AppProject
-        documentIndex: 4
+        documentIndex: 2
 
   # ========================================
   # PROJECT CONFIGURATION TESTS
@@ -95,13 +87,5 @@ tests:
         documentIndex: 1
       - equal:
           path: spec.description
-          value: "Project for k8s microservices apps."
+          value: "Project for k8s tenant apps."
         documentIndex: 2
-      - equal:
-          path: spec.description
-          value: "Project for k8s integrated-tools apps."
-        documentIndex: 3
-      - equal:
-          path: spec.description
-          value: "Project for k8s client-tools apps."
-        documentIndex: 4

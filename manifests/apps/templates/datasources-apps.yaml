@@ -1,0 +1,69 @@
+{{- /*
+Datasources tier — one Application per entry in .Values.datasources.apps, sourced from
+manifests/datasources/<name>. project = datasources.project; destination namespace =
+<app>.namespace | datasources.namespace (e.g. namespace-datasources overrides to `default`
+since it only creates the cluster-scoped datasources namespace).
+*/ -}}
+
+{{- if .Values.datasources.enabled }}
+{{- range $name, $app := .Values.datasources.apps }}
+{{- if not (and (hasKey $app "enabled") (eq $app.enabled false)) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ $name }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{ $app.syncWave | default "0" }}"
+    {{- if get ($app.syncOptions | default dict) "ServerSideDiff" | default false }}
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+    {{- end }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: {{ $.Values.datasources.project }}
+
+  sources:
+    - repoURL: {{ $.Values.repository.URL }}
+      targetRevision: {{ $.Values.repository.branch }}
+      path: "{{ $.Values.repository.baseDir }}/datasources/{{ $name }}"
+      helm:
+        valueFiles:
+          - "values-{{ $.Values.environment }}.yaml"
+        ignoreMissingValueFiles: true
+        values: |
+          environment: {{ $.Values.environment }}
+          deployment:
+{{ toYaml $.Values.deployment | indent 12 }}
+{{- $appValues := include "app.values" (list $name $app $.Values) | trim }}
+{{- if ne $appValues "" }}
+{{ $appValues | indent 10 }}
+{{- end }}
+
+  destination:
+    name: in-cluster
+    namespace: {{ $app.namespace | default $.Values.datasources.namespace }}
+
+  syncPolicy:
+    retry:
+      limit: 3
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 1m
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply={{ (get $app "syncOptions" | default dict).ServerSideApply | default false }}
+      - RespectIgnoreDifferences={{ (get $app "syncOptions" | default dict).RespectIgnoreDifferences | default false }}
+
+  {{- if (get $app "syncOptions" | default dict).RespectIgnoreDifferences | default false }}
+  ignoreDifferences:
+{{ include (printf "app-helpers.%s.ignoreDifferences" $name) . | indent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,6 +1,0 @@
-global:
-  image:
-    tag: latest
-
-rbac:
-  enabled: true

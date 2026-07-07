@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: openframe-config
-data:
-  CONFIG_GIT_BRANCH: "{{ .Values.deployment.oss.repository.branch }}"

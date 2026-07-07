@@ -1,259 +1,96 @@
-global:
-  image:
-    tag: latest
-
-environment: dev
 
 deployment:
-  oss:
-    ingress:
-      localhost:
-        enabled: true   # Enable localhost ingress with nginx
-      ngrok:
-        enabled: false  # Enable ngrok ingress for external access
-        credentials:
-          apiKey: ""
-          authtoken: ""
-    repository:
-      baseDir: manifests
-      appsDir: apps
-      URL: https://github.com/flamingo-stack/openframe-oss-tenant.git
-      branch: main
-      profile: dev
-      autoSync: true
+  ingress:
+    localhost:
+      enabled: true   # Enable localhost ingress with nginx
+    ngrok:
+      enabled: false  # Enable ngrok ingress for external access
+      credentials:
+        apiKey: ""
+        authtoken: ""
+
+repository:
+  baseDir: manifests
+  URL: https://github.com/flamingo-stack/openframe-oss-tenant.git
+  branch: main
 
 
-apps:
-  namespace-platform:
-    enabled: true
-    project: default
-    namespace: platform
-    syncWave: "-1"
-  namespace-datasources:
-    enabled: true
-    project: default
-    namespace: datasources
-    syncWave: "-1"
-  namespace-microservices:
-    enabled: true
-    project: default
-    namespace: microservices
-    syncWave: "-1"
-  namespace-client-tools:
-    enabled: true
-    project: default
-    namespace: client-tools
-    syncWave: "-1"
-  namespace-integrated-tools:
-    enabled: true
-    project: default
-    namespace: integrated-tools
-    syncWave: "-1"
+# ── Platform tier ──────────────────────────────────────────────────────────
+# One Application per platform.apps entry, sourced from manifests/platform/<name>.
+# ngrok-operator and ingress-nginx additionally follow deployment.ingress:
+# localhost.enabled skips ngrok-operator, ngrok.enabled skips ingress-nginx.
+platform:
+  enabled: true
+  namespace: platform
+  project: platform
+  apps:
+    namespace-platform:
+      enabled: true
+      syncWave: "-1"
+      namespace: default        # only creates the (cluster-scoped) platform ns → target default
+    ngrok-operator:
+      enabled: false
+    ingress-nginx:
+      enabled: true
+    dev-tools:
+      enabled: true
+    openframe-config:
+      enabled: true
+      syncWave: "1"
 
-  ngrok-operator:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-  ingress-nginx:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-  alloy:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-  loki:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-  prometheus:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-    syncOptions:
-      ServerSideApply: true
-  grafana:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-    syncOptions:
-      ServerSideApply: true
-      RespectIgnoreDifferences: true
+# ── Datasources tier ───────────────────────────────────────────────────────
+# One Application per datasources.apps entry, sourced from manifests/datasources/<name>.
+datasources:
+  enabled: true
+  namespace: datasources
+  project: datasources
+  apps:
+    namespace-datasources:
+      enabled: true
+      syncWave: "-1"
+      namespace: default        # only creates the (cluster-scoped) datasources ns → target default
+    cassandra:
+      enabled: true
+      syncWave: "1"
+    debezium-connect:
+      enabled: true
+      syncWave: "1"
+    kafka:
+      enabled: true
+      syncWave: "1"
+    mongodb:
+      enabled: true
+      syncWave: "1"
+    mongodb-meshcentral:
+      enabled: true
+      syncWave: "1"
+    mysql-fleetmdm:
+      enabled: true
+      syncWave: "1"
+    nats:
+      enabled: true
+      syncWave: "1"
+    pinot:
+      enabled: true
+      syncWave: "1"
+    redis-cluster:
+      enabled: true
+      syncWave: "1"
+    zookeeper:
+      enabled: true
+      syncWave: "1"
 
-  mongodb:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  debezium-connect:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  pinot:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  cassandra:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  kafka:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  nats:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  redis:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  zookeeper:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-# ---
-  openframe-config:
-    enabled: true
-    project: microservices
-    namespace: microservices
-    syncWave: "1"
-    values:
-      config:
-        branch: main
-  openframe-management:
-    enabled: true
-    project: microservices
-    namespace: microservices
-    syncWave: "1"
-
-  openframe-external-api: 
-    enabled: true
-    project: microservices
-    namespace: microservices
-    syncWave: "2"
-  openframe-api: 
-    enabled: true
-    project: microservices
-    namespace: microservices
-    syncWave: "2"
-  openframe-authorization-server:
-    enabled: true
-    project: microservices
-    namespace: microservices
-    syncWave: "2"
-  openframe-gateway: 
-    enabled: true
-    project: microservices
-    namespace: microservices
-    syncWave: "2"
-  openframe-client: 
-    enabled: true
-    project: microservices
-    namespace: microservices
-    syncWave: "2"
-  openframe-stream: 
-    enabled: true
-    project: microservices
-    namespace: microservices
-    syncWave: "2"
-  openframe-frontend: 
-    enabled: true
-    project: microservices
-    namespace: microservices
-    syncWave: "2"
-# ---
-  mongo-express:
-    enabled: true
-    project: client-tools
-    namespace: client-tools
-    syncWave: "2"
-  kafka-ui:
-    enabled: true
-    project: client-tools
-    namespace: client-tools
-    syncWave: "2"
-  telepresence:
-    enabled: true
-    project: client-tools
-    namespace: client-tools
-    syncWave: "2"
-    syncOptions:
-      RespectIgnoreDifferences: true
-# ---
-  # postgres-authentik:
-  #   enabled: true
-  #   project: integrated-tools
-  #   namespace: integrated-tools
-  #   syncWave: "2"
-  # redis-authentik:
-  #   enabled: true
-  #   project: integrated-tools
-  #   namespace: integrated-tools
-  #   syncWave: "2"
-  mysql-fleetmdm:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-  redis-fleet:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-  mongodb-meshcentral:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-  redis-tactical:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-  postgres-tactical:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-
-  # authentik:
-  #   enabled: true
-  #   project: integrated-tools
-  #   namespace: integrated-tools
-  #   syncWave: "3"
-  fleetmdm: 
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
-  meshcentral: 
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
-  tactical-rmm:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
-  
-  registration:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "4"
+# ── Tenant tier ────────────────────────────────────────────────────────────
+# ONE Application sourcing the manifests/tenant umbrella (fleet, meshcentral
+# and the openframe services). OSS is single-tenant, so this is a plain
+# Application, not the fleet-driven ApplicationSet used on SaaS.
+tenant:
+  enabled: true
+  id: "tenant-XXX-X-X"
+  uuid: ""
+  namespace: tenant
+  project: tenant
+  syncWave: "2"
+  # Extra values for the tenant umbrella (e.g. openframe-saas.image.tag);
+  # deep-merged over the deployment block (tenant.values wins per key).
+  values: {}

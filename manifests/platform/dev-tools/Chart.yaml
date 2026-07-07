@@ -1,0 +1,14 @@
+apiVersion: v2
+name: dev-tools
+description: Dev/operator tooling (kafka-ui, telepresence) for the platform tier
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
+
+dependencies:
+  - name: kafka-ui
+    version: "~1.6.3"
+    repository: https://kafbat.github.io/helm-charts
+  - name: telepresence-oss
+    version: "~2.28.0"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts

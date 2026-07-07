@@ -24,7 +24,7 @@ tests:
           count: 1
         template: templates/argocd-apps.yaml
       - hasDocuments:
-          count: 5
+          count: 3
         template: templates/projects.yaml
 
   # ========================================
@@ -34,10 +34,10 @@ tests:
   - it: should handle custom repository configuration
     template: templates/argocd-apps.yaml
     set:
-      deployment.oss.repository.URL: "https://example.com/custom-repo.git"
-      deployment.oss.repository.branch: "custom-branch"
-      deployment.oss.repository.baseDir: "custom-dir"
-      deployment.oss.repository.appsDir: "custom-apps-dir"
+      repository.URL: "https://example.com/custom-repo.git"
+      repository.branch: "custom-branch"
+      repository.baseDir: "custom-dir"
+      repository.appsDir: "custom-apps-dir"
     asserts:
       - equal:
           path: spec.sources[0].repoURL
@@ -48,23 +48,3 @@ tests:
       - equal:
           path: spec.sources[0].path
           value: "custom-dir/custom-apps-dir"
-
-  # ========================================
-  # ENVIRONMENT CONFIGURATION
-  # ========================================
-
-  - it: should propagate environment setting
-    template: templates/argocd-apps.yaml
-    set:
-      environment: production
-    asserts:
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "environment: production"
-
-  - it: should use default environment when not specified
-    template: templates/argocd-apps.yaml
-    asserts:
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "environment: dev"

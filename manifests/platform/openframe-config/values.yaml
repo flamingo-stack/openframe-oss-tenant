@@ -1,0 +1,22 @@
+
+image:
+  registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+  repository: openframe-config
+  tag: "latest"
+
+# Git branch the config server serves Spring config from;
+# the apps chart injects the real deployment branch
+repository:
+  branch: main
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "500m"
+    memory: "1Gi"
+
+podAnnotations:
+  loki.grafana.com/scrape: "true"
+  prometheus.io/scrape: "true"

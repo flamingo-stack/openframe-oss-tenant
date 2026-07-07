@@ -1,0 +1,56 @@
+
+redis-cluster:
+  fullnameOverride: redis-cluster
+
+  global:
+    security:
+      allowInsecureImages: true  # bitnamilegacy
+
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: bitnamilegacy/redis-cluster
+    tag: 7.4.2-debian-12-r2
+
+  usePassword: false
+
+  # 3 masters, no replicas — smallest valid redis cluster. Keep in sync with
+  # deployment.redisClusterNodes in manifests/tenant/values.yaml (seed list).
+  cluster:
+    init: true
+    nodes: 3
+    replicas: 0
+
+  redis:
+    useHostnames: false
+    configmap: |-
+      maxmemory 200mb
+      maxmemory-policy allkeys-lru
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 250m
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 30
+
+  persistence:
+    size: 2Gi
+
+  metrics:
+    enabled: true
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: bitnamilegacy/redis-exporter
+      tag: 1.76.0-debian-12-r0
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9121"
+      prometheus.io/path: "/metrics"
