@@ -9,32 +9,30 @@ data:
 
   # Kafka values (OSS runs a single kafka; the tenant listener points at it too)
   KAFKA_HOST: "kafka.datasources.svc.cluster.local"
-  KAFKA_PORT: "{{ .Values.deployment.kafkaPort }}"
+  KAFKA_PORT: "9092"
   KAFKA_TENANT_HOST: "kafka.datasources.svc.cluster.local"
-  KAFKA_TENANT_PORT: "{{ .Values.deployment.kafkaPort }}"
+  KAFKA_TENANT_PORT: "9092"
 
   # Pinot values
   PINOT_CONTROLLER_HOST: "pinot-controller.datasources.svc.cluster.local"
-  PINOT_CONTROLLER_PORT: "{{ .Values.deployment.pinotControllerPort }}"
+  PINOT_CONTROLLER_PORT: "9000"
   PINOT_BROKER_HOST: "pinot-broker.datasources.svc.cluster.local"
-  PINOT_BROKER_PORT: "{{ .Values.deployment.pinotBrokerPort }}"
+  PINOT_BROKER_PORT: "8099"
 
   # Cassandra values
   CASSANDRA_HOST: "cassandra.datasources.svc.cluster.local"
-  CASSANDRA_PORT: "{{ .Values.deployment.cassandraPort }}"
+  CASSANDRA_PORT: "9042"
 
-  # Redis values (OSS runs a single bitnami redis, not a cluster; the key name
-  # is kept because the services and fleet read REDIS_CLUSTER_NODES)
-  REDIS_CLUSTER_NODES: "redis-master.datasources.svc.cluster.local:{{ .Values.deployment.redisPort }}"
+  # Redis values
+  REDIS_CLUSTER_NODES: "{{- range $i := until (.Values.deployment.redisClusterNodes | int) }}{{- if $i }},{{- end }}redis-cluster-{{ $i }}.redis-cluster-headless.datasources.svc.cluster.local:6379{{- end }}"
 
   # Nats values
   NATS_HOST: "nats.datasources.svc.cluster.local"
-  NATS_PORT: "{{ .Values.deployment.natsPort }}"
+  NATS_PORT: "4222"
 
   # MongoDB values (per-pod DNS through the mongodb headless service)
-  MONGODB_HOSTS: "{{- range $i := until (.Values.deployment.mongodbReplicas | int) }}{{- if $i }},{{- end }}mongodb-{{ $i }}.mongodb.datasources.svc.cluster.local:{{ $.Values.deployment.mongodbPort }}{{- end }}"
+  MONGODB_HOSTS: "{{- range $i := until (.Values.deployment.mongodbReplicas | int) }}{{- if $i }},{{- end }}mongodb-{{ $i }}.mongodb.datasources.svc.cluster.local:27017{{- end }}"
 
-  SHARED_HOST_URL: "{{ .Values.deployment.publicDomain }}"
   TENANT_ID: "{{ .Values.tenant.uuid }}"
   TENANT_UUID: "{{ .Values.tenant.uuid }}"
   TENANT_NS: "{{ .Values.tenant.namespace }}"

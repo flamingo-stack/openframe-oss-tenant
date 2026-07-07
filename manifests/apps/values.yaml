@@ -29,7 +29,7 @@ platform:
       syncWave: "-1"
       namespace: default        # only creates the (cluster-scoped) platform ns → target default
     ngrok-operator:
-      enabled: true
+      enabled: false
     ingress-nginx:
       enabled: true
     dev-tools:
@@ -73,7 +73,7 @@ datasources:
     pinot:
       enabled: true
       syncWave: "1"
-    redis:
+    redis-cluster:
       enabled: true
       syncWave: "1"
     zookeeper:
