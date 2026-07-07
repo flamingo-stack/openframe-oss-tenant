@@ -14,7 +14,7 @@ server:
   image:
     registry: ghcr.io/flamingo-stack/meshcentral
     repository: meshcentral
-    tag: "0.0.19"
+    tag: "0.0.24"
   podAnnotations:
     loki.grafana.com/scrape: "true"
     prometheus.io/scrape: "true"
