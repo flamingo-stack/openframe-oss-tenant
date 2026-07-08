@@ -128,11 +128,6 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' });
   }
 
-  validateAccessCode<T = any>(email: string, code: string) {
-    const path = `/sas/oauth/access-code/validate?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
-    return requestPublic<T>(path, { method: 'GET' });
-  }
-
   resendVerificationEmail<T = any>(email: string) {
     const path = `/sas/email/verify/resend?email=${encodeURIComponent(email)}`;
     return requestPublic<T>(path, { method: 'POST' });
@@ -145,7 +140,6 @@ class AuthApiClient {
     password: string;
     tenantName: string;
     tenantDomain: string;
-    accessCode?: string;
   }) {
     return request<T>('/sas/oauth/register', {
       method: 'POST',
@@ -158,7 +152,6 @@ class AuthApiClient {
     tenantDomain: string;
     email: string;
     provider: 'google' | 'microsoft';
-    accessCode: string;
     redirectTo?: string;
   }) {
     const params = new URLSearchParams({
@@ -166,7 +159,6 @@ class AuthApiClient {
       tenantDomain: payload.tenantDomain,
       email: payload.email,
       provider: payload.provider,
-      accessCode: payload.accessCode,
     });
 
     if (payload.redirectTo) {
