@@ -44,7 +44,6 @@ export default function InvitePage() {
   const invitationId = searchParams.get('id');
 
   const { providers, email, loading, error } = useInviteProviders(invitationId);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleBack = () => router.push('/auth');
@@ -96,13 +95,9 @@ export default function InvitePage() {
     <AuthShell mobileTagline={AUTH_MOBILE_TAGLINE} footer={<BackToLoginLink onClick={handleBack} />}>
       <AcceptInvitationForm
         email={email}
-        agreedToTerms={agreedToTerms}
-        onAgreedToTermsChange={setAgreedToTerms}
         ssoProviders={formProviders}
         onSsoClick={handleSso}
         onBackToLogin={handleBack}
-        termsUrl="https://www.flamingo.run/terms-of-service"
-        privacyPolicyUrl="https://www.flamingo.run/privacy-policy"
         loading={loading || isSubmitting}
       />
     </AuthShell>

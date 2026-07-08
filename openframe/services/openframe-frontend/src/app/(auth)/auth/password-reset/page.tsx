@@ -96,6 +96,7 @@ export default function PasswordResetPage() {
         onConfirmPasswordChange={setConfirmPassword}
         onSubmit={handleSubmit}
         onCancel={handleBack}
+        onBackToLogin={handleBack}
         submitDisabled={!isValid}
         loading={isLoading}
         errors={{

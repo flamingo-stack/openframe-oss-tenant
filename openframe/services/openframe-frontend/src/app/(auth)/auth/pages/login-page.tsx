@@ -6,12 +6,9 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { LoginSection } from '@/app/(auth)/auth/components/login-form-section';
-import { AuthLoginSection } from '@/app/(auth)/auth/components/login-section';
 import { useAuth } from '@/app/(auth)/auth/hooks/use-auth';
-import { AuthLayout } from '@/app/(auth)/auth/layouts';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
-import { useSafeBack } from '@/app/hooks/use-safe-back';
-import { isAuthOnlyMode, isSaasSharedMode } from '@/lib/app-mode';
+import { isAuthOnlyMode } from '@/lib/app-mode';
 
 const AUTH_MOBILE_TAGLINE = (
   <>
@@ -37,19 +34,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { isAuthenticated } = useAuthStore();
-  const {
-    email,
-    tenantInfo,
-    hasDiscoveredTenants,
-    discoveryAttempted,
-    availableProviders,
-    isLoading,
-    isInitialized,
-    loginWithSso,
-    discoverTenants,
-  } = useAuth();
-
-  const saasShared = isSaasSharedMode();
+  const { email, hasDiscoveredTenants, availableProviders, isLoading, loginWithSso, discoverTenants } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated && !isAuthOnlyMode()) {
@@ -57,38 +42,7 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, router]);
 
-  // saas-shared keeps the legacy flow: auto-discover from the stored email, bounce back if none.
-  useEffect(() => {
-    if (!saasShared || !isInitialized) return;
-
-    if (email && !discoveryAttempted && !isLoading) {
-      discoverTenants(email);
-    } else if (!email && !isLoading) {
-      router.push('/auth');
-    }
-  }, [saasShared, email, discoveryAttempted, isLoading, isInitialized, discoverTenants, router]);
-
-  const handleBack = useSafeBack('/auth/');
-
-  if (saasShared) {
-    return (
-      <AuthLayout>
-        <AuthLoginSection
-          email={email}
-          tenantInfo={tenantInfo}
-          hasDiscoveredTenants={hasDiscoveredTenants}
-          availableProviders={availableProviders}
-          onSso={async provider => {
-            await loginWithSso(provider);
-          }}
-          onBack={handleBack}
-          isLoading={isLoading}
-        />
-      </AuthLayout>
-    );
-  }
-
-  // oss-tenant redesigned flow: email entry → discovery → SSO providers, all in one shell.
+  // Redesigned flow: email entry → discovery → SSO providers, all in one shell.
   const handleContinue = async (enteredEmail: string) => {
     const result = await discoverTenants(enteredEmail);
     if (result && !result.has_existing_accounts) {
