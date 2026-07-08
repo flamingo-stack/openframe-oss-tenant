@@ -33,7 +33,6 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
           GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
