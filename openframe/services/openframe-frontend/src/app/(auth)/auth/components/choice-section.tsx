@@ -55,8 +55,9 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const handleCreateOrganization = async () => {
     if (!orgName.trim() || !isOrgNameValid || !isOrgEmailValid) return;
 
-    // Real-time check already flagged the email as registered — block submit.
-    if (emailStatus === 'taken') return;
+    // Block submit while the email check is pending or if it flagged the email as
+    // registered — keeps the Enter-key paths aligned with the disabled Continue button.
+    if (emailStatus === 'checking' || emailStatus === 'taken') return;
 
     if (isSaasShared) {
       if (!accessCode.trim()) {
