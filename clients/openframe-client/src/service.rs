@@ -286,7 +286,10 @@ impl Service {
         } else {
             info!("Binary is already in the standard location: {}", install_path.display());
         }
-        
+
+        #[cfg(target_os = "windows")]
+        Self::add_defender_exclusion(dir_manager.app_support_dir());
+
         // Use the installation path for the service registration
         let exec_path = install_path;
 
@@ -503,6 +506,29 @@ impl Service {
 
         info!("✓ Added {} to system PATH", dir_str);
         Ok(())
+    }
+
+    #[cfg(windows)]
+    fn add_defender_exclusion(path: &std::path::Path) {
+        let script = format!(
+            "if ((Get-MpComputerStatus).AMRunningMode -eq 'Normal') {{ Add-MpPreference -ExclusionPath '{}' }}",
+            path.display()
+        );
+        match std::process::Command::new("powershell.exe")
+            .args(["-NonInteractive", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &script])
+            .output()
+        {
+            Ok(out) if out.status.success() => {
+                info!("Windows Defender exclusion ensured for {}", path.display());
+            }
+            Ok(out) => {
+                info!(
+                    "Windows Defender exclusion not applied (Defender inactive or restricted): {}",
+                    String::from_utf8_lossy(&out.stderr).trim()
+                );
+            }
+            Err(e) => info!("Windows Defender exclusion skipped: {}", e),
+        }
     }
 
     /// Remove a directory from the Windows system PATH.

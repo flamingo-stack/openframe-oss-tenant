@@ -11,12 +11,37 @@ use crate::executor::output::{clean_string, read_capped};
 use crate::executor::{ExecResult, ScriptParams};
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+const SCRIPT_READY_RETRIES: u32 = 3;
+const SCRIPT_READY_DELAY_MS: u64 = 200;
+
+async fn wait_until_readable(path: &Path) {
+    for attempt in 0..SCRIPT_READY_RETRIES {
+        match std::fs::File::open(path) {
+            Ok(_) => return,
+            Err(e)
+                if attempt + 1 < SCRIPT_READY_RETRIES
+                    && matches!(e.raw_os_error(), Some(5) | Some(32) | Some(33)) =>
+            {
+                tracing::warn!(
+                    attempt = attempt + 1,
+                    error = %e,
+                    path = %path.display(),
+                    "script file not yet readable (antivirus scan lock?), waiting before launch"
+                );
+                tokio::time::sleep(Duration::from_millis(SCRIPT_READY_DELAY_MS)).await;
+            }
+            Err(_) => return,
+        }
+    }
+}
 
 pub(super) async fn run_normal(
     interpreter: &Interpreter,
     tmp_file: &Path,
     params: &ScriptParams<'_>,
 ) -> ExecResult {
+    wait_until_readable(tmp_file).await;
+
     let mut cmd = Command::new(&interpreter.exe);
     for &flag in interpreter.flags {
         cmd.arg(flag);
