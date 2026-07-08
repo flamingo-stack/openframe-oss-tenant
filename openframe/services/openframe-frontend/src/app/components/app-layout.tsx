@@ -10,6 +10,12 @@ import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useMingoLauncherStore } from '@/app/(app)/mingo/stores/mingo-launcher-store';
+import {
+  INITIAL_SETUP_DONE,
+  INITIAL_SETUP_TOTAL,
+  USER_ONBOARDING_DONE,
+  USER_ONBOARDING_REMAINING,
+} from '@/app/(app)/onboarding/onboarding-static';
 import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
 import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
@@ -22,7 +28,10 @@ import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app
 import { getNavigationItems } from '../../lib/navigation-config';
 import { AppShellSkeleton } from './app-shell-skeleton';
 import { ChatDrawerErrorBoundary } from './chat-drawer-error-boundary';
+import { InitialSetupBar } from './initial-setup-bar';
 import { type UnreadCountsByCategory, UnreadCountsHydrator } from './notifications/unread-counts-hydrator';
+import { OnboardingCoachMark } from './onboarding-coach-mark';
+import { OnboardingTourBar } from './onboarding-tour-bar';
 import { OpenframeEmbeddableChatEntry } from './openframe-embeddable-chat-entry';
 import { SubscriptionGuard } from './subscription-lock/subscription-guard';
 import { SubscriptionLockContent } from './subscription-lock/subscription-lock-content';
@@ -122,16 +131,55 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   const isMingoPage = pathname?.startsWith('/mingo') ?? false;
   const chatEnabled = featureFlags.mingoSidebar.enabled() && !showLockContent && !isMingoPage;
   const [unreadCounts, setUnreadCounts] = useState<UnreadCountsByCategory>({});
-  const navigationItems = useMemo(() => getNavigationItems(pathname, unreadCounts), [pathname, unreadCounts]);
+
+  // Onboarding chrome (behind the `new-onboarding` flag) — pure static: while the
+  // flag is on, show the sidebar "Onboarding" tab/badge and the Initial Setup top
+  // bar. No store, no backend.
+  const newOnboardingEnabled = featureFlags.newOnboarding.enabled();
+
+  const navigationItems = useMemo(
+    () =>
+      getNavigationItems(
+        pathname,
+        unreadCounts,
+        newOnboardingEnabled ? { inProgress: true, remaining: USER_ONBOARDING_REMAINING } : undefined,
+      ),
+    [pathname, unreadCounts, newOnboardingEnabled],
+  );
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
     () => ({
       items: navigationItems,
       onNavigate: handleNavigate,
-      className: 'h-screen',
+      // `h-full` (not `h-screen`) so the sidebar fills the layout row below the
+      // optional top bar rather than overflowing the viewport by its height.
+      className: 'h-full',
     }),
     [navigationItems, handleNavigate],
   );
+
+  // Onboarding top bar (single `topBar` slot, one bar at a time):
+  //   Tenant phase (Initial Setup incomplete): the yellow `InitialSetupBar` on
+  //     every page EXCEPT the dashboard (which hosts the setup card) and the
+  //     onboarding page.
+  //   User phase (Initial Setup done): the `OnboardingTourBar` on every page
+  //     until the user opens `/onboarding`.
+  // Each bar's CTA reads "Start …"/"Take …" until its first step is done, then
+  // "Continue …". All static — driven by the constants in `onboarding-static`.
+  const isOnboardingPage = pathname?.startsWith('/onboarding') ?? false;
+  const isDashboardPage = pathname === '/' || (pathname?.startsWith('/dashboard') ?? false);
+  const initialSetupComplete = INITIAL_SETUP_DONE >= INITIAL_SETUP_TOTAL;
+  let topBar: React.ReactNode;
+  if (newOnboardingEnabled && !isOnboardingPage) {
+    if (!initialSetupComplete) {
+      // The setup card already lives on the dashboard, so skip the bar there.
+      topBar = isDashboardPage ? undefined : (
+        <InitialSetupBar onStart={() => router.push('/dashboard')} started={INITIAL_SETUP_DONE > 0} />
+      );
+    } else {
+      topBar = <OnboardingTourBar onStart={() => router.push('/onboarding')} started={USER_ONBOARDING_DONE > 0} />;
+    }
+  }
 
   const displayName = useMemo(
     () => `${userFirstName || ''} ${userLastName || ''}`.trim(),
@@ -232,10 +280,18 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
           headerProps={headerProps}
           disabled={showLockContent}
           drawer={chatDrawer}
+          topBar={topBar}
         >
           {showLockContent ? <SubscriptionLockContent /> : children}
         </CoreAppLayout>
       </TimeTrackerHostProvider>
+      {/* Onboarding coach-mark — shows only when a page was reached from an
+          onboarding step (via the `setupHint` query param). */}
+      {newOnboardingEnabled && (
+        <Suspense fallback={null}>
+          <OnboardingCoachMark />
+        </Suspense>
+      )}
       {/* Logout confirmation modal — opened from the nav user menu and the
           Settings "Log Out" button via `useLogoutConfirmStore`. */}
       <LogoutConfirmModal />

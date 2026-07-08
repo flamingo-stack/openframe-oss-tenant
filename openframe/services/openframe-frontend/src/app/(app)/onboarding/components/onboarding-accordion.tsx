@@ -127,7 +127,7 @@ export function OnboardingAccordionItem({
       {!isDisabled && (
         <div
           className={cn(
-            'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+            'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
             expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
           )}
         >

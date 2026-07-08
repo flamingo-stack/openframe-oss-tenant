@@ -1,4 +1,5 @@
 import { useFeatureFlagsStore } from '@/stores/feature-flags-store';
+import { runtimeEnv } from './runtime-config';
 
 /**
  * Server-known flag names. Must be passed to `feFeatureFlags(names: ...)`;
@@ -105,7 +106,7 @@ export const featureFlags = {
    */
   newOnboarding: {
     enabled(): boolean {
-      return getFlagValue('new-onboarding', () => false);
+      return getFlagValue('new-onboarding', () => runtimeEnv.newOnboardingFlag());
     },
   },
 } as const;

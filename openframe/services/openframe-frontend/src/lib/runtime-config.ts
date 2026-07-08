@@ -56,4 +56,16 @@ export const runtimeEnv = {
   mobileTenantId(): string {
     return getEnvVar('NEXT_PUBLIC_MOBILE_TENANT_ID') || '';
   },
+  /**
+   * `new-onboarding` flag fallback when the backend doesn't return it. The onboarding
+   * UI is currently pure static (no backend), so this just controls visibility:
+   * defaults ON in development, OFF in production. Override with
+   * `NEXT_PUBLIC_FF_NEW_ONBOARDING=true|false`.
+   */
+  newOnboardingFlag(): boolean {
+    const explicit = getEnvVar('NEXT_PUBLIC_FF_NEW_ONBOARDING');
+    if (explicit === 'true') return true;
+    if (explicit === 'false') return false;
+    return process.env.NODE_ENV !== 'production';
+  },
 };

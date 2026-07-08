@@ -1,39 +1,84 @@
 'use client';
 
-import { CheckCircleIcon, ExternalLinkIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  accentFromIdentityIcon,
+  ChatQuickActionRow,
+  getAgentAccent,
+  type QuickActionChip,
+  useEmptyStateConfig,
+} from '@flamingo-stack/openframe-frontend-core/components/chat';
+import { CheckCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useChatRuntime } from '@flamingo-stack/openframe-frontend-core/contexts';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import Link from 'next/link';
+import { useCallback, useMemo } from 'react';
 import { useMingoLauncherStore } from '@/app/(app)/mingo/stores/mingo-launcher-store';
 import { useMingoMessagesStore } from '@/app/(app)/mingo/stores/mingo-messages-store';
 
-const GUARDRAILS_HREF = '/settings/ai-settings';
-
-const TRY_ASKING = [
-  'What actions can you take?',
-  'Weekly Log Summary',
-  'Device Online Status',
-  'Tech Required Overview',
-];
+const GUARDRAILS_HREF = '/settings/ai-settings?tab=guardrails';
 
 /**
- * Inner body of the "Meet Mingo" onboarding step — an informational intro to the Mingo
- * AI co-pilot. "Start New Chat" opens the in-layout Mingo drawer (same mechanism as
- * {@link ../../../components/notifications/open-mingo-dialog}); the Guardrails links go to
- * AI Settings.
+ * Inner body of the "Meet Mingo" onboarding step — an intro to the Mingo AI co-pilot.
+ *
+ * The "Try this quick actions" chips come from MPH — specifically the Mingo AGENT's
+ * own published config, NOT the platform empty-state. Both endpoints share MPH's
+ * `resolveChatSurfaceDisplay`, but the empty-state is keyed by the deployment platform
+ * (so it returns the platform's "flamingo/openframe" chips) while the agent config is
+ * keyed by `source = agent-mingo` — the "application type" we actually want. We select
+ * it through the runtime's standard `aiAgentConfigUrl(slug)` seam (same `/content`
+ * proxy, same flat wire shape), fetch it with the shared `useEmptyStateConfig`, and
+ * render the first four through the SAME `ChatQuickActionRow` the chat empty state
+ * (`GuideWelcome`) uses — with the identical icon-accent resolution, so the glyphs come
+ * out turquoise (mingo → `cyan`) exactly like in the chat.
+ *
+ * The public agent SLUG is `mingo` (its chat-admin `source`/config is `agent-mingo`).
+ *
+ * "Start New Chat" opens the in-layout Mingo drawer on a fresh chat; the Guardrails
+ * link goes to AI Settings.
  */
-export function MingoStep() {
+const MINGO_AGENT_SLUG = 'mingo';
+
+export function MingoStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean }) {
   const { toast } = useToast();
 
-  const startNewChat = () => {
-    // Clear the active dialog so the drawer opens on a fresh chat.
+  // MPH-sourced quick actions — the `agent-mingo` agent config (source-keyed on
+  // `agent-mingo`), selected via the runtime's standard agent-config URL builder.
+  const runtime = useChatRuntime();
+  const agentConfigUrl = runtime?.endpoints.aiAgentConfigUrl?.(MINGO_AGENT_SLUG);
+  const { config } = useEmptyStateConfig(agentConfigUrl, { enabled: Boolean(agentConfigUrl) });
+
+  const startNewChat = useCallback(() => {
+    // Clear the active dialog so the drawer opens on a fresh Mingo chat, where the
+    // same quick actions are wired to actually send.
     useMingoMessagesStore.getState().setActiveDialogId(null);
     useMingoLauncherStore.getState().setOpen(true);
-  };
+  }, []);
+
+  // Build the chip list exactly like the chat empty state (`GuideWelcome`): a
+  // declarative EntityIcon spec per action with the accent resolved admin-first —
+  // per-action color → the agent identity's `icon_props.color` → the `mingo`
+  // fallback (`cyan`), so the glyphs render turquoise like in the chat. Clicking a
+  // chip opens the Mingo drawer and immediately sends that action's prompt (agent
+  // mode) via the launcher's one-shot `sendToMingo`.
+  const chips = useMemo<QuickActionChip[]>(() => {
+    const accent = accentFromIdentityIcon(config.icon) ?? getAgentAccent(MINGO_AGENT_SLUG);
+    return config.quickActions.slice(0, 4).map(action => ({
+      id: action.id,
+      label: action.label,
+      icon: {
+        name: action.iconName ?? undefined,
+        url: action.iconUrl ?? undefined,
+        props: action.iconProps ?? undefined,
+        accent,
+      },
+      onSelect: () => useMingoLauncherStore.getState().sendToMingo(action.prompt),
+    }));
+  }, [config.quickActions, config.icon]);
 
   return (
     <div className="flex w-full flex-col gap-[var(--spacing-system-l)]">
-      {/* Intro + suggestions (left) / demo video (right) */}
+      {/* Intro + quick actions (left) / demo video (right) */}
       <div className="flex w-full flex-col items-start gap-[var(--spacing-system-l)] md:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-[var(--spacing-system-l)]">
           <p className="text-h4 text-ods-text-primary">
@@ -45,19 +90,12 @@ export function MingoStep() {
             .
           </p>
 
-          <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
-            <p className="text-h5 text-ods-text-secondary">Try asking:</p>
-            <div className="flex flex-wrap items-center gap-[var(--spacing-system-xxs)]">
-              {TRY_ASKING.map(prompt => (
-                <span
-                  key={prompt}
-                  className="flex h-8 items-center justify-center rounded-md border border-ods-border bg-ods-card px-[var(--spacing-system-xsf)] text-h5 text-ods-text-primary"
-                >
-                  {prompt}
-                </span>
-              ))}
+          {chips.length > 0 && (
+            <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
+              <p className="text-h5 text-ods-text-secondary">Try this quick actions:</p>
+              <ChatQuickActionRow wrap chips={chips} />
             </div>
-          </div>
+          )}
         </div>
 
         <div className="flex aspect-[976/558] w-full flex-1 items-center justify-center rounded-md border border-ods-text-secondary bg-ods-border">
@@ -67,22 +105,21 @@ export function MingoStep() {
 
       {/* Footer actions */}
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
-        <Link
-          href={GUARDRAILS_HREF}
-          className="flex flex-1 items-center gap-[var(--spacing-system-xs)] text-ods-text-secondary transition-colors hover:text-ods-text-primary"
-        >
-          <ExternalLinkIcon size={24} className="shrink-0" />
-          <span className="text-h4 underline">Configure Guardrails</span>
-        </Link>
         <div className="hidden flex-1 md:block" />
-        <Button
-          variant="outline"
-          leftIcon={<CheckCircleIcon className="size-5" />}
-          onClick={() => toast({ title: 'Step marked complete', variant: 'success' })}
-          className="w-full md:flex-1"
-        >
-          Mark as Complete
-        </Button>
+        <div className="hidden flex-1 md:block" />
+        {!completed && (
+          <Button
+            variant="outline"
+            leftIcon={<CheckCircleIcon className="size-5" />}
+            onClick={() => {
+              onComplete?.();
+              toast({ title: 'Step marked complete', variant: 'success' });
+            }}
+            className="w-full md:flex-1"
+          >
+            Mark as Complete
+          </Button>
+        )}
         <Button variant="accent" onClick={startNewChat} className="w-full md:flex-1">
           Start New Chat
         </Button>

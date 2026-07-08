@@ -3,14 +3,16 @@
 import { CheckCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { onboardingHintUrl } from '../onboarding-coach-marks';
 
 /**
  * Inner body of the "Knowledge Base" onboarding step — an intro to building docs for the
  * AI Assistant. "Create Article" opens the knowledge-base editor.
  */
-export function KnowledgeBaseStep() {
+export function KnowledgeBaseStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
 
   return (
@@ -23,15 +25,25 @@ export function KnowledgeBaseStep() {
       {/* Footer actions */}
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <div className="hidden flex-1 md:block" />
+        <div className="hidden flex-1 md:block" />
+        {!completed && (
+          <Button
+            variant="outline"
+            leftIcon={<CheckCircleIcon className="size-5" />}
+            onClick={() => {
+              onComplete?.();
+              toast({ title: 'Step marked complete', variant: 'success' });
+            }}
+            className="w-full md:flex-1"
+          >
+            Mark as Complete
+          </Button>
+        )}
         <Button
-          variant="outline"
-          leftIcon={<CheckCircleIcon className="size-5" />}
-          onClick={() => toast({ title: 'Step marked complete', variant: 'success' })}
+          variant="accent"
+          onClick={() => router.push(onboardingHintUrl('/knowledge-base/new', 'knowledge', pathname))}
           className="w-full md:flex-1"
         >
-          Mark as Complete
-        </Button>
-        <Button variant="accent" onClick={() => router.push('/knowledge-base/new')} className="w-full md:flex-1">
           Create Article
         </Button>
       </div>

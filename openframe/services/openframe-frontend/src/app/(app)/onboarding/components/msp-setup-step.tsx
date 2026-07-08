@@ -21,7 +21,7 @@ import type { TenantImage } from '../../settings/types/tenant-info';
  * data layer and core components as the settings "Edit Organization" form
  * ({@link ../../settings/components/edit-organization-modal}) so both stay in sync.
  */
-export function MspSetupStep() {
+export function MspSetupStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: tenantInfo } = useTenantInfo();
@@ -140,14 +140,19 @@ export function MspSetupStep() {
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <div className="hidden flex-1 md:block" />
         <div className="hidden flex-1 md:block" />
-        <Button
-          variant="outline"
-          leftIcon={<CheckCircleIcon className="size-5" />}
-          onClick={() => toast({ title: 'Step marked complete', variant: 'success' })}
-          className="w-full md:flex-1"
-        >
-          Mark as Complete
-        </Button>
+        {!completed && (
+          <Button
+            variant="outline"
+            leftIcon={<CheckCircleIcon className="size-5" />}
+            onClick={() => {
+              onComplete?.();
+              toast({ title: 'Step marked complete', variant: 'success' });
+            }}
+            className="w-full md:flex-1"
+          >
+            Mark as Complete
+          </Button>
+        )}
         <Button variant="accent" onClick={handleSave} disabled={isSaving} className="w-full md:flex-1">
           {isSaving ? 'Saving...' : 'Save Organization'}
         </Button>

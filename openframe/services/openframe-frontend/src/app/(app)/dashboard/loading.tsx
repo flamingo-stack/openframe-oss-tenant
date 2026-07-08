@@ -170,7 +170,7 @@ export default function DashboardLoading() {
   const showTickets = isSaasTenantMode();
 
   return (
-    <div className="space-y-10 pt-6" role="status" aria-label="Loading dashboard">
+    <div className="space-y-10 p-[var(--spacing-system-l)]" role="status" aria-label="Loading dashboard">
       <OnboardingSkeleton />
       <DevicesSkeleton />
       {showTickets && <TicketsSkeleton />}

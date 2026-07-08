@@ -148,6 +148,16 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         // we have no SSR hop to inject these as props the way MPH's in-app chat
         // does. Drives `emptyStateGreeting` + the Guide/Mingo quick-action chips.
         emptyStateUrl: content('/api/docs/empty-state'),
+        // Per-AGENT public config (`/api/ai-agents/<slug>`, source-keyed on
+        // `agent-<slug>`), the flat superset of the empty-state whose
+        // `quickActions` are that agent's own admin-curated chips — NOT the
+        // platform's. Same shape/owner as `emptyStateUrl` (both flow through
+        // MPH's `resolveChatSurfaceDisplay`, one keyed by platform, the other
+        // by `agent-<slug>`), and same same-origin `/content/*` proxy. Mirrors
+        // flamingo.run's `aiAgentConfigUrl: (slug) => /api/ai-agents/<slug>`;
+        // consumed by the "Meet Mingo" onboarding step to show the `agent-mingo`
+        // agent's quick actions.
+        aiAgentConfigUrl: (slug: string) => content(`/api/ai-agents/${encodeURIComponent(slug)}`),
         // Fetch-mode entity cards (blog, roadmap, case study, release,
         // podcast/webinar/event, …) expand their `[card://<type>:<id>]`
         // markers by GETting the type's list endpoint. The lib owns the

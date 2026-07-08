@@ -37,6 +37,14 @@ export function resolvedCountFromStatistics(stats: TicketStatisticsCounts | unde
   return sumKindCount(stats, TICKET_STATUS_KIND.RESOLVED);
 }
 
+/** Total tickets across every status (used to tell "any tickets exist yet"). */
+export function totalCountFromStatistics(stats: TicketStatisticsCounts | undefined): number {
+  if (!stats) return 0;
+  const fromStatusCounts = (stats.statusCounts ?? []).reduce((total, c) => total + c.count, 0);
+  if (fromStatusCounts > 0) return fromStatusCounts;
+  return (stats.statusDefinitionCounts ?? []).reduce((total, c) => total + c.count, 0);
+}
+
 export interface TicketKindCounts {
   aiAssistance: number;
   techRequired: number;

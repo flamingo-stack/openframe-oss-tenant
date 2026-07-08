@@ -8,7 +8,11 @@ import { GET_TICKET_STATISTICS_QUERY } from '../queries/ticket-queries';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 import { ticketsQueryKeys } from '../utils/query-keys';
-import { resolvedCountFromStatistics, type TicketStatisticsCounts } from '../utils/ticket-statistics';
+import {
+  resolvedCountFromStatistics,
+  type TicketStatisticsCounts,
+  totalCountFromStatistics,
+} from '../utils/ticket-statistics';
 
 interface TicketStatisticsResponse {
   ticketStatistics: TicketStatisticsCounts;
@@ -28,6 +32,7 @@ export function useTicketStatistics({ enabled = true }: { enabled?: boolean } = 
   });
 
   const resolvedCount = useMemo(() => resolvedCountFromStatistics(data?.ticketStatistics), [data]);
+  const totalCount = useMemo(() => totalCountFromStatistics(data?.ticketStatistics), [data]);
 
-  return { resolvedCount, isLoading };
+  return { resolvedCount, totalCount, isLoading };
 }

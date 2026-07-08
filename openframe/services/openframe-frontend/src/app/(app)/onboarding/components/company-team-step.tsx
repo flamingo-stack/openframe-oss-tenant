@@ -32,7 +32,7 @@ const newRow = (): InviteRow => ({ email: '', role: 'ADMIN' });
  * blocks from settings ({@link ../../settings/components/add-users-modal}) — the same
  * row model and the `useInvitations().inviteUsers` mutation.
  */
-export function CompanyTeamStep() {
+export function CompanyTeamStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean }) {
   const { toast } = useToast();
   const { inviteUsers } = useInvitations();
 
@@ -134,7 +134,10 @@ export function CompanyTeamStep() {
         <Button
           variant="outline"
           leftIcon={<CheckCircleIcon className="size-5" />}
-          onClick={() => toast({ title: 'Step marked complete', variant: 'success' })}
+          onClick={() => {
+            onComplete?.();
+            toast({ title: 'Step marked complete', variant: 'success' });
+          }}
           className="w-full md:flex-1"
         >
           Mark as Complete

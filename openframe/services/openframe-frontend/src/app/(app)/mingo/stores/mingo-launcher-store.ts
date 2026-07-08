@@ -32,6 +32,10 @@ interface MingoLauncherStore {
   close: () => void;
   /** Open the drawer and queue the source's prompt (or an override) for Guide-mode auto-send. */
   askMingo: (source: MingoPromptSource, promptOverride?: string) => void;
+  /** Open the drawer and queue a prompt for MINGO agent-mode auto-send — the chat
+   *  entry drains it straight into a fresh Mingo dialog via `sendInNewDialog`. Used
+   *  by agent-mode launchers (e.g. the onboarding "Meet Mingo" quick-action chips). */
+  sendToMingo: (prompt: string) => void;
   /** Read and clear the pending prompt + mode in one step (safe against double-consume). */
   consumePendingPrompt: () => string | null;
 }
@@ -53,6 +57,8 @@ export const useMingoLauncherStore = create<MingoLauncherStore>()(
           false,
           'askMingo',
         ),
+
+      sendToMingo: prompt => set({ isOpen: true, pendingPrompt: prompt, pendingMode: 'mingo' }, false, 'sendToMingo'),
 
       consumePendingPrompt: () => {
         const { pendingPrompt } = get();

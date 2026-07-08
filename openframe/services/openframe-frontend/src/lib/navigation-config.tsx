@@ -5,6 +5,7 @@ import {
   ChartDonutIcon,
   ClipboardListIcon,
   ClockHistoryIcon,
+  CompassIcon,
   IdCardIcon,
   MonitorIcon,
   QuestionCircleIcon,
@@ -30,15 +31,40 @@ const CATEGORY_BY_NAV_ID: Record<string, NotificationCategory> = {
   mingo: NotificationCategory.MINGO,
 };
 
+/** Onboarding chrome state used to conditionally show the "Onboarding" tab + badge. */
+export interface OnboardingNavState {
+  /** User "Get Started" is in progress (not completed / skipped). */
+  inProgress: boolean;
+  /** Outstanding step count, shown as the badge. */
+  remaining: number;
+}
+
 export const getNavigationItems = (
   pathname: string,
   unreadCounts?: UnreadCountsByCategory,
+  onboarding?: OnboardingNavState,
 ): NavigationSidebarItem[] => {
   if (isAuthOnlyMode()) {
     return [];
   }
 
   const baseItems: NavigationSidebarItem[] = [
+    // Shown only while the user's Get Started onboarding is in progress. Sits at
+    // the very top with a count badge of steps still outstanding.
+    ...(onboarding?.inProgress
+      ? [
+          {
+            id: 'onboarding',
+            label: 'Onboarding',
+            icon: <CompassIcon size={24} />,
+            path: '/onboarding',
+            isActive: pathname.startsWith('/onboarding'),
+            // Solid accent pill with the remaining-step count (matches Figma) — the
+            // `unreadCount` slot, not `badge` (which is plain accent-colored text).
+            unreadCount: onboarding.remaining,
+          } satisfies NavigationSidebarItem,
+        ]
+      : []),
     {
       id: 'dashboard',
       label: 'Dashboard',
