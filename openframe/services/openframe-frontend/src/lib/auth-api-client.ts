@@ -123,6 +123,11 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' });
   }
 
+  checkEmailAvailability<T = any>(email: string) {
+    const path = `/sas/tenant/email-available?email=${encodeURIComponent(email)}`;
+    return requestPublic<T>(path, { method: 'GET' });
+  }
+
   validateAccessCode<T = any>(email: string, code: string) {
     const path = `/sas/oauth/access-code/validate?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
     return requestPublic<T>(path, { method: 'GET' });
