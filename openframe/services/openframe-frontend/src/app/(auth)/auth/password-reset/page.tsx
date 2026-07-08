@@ -9,7 +9,6 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { authApiClient } from '@/lib/auth-api-client';
-import { runtimeEnv } from '@/lib/runtime-config';
 
 const AUTH_MOBILE_TAGLINE = (
   <>
@@ -70,10 +69,8 @@ export default function PasswordResetPage() {
         variant: 'success',
       });
 
-      // The reset password is the OpenFrame SSO credential, so continue on the
-      // OpenFrame SSO Login page (per the updated auth flow).
       setTimeout(() => {
-        window.location.href = `${runtimeEnv.sharedHostUrl()}/sas/login`;
+        router.push('/auth');
       }, 2000);
     } catch (error) {
       console.error('Password reset error:', error);

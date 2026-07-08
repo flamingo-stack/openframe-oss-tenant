@@ -2,6 +2,7 @@
 
 import { type AuthSsoProvider, LoginForm } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { useEffect, useState } from 'react';
+import { ForgotPasswordModal } from './forgot-password-modal';
 
 interface LoginSectionProps {
   /** Email pre-seeded from storage (e.g. after org registration). */
@@ -20,6 +21,7 @@ interface LoginSectionProps {
  */
 export function LoginSection({ initialEmail, ssoProviders, onContinue, onSso, isLoading }: LoginSectionProps) {
   const [email, setEmail] = useState(initialEmail ?? '');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Seed the field once a stored email hydrates; never clobber what the user typed.
   useEffect(() => {
@@ -35,17 +37,22 @@ export function LoginSection({ initialEmail, ssoProviders, onContinue, onSso, is
   };
 
   return (
-    <LoginForm
-      email={email}
-      onEmailChange={setEmail}
-      onSubmit={handleSubmit}
-      submitDisabled={!isEmailValid}
-      loading={isLoading}
-      ssoProviders={ssoProviders}
-      onSsoClick={onSso}
-      errors={{
-        email: email.trim() && !isEmailValid ? 'Enter a valid email address' : undefined,
-      }}
-    />
+    <>
+      <LoginForm
+        email={email}
+        onEmailChange={setEmail}
+        onSubmit={handleSubmit}
+        onForgotPassword={() => setShowForgotPassword(true)}
+        submitDisabled={!isEmailValid}
+        loading={isLoading}
+        ssoProviders={ssoProviders}
+        onSsoClick={onSso}
+        errors={{
+          email: email.trim() && !isEmailValid ? 'Enter a valid email address' : undefined,
+        }}
+      />
+
+      <ForgotPasswordModal open={showForgotPassword} onOpenChange={setShowForgotPassword} defaultEmail={email} />
+    </>
   );
 }

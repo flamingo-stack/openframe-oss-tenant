@@ -31,7 +31,6 @@ export function SignUpSection({ initialEmail = '', onSubmit, isLoading }: SignUp
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,8 +43,7 @@ export function SignUpSection({ initialEmail = '', onSubmit, isLoading }: SignUp
     !!firstName.trim() &&
     !!lastName.trim() &&
     password.length >= MIN_PASSWORD_LENGTH &&
-    password === confirmPassword &&
-    agreedToTerms;
+    password === confirmPassword;
 
   const handleSubmit = () => {
     if (!isValid) return;
@@ -65,19 +63,16 @@ export function SignUpSection({ initialEmail = '', onSubmit, isLoading }: SignUp
         lastName={lastName}
         password={password}
         confirmPassword={confirmPassword}
-        agreedToTerms={agreedToTerms}
         onEmailChange={setEmail}
         onFirstNameChange={setFirstName}
         onLastNameChange={setLastName}
         onPasswordChange={setPassword}
         onConfirmPasswordChange={setConfirmPassword}
-        onAgreedToTermsChange={setAgreedToTerms}
         onSubmit={handleSubmit}
         onForgotPassword={() => setShowForgotPassword(true)}
+        emailReadOnly={!!initialEmail}
         submitDisabled={!isValid}
         loading={isLoading}
-        termsUrl="https://www.flamingo.run/terms-of-service"
-        privacyPolicyUrl="https://www.flamingo.run/privacy-policy"
         errors={{
           email: email.trim() && !isEmailValid ? 'Enter a valid email address' : undefined,
           password: isTooShort ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters` : undefined,
