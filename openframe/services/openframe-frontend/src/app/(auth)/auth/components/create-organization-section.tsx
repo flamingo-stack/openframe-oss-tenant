@@ -1,6 +1,7 @@
 'use client';
 
 import { CreateOrganizationForm } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useState } from 'react';
 import { AUTH_ERROR_CODE } from '@/app/(auth)/auth/constants/auth-error-codes';
@@ -28,6 +29,7 @@ export function CreateOrganizationSection({ onCreateOrganization, isLoading }: C
   const [domain, setDomain] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isCheckingDomain, setIsCheckingDomain] = useState(false);
+  const [suggestedDomains, setSuggestedDomains] = useState<string[]>([]);
 
   const orgNameRegex = /^[\p{L}\p{M}0-9&\.,'"()\- ]{2,100}$/u;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,8 +40,15 @@ export function CreateOrganizationSection({ onCreateOrganization, isLoading }: C
   const isEmailBlocked = emailStatus === 'taken' || emailStatus === 'checking';
 
   // Live subdomain availability — saas-shared only.
-  const { status: domainStatus } = useDomainAvailability(domain, organizationName, isSaasShared);
+  const { status: domainStatus, suggestions: liveDomainSuggestions } = useDomainAvailability(
+    domain,
+    organizationName,
+    isSaasShared,
+  );
   const isDomainBlocked = isSaasShared && (domainStatus === 'taken' || domainStatus === 'checking');
+
+  // Prefer live suggestions from the real-time check; fall back to submit-time ones.
+  const domainSuggestions = liveDomainSuggestions.length > 0 ? liveDomainSuggestions : suggestedDomains;
 
   const isValid =
     isEmailValid && !isEmailBlocked && isOrgNameValid && !!domain.trim() && !isDomainBlocked && agreedToTerms;
@@ -47,6 +56,7 @@ export function CreateOrganizationSection({ onCreateOrganization, isLoading }: C
   const handleDomainChange = (value: string) => {
     // Subdomains allow only lowercase letters, digits and dashes.
     setDomain(isSaasShared ? value.toLowerCase().replace(/[^a-z0-9-]/g, '') : value);
+    setSuggestedDomains([]);
   };
 
   const handleSubmit = async () => {
@@ -64,7 +74,7 @@ export function CreateOrganizationSection({ onCreateOrganization, isLoading }: C
       const response = await authApiClient.checkDomainAvailability(subdomain, organizationName.trim());
 
       if (response.ok && response.data) {
-        const { available } = response.data as { available: boolean; suggestedUrl?: string[] };
+        const { available, suggestedUrl } = response.data as { available: boolean; suggestedUrl?: string[] };
         if (available) {
           onCreateOrganization(organizationName.trim(), `${subdomain}.${SAAS_DOMAIN_SUFFIX}`, email.trim());
         } else {
@@ -73,6 +83,9 @@ export function CreateOrganizationSection({ onCreateOrganization, isLoading }: C
             description: `The subdomain '${subdomain}' is already taken. Please try another one.`,
             variant: 'destructive',
           });
+          if (suggestedUrl && suggestedUrl.length > 0) {
+            setSuggestedDomains(suggestedUrl.map(url => url.replace(`.${SAAS_DOMAIN_SUFFIX}`, '')));
+          }
         }
       } else {
         const errorData = response.data as { code?: string; message?: string } | undefined;
@@ -113,6 +126,40 @@ export function CreateOrganizationSection({ onCreateOrganization, isLoading }: C
           ? { message: 'Email is available', variant: 'success' as const }
           : undefined;
 
+  const domainStatusMessage =
+    !isSaasShared || !domain.trim()
+      ? undefined
+      : domainStatus === 'checking'
+        ? { message: 'Checking availability…', variant: 'muted' as const }
+        : domainStatus === 'taken'
+          ? { message: 'This domain is already taken. Please try another one.', variant: 'error' as const }
+          : domainStatus === 'available'
+            ? { message: 'Domain is available', variant: 'success' as const }
+            : undefined;
+
+  const domainSuggestionsSlot =
+    isSaasShared && domainSuggestions.length > 0 ? (
+      <div className="flex flex-col gap-2 text-h6 text-ods-text-secondary">
+        <p>Available suggestions:</p>
+        <div className="flex flex-wrap gap-2">
+          {domainSuggestions.map(suggestion => (
+            <Button
+              key={suggestion}
+              type="button"
+              variant="outline"
+              size="small-legacy"
+              onClick={() => {
+                setDomain(suggestion);
+                setSuggestedDomains([]);
+              }}
+            >
+              {suggestion}.{SAAS_DOMAIN_SUFFIX}
+            </Button>
+          ))}
+        </div>
+      </div>
+    ) : undefined;
+
   return (
     <CreateOrganizationForm
       email={email}
@@ -130,14 +177,12 @@ export function CreateOrganizationSection({ onCreateOrganization, isLoading }: C
       termsUrl="https://www.flamingo.run/terms-of-service"
       privacyPolicyUrl="https://www.flamingo.run/privacy-policy"
       emailStatus={emailStatusMessage}
+      domainStatus={domainStatusMessage}
+      domainSlot={domainSuggestionsSlot}
       errors={{
         email: email.trim() && !isEmailValid ? 'Enter a valid email address' : undefined,
         organizationName:
           organizationName.trim() && !isOrgNameValid ? 'Organization Name must be 2-100 characters' : undefined,
-        domain:
-          isSaasShared && domain.trim() && domainStatus === 'taken'
-            ? 'This domain is already taken. Please try another one.'
-            : undefined,
       }}
     />
   );
