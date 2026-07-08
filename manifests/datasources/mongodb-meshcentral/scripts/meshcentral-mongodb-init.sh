@@ -23,7 +23,7 @@ if [ -n "${KUBERNETES_SERVICE_HOST:-}" ]; then
   # Running in Kubernetes
   POD_NAME=$(hostname)
   SERVICE_NAME="${SERVICE_NAME:-meshcentral-mongodb}"
-  NAMESPACE="${NAMESPACE:-integrated-tools}"
+  NAMESPACE="${NAMESPACE:-datasources}"
   HOST_FQDN="${POD_NAME}.${SERVICE_NAME}.${NAMESPACE}.svc.cluster.local"
 else
   # Local development, CI/CD or other environment - use hostname

@@ -24,9 +24,10 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to Release to Stage (e.g., v1.2.3)"
-        required: true
+        description: "Version to Release to Stage (x.y.z). Leave empty for auto patch bump."
+        required: false
         type: string
+        default: ''
 
 env:
   REGISTRY: "ghcr.io"
@@ -38,6 +39,13 @@ env:
 # =============================================================================
 
 jobs:
+  version:
+    name: Resolve Version
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/version.yml
+    with:
+      version: ${{ inputs.version }}
+
   changes:
     name: Detect Changes
     uses: ./.github/workflows/changes.yml
@@ -55,7 +63,7 @@ jobs:
 
   build_images:
     name: "Build: ${{ matrix.name }}"
-    needs: [changes, matrix]
+    needs: [version, changes, matrix]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -99,7 +107,7 @@ jobs:
           tags: |
             type=ref,event=tag
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
+            type=raw,value=${{ needs.version.outputs.version }},enable=${{ needs.version.outputs.version != '' }}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -151,7 +159,7 @@ jobs:
 
   build_clients:
     name: "Build Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
-    needs: [changes, matrix]
+    needs: [version, changes, matrix]
     runs-on: "${{ matrix.os }}-latest"
     env:
       CARGO_INCREMENTAL: 0
@@ -190,7 +198,7 @@ jobs:
         working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         env:
-          VERSION: ${{ inputs.version || 'latest' }}
+          VERSION: ${{ needs.version.outputs.version || 'latest' }}
         run: |
           if [[ "${{ matrix.name }}" == "openframe-client" && "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
@@ -269,7 +277,7 @@ jobs:
 
   build_helm:
     name: "Build Helm Chart"
-    needs: [changes]
+    needs: [version, changes]
     runs-on: ubuntu-latest
     steps:
       - name: Check if build should run
@@ -299,7 +307,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [changes, matrix, build_images, build_clients, build_helm]
+    needs: [version, changes, matrix, build_images, build_clients, build_helm]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -338,7 +346,7 @@ jobs:
 
       - name: Generate release header
         run: |
-          VERSION="${{ inputs.version || 'latest' }}"
+          VERSION="${{ needs.version.outputs.version || 'latest' }}"
           IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):'"${VERSION}"'`"')
 
           cat > RELEASE_HEADER.md <<EOF
@@ -367,8 +375,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.version || 'latest' }}
-          name: "🦩 ${{ inputs.version || 'latest' }}"
+          tag_name: ${{ needs.version.outputs.version || 'latest' }}
+          name: "🦩 ${{ needs.version.outputs.version || 'latest' }}"
           draft: false
           prerelease: ${{ github.event_name == 'push' }}
           token: ${{ secrets.GITHUB_TOKEN }}

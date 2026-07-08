@@ -1,0 +1,50 @@
+name: Resolve Version
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to release (x.y.z). Leave empty for auto patch bump."
+        required: false
+        type: string
+        default: ''
+    outputs:
+      version:
+        description: "Resolved release version"
+        value: ${{ jobs.version.outputs.version }}
+
+jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          latest=$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          latest=${latest:-0.0.0}
+          IFS='.' read -r cur_major cur_minor cur_patch <<< "$latest"
+
+          if [ -z "$INPUT_VERSION" ]; then
+            version="${cur_major}.${cur_minor}.$((cur_patch + 1))"
+            echo "No version provided, auto patch bump: ${latest} -> ${version}"
+          else
+            if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Invalid version format: ${INPUT_VERSION} (expected x.y.z)"
+              exit 1
+            fi
+            version="$INPUT_VERSION"
+            echo "Using provided version: ${version}"
+          fi
+
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
