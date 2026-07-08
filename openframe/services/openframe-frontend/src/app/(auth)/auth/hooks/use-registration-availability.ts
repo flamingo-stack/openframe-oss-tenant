@@ -53,6 +53,8 @@ export function useDomainAvailability(
   delay = 400,
 ): { status: AvailabilityStatus; suggestions: string[] } {
   const debounced = useDebounce(subdomain.trim(), delay);
+  // Debounced too — otherwise every keystroke in Organization Name re-fires the check.
+  const debouncedOrgName = useDebounce(orgName.trim(), delay);
   const [status, setStatus] = useState<AvailabilityStatus>('idle');
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
@@ -68,7 +70,7 @@ export function useDomainAvailability(
     setSuggestions([]);
 
     authApiClient
-      .checkDomainAvailability(debounced, orgName.trim())
+      .checkDomainAvailability(debounced, debouncedOrgName)
       .then(res => {
         if (cancelled) return;
         if (!res.ok || !res.data) {
@@ -91,7 +93,7 @@ export function useDomainAvailability(
     return () => {
       cancelled = true;
     };
-  }, [debounced, orgName, enabled]);
+  }, [debounced, debouncedOrgName, enabled]);
 
   return { status, suggestions };
 }
