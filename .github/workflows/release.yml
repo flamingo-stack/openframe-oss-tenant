@@ -296,7 +296,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         with:
           name: app-of-apps
-          tag: ${{ needs.version.outputs.version }}
+          tag: ${{ needs.version.outputs.version == 'dev' && '9.9.9' || needs.version.outputs.version }}
           path: ./manifests/app-of-apps
           registry: ${{ env.REGISTRY }}
           repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}

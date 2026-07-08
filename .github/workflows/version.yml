@@ -36,10 +36,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          latest=$(gh release list --limit 100 --exclude-drafts --exclude-pre-releases \
-            --json tagName --jq '.[].tagName' \
-            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | grep -v '^9\.9\.' | sort -V | tail -1 || true)
-          latest=${latest:-0.0.0}
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)
+          [[ "$latest" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Latest release tag '${latest}' is not x.y.z"; exit 1; }
           IFS='.' read -r cur_major cur_minor cur_patch <<< "$latest"
 
           if [ -z "$INPUT_VERSION" ]; then
@@ -54,7 +52,7 @@ jobs:
             if ! ([ "$new_major" -eq $((cur_major + 1)) ] && [ "$new_minor" -eq 0 ] && [ "$new_patch" -eq 0 ]) &&
                ! ([ "$new_major" -eq "$cur_major" ] && [ "$new_minor" -eq $((cur_minor + 1)) ] && [ "$new_patch" -eq 0 ]) &&
                ! ([ "$new_major" -eq "$cur_major" ] && [ "$new_minor" -eq "$cur_minor" ] && [ "$new_patch" -eq $((cur_patch + 1)) ]); then
-              echo "Invalid version bump: ${latest} -> ${INPUT_VERSION}"
+              echo "Invalid version bump: ${latest} -> ${INPUT_VERSION} (expected $((cur_major + 1)).0.0, ${cur_major}.$((cur_minor + 1)).0, or ${cur_major}.${cur_minor}.$((cur_patch + 1)))"
               exit 1
             fi
             version="$INPUT_VERSION"
