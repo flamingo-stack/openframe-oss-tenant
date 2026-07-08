@@ -11,9 +11,6 @@ spring:
   data:
     mongodb:
       enabled: true
-    redis:
-      host: redis-master.datasources.svc.cluster.local
-      port: 6379
   redis:
     enabled: true
     timeout: 2000

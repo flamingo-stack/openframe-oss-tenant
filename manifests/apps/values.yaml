@@ -36,7 +36,6 @@ platform:
       enabled: true
     openframe-config:
       enabled: true
-      syncWave: "1"
 
 # ── Datasources tier ───────────────────────────────────────────────────────
 # One Application per datasources.apps entry, sourced from manifests/datasources/<name>.
@@ -51,34 +50,24 @@ datasources:
       namespace: default        # only creates the (cluster-scoped) datasources ns → target default
     cassandra:
       enabled: true
-      syncWave: "1"
     debezium-connect:
       enabled: true
-      syncWave: "1"
     kafka:
       enabled: true
-      syncWave: "1"
     mongodb:
       enabled: true
-      syncWave: "1"
     mongodb-meshcentral:
       enabled: true
-      syncWave: "1"
     mysql-fleetmdm:
       enabled: true
-      syncWave: "1"
     nats:
       enabled: true
-      syncWave: "1"
     pinot:
       enabled: true
-      syncWave: "1"
     redis-cluster:
       enabled: true
-      syncWave: "1"
     zookeeper:
       enabled: true
-      syncWave: "1"
 
 # ── Tenant tier ────────────────────────────────────────────────────────────
 # ONE Application sourcing the manifests/tenant umbrella (fleet, meshcentral
@@ -90,7 +79,8 @@ tenant:
   uuid: ""
   namespace: tenant
   project: tenant
-  syncWave: "2"
+  syncWave: "1"
   # Extra values for the tenant umbrella (e.g. openframe-saas.image.tag);
   # deep-merged over the deployment block (tenant.values wins per key).
   values: {}
+

@@ -10,4 +10,19 @@ data:
   FLEET_SERVER_QUERY_RESULTS_CLEANUP_INTERVAL: "1h"
   FLEET_SETUP_ADMIN_EMAIL: {{ .Values.fleet.fleet.setup.adminEmail | quote }}
   test: "test"
+
+---
+
+# fleet reads its database wiring from this ConfigMap in the release namespace
+# (fleet.database.existingConfigMap); values must match the mysql rendered by
+# manifests/datasources/mysql-fleetmdm
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fleetmdm-mysql
+data:
+  MYSQL_USER: "fleet-mdm-user"
+  MYSQL_DATABASE: "fleet-mdm-database"
+  FLEET_MYSQL_HOST: "fleetmdm-mysql-0.fleetmdm-mysql.datasources.svc.cluster.local"
+  FLEET_MYSQL_PORT: "3306"
 {{- end }}
