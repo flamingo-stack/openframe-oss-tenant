@@ -7,6 +7,7 @@ import {
   BackToLoginLink,
   InviteLinkInvalidModal,
 } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useInviteProviders } from '@/app/(auth)/auth/hooks/use-invite-providers';
@@ -25,7 +26,7 @@ const SSO_TO_FORM: Record<string, AuthSsoProvider> = {
   google: 'google',
   microsoft: 'microsoft',
 };
-const FORM_TO_SSO: Record<AuthSsoProvider, string> = {
+const FORM_TO_SSO: Record<AuthSsoProvider, 'openframe-sso' | 'google' | 'microsoft'> = {
   openframe: 'openframe-sso',
   google: 'google',
   microsoft: 'microsoft',
@@ -38,6 +39,7 @@ function isInvalidInviteError(error: string | null): boolean {
 
 export default function InvitePage() {
   const router = useRouter();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const invitationId = searchParams.get('id');
 
@@ -49,14 +51,36 @@ export default function InvitePage() {
 
   const handleSso = (provider: AuthSsoProvider) => {
     if (!invitationId) return;
+
+    const ssoProvider = FORM_TO_SSO[provider];
+    // The accept endpoint only supports external providers (google/microsoft).
+    if (ssoProvider === 'openframe-sso') {
+      toast({
+        title: 'Provider Not Supported',
+        description: 'This invitation cannot be accepted with OpenFrame SSO. Please use Google or Microsoft.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
-    // Redirects the browser; acceptInvitationSso passes the provider through in the URL.
-    void authApiClient.acceptInvitationSso({
-      invitationId,
-      provider: FORM_TO_SSO[provider] as 'google' | 'microsoft',
-      switchTenant: true,
-      redirectTo: '/auth/login',
-    });
+    try {
+      // Redirects the browser; acceptInvitationSso passes the provider through in the URL.
+      void authApiClient.acceptInvitationSso({
+        invitationId,
+        provider: ssoProvider,
+        switchTenant: true,
+        redirectTo: '/auth/login',
+      });
+    } catch (err) {
+      console.error('SSO signup error:', err);
+      toast({
+        title: 'SSO Signup Failed',
+        description: 'Unable to initiate SSO signup. Please try again.',
+        variant: 'destructive',
+      });
+      setIsSubmitting(false);
+    }
   };
 
   // Expired / already-used / missing link → dedicated notice.
