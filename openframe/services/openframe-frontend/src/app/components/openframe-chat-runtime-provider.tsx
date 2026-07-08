@@ -14,45 +14,52 @@
  *     reverse-proxies that prefix to the MPH origin so neither the lib
  *     nor the host page learns the upstream MPH URL.
  *
- * Navigation is `mode: 'embed'`: openframe-frontend is an EMBEDDER of the
- * Flamingo content hub, not its host. The content entity cards (blog,
- * roadmap, case-studies, …) carry RELATIVE hrefs (`/blog/<slug>`) that only
- * resolve on the hub origin — those routes don't exist in openframe. Embed
- * mode makes the lib (a) absolutize every relative card/chip href against
- * `defaultContentOrigin` and (b) always open it in a new tab, so a click
- * lands on the real page on the hub instead of 404-ing in-app. The in-app
- * entity cards openframe DOES host (tickets / FAQ, via `composeContentUrl`)
- * are emitted as same-origin absolute URLs and soft-nav in-app; the `navigate`
- * hook below handles the same-PAGE deep-link cases a plain router push can't
- * (a hash for FAQ, a `?ticket=` query for tickets).
+ * Navigation is `mode: 'host'` — IDENTICAL to MPH's `HubRuntimeProvider`
+ * (hub.openframe.ai). openframe-frontend hosts its own copy of the content the
+ * chat cites (the `openframe-docs` knowledge base at `/help-center/knowledge-base`,
+ * plus tickets / FAQ / releases / roadmap under `/help-center`), so it behaves as
+ * the content HOST, not a cross-origin embedder. In host mode the lib leaves
+ * relative hrefs untouched (they resolve against OUR origin) and defers the
+ * new-tab decision to `navigation.decideNewTab`. Concretely, mirroring the hub:
+ *   - `navigate`   — in-page doc-tree swap (`useDocNavigation`) → same-origin
+ *                    `router.push` (with same-page-hash smoothing) → false for
+ *                    cross-origin (lib opens externally).
+ *   - `decideNewTab` — lib's `decideNewTab` with our `source`: same-platform /
+ *                    same-origin → same tab; cross-platform / cross-origin → new tab.
+ * Result: `openframe-docs` chips / cards / search results soft-nav in-app on OUR
+ * origin (just like they stay on hub.openframe.ai on the hub); genuinely external
+ * content (blog / podcasts / …), emitted by `composeContentUrl` as absolute hub
+ * URLs, still opens in a new tab on the hub.
  */
 
-/** Public origin of the Flamingo content hub where the chat's content
- *  entity-card pages (blog / roadmap / case-studies / podcasts / …) actually
- *  live. Relative card hrefs are absolutized against this in embed mode. */
-const CONTENT_HUB_ORIGIN = 'https://www.flamingo.run';
-
+import {
+  isCrossOriginUrl,
+  decideNewTab as libDecideNewTab,
+  stripSameOriginToPath,
+} from '@flamingo-stack/openframe-frontend-core/components/chat';
+import { useDocNavigation } from '@flamingo-stack/openframe-frontend-core/components/docs';
 import { type ChatRuntime, ChatRuntimeContext } from '@flamingo-stack/openframe-frontend-core/contexts';
 import {
   buildListUrl as buildEntityCardListUrl,
   clearEmbedProxyAuth,
   type EmbedAuthAdapter,
+  navigateSamePageHash,
   setEmbedAuthAdapter,
 } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 import { composeOpenframeChatContentUrl } from '@/app/(app)/help-center/help-center-content-href';
 import { getAccessTokenSync, isBearerAuthMode } from '@/lib/token-store';
 
 /**
- * Content-href seam for the openframe embedder. The type→route map is shared
- * with the Help Center pages (single source of truth in
- * `help-center-content-href.ts`): the FOUR types openframe hosts in-app
- * (product release / onboarding guide / roadmap / delivery) resolve to
- * `/help-center/...` ABSOLUTE same-origin URLs — so the lib's embed-mode nav
- * recognizes them as in-app and soft-navs there instead of bouncing the card
- * out to the hub. Every other type (blog / podcast / case-study / …) still
- * opens OUT to its RAG-authoritative `externalUrl` on the content hub.
+ * Content-href seam for openframe. The type→route map is shared with the Help
+ * Center pages (single source of truth in `help-center-content-href.ts`): the
+ * FOUR types openframe hosts in-app (product release / onboarding guide /
+ * roadmap / delivery) resolve to `/help-center/...` same-origin URLs — so
+ * host-mode nav recognizes them as in-app and soft-navs there instead of
+ * bouncing the card out to the hub. Every other type (blog / podcast /
+ * case-study / …) still opens OUT to its RAG-authoritative `externalUrl` on
+ * the content hub.
  */
 
 import { refreshAccessToken } from '@/lib/token-refresh-manager';
@@ -117,6 +124,46 @@ if (typeof window !== 'undefined') {
 
 export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  // In-app doc-tree swap bridge — the same hook the hub wires into `navigate`.
+  // When a knowledge-base viewer is mounted it swaps the doc in place; otherwise
+  // its safe no-op fallback returns false and we `router.push` instead.
+  const docNav = useDocNavigation();
+
+  // Host-mode navigation callbacks — mirror MPH's `HubRuntimeProvider` so the
+  // `openframe-docs` chips / cards / search results navigate identically here.
+  const navigate = useCallback<NonNullable<ChatRuntime['navigation']['navigate']>>(
+    ({ href, path }) => {
+      // 1. In-page doc-tree swap when `path` matches a mounted viewer.
+      if (path != null && docNav.navigate(path)) return true;
+      // 2. Same-origin URL → soft-nav (hash targets get the smooth same-page tween
+      //    + synthetic `hashchange` so FAQ auto-expand / scroll-to-hash still fire).
+      if (!isCrossOriginUrl(href)) {
+        const target = stripSameOriginToPath(href);
+        if (!navigateSamePageHash(target)) router.push(target);
+        return true;
+      }
+      // 3. Cross-origin → let the lib open it (new tab).
+      return false;
+    },
+    [router, docNav],
+  );
+
+  // New-tab decision is purely ORIGIN-based, and deliberately drops the incoming
+  // `targetPlatform`. Our `composeContentUrl` emits in-app content as RELATIVE
+  // hrefs (`isCrossOriginUrl` → false → same tab, soft-nav on our origin) and
+  // hub content as ABSOLUTE URLs (→ true → new tab). We must NOT feed
+  // `targetPlatform` into the lib rule: the RAG tags every openframe row
+  // `targetPlatform: 'openframe'` (== our `source`), which the lib's platform
+  // branch reads as "same app → same tab" — even for hub content we don't host
+  // (webinar / blog / …). That flipped a hub webinar URL to same-tab, so the click
+  // handler stripped its origin and `router.push`ed `/webinars/<id>` → 404 on our
+  // origin. Passing `targetPlatform: null` forces the lib onto its origin-compare
+  // fallback, which is exactly right once in-app=relative / hub=absolute holds.
+  const decideNewTab = useCallback<NonNullable<ChatRuntime['navigation']['decideNewTab']>>(
+    ({ href }) => libDecideNewTab({ href, targetPlatform: null, currentSource: CHAT_SOURCE }),
+    [],
+  );
+
   const runtime = useMemo<ChatRuntime>(() => {
     // Guide-mode endpoints are SAME-ORIGIN relative `/content/*` paths. The
     // lib's `embedAuthedFetch` rejects cross-origin URLs in production builds
@@ -170,53 +217,11 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         imageProxyUrlPrefix: content('/api/image-proxy'),
       },
       navigation: {
-        // Embedder, not host — see the file header. Relative content-card
-        // hrefs get absolutized against `defaultContentOrigin` and opened in
-        // a new tab (the lib's `computeIsNewTab` short-circuits to new-tab in
-        // embed mode). The same-tab cases we DO own are same-PAGE deep-links —
-        // see `navigate` below.
-        mode: 'embed',
-        defaultContentOrigin: CONTENT_HUB_ORIGIN,
-        // Same-PAGE deep-links — a card clicked while ALREADY on its target page:
-        //   - FAQ  → `/help-center/faqs#faq-item-<id>`   (hash deep-link)
-        //   - ticket → `/help-center/tickets?ticket=<id>` (query deep-link)
-        // The lib's same-tab fallback router-pushes the same pathname, which
-        // neither emits a `hashchange` (the FAQ page expands+scrolls on it) nor
-        // re-opens the ticket drawer the tickets page derives from `?ticket=`. So
-        // drive each page's own re-sync here: the query via the real router (the
-        // same `replace` the ticket list's row-click uses) so `useSearchParams`
-        // re-derives, and the hash via `location.hash` so `hashchange` fires.
-        // Cross-page / hub links return false → the lib's default nav is unchanged.
-        navigate: ({ href }) => {
-          if (typeof window === 'undefined') return false;
-          let url: URL;
-          try {
-            url = new URL(href, window.location.origin);
-          } catch {
-            return false;
-          }
-          const samePage = url.origin === window.location.origin && url.pathname === window.location.pathname;
-          if (!samePage) return false;
-          const hashChanged = url.hash !== window.location.hash;
-          const searchChanged = url.search !== window.location.search;
-          if (!hashChanged && !searchChanged) {
-            // Re-clicking the same target — re-fire the hash event so a hash page
-            // re-runs its scroll/open (a query page is already in the right state).
-            if (url.hash) window.dispatchEvent(new HashChangeEvent('hashchange'));
-            return true;
-          }
-          // Query deep-link (e.g. `?ticket=<id>`) → real router so the page's
-          // `useSearchParams` re-derives the open drawer (matches its row-click).
-          if (searchChanged) {
-            router.replace(`${url.pathname}${url.search}`, { scroll: false });
-          }
-          // Hash deep-link (e.g. `#faq-item-<id>`) → a router nav to the same
-          // pathname emits no `hashchange`, which the page listens for; set it.
-          if (hashChanged) {
-            window.location.hash = url.hash;
-          }
-          return true;
-        },
+        // Host mode — identical to MPH's `HubRuntimeProvider`. See the file
+        // header + the `navigate` / `decideNewTab` callbacks defined above.
+        mode: 'host',
+        navigate,
+        decideNewTab,
       },
       // Unified content-href seam (shared with Help Center pages): the four
       // in-app-hosted types soft-nav into `/help-center/...`; every other type
@@ -224,9 +229,9 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
       composeContentUrl: composeOpenframeChatContentUrl,
       source: CHAT_SOURCE,
     };
-    // `router` is the only reactive dep; Next returns a stable instance, so the
-    // runtime object is effectively built once.
-  }, [router]);
+    // `navigate` / `decideNewTab` are the only reactive deps; both are stable
+    // `useCallback`s, so the runtime object is effectively built once.
+  }, [navigate, decideNewTab]);
 
   return <ChatRuntimeContext.Provider value={runtime}>{children}</ChatRuntimeContext.Provider>;
 }
