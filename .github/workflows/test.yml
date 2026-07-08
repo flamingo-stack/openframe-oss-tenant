@@ -197,9 +197,19 @@ jobs:
         working-directory: cli
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENFRAME_CLI_URL: "https://github.com/${{ env.ORGANISATION }}/openframe-cli/releases/latest/download/openframe-cli_linux_amd64.tar.gz"
+          OPENFRAME_CLI_BASE: "https://github.com/${{ env.ORGANISATION }}/openframe-cli/releases/latest/download"
+          OPENFRAME_CLI_ARCHIVE: "openframe-cli_linux_amd64.tar.gz"
         run: |
-          curl -fL "$OPENFRAME_CLI_URL" | tar -xz -C /tmp && install -m 0755 /tmp/openframe /usr/local/bin/openframe
+          set -euo pipefail
+          # Download the release archive and verify it against the release checksums before installing.
+          curl -fLo "/tmp/${OPENFRAME_CLI_ARCHIVE}" "${OPENFRAME_CLI_BASE}/${OPENFRAME_CLI_ARCHIVE}"
+          curl -fLo /tmp/checksums.txt "${OPENFRAME_CLI_BASE}/checksums.txt"
+          # Guard: assert the archive is actually listed.
+          grep -qF "${OPENFRAME_CLI_ARCHIVE}" /tmp/checksums.txt
+          ( cd /tmp && sha256sum --ignore-missing -c checksums.txt )
+          tar -xzf "/tmp/${OPENFRAME_CLI_ARCHIVE}" -C /tmp
+          install -m 0755 /tmp/openframe /usr/local/bin/openframe
+          openframe --version
           openframe bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
       - name: Setup Telepresence
