@@ -1,46 +1,12 @@
 'use client';
 
-import { DashboardInfoCard, OrganizationCard, Skeleton, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
+import { DashboardInfoCard, OrganizationCard, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
 import { IdCardIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useMemo } from 'react';
 import { EmptyState } from '@/app/components/shared';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useCustomersOverview } from '../hooks/use-customers-overview';
-
-const CustomersSkeleton = function CustomersSkeleton() {
-  return (
-    <div className="flex flex-col gap-3">
-      {[1, 2, 3].map(i => (
-        <div key={i} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-          {/* Organization card skeleton */}
-          <div className="bg-ods-card border border-ods-border rounded-[6px] p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-1 min-w-0 space-y-2">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-              <Skeleton className="h-4 w-20" />
-            </div>
-          </div>
-
-          {/* Active devices card skeleton */}
-          <div className="bg-ods-card border border-ods-border rounded-[6px] p-4 space-y-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="h-2 w-full" />
-          </div>
-
-          {/* Inactive devices card skeleton */}
-          <div className="bg-ods-card border border-ods-border rounded-[6px] p-4 space-y-2">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="h-2 w-full" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
+import { CustomersOverviewSkeleton } from './dashboard-skeletons';
 
 /**
  * Organizations Overview Section
@@ -49,10 +15,6 @@ export function CustomersOverviewSection() {
   const { rows, loading, error, totalOrganizations } = useCustomersOverview(10);
 
   const organizationRows = useMemo(() => {
-    if (loading && rows.length === 0) {
-      return <CustomersSkeleton />;
-    }
-
     if (error) {
       return <div className="text-ods-error font-['DM_Sans'] text-[14px]">{error}</div>;
     }
@@ -114,13 +76,19 @@ export function CustomersOverviewSection() {
         </div>
       );
     });
-  }, [rows, loading, error]);
+  }, [rows, error]);
+
+  // Initial load (no rows yet) — render the full skeleton so the header (with its
+  // subtitle line) matches the loaded layout and doesn't jump when data arrives.
+  if (loading && rows.length === 0) {
+    return <CustomersOverviewSkeleton />;
+  }
 
   return (
     <div className="space-y-4">
       <TitleBlock
         title="Customers Overview"
-        subtitle={loading ? undefined : `${totalOrganizations.toLocaleString()} Customers in Total`}
+        subtitle={`${totalOrganizations.toLocaleString()} Customers in Total`}
         className="pt-0 mb-0 [&_p]:hidden lg:[&_p]:block"
       />
 

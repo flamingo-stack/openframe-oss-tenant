@@ -1,9 +1,11 @@
 'use client';
 
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
+import { Suspense } from 'react';
 import { InitialSetupCard } from '@/app/(app)/onboarding/components/initial-setup-card';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { featureFlags } from '@/lib/feature-flags';
+import { useOnboardingStore } from '@/stores/onboarding-store';
 import { CustomersOverviewSection } from './customers-overview';
 import { DevicesOverviewSection } from './devices-overview';
 import { OnboardingSection } from './onboarding-section';
@@ -21,15 +23,27 @@ export default function DashboardContent() {
   const newOnboardingEnabled = featureFlags.newOnboarding.enabled();
   const showLegacyOnboarding = !newOnboardingEnabled;
 
-  // While the Initial Setup card is shown, the rest of the dashboard is dimmed and
-  // non-interactive — the setup card is the only lit surface, so it reads as
-  // "finish setup first" (per design). Static: tied to the flag.
-  const dimDashboard = newOnboardingEnabled;
+  // Dim (and disable) the rest of the dashboard ONLY while the tenant Initial Setup
+  // is still incomplete — that's when the setup card is the surface to focus on
+  // ("finish setup first"). Once setup is complete — or before onboarding progress
+  // has loaded — the dashboard is fully lit. Backed by the same onboarding store as
+  // the setup card, so it flips the instant setup is marked complete.
+  const onboardingLoaded = useOnboardingStore(state => state.isLoaded);
+  const initialSetupComplete = useOnboardingStore(state => state.tenant?.completed ?? false);
+  const dimDashboard = newOnboardingEnabled && onboardingLoaded && !initialSetupComplete;
 
   return (
     <div className="space-y-10 p-[var(--spacing-system-l)]">
       {showLegacyOnboarding && <OnboardingSection />}
-      {newOnboardingEnabled && <InitialSetupCard />}
+      {/* Local Suspense so the setup card's suspending queries (e.g. DeviceSetupStep's
+          `useDeviceOrganizations`, a `useSuspenseQuery`) are caught here instead of
+          bubbling to the route-level `loading.tsx` and re-flashing the whole dashboard
+          skeleton. `fallback={null}` — the card just appears when ready, no skeleton. */}
+      {newOnboardingEnabled && (
+        <Suspense fallback={null}>
+          <InitialSetupCard />
+        </Suspense>
+      )}
       <div
         className={cn(
           'space-y-10 transition-opacity duration-300',

@@ -1,24 +1,14 @@
 'use client';
 
-import { DashboardInfoCard, Skeleton, TicketStatusTag, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
+import { DashboardInfoCard, TicketStatusTag, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
 import { useTicketsOverview } from '../hooks/use-dashboard-stats';
+import { TicketsOverviewSkeleton } from './dashboard-skeletons';
 
 export function TicketsOverviewSection() {
   const tickets = useTicketsOverview();
 
   if (tickets.isLoading) {
-    return (
-      <div className="space-y-4">
-        <TitleBlock title="Tickets Overview" className="pt-0 mb-0" />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      </div>
-    );
+    return <TicketsOverviewSkeleton />;
   }
 
   return (

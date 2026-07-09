@@ -1,8 +1,9 @@
 'use client';
 
-import { DashboardInfoCard, Skeleton, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
+import { DashboardInfoCard, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
 import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
 import { useDevicesOverview } from '../hooks/use-dashboard-stats';
+import { DevicesOverviewSkeleton } from './dashboard-skeletons';
 
 type DeviceStatusCard = {
   status: string;
@@ -47,17 +48,7 @@ export function DevicesOverviewSection() {
   ];
 
   if (devices.isLoading) {
-    return (
-      <div className="space-y-4">
-        <TitleBlock title="Devices Overview" className="pt-0 mb-0" />
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statusCards.map(card => (
-            <Skeleton key={card.status} className="h-20 w-full" />
-          ))}
-        </div>
-      </div>
-    );
+    return <DevicesOverviewSkeleton />;
   }
 
   return (
