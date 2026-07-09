@@ -18,6 +18,7 @@ import { usePolicyDevices } from '../../monitoring/policy/hooks/use-policy-devic
 import { useReplacePolicyHosts } from '../../monitoring/policy/hooks/use-policy-hosts';
 import { ScriptEditor } from '../../scripts/components/script/script-editor';
 import { onboardingHintUrl } from '../onboarding-coach-marks';
+import { useStepActionState } from '../use-step-action-state';
 
 const monitoringPolicySchema = z.object({
   name: z.string().min(1, 'Please enter a policy name'),
@@ -39,7 +40,15 @@ const getDeviceKey = (d: Device) => {
  * creates the policy, assigns the selected devices, then redirects to the policy
  * details page with the coach-mark hint.
  */
-export function MonitoringStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean }) {
+export function MonitoringStep({
+  onComplete,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -48,6 +57,7 @@ export function MonitoringStep({ onComplete, completed }: { onComplete?: () => v
   const { devices: policyDevices, isLoading: isLoadingDevices } = usePolicyDevices();
   const replacePolicyHostsMutation = useReplacePolicyHosts();
   const isSaving = isCreating || replacePolicyHostsMutation.isPending;
+  const actions = useStepActionState({ completing, primaryBusy: isSaving });
 
   const [selectedFleetHostIds, setSelectedFleetHostIds] = useState<Set<number>>(new Set());
   const stringSelectedIds = useMemo(
@@ -84,6 +94,8 @@ export function MonitoringStep({ onComplete, completed }: { onComplete?: () => v
             } catch {
               // Policy created but host assignment failed — error toast shown by the mutation hook.
             }
+            // A successful create completes the onboarding step (if not already done).
+            if (!completed) onComplete?.();
             router.push(onboardingHintUrl(`/monitoring/policy?id=${policy.id}`, 'policies', pathname));
           },
         },
@@ -162,21 +174,36 @@ export function MonitoringStep({ onComplete, completed }: { onComplete?: () => v
           <span className="text-h4 underline">Full Policy Form</span>
         </Link>
         <div className="flex flex-1 flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
-          {!completed && (
+          {!completed ? (
             <Button
               variant="outline"
               leftIcon={<CheckCircleIcon className="size-5" />}
               onClick={() => {
+                actions.begin('complete');
                 onComplete?.();
-                toast({ title: 'Step marked complete', variant: 'success' });
               }}
+              loading={actions.complete.loading}
+              disabled={actions.complete.disabled}
               className="w-full md:flex-1"
             >
               Mark as Complete
             </Button>
+          ) : (
+            // Keep the completed step's primary button its own width — don't let it
+            // stretch into the removed "Mark as Complete" slot.
+            <div className="hidden md:block md:flex-1" aria-hidden />
           )}
-          <Button variant="accent" onClick={handleAddPolicy} disabled={isSaving} className="w-full md:flex-1">
-            {isSaving ? 'Adding...' : 'Add Policy'}
+          <Button
+            variant="accent"
+            onClick={() => {
+              actions.begin('primary');
+              handleAddPolicy();
+            }}
+            loading={actions.primary.loading}
+            disabled={actions.primary.disabled}
+            className="w-full md:flex-1"
+          >
+            Add Policy
           </Button>
         </div>
       </div>

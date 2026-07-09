@@ -10,7 +10,6 @@ import {
 import { CheckCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useChatRuntime } from '@flamingo-stack/openframe-frontend-core/contexts';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import Link from 'next/link';
 import { useCallback, useMemo } from 'react';
 import { useMingoLauncherStore } from '@/app/(app)/mingo/stores/mingo-launcher-store';
@@ -39,9 +38,17 @@ const GUARDRAILS_HREF = '/settings/ai-settings?tab=guardrails';
  */
 const MINGO_AGENT_SLUG = 'mingo';
 
-export function MingoStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean }) {
-  const { toast } = useToast();
-
+export function MingoStep({
+  onComplete,
+  onCompleteBackground,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  onCompleteBackground?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+}) {
   // MPH-sourced quick actions — the `agent-mingo` agent config (source-keyed on
   // `agent-mingo`), selected via the runtime's standard agent-config URL builder.
   const runtime = useChatRuntime();
@@ -107,20 +114,32 @@ export function MingoStep({ onComplete, completed }: { onComplete?: () => void; 
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <div className="hidden flex-1 md:block" />
         <div className="hidden flex-1 md:block" />
-        {!completed && (
+        {!completed ? (
           <Button
             variant="outline"
             leftIcon={<CheckCircleIcon className="size-5" />}
-            onClick={() => {
-              onComplete?.();
-              toast({ title: 'Step marked complete', variant: 'success' });
-            }}
+            onClick={() => onComplete?.()}
+            loading={completing}
+            disabled={completing}
             className="w-full md:flex-1"
           >
             Mark as Complete
           </Button>
+        ) : (
+          // Keep the completed step's primary button its own width — don't let it
+          // stretch into the removed "Mark as Complete" slot.
+          <div className="hidden md:block md:flex-1" aria-hidden />
         )}
-        <Button variant="accent" onClick={startNewChat} className="w-full md:flex-1">
+        <Button
+          variant="accent"
+          onClick={() => {
+            // Opening a Mingo chat completes the step in the background (if not already
+            // done) — no spinner; the drawer opening is the feedback.
+            if (!completed) onCompleteBackground?.();
+            startNewChat();
+          }}
+          className="w-full md:flex-1"
+        >
           Start New Chat
         </Button>
       </div>

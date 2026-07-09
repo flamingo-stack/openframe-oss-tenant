@@ -2,7 +2,6 @@
 
 import { CheckCircleIcon, DotsLoaderIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { isSaasTenantMode } from '@/lib/app-mode';
@@ -33,10 +32,19 @@ const INSIDE_TICKET_POINTS = [
  * The footer shows a passive "waiting" state until the first ticket exists, then a primary
  * "Go to Tickets" action ({@link ../../tickets/hooks/use-ticket-statistics}).
  */
-export function TicketsStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean }) {
+export function TicketsStep({
+  onComplete,
+  onCompleteBackground,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  onCompleteBackground?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast();
 
   // Once at least one ticket exists, the "waiting" pending state gives way to a
   // primary "Go to Tickets" action. Tickets are a saas-tenant feature, so skip
@@ -87,24 +95,32 @@ export function TicketsStep({ onComplete, completed }: { onComplete?: () => void
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <div className="hidden flex-1 md:block" />
         <div className="hidden flex-1 md:block" />
-        {!completed && (
+        {!completed ? (
           <Button
             variant="outline"
             leftIcon={<CheckCircleIcon className="size-5" />}
-            onClick={() => {
-              onComplete?.();
-              toast({ title: 'Step marked complete', variant: 'success' });
-            }}
+            onClick={() => onComplete?.()}
+            loading={completing}
+            disabled={completing}
             className="w-full md:flex-1"
           >
             Mark as Complete
           </Button>
+        ) : (
+          // Keep the completed step's primary button its own width — don't let it
+          // stretch into the removed "Mark as Complete" slot.
+          <div className="hidden md:block md:flex-1" aria-hidden />
         )}
         {/* No tickets yet → passive "waiting" state; once one arrives → primary action. */}
         {hasTickets ? (
           <Button
             variant="accent"
-            onClick={() => router.push(onboardingHintUrl('/tickets', 'tickets', pathname))}
+            onClick={() => {
+              // Reaching Tickets from onboarding completes the step in the background
+              // (if not already done) — no spinner, navigation is the feedback.
+              if (!completed) onCompleteBackground?.();
+              router.push(onboardingHintUrl('/tickets', 'tickets', pathname));
+            }}
             className="w-full md:flex-1"
           >
             Go to Tickets

@@ -55,7 +55,17 @@ const logDetailsUrl = (log: LogEntry): string =>
  * read-only table that mirrors the full logs table, then links to the logs page with
  * the coach-mark hint.
  */
-export function LoggingStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean }) {
+export function LoggingStep({
+  onComplete,
+  onCompleteBackground,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  onCompleteBackground?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const { logs, isLoading } = useLogs();
@@ -194,19 +204,30 @@ export function LoggingStep({ onComplete, completed }: { onComplete?: () => void
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <div className="hidden flex-1 md:block" />
         <div className="hidden flex-1 md:block" />
-        {!completed && (
+        {!completed ? (
           <Button
             variant="outline"
             leftIcon={<CheckCircleIcon className="size-5" />}
             onClick={() => onComplete?.()}
+            loading={completing}
+            disabled={completing}
             className="w-full md:flex-1"
           >
             Mark as Complete
           </Button>
+        ) : (
+          // Keep the completed step's primary button its own width — don't let it
+          // stretch into the removed "Mark as Complete" slot.
+          <div className="hidden md:block md:flex-1" aria-hidden />
         )}
         <Button
           variant="accent"
-          onClick={() => router.push(onboardingHintUrl('/logs-page', 'logs', pathname))}
+          onClick={() => {
+            // Opening Logs from onboarding completes the step in the background
+            // (if not already done) — no spinner, navigation is the feedback.
+            if (!completed) onCompleteBackground?.();
+            router.push(onboardingHintUrl('/logs-page', 'logs', pathname));
+          }}
           className="w-full md:flex-1"
         >
           View Logs

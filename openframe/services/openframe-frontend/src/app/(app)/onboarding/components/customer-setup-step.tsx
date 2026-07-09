@@ -12,6 +12,7 @@ import { uploadWithAuth } from '@/lib/upload-with-auth';
 import { type CreateCustomerRequest, useCreateCustomer } from '../../customers/hooks/use-create-customer';
 import { dashboardQueryKeys } from '../../dashboard/utils/query-keys';
 import { onboardingHintUrl } from '../onboarding-coach-marks';
+import { useStepActionState } from '../use-step-action-state';
 
 const emptyAddress = { street1: '', street2: '', city: '', state: '', postalCode: '', country: '' };
 
@@ -21,7 +22,15 @@ const emptyAddress = { street1: '', street2: '', city: '', state: '', postalCode
  * `useCreateCustomer` mutation, `Input` and `ImageUploader` — for a quick first-client
  * form. The full form lives at `/customers/new`.
  */
-export function CustomerSetupStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean } = {}) {
+export function CustomerSetupStep({
+  onComplete,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+} = {}) {
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
@@ -96,6 +105,9 @@ export function CustomerSetupStep({ onComplete, completed }: { onComplete?: () =
       ]);
 
       toast({ title: 'Customer created', description: `${name.trim()} has been created`, variant: 'success' });
+      // A successful create completes the onboarding step — but only the first time,
+      // so creating another customer on an already-complete step doesn't re-fire it.
+      if (!completed) onComplete?.();
       // Onboarding always renders this step, so a create here means "continue from
       // onboarding" — send the user to Customers with the coach-mark hint.
       router.push(onboardingHintUrl('/customers', 'customers', pathname));
@@ -108,9 +120,21 @@ export function CustomerSetupStep({ onComplete, completed }: { onComplete?: () =
     } finally {
       setIsSubmitting(false);
     }
-  }, [name, website, pendingFile, isSubmitting, createOrganization, queryClient, toast, router, pathname]);
+  }, [
+    name,
+    website,
+    pendingFile,
+    isSubmitting,
+    createOrganization,
+    queryClient,
+    toast,
+    router,
+    pathname,
+    onComplete,
+    completed,
+  ]);
 
-  const saveDisabled = !name.trim() || isSubmitting;
+  const actions = useStepActionState({ completing, primaryBusy: isSubmitting });
 
   return (
     <div className="flex w-full flex-col gap-[var(--spacing-system-l)]">
@@ -170,21 +194,36 @@ export function CustomerSetupStep({ onComplete, completed }: { onComplete?: () =
         {/* Mark as Complete (hidden once the step is done) + Save Customer.
             Buttons share the right half, each flex-1; they stack full-width on mobile. */}
         <div className="flex flex-1 flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
-          {!completed && (
+          {!completed ? (
             <Button
               variant="outline"
               leftIcon={<CheckCircleIcon className="size-5" />}
               onClick={() => {
+                actions.begin('complete');
                 onComplete?.();
-                toast({ title: 'Step marked complete', variant: 'success' });
               }}
+              loading={actions.complete.loading}
+              disabled={actions.complete.disabled}
               className="w-full md:flex-1"
             >
               Mark as Complete
             </Button>
+          ) : (
+            // Keep the completed step's primary button its own width — don't let it
+            // stretch into the removed "Mark as Complete" slot.
+            <div className="hidden md:block md:flex-1" aria-hidden />
           )}
-          <Button variant="accent" onClick={handleSave} disabled={saveDisabled} className="w-full md:flex-1">
-            {isSubmitting ? 'Saving...' : 'Save Customer'}
+          <Button
+            variant="accent"
+            onClick={() => {
+              actions.begin('primary');
+              handleSave();
+            }}
+            disabled={!name.trim() || actions.primary.disabled}
+            loading={actions.primary.loading}
+            className="w-full md:flex-1"
+          >
+            Save Customer
           </Button>
         </div>
       </div>

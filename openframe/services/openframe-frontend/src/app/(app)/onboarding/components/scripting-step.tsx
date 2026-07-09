@@ -20,12 +20,14 @@ import { useMutation } from 'react-relay';
 import { z } from 'zod';
 import type { createScriptMutation as CreateScriptMutationType } from '@/__generated__/createScriptMutation.graphql';
 import { createScriptMutation } from '@/graphql/scripts/create-script-mutation';
+import { getRelayErrorMessage } from '@/lib/handle-api-error';
 import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '@/lib/platforms';
 import { ScriptEditor } from '../../scripts/components/script/script-editor';
 import { EDIT_SCRIPT_DEFAULT_VALUES } from '../../scripts/types/edit-script.types';
 import { formToWriteInput } from '../../scripts/v2/utils/script-mappers';
 import { SCRIPT_V2_SHELL_TYPES } from '../../scripts/v2/utils/shell-types';
 import { onboardingHintUrl } from '../onboarding-coach-marks';
+import { useStepActionState } from '../use-step-action-state';
 
 // Trimmed subset of the full add-script form (`edit-script.types.ts`): the fields
 // the onboarding step exposes. The rest are filled from EDIT_SCRIPT_DEFAULT_VALUES
@@ -51,7 +53,15 @@ type OnboardingScriptForm = z.infer<typeof onboardingScriptSchema>;
  * the native `createScriptMutation` + `formToWriteInput` mapper. On "Add Script" it
  * creates the script and redirects to its details page with the coach-mark hint.
  */
-export function ScriptingStep({ onComplete, completed }: { onComplete?: () => void; completed?: boolean }) {
+export function ScriptingStep({
+  onComplete,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -71,6 +81,7 @@ export function ScriptingStep({ onComplete, completed }: { onComplete?: () => vo
   });
 
   const [commitCreate, isCreating] = useMutation<CreateScriptMutationType>(createScriptMutation);
+  const actions = useStepActionState({ completing, primaryBusy: isCreating });
   const selectedPlatforms = form.watch('supported_platforms');
 
   const handleAddScript = form.handleSubmit(
@@ -81,6 +92,8 @@ export function ScriptingStep({ onComplete, completed }: { onComplete?: () => vo
         onCompleted: response => {
           const newId = response.createScript?.id;
           toast({ title: 'Success', description: 'Script created successfully', variant: 'success' });
+          // A successful create completes the onboarding step (if not already done).
+          if (!completed) onComplete?.();
           router.push(
             newId ? onboardingHintUrl(`/scripts-v2/details?id=${newId}`, 'scripts', pathname) : '/scripts-v2',
           );
@@ -88,7 +101,7 @@ export function ScriptingStep({ onComplete, completed }: { onComplete?: () => vo
         onError: err => {
           toast({
             title: 'Error',
-            description: err instanceof Error ? err.message : 'Failed to create script',
+            description: getRelayErrorMessage(err, 'Failed to create script'),
             variant: 'destructive',
           });
         },
@@ -255,21 +268,36 @@ export function ScriptingStep({ onComplete, completed }: { onComplete?: () => vo
           <span className="text-h4 underline">Full Script Form</span>
         </Link>
         <div className="flex flex-1 flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
-          {!completed && (
+          {!completed ? (
             <Button
               variant="outline"
               leftIcon={<CheckCircleIcon className="size-5" />}
               onClick={() => {
+                actions.begin('complete');
                 onComplete?.();
-                toast({ title: 'Step marked complete', variant: 'success' });
               }}
+              loading={actions.complete.loading}
+              disabled={actions.complete.disabled}
               className="w-full md:flex-1"
             >
               Mark as Complete
             </Button>
+          ) : (
+            // Keep the completed step's primary button its own width — don't let it
+            // stretch into the removed "Mark as Complete" slot.
+            <div className="hidden md:block md:flex-1" aria-hidden />
           )}
-          <Button variant="accent" onClick={handleAddScript} disabled={isCreating} className="w-full md:flex-1">
-            {isCreating ? 'Adding...' : 'Add Script'}
+          <Button
+            variant="accent"
+            onClick={() => {
+              actions.begin('primary');
+              handleAddScript();
+            }}
+            loading={actions.primary.loading}
+            disabled={actions.primary.disabled}
+            className="w-full md:flex-1"
+          >
+            Add Script
           </Button>
         </div>
       </div>
