@@ -82,7 +82,7 @@ export function buildNotificationColumns({
     {
       id: 'details',
       accessorKey: 'description',
-      header: 'Details',
+      header: '',
       enableSorting: false,
       meta: { width: 'flex-[3] min-w-0' },
       cell: ({ row }: { row: Row<NotificationRow> }) => {

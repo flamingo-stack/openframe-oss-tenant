@@ -52,8 +52,8 @@ const ticketRoute = (ticketId: string) => `/tickets/dialog?id=${encodeURICompone
  */
 const mingoDialogAction = (dialogId: string): NotificationAction =>
   featureFlags.mingoSidebar.enabled()
-    ? { label: 'Open in Mingo', mingoDialogId: dialogId }
-    : { label: 'Open in Mingo', route: mingoDialogRoute(dialogId) };
+    ? { label: 'Open Chat', mingoDialogId: dialogId }
+    : { label: 'Open Chat', route: mingoDialogRoute(dialogId) };
 
 /**
  * Resolve the navigation action a notification offers (button label + route), or null when it
@@ -67,13 +67,13 @@ export function resolveNotificationAction(notification: Notification): Notificat
 
   // Approval requests live in their ticket when one exists, otherwise the mingo dialog.
   if (contextType === ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE) {
-    if (ticketId) return { label: 'Open Ticket', route: ticketRoute(ticketId) };
+    if (ticketId) return { label: 'Ticket Details', route: ticketRoute(ticketId) };
     if (dialogId) return mingoDialogAction(dialogId);
     return null;
   }
 
   if (contextType && TICKET_CONTEXT_TYPES.has(contextType) && ticketId) {
-    return { label: 'Open Ticket', route: ticketRoute(ticketId) };
+    return { label: 'Ticket Details', route: ticketRoute(ticketId) };
   }
 
   if (contextType === ADMIN_AI_MESSAGE_CONTEXT_TYPE && dialogId) {
