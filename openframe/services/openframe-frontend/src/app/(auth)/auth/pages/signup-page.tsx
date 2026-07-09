@@ -3,43 +3,32 @@
 import {
   AuthShell,
   type AuthSsoProvider,
-  CreateOrganizationForm,
+  CompleteAccountForm,
 } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { TabSelector } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/(auth)/auth/hooks/use-auth';
 import { useRegistrationProviders } from '@/app/(auth)/auth/hooks/use-registration-providers';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { isAuthOnlyMode, isSaasSharedMode } from '@/lib/app-mode';
-import { SAAS_DOMAIN_SUFFIX } from '@/lib/auth-api-client';
 
-const AUTH_MOBILE_TAGLINE = (
-  <>
-    <p>All your MSP ops in one place.</p>
-    <p>Open-source, AI-ready, no vendor tax.</p>
-  </>
-);
-
-// Backend provider id ↔ form provider id
-const SSO_TO_FORM: Record<string, AuthSsoProvider> = {
-  'openframe-sso': 'openframe',
-  google: 'google',
-  microsoft: 'microsoft',
-};
+const MIN_PASSWORD_LENGTH = 8;
 
 /**
- * Sign Up (SSO) step: the Create Organization details entered on the previous
- * screen are shown locked, and the user picks how to register — OpenFrame SSO
- * (credentials form) or an external provider.
+ * "Complete your Account" step: name + password for the organization collected
+ * on the Create Organization step, or an external SSO provider shortcut.
  */
 export default function SignupPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
-  const { isLoading, registerOrganizationSso } = useAuth();
+  const { isLoading, registerOrganization, registerOrganizationSso } = useAuth();
   const { providers, loading: loadingProviders } = useRegistrationProviders();
 
-  const isSaasShared = isSaasSharedMode();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const storedOrgName = typeof window !== 'undefined' ? sessionStorage.getItem('auth:org_name') || '' : '';
   const storedDomain = typeof window !== 'undefined' ? sessionStorage.getItem('auth:domain') || '' : '';
@@ -62,24 +51,30 @@ export default function SignupPage() {
 
   if (!storedOrgName || !storedDomain) return null;
 
-  // saas-shared stores the full domain; show the subdomain with the suffix adornment.
-  const domainSuffix = `.${SAAS_DOMAIN_SUFFIX}`;
-  const displayDomain =
-    isSaasShared && storedDomain.endsWith(domainSuffix) ? storedDomain.slice(0, -domainSuffix.length) : storedDomain;
+  const isTooShort = !!password && password.length < MIN_PASSWORD_LENGTH;
+  const isMismatch = !!confirmPassword && password !== confirmPassword;
+  const isValid =
+    !!firstName.trim() && !!lastName.trim() && password.length >= MIN_PASSWORD_LENGTH && password === confirmPassword;
 
-  // OpenFrame SSO is always offered; external providers come from the backend.
-  const formProviders: AuthSsoProvider[] = [
-    'openframe',
-    ...(['google', 'microsoft'] as const).filter(provider =>
-      providers.some(sp => SSO_TO_FORM[sp.provider] === provider),
-    ),
-  ];
+  const handleSubmit = () => {
+    if (!isValid) return;
+    registerOrganization({
+      tenantName: storedOrgName,
+      tenantDomain: storedDomain,
+      email: storedEmail,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      password,
+    });
+  };
+
+  // External providers offered by the backend for registration.
+  const formProviders: AuthSsoProvider[] = (['google', 'microsoft'] as const).filter(provider =>
+    providers.some(sp => sp.provider === provider),
+  );
 
   const handleSso = (provider: AuthSsoProvider) => {
-    if (provider === 'openframe') {
-      router.push('/auth/signup/openframe/');
-      return;
-    }
+    if (provider !== 'google' && provider !== 'microsoft') return;
     void registerOrganizationSso({
       tenantName: storedOrgName,
       tenantDomain: storedDomain,
@@ -104,23 +99,27 @@ export default function SignupPage() {
   );
 
   return (
-    <AuthShell tabs={tabs} mobileTagline={AUTH_MOBILE_TAGLINE}>
-      <CreateOrganizationForm
-        email={storedEmail}
-        organizationName={storedOrgName}
-        domain={displayDomain}
-        agreedToTerms
-        onEmailChange={() => {}}
-        onOrganizationNameChange={() => {}}
-        onDomainChange={() => {}}
-        onAgreedToTermsChange={() => {}}
-        onSubmit={() => {}}
-        domainSuffix={isSaasShared ? domainSuffix : undefined}
-        termsUrl="https://www.flamingo.run/terms-of-service"
-        privacyPolicyUrl="https://www.flamingo.run/privacy-policy"
+    <AuthShell tabs={tabs}>
+      <CompleteAccountForm
+        firstName={firstName}
+        lastName={lastName}
+        password={password}
+        confirmPassword={confirmPassword}
+        onFirstNameChange={setFirstName}
+        onLastNameChange={setLastName}
+        onPasswordChange={setPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onSubmit={handleSubmit}
+        onBack={() => router.push('/auth')}
         ssoProviders={formProviders}
         onSsoClick={handleSso}
+        submitLabel={isSaasSharedMode() ? 'Start Free Trial' : 'Create Organization'}
+        submitDisabled={!isValid}
         loading={isLoading || loadingProviders}
+        errors={{
+          password: isTooShort ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters` : undefined,
+          confirmPassword: isMismatch ? 'Passwords do not match' : undefined,
+        }}
       />
     </AuthShell>
   );

@@ -8,13 +8,6 @@ import { CreateOrganizationSection } from '@/app/(auth)/auth/components/create-o
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { isAuthOnlyMode } from '@/lib/app-mode';
 
-const AUTH_MOBILE_TAGLINE = (
-  <>
-    <p>All your MSP ops in one place.</p>
-    <p>Open-source, AI-ready, no vendor tax.</p>
-  </>
-);
-
 export default function AuthPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
@@ -48,7 +41,7 @@ export default function AuthPage() {
   );
 
   return (
-    <AuthShell tabs={tabs} mobileTagline={AUTH_MOBILE_TAGLINE}>
+    <AuthShell tabs={tabs}>
       <CreateOrganizationSection onCreateOrganization={handleCreateOrganization} />
     </AuthShell>
   );

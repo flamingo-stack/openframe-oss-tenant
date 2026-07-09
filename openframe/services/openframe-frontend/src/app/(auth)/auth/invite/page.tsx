@@ -1,37 +1,26 @@
 'use client';
 
 import {
-  AcceptInvitationForm,
   AuthShell,
   type AuthSsoProvider,
   BackToLoginLink,
+  CompleteAccountForm,
   InviteLinkInvalidModal,
 } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useInviteProviders } from '@/app/(auth)/auth/hooks/use-invite-providers';
+import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { authApiClient } from '@/lib/auth-api-client';
 
-const AUTH_MOBILE_TAGLINE = (
-  <>
-    <p>All your MSP ops in one place.</p>
-    <p>Open-source, AI-ready, no vendor tax.</p>
-  </>
-);
+const MIN_PASSWORD_LENGTH = 8;
 
-// Backend provider id ↔ AcceptInvitationForm provider id
+// Backend provider id ↔ form provider id (external providers only)
 const SSO_TO_FORM: Record<string, AuthSsoProvider> = {
-  'openframe-sso': 'openframe',
   google: 'google',
   microsoft: 'microsoft',
 };
-const FORM_TO_SSO: Record<AuthSsoProvider, 'openframe-sso' | 'google' | 'microsoft'> = {
-  openframe: 'openframe-sso',
-  google: 'google',
-  microsoft: 'microsoft',
-};
-const FORM_PROVIDER_ORDER: AuthSsoProvider[] = ['openframe', 'google', 'microsoft'];
 
 function isInvalidInviteError(error: string | null): boolean {
   return !!error && (error.includes('Invitation not found') || error.includes('Invitation already used or revoked'));
@@ -43,22 +32,77 @@ export default function InvitePage() {
   const searchParams = useSearchParams();
   const invitationId = searchParams.get('id');
 
-  const { providers, email, loading, error } = useInviteProviders(invitationId);
+  const { providers, loading, error } = useInviteProviders(invitationId);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTenantSwitch, setShowTenantSwitch] = useState(false);
 
   const handleBack = () => router.push('/auth');
 
-  const handleSso = (provider: AuthSsoProvider) => {
-    if (!invitationId) return;
+  const isTooShort = !!password && password.length < MIN_PASSWORD_LENGTH;
+  const isMismatch = !!confirmPassword && password !== confirmPassword;
+  const isValid =
+    !!firstName.trim() && !!lastName.trim() && password.length >= MIN_PASSWORD_LENGTH && password === confirmPassword;
 
-    const ssoProvider = FORM_TO_SSO[provider];
+  const handleSubmit = async (switchTenant = false) => {
+    if (!invitationId || !isValid) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await authApiClient.acceptInvitation({
+        invitationId,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        password,
+        switchTenant,
+      });
+
+      if (!response.ok) {
+        const errorData = response.data as any;
+
+        // Already active elsewhere — confirm the tenant switch, then retry.
+        if (errorData?.code === 'USER_IS_ACTIVE_IN_ANOTHER_TENANT') {
+          setShowTenantSwitch(true);
+          setIsSubmitting(false);
+          return;
+        }
+
+        throw new Error(errorData?.message || response.error || 'Failed to accept invitation');
+      }
+
+      toast({
+        title: 'Invitation Accepted!',
+        description: 'Your account has been created successfully. Redirecting to login...',
+        variant: 'success',
+      });
+
+      setTimeout(() => {
+        router.push('/auth');
+      }, 2000);
+    } catch (err) {
+      console.error('Invitation acceptance error:', err);
+      toast({
+        title: 'Acceptance Failed',
+        description: err instanceof Error ? err.message : 'Failed to accept invitation. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSso = (provider: AuthSsoProvider) => {
+    if (!invitationId || (provider !== 'google' && provider !== 'microsoft')) return;
 
     setIsSubmitting(true);
     try {
       // Redirects the browser; acceptInvitationSso passes the provider through in the URL.
       void authApiClient.acceptInvitationSso({
         invitationId,
-        provider: ssoProvider,
+        provider,
         switchTenant: true,
         redirectTo: '/auth/login',
       });
@@ -78,23 +122,42 @@ export default function InvitePage() {
     return <InviteLinkInvalidModal onBackToLogin={handleBack} />;
   }
 
-  // OpenFrame SSO is the platform's own sign-in, so it's always offered;
-  // external providers come from the backend response.
-  const formProviders: AuthSsoProvider[] = [
-    'openframe',
-    ...FORM_PROVIDER_ORDER.filter(
-      provider => provider !== 'openframe' && providers.some(sp => SSO_TO_FORM[sp.provider] === provider),
-    ),
-  ];
+  const formProviders: AuthSsoProvider[] = (['google', 'microsoft'] as const).filter(provider =>
+    providers.some(sp => SSO_TO_FORM[sp.provider] === provider),
+  );
 
   return (
-    <AuthShell mobileTagline={AUTH_MOBILE_TAGLINE} footer={<BackToLoginLink onClick={handleBack} />}>
-      <AcceptInvitationForm
-        email={email}
+    <AuthShell footer={<BackToLoginLink onClick={handleBack} />}>
+      <CompleteAccountForm
+        firstName={firstName}
+        lastName={lastName}
+        password={password}
+        confirmPassword={confirmPassword}
+        onFirstNameChange={setFirstName}
+        onLastNameChange={setLastName}
+        onPasswordChange={setPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onSubmit={() => handleSubmit()}
         ssoProviders={formProviders}
         onSsoClick={handleSso}
-        onBackToLogin={handleBack}
+        title="Accept Invitation"
+        subtitle="Complete your registration to join the organization"
+        submitDisabled={!isValid}
         loading={loading || isSubmitting}
+        errors={{
+          password: isTooShort ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters` : undefined,
+          confirmPassword: isMismatch ? 'Passwords do not match' : undefined,
+        }}
+      />
+
+      <ConfirmDialog
+        open={showTenantSwitch}
+        onOpenChange={setShowTenantSwitch}
+        title="Switch Organization?"
+        description="You are already registered in another organization. Would you like to switch to this new organization?"
+        confirmLabel="Yes, Switch Organization"
+        variant="default"
+        onConfirm={() => handleSubmit(true)}
       />
     </AuthShell>
   );

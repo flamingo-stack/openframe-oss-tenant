@@ -10,13 +10,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { authApiClient } from '@/lib/auth-api-client';
 
-const AUTH_MOBILE_TAGLINE = (
-  <>
-    <p>All your MSP ops in one place.</p>
-    <p>Open-source, AI-ready, no vendor tax.</p>
-  </>
-);
-
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function PasswordResetPage() {
@@ -88,7 +81,7 @@ export default function PasswordResetPage() {
   };
 
   return (
-    <AuthShell mobileTagline={AUTH_MOBILE_TAGLINE} footer={<BackToLoginLink onClick={handleBack} />}>
+    <AuthShell footer={<BackToLoginLink onClick={handleBack} />}>
       <PasswordResetForm
         password={password}
         confirmPassword={confirmPassword}

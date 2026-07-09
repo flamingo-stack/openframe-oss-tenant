@@ -10,13 +10,6 @@ import { useAuth } from '@/app/(auth)/auth/hooks/use-auth';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { isAuthOnlyMode } from '@/lib/app-mode';
 
-const AUTH_MOBILE_TAGLINE = (
-  <>
-    <p>All your MSP ops in one place.</p>
-    <p>Open-source, AI-ready, no vendor tax.</p>
-  </>
-);
-
 // Backend provider id ↔ LoginForm provider id
 const SSO_TO_FORM: Record<string, AuthSsoProvider> = {
   'openframe-sso': 'openframe',
@@ -77,7 +70,7 @@ export default function LoginPage() {
   );
 
   return (
-    <AuthShell tabs={tabs} mobileTagline={AUTH_MOBILE_TAGLINE}>
+    <AuthShell tabs={tabs}>
       <LoginSection
         initialEmail={email}
         ssoProviders={formProviders}
