@@ -12,6 +12,7 @@ import type { updateScriptMutation as UpdateScriptMutationType } from '@/__gener
 import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { createScriptMutation } from '@/graphql/scripts/create-script-mutation';
 import { updateScriptMutation } from '@/graphql/scripts/update-script-mutation';
+import { getRelayErrorMessage } from '@/lib/handle-api-error';
 import { EDIT_SCRIPT_DEFAULT_VALUES, type EditScriptFormData, editScriptSchema } from '../../types/edit-script.types';
 import { formToWriteInput } from '../utils/script-mappers';
 
@@ -81,7 +82,7 @@ export function useEditScriptForm({ scriptId, initialValues, isEditMode }: UseEd
           onError: err => {
             toast({
               title: 'Error',
-              description: err instanceof Error ? err.message : 'Failed to update script',
+              description: getRelayErrorMessage(err, 'Failed to update script'),
               variant: 'destructive',
             });
           },
@@ -99,7 +100,7 @@ export function useEditScriptForm({ scriptId, initialValues, isEditMode }: UseEd
         onError: err => {
           toast({
             title: 'Error',
-            description: err instanceof Error ? err.message : 'Failed to create script',
+            description: getRelayErrorMessage(err, 'Failed to create script'),
             variant: 'destructive',
           });
         },
