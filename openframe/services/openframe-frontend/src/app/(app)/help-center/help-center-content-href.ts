@@ -53,8 +53,8 @@ const helpCenterTicketHref = (id: string): { href: string; targetPlatform: strin
 /**
  * The unified `composeContentUrl` for OpenFrame. Returns RELATIVE in-app hrefs
  * for the four hosted types and the hub URL for everything else — exactly what
- * the `host`-mode help-center subtree needs. The embed-mode chat wraps this via
- * {@link toSameOriginHelpCenterHref} to absolutize the in-app branch.
+ * the `host`-mode help-center subtree needs. The chat wraps this via
+ * {@link composeOpenframeChatContentUrl} to force non-hosted hrefs absolute.
  */
 export const composeOpenframeContentUrl: ComposeContentUrl = makeComposeContentUrl({
   hostedTypes: HOSTED_TYPES,
@@ -100,23 +100,48 @@ export function isInAppHelpCenterHref(href: string): boolean {
   return href === HELP_CENTER_BASE || href.startsWith(`${HELP_CENTER_BASE}/`);
 }
 
-/**
- * Embed-mode adapter: absolutize an in-app `/help-center/...` href against the
- * CURRENT origin so the lib's `computeIsNewTab` recognizes it as same-origin
- * in-app (same-tab soft-nav) instead of absolutizing it against the hub origin
- * and opening a new tab. Non-hosted (already-absolute hub) hrefs pass through.
- * SSR-safe: with no `window` it returns the href unchanged (cards only ever
- * render client-side, so the relative form never reaches the user).
- */
-export function toSameOriginHelpCenterHref(href: string): string {
-  if (typeof window === 'undefined') return href;
-  if (!isInAppHelpCenterHref(href)) return href;
-  return window.location.origin + href;
+/** True when `href` is already absolute (`https://…` or protocol-relative `//…`). */
+function isAbsoluteHref(href: string): boolean {
+  return /^(?:https?:)?\/\//i.test(href);
 }
 
-/** Embed-mode `composeContentUrl`: same routing as {@link composeOpenframeContentUrl},
- *  but in-app hrefs are absolutized to the current origin for the embedded chat. */
+/**
+ * Force a hub-owned href onto the content-hub origin. The RAG can hand back a
+ * RELATIVE `externalUrl` for content we do NOT host (observed: webinar
+ * `externalUrl: 'webinars/<id>'`). openframe runs the chat in `host` mode
+ * (identical to the hub), so a relative href would resolve against OUR origin and
+ * 404 — the hub gets away with relative hrefs only because it hosts every content
+ * type. We host just the `/help-center/*` subset, so every OTHER type must be an
+ * ABSOLUTE hub URL to open externally. Already-absolute hrefs (incl. cross-platform
+ * ones like an openmsp podcast) pass through untouched.
+ */
+function toHubOriginHref(href: string): string {
+  if (isAbsoluteHref(href)) return href;
+  return `${CONTENT_HUB_ORIGIN}/${href.replace(/^\/+/, '')}`;
+}
+
+/**
+ * The chat's `composeContentUrl`, shaped for the lib's HOST-mode nav decision
+ * (`decideNewTab` → `isCrossOriginUrl` origin-compare / `targetPlatform` vs our
+ * `source`). Splits on what openframe hosts in-app:
+ *
+ *   - `/help-center/*` types → keep the href RELATIVE (+ `targetPlatform: null`).
+ *     `isCrossOriginUrl('/help-center/…')` is false → SAME-tab soft-nav that the
+ *     browser resolves against OUR origin. (Absolutizing to our origin would
+ *     backfire: `isCrossOriginUrl` counts EVERY absolute URL as cross-origin and
+ *     would force a redundant new tab.)
+ *   - everything else lives on the content hub → an ABSOLUTE hub URL, and
+ *     `targetPlatform: null` so the new-tab decision falls to the origin compare
+ *     (cross-origin hub URL → NEW tab). We must DROP the row's `targetPlatform`
+ *     here: the RAG tags openframe content `targetPlatform: 'openframe'`, which
+ *     equals our `source` and would flip `decideNewTab` to same-tab → the click
+ *     handler strips the origin and `router.push`es a `/webinars/<id>` path that
+ *     404s on our origin (the reported bug).
+ */
 export const composeOpenframeChatContentUrl: ComposeContentUrl = input => {
   const resolved = composeOpenframeContentUrl(input);
-  return { href: toSameOriginHelpCenterHref(resolved.href), targetPlatform: resolved.targetPlatform };
+  if (isInAppHelpCenterHref(resolved.href)) {
+    return { href: resolved.href, targetPlatform: null };
+  }
+  return { href: toHubOriginHref(resolved.href), targetPlatform: null };
 };

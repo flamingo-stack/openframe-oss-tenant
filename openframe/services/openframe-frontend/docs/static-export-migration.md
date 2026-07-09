@@ -85,8 +85,9 @@ build is green; the bundle is not yet runtime-functional from a `localhost` orig
   Cookies fail cross-origin from `localhost`. Use the existing Bearer/dev-ticket
   path (`of_access_token` in storage + `NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER`;
   api-client + relay already support it). **New (backend) work:** gateway CORS for
-  the `capacitor://localhost` / `https://localhost` / `tauri://localhost` origins,
-  and the shell injecting the token from Face-ID-gated secure storage.
+  the `capacitor://localhost` / `https://localhost` / `tauri://localhost` /
+  `http://tauri.localhost` (Tauri on Windows) origins, and the shell injecting the
+  token from Face-ID-gated secure storage.
 
 - [ ] **C. `/content/*` embedded-chat proxy — localized**
   `src/app/components/openframe-chat-runtime-provider.tsx` relies on the `rewrites()`
@@ -162,13 +163,24 @@ defensible and the public store viable.
 
 ---
 
-## Desktop reuse
+## Desktop reuse — DONE (2026-07-08)
 
-The same `export` bundle lets the Tauri desktop app (`openframe-desktop`, today a
-remote-URL shell) embed the UI instead of pointing at a remote URL → stronger
-posture + faster cold start. Same bundle, same backend, same env-injection pattern
-(Tauri `init_script` instead of a Capacitor script). The frontend work here pays off
-across all three targets at once.
+The Tauri desktop app (`openframe-desktop`) now embeds this same `export` bundle
+instead of loading the tenant URL. Implementation (all shell-side, zero frontend
+changes):
+- `scripts/build-web.sh` mirrors the mobile pipeline (`build:export` → `dist/` →
+  `www/`), but env is injected at **runtime** via a Tauri initialization script
+  (`window.__ENV` built from the host picked in the connect window), so one
+  binary serves any instance.
+- The init script also installs a Capacitor-compatible shim —
+  `window.Capacitor.isNativePlatform()` + `Plugins.NativeAuth` backed by Rust
+  commands (login window capturing `?devTicket=`, native header-reading ticket
+  exchange, file-based token store) — so `native-shell.ts`, `native-login.ts`,
+  and `token-store.ts` work on desktop unchanged.
+- Verified: bundle boots in the shell, hydrates cleanly, targets the injected
+  tenant host. Blocked on **gateway CORS for `tauri://localhost` (macOS/Linux)
+  and `http://tauri.localhost` (Windows)** — the same item-B change as
+  `capacitor://localhost` — before login/data work end-to-end.
 
 ## Sequencing
 

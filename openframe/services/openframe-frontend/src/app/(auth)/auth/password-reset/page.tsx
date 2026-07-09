@@ -1,18 +1,16 @@
 'use client';
 
 import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Input,
-  Label,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
+  AuthShell,
+  BackToLoginLink,
+  PasswordResetForm,
+} from '@flamingo-stack/openframe-frontend-core/components/features';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { authApiClient } from '@/lib/auth-api-client';
-import { AuthLayout } from '../layouts';
+
+const MIN_PASSWORD_LENGTH = 8;
 
 export default function PasswordResetPage() {
   const searchParams = useSearchParams();
@@ -36,39 +34,20 @@ export default function PasswordResetPage() {
     }
   }, [token, router, toast]);
 
+  const isTooShort = !!password && password.length < MIN_PASSWORD_LENGTH;
+  const isMismatch = !!confirmPassword && password !== confirmPassword;
+  const isValid = password.length >= MIN_PASSWORD_LENGTH && password === confirmPassword;
+
+  const handleBack = () => router.push('/auth');
+
   const handleSubmit = async () => {
-    if (!password || !confirmPassword) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill in both password fields.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast({
-        title: "Passwords Don't Match",
-        description: 'Please ensure both passwords are the same.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (password.length < 8) {
-      toast({
-        title: 'Password Too Short',
-        description: 'Password must be at least 8 characters long.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    if (!token || !isValid) return;
 
     setIsLoading(true);
 
     try {
       const response = await authApiClient.confirmPasswordReset({
-        token: token!,
+        token,
         newPassword: password,
       });
 
@@ -102,76 +81,22 @@ export default function PasswordResetPage() {
   };
 
   return (
-    <AuthLayout>
-      <div className="w-full">
-        <Card className="bg-ods-card border-ods-border">
-          <CardHeader>
-            <h1 className="font-heading text-[32px] font-semibold text-ods-text-primary leading-10 tracking-[-0.64px] mb-2">
-              Reset Your Password
-            </h1>
-            <p className="font-body text-[18px] font-medium text-ods-text-secondary leading-6">
-              Enter your new password below
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Password Fields */}
-              <div className="flex flex-col gap-1">
-                <Label>New Password</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Choose a Strong Password"
-                  disabled={isLoading}
-                  className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-                />
-                {password && password.length < 8 && (
-                  <p className="text-xs text-ods-error mt-1">Password must be at least 8 characters</p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <Label>Confirm Password</Label>
-                <Input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your Password"
-                  disabled={isLoading}
-                  className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-                />
-                {confirmPassword && password !== confirmPassword && (
-                  <p className="text-xs text-ods-error mt-1">Passwords do not match</p>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch md:items-center pt-4">
-                <Button
-                  onClick={() => router.push('/auth')}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="w-full md:flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={
-                    !password || !confirmPassword || password !== confirmPassword || password.length < 8 || isLoading
-                  }
-                  loading={isLoading}
-                  variant="accent"
-                  className="w-full md:flex-1"
-                >
-                  Reset Password
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </AuthLayout>
+    <AuthShell footer={<BackToLoginLink onClick={handleBack} />}>
+      <PasswordResetForm
+        password={password}
+        confirmPassword={confirmPassword}
+        onPasswordChange={setPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onSubmit={handleSubmit}
+        onCancel={handleBack}
+        onBackToLogin={handleBack}
+        submitDisabled={!isValid}
+        loading={isLoading}
+        errors={{
+          password: isTooShort ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters` : undefined,
+          confirmPassword: isMismatch ? 'Passwords do not match' : undefined,
+        }}
+      />
+    </AuthShell>
   );
 }

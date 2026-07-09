@@ -1,89 +1,59 @@
 'use client';
 
-import { AuthProvidersList } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Input,
-  Label,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
+  AuthShell,
+  type AuthSsoProvider,
+  BackToLoginLink,
+  CompleteAccountForm,
+  InviteLinkInvalidModal,
+} from '@flamingo-stack/openframe-frontend-core/components/features';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useInviteProviders } from '@/app/(auth)/auth/hooks/use-invite-providers';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { authApiClient } from '@/lib/auth-api-client';
-import { AuthLayout } from '../layouts';
+
+const MIN_PASSWORD_LENGTH = 8;
+
+// Backend provider id ↔ form provider id (external providers only)
+const SSO_TO_FORM: Record<string, AuthSsoProvider> = {
+  google: 'google',
+  microsoft: 'microsoft',
+};
+
+function isInvalidInviteError(error: string | null): boolean {
+  return !!error && (error.includes('Invitation not found') || error.includes('Invitation already used or revoked'));
+}
 
 export default function InvitePage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
-
+  const searchParams = useSearchParams();
   const invitationId = searchParams.get('id');
-  const {
-    providers: ssoProviders,
-    loading: loadingProviders,
-    error: providersError,
-  } = useInviteProviders(invitationId);
 
+  const { providers, loading, error } = useInviteProviders(invitationId);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTenantSwitch, setShowTenantSwitch] = useState(false);
-  const [, setSignupMethod] = useState<'form' | 'sso'>('form');
-  const [invitationNotFound, setInvitationNotFound] = useState(false);
 
-  useEffect(() => {
-    if (!invitationId) {
-      toast({
-        title: 'Invalid Invitation',
-        description: 'No invitation ID provided. Please use the link from your invitation email.',
-        variant: 'destructive',
-      });
-      router.push('/auth');
-    } else if (
-      providersError &&
-      (providersError.includes('Invitation not found') || providersError.includes('Invitation already used or revoked'))
-    ) {
-      setInvitationNotFound(true);
-      toast({
-        title: 'Invitation Not Found',
-        description:
-          'This invitation link is invalid or has expired. Please contact your administrator for a new invitation.',
-        variant: 'destructive',
-      });
-    }
-  }, [invitationId, providersError, router, toast]);
+  const handleBack = () => router.push('/auth');
+
+  const isTooShort = !!password && password.length < MIN_PASSWORD_LENGTH;
+  const isMismatch = !!confirmPassword && password !== confirmPassword;
+  const isValid =
+    !!firstName.trim() && !!lastName.trim() && password.length >= MIN_PASSWORD_LENGTH && password === confirmPassword;
 
   const handleSubmit = async (switchTenant = false) => {
-    if (!firstName.trim() || !lastName.trim() || !password || password !== confirmPassword) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill in all fields and ensure passwords match.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    if (!invitationId || !isValid) return;
 
-    if (password.length < 8) {
-      toast({
-        title: 'Password Too Short',
-        description: 'Password must be at least 8 characters long.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
+    setIsSubmitting(true);
     try {
       const response = await authApiClient.acceptInvitation({
-        invitationId: invitationId!,
+        invitationId,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         password,
@@ -91,15 +61,16 @@ export default function InvitePage() {
       });
 
       if (!response.ok) {
-        const error = response.data as any;
+        const errorData = response.data as any;
 
-        if (error?.code === 'USER_IS_ACTIVE_IN_ANOTHER_TENANT') {
+        // Already active elsewhere — confirm the tenant switch, then retry.
+        if (errorData?.code === 'USER_IS_ACTIVE_IN_ANOTHER_TENANT') {
           setShowTenantSwitch(true);
-          setIsLoading(false);
+          setIsSubmitting(false);
           return;
         }
 
-        throw new Error(error?.message || response.error || 'Failed to accept invitation');
+        throw new Error(errorData?.message || response.error || 'Failed to accept invitation');
       }
 
       toast({
@@ -111,272 +82,73 @@ export default function InvitePage() {
       setTimeout(() => {
         router.push('/auth');
       }, 2000);
-    } catch (error) {
-      console.error('Invitation acceptance error:', error);
+    } catch (err) {
+      console.error('Invitation acceptance error:', err);
       toast({
         title: 'Acceptance Failed',
-        description: error instanceof Error ? error.message : 'Failed to accept invitation. Please try again.',
+        description: err instanceof Error ? err.message : 'Failed to accept invitation. Please try again.',
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleTenantSwitch = async () => {
-    setShowTenantSwitch(false);
-    await handleSubmit(true);
-  };
+  const handleSso = (provider: AuthSsoProvider) => {
+    if (!invitationId || (provider !== 'google' && provider !== 'microsoft')) return;
 
-  const handleSsoSignup = async (provider: string) => {
-    setSignupMethod('sso');
-
-    if (!invitationId) {
-      toast({
-        title: 'Invalid Invitation',
-        description: 'No invitation ID provided.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
+    setIsSubmitting(true);
     try {
-      await authApiClient.acceptInvitationSso({
+      // Redirects the browser; acceptInvitationSso passes the provider through in the URL.
+      void authApiClient.acceptInvitationSso({
         invitationId,
-        provider: provider as 'google' | 'microsoft',
+        provider,
         switchTenant: true,
         redirectTo: '/auth/login',
       });
-    } catch (error) {
-      console.error('SSO signup error:', error);
+    } catch (err) {
+      console.error('SSO signup error:', err);
       toast({
         title: 'SSO Signup Failed',
         description: 'Unable to initiate SSO signup. Please try again.',
         variant: 'destructive',
       });
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (loadingProviders) {
-    return (
-      <AuthLayout>
-        <div className="w-full">
-          <Card className="bg-ods-card border-ods-border">
-            <CardHeader>
-              <div className="animate-pulse space-y-2">
-                <div className="h-10 w-72 bg-ods-border rounded" />
-                <div className="h-6 w-96 bg-ods-border rounded" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="animate-pulse space-y-6">
-                {/* SSO Providers Loading */}
-                <div className="space-y-3">
-                  <div className="h-12 w-full bg-ods-border rounded" />
-                  <div className="h-12 w-full bg-ods-border rounded" />
-                </div>
-
-                {/* Divider with text */}
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-ods-border" />
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="bg-ods-card px-2">
-                      <div className="h-4 w-32 bg-ods-border rounded" />
-                    </span>
-                  </div>
-                </div>
-
-                {/* Personal Details */}
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-20 bg-ods-border rounded" />
-                    <div className="h-12 w-full bg-ods-border rounded" />
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-20 bg-ods-border rounded" />
-                    <div className="h-12 w-full bg-ods-border rounded" />
-                  </div>
-                </div>
-
-                {/* Password Fields */}
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-20 bg-ods-border rounded" />
-                    <div className="h-12 w-full bg-ods-border rounded" />
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-32 bg-ods-border rounded" />
-                    <div className="h-12 w-full bg-ods-border rounded" />
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col md:flex-row gap-4 md:gap-6 pt-4">
-                  <div className="h-12 flex-1 bg-ods-border rounded" />
-                  <div className="h-12 flex-1 bg-ods-border rounded" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </AuthLayout>
-    );
+  // Expired / already-used / missing link → dedicated notice.
+  if (!invitationId || isInvalidInviteError(error)) {
+    return <InviteLinkInvalidModal onBackToLogin={handleBack} />;
   }
 
-  if (invitationNotFound) {
-    return (
-      <AuthLayout>
-        <div className="w-full">
-          <Card className="bg-ods-card border-ods-border">
-            <CardHeader>
-              <h1 className="font-heading text-[32px] font-semibold text-ods-text-primary leading-10 tracking-[-0.64px] mb-2">
-                Invite link isn't valid
-              </h1>
-              <p className="font-body text-[18px] font-medium text-ods-text-secondary leading-6">
-                This invitation link has expired or is no longer valid. Contact your administrator for a new invitation.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-6 items-center">
-                <div className="flex-1"></div>
-                <div className="flex-1">
-                  <Button onClick={() => router.push('/auth')} variant="accent" className="!w-full md:!w-full">
-                    Back to Login
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </AuthLayout>
-    );
-  }
+  const formProviders: AuthSsoProvider[] = (['google', 'microsoft'] as const).filter(provider =>
+    providers.some(sp => SSO_TO_FORM[sp.provider] === provider),
+  );
 
   return (
-    <AuthLayout>
-      <div className="w-full">
-        <Card className="bg-ods-card border-ods-border">
-          <CardHeader>
-            <h1 className="font-heading text-[32px] font-semibold text-ods-text-primary leading-10 tracking-[-0.64px] mb-2">
-              Accept Invitation
-            </h1>
-            <p className="font-body text-[18px] font-medium text-ods-text-secondary leading-6">
-              Complete your registration to join the organization
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* SSO Options */}
-              {ssoProviders.length > 0 && (
-                <div>
-                  <AuthProvidersList
-                    enabledProviders={ssoProviders}
-                    onProviderClick={handleSsoSignup}
-                    dividerText="Sign up with"
-                    loading={isLoading || loadingProviders}
-                  />
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-ods-border" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="bg-ods-card px-2 text-ods-text-secondary">Or continue with email</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {/* Personal Details */}
-              <div className="flex flex-col md:flex-row gap-6" onClick={() => setSignupMethod('form')}>
-                <div className="flex-1 flex flex-col gap-1">
-                  <Label>First Name</Label>
-                  <Input
-                    value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    placeholder="Your First Name"
-                    disabled={isLoading}
-                    className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-                  />
-                </div>
-                <div className="flex-1 flex flex-col gap-1">
-                  <Label>Last Name</Label>
-                  <Input
-                    value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    placeholder="Your Last Name"
-                    disabled={isLoading}
-                    className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-                  />
-                </div>
-              </div>
-
-              {/* Password Fields */}
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="flex-1 flex flex-col gap-1">
-                  <Label>Password</Label>
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="Choose a Strong Password"
-                    disabled={isLoading}
-                    className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-                  />
-                  {password && password.length < 8 && (
-                    <p className="text-xs text-ods-error mt-1">Password must be at least 8 characters</p>
-                  )}
-                </div>
-                <div className="flex-1 flex flex-col gap-1">
-                  <Label>Confirm Password</Label>
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm your Password"
-                    disabled={isLoading}
-                    className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-                  />
-                  {confirmPassword && password !== confirmPassword && (
-                    <p className="text-xs text-ods-error mt-1">Passwords do not match</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch md:items-center pt-4">
-                <Button
-                  onClick={() => router.push('/auth')}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="w-full md:flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleSubmit(false)}
-                  disabled={
-                    !firstName.trim() ||
-                    !lastName.trim() ||
-                    !password ||
-                    !confirmPassword ||
-                    password !== confirmPassword ||
-                    isLoading
-                  }
-                  loading={isLoading}
-                  variant="accent"
-                  className="w-full md:flex-1"
-                >
-                  Accept Invitation
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <AuthShell footer={<BackToLoginLink onClick={handleBack} />}>
+      <CompleteAccountForm
+        firstName={firstName}
+        lastName={lastName}
+        password={password}
+        confirmPassword={confirmPassword}
+        onFirstNameChange={setFirstName}
+        onLastNameChange={setLastName}
+        onPasswordChange={setPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onSubmit={() => handleSubmit()}
+        ssoProviders={formProviders}
+        onSsoClick={handleSso}
+        title="Accept Invitation"
+        subtitle="Complete your registration to join the organization"
+        submitDisabled={!isValid}
+        loading={loading || isSubmitting}
+        errors={{
+          password: isTooShort ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters` : undefined,
+          confirmPassword: isMismatch ? 'Passwords do not match' : undefined,
+        }}
+      />
 
       <ConfirmDialog
         open={showTenantSwitch}
@@ -385,8 +157,8 @@ export default function InvitePage() {
         description="You are already registered in another organization. Would you like to switch to this new organization?"
         confirmLabel="Yes, Switch Organization"
         variant="default"
-        onConfirm={handleTenantSwitch}
+        onConfirm={() => handleSubmit(true)}
       />
-    </AuthLayout>
+    </AuthShell>
   );
 }

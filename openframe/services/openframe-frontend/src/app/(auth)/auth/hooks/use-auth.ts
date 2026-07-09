@@ -4,7 +4,6 @@ import { useLocalStorage, useToast } from '@flamingo-stack/openframe-frontend-co
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { isSaasSharedMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
 import { nativeLogin } from '@/lib/native-login';
 import { isNativeShell } from '@/lib/native-shell';
@@ -35,7 +34,6 @@ interface RegisterRequest {
   lastName: string;
   email: string;
   password: string;
-  accessCode: string;
 }
 
 interface SsoRegisterRequest {
@@ -43,7 +41,6 @@ interface SsoRegisterRequest {
   tenantDomain: string;
   email: string;
   provider: 'google' | 'microsoft';
-  accessCode: string;
   redirectTo?: string;
 }
 
@@ -145,7 +142,6 @@ export function useAuth() {
         password: data.password,
         tenantName: data.tenantName,
         tenantDomain: data.tenantDomain || 'localhost',
-        accessCode: isSaasSharedMode() ? data.accessCode : undefined,
       });
 
       if (!response.ok) {
@@ -156,18 +152,6 @@ export function useAuth() {
         const variant: any = 'destructive';
 
         switch (code) {
-          case AUTH_ERROR_CODE.INVALID_ARGUMENT:
-            userMessage = 'Access code is required';
-            break;
-          case AUTH_ERROR_CODE.INVALID_ACCESS_CODE:
-            userMessage = 'The access code you entered is invalid. Please check and try again.';
-            break;
-          case AUTH_ERROR_CODE.ACCESS_CODE_ALREADY_USED:
-            userMessage = 'This access code has already been used. Please contact support for a new code.';
-            break;
-          case AUTH_ERROR_CODE.ACCESS_CODE_VALIDATION_FAILED:
-            userMessage = 'Unable to verify access code. Please try again in a moment.';
-            break;
           case AUTH_ERROR_CODE.TENANT_REGISTRATION_BLOCKED:
             title = 'Service Unavailable';
             userMessage = 'Registration is temporarily unavailable. Please try again later.';

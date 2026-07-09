@@ -1,8 +1,4 @@
-import {
-  ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE,
-  getApprovalMeta,
-  type Notification,
-} from '@flamingo-stack/openframe-frontend-core';
+import { ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE, type Notification } from '@flamingo-stack/openframe-frontend-core';
 import { featureFlags } from '@/lib/feature-flags';
 
 // Backend `NotificationContext.type` discriminators (the string `type` field; the same set the
@@ -56,8 +52,8 @@ const ticketRoute = (ticketId: string) => `/tickets/dialog?id=${encodeURICompone
  */
 const mingoDialogAction = (dialogId: string): NotificationAction =>
   featureFlags.mingoSidebar.enabled()
-    ? { label: 'Open in Mingo', mingoDialogId: dialogId }
-    : { label: 'Open in Mingo', route: mingoDialogRoute(dialogId) };
+    ? { label: 'Open Chat', mingoDialogId: dialogId }
+    : { label: 'Open Chat', route: mingoDialogRoute(dialogId) };
 
 /**
  * Resolve the navigation action a notification offers (button label + route), or null when it
@@ -71,13 +67,13 @@ export function resolveNotificationAction(notification: Notification): Notificat
 
   // Approval requests live in their ticket when one exists, otherwise the mingo dialog.
   if (contextType === ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE) {
-    if (ticketId) return { label: 'Open Ticket', route: ticketRoute(ticketId) };
+    if (ticketId) return { label: 'Ticket Details', route: ticketRoute(ticketId) };
     if (dialogId) return mingoDialogAction(dialogId);
     return null;
   }
 
   if (contextType && TICKET_CONTEXT_TYPES.has(contextType) && ticketId) {
-    return { label: 'Open Ticket', route: ticketRoute(ticketId) };
+    return { label: 'Ticket Details', route: ticketRoute(ticketId) };
   }
 
   if (contextType === ADMIN_AI_MESSAGE_CONTEXT_TYPE && dialogId) {
@@ -87,23 +83,22 @@ export function resolveNotificationAction(notification: Notification): Notificat
   return null;
 }
 
-/**
- * A still-open approval request — its entity should NOT be auto-marked read when
- * merely opened (it clears only when approved/rejected). Shared by every place
- * that marks a notification read on open (the location auto-reader, the drawer
- * tile/table, the desktop click) so the rule stays uniform.
- */
-export function isPendingApproval(notification: Notification): boolean {
-  const approval = getApprovalMeta(notification);
-  if (!approval) return false;
-  const resolution = approval.resolution?.toUpperCase();
-  return !resolution || resolution === 'PENDING';
-}
-
 /** Convenience for callers that only need a router route (drawer actions yield null). */
 export function resolveNotificationRoute(notification: Notification): string | null {
   const action = resolveNotificationAction(notification);
   return action && 'route' in action ? action.route : null;
+}
+
+/**
+ * True when the notification carries the id of a dialog currently on screen. The drawer
+ * changes no URL, so this is the drawer analogue of `notificationTargetsLocation` — the
+ * caller supplies the active-view set from `@/lib/active-dialog-views`. Matches by
+ * `meta.dialogId` rather than the navigation action so ticket-linked Mingo messages
+ * (whose action is the ticket route) still auto-read while their dialog is being watched.
+ */
+export function notificationTargetsDialog(notification: Notification, activeDialogs: ReadonlySet<string>): boolean {
+  const dialogId = notification.meta?.dialogId;
+  return typeof dialogId === 'string' && activeDialogs.has(dialogId);
 }
 
 /**

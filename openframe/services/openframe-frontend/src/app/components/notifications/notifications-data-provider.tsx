@@ -28,6 +28,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import {
   ConnectionHandler,
@@ -61,13 +62,18 @@ import {
 } from '@/graphql/notifications/notifications-helpers';
 import { refreshUnreadCounts } from '@/graphql/notifications/unread-counts-relay';
 import { useNotificationMutations } from '@/graphql/notifications/use-notification-mutations';
-import { isDialogViewActive } from '@/lib/active-dialog-views';
+import {
+  getActiveDialogViews,
+  getServerActiveDialogViews,
+  isDialogViewActive,
+  subscribeActiveDialogViews,
+} from '@/lib/active-dialog-views';
 import { featureFlags } from '@/lib/feature-flags';
 import { notificationGlobalId } from '@/lib/relay-id';
+import { withCategoryIcon } from './notification-category-icons';
 import {
-  ADMIN_AI_MESSAGE_CONTEXT_TYPE,
   CONTEXT_TYPENAME_BY_TYPE,
-  isPendingApproval,
+  notificationTargetsDialog,
   notificationTargetsLocation,
   resolveNotificationAction,
 } from './notification-navigation';
@@ -260,8 +266,7 @@ function NavigationTileWrapper({ notification, helpers, children }: NavigationTi
         openMingoDialogInDrawer(action.mingoDialogId);
         // The drawer changes no URL, so the location-based `EntityViewAutoReader`
         // can't clear this one — mark it read here to match the route flow.
-        // Pending approvals stay unread until decided (same rule as the reader).
-        if (!isPendingApproval(notification)) markRead(notification.id);
+        markRead(notification.id);
       } else {
         router.push(action.route);
       }
@@ -431,24 +436,32 @@ function NotificationsDataInner({
  * Marks an unread notification read once the user opens the entity it points at (the mingo
  * dialog, the ticket, …). Works off the shared route mapping so it stays consistent across
  * every entity type a notification can carry, and routes through the context's `markRead` so
- * the drawer list, the unread connection and the sidebar bucket all update together. Pending
- * approval requests are left unread — opening the entity isn't acting on them; they clear only
- * once approved/rejected.
+ * the drawer list, the unread connection and the sidebar bucket all update together. A Mingo
+ * dialog opened in the chat drawer changes no URL, so "viewing" is the union of the location
+ * match and the active-dialog-views registry.
  */
 function EntityViewAutoReader() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const activeDialogs = useSyncExternalStore(
+    subscribeActiveDialogViews,
+    getActiveDialogViews,
+    getServerActiveDialogViews,
+  );
   const { notifications, markRead } = useNotifications();
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     for (const notification of notifications) {
-      if (notification.read || isPendingApproval(notification)) continue;
-      if (notificationTargetsLocation(notification, pathname, params)) {
+      if (notification.read) continue;
+      if (
+        notificationTargetsLocation(notification, pathname, params) ||
+        notificationTargetsDialog(notification, activeDialogs)
+      ) {
         markRead(notification.id);
       }
     }
-  }, [pathname, searchParams, notifications, markRead]);
+  }, [pathname, searchParams, activeDialogs, notifications, markRead]);
 
   return null;
 }
@@ -471,7 +484,7 @@ function NotificationsDrawerHydrator({ onPaginationChange }: NotificationsDrawer
   >(notificationsDrawerRelayFragment, queryData);
 
   const notifications = useMemo(
-    () => data.notifications.edges.map(edge => mapNotificationNode(edge.node)),
+    () => data.notifications.edges.map(edge => withCategoryIcon(mapNotificationNode(edge.node))),
     [data.notifications.edges],
   );
 
@@ -496,16 +509,15 @@ interface NotificationsLiveBridgeProps {
 }
 
 /**
- * True when the notification is an AI-message for a dialog the user is
- * watching live (mingo page or chat drawer) in a visible tab. Such
- * notifications are redundant — the message is already rendering in the chat —
- * so the popup is skipped and the notification auto-marked read. Approval
- * requests are deliberately excluded: they carry actions, so they stay unread
- * until the user acts (same convention as `NavigationTileWrapper`).
+ * True when the notification points at a dialog the user is watching live
+ * (mingo page or chat drawer) in a visible tab — any context carrying a
+ * `dialogId`, i.e. Mingo messages, their ticket-linked variant, and approval
+ * requests. Such notifications are redundant — the message or approval card is
+ * already rendering in the chat — so the popup is skipped and the notification
+ * auto-marked read.
  */
 function isWatchingNotificationDialog(payload: NatsNotificationPayload): boolean {
-  if (payload.context?.type !== ADMIN_AI_MESSAGE_CONTEXT_TYPE) return false;
-  const dialogId = payload.context.dialogId;
+  const dialogId = payload.context?.dialogId;
   if (typeof dialogId !== 'string' || !isDialogViewActive(dialogId)) return false;
   return typeof document !== 'undefined' && document.visibilityState === 'visible';
 }
@@ -556,10 +568,8 @@ function maybeShowDesktopNotification(
       if (action) {
         if ('mingoDialogId' in action) {
           openMingoDialogInDrawer(action.mingoDialogId);
-          // No route change → the location auto-reader can't clear it; mark read
-          // here. Approval requests are the exception (they clear on decision,
-          // not on open) — leave those unread.
-          if (payload.context?.type !== ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE) markRead(relayId);
+          // No route change → the location auto-reader can't clear it; mark read here.
+          markRead(relayId);
         } else {
           navigate(action.route);
         }

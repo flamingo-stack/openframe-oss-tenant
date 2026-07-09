@@ -6,10 +6,44 @@ import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@/lib/auth-api-client';
 
 export type AvailabilityStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error';
 
-// NOTE: real-time email availability is temporarily unimplemented. It previously used
-// `discoverTenants`, which flags any email that belongs to a tenant — too broad to gate
-// registration. A dedicated BE endpoint for "is this email registered" is pending; the
-// email hook will be reintroduced against it.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Debounced check of whether an email is already registered. Runs only on valid email format. */
+export function useEmailAvailability(email: string, delay = 400): AvailabilityStatus {
+  const debounced = useDebounce(email.trim(), delay);
+  const [status, setStatus] = useState<AvailabilityStatus>('idle');
+
+  useEffect(() => {
+    if (!debounced || !EMAIL_REGEX.test(debounced)) {
+      setStatus('idle');
+      return;
+    }
+
+    let cancelled = false;
+    setStatus('checking');
+
+    authApiClient
+      .checkEmailAvailability(debounced)
+      .then(res => {
+        if (cancelled) return;
+        if (!res.ok || !res.data) {
+          setStatus('error');
+          return;
+        }
+        const { available } = res.data as { available?: boolean };
+        setStatus(available ? 'available' : 'taken');
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('error');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debounced]);
+
+  return status;
+}
 
 /** Debounced check of subdomain availability; returns status plus suggested alternatives when taken. */
 export function useDomainAvailability(
@@ -19,6 +53,8 @@ export function useDomainAvailability(
   delay = 400,
 ): { status: AvailabilityStatus; suggestions: string[] } {
   const debounced = useDebounce(subdomain.trim(), delay);
+  // Debounced too — otherwise every keystroke in Organization Name re-fires the check.
+  const debouncedOrgName = useDebounce(orgName.trim(), delay);
   const [status, setStatus] = useState<AvailabilityStatus>('idle');
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
@@ -34,7 +70,7 @@ export function useDomainAvailability(
     setSuggestions([]);
 
     authApiClient
-      .checkDomainAvailability(debounced, orgName.trim())
+      .checkDomainAvailability(debounced, debouncedOrgName)
       .then(res => {
         if (cancelled) return;
         if (!res.ok || !res.data) {
@@ -57,7 +93,7 @@ export function useDomainAvailability(
     return () => {
       cancelled = true;
     };
-  }, [debounced, orgName, enabled]);
+  }, [debounced, debouncedOrgName, enabled]);
 
   return { status, suggestions };
 }

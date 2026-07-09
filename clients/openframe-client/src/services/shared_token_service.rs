@@ -1,7 +1,7 @@
-use std::fs;
 use anyhow::Result;
 use crate::platform::directories::DirectoryManager;
 use crate::services::EncryptionService;
+use crate::utils::fs::atomic_write;
 
 #[derive(Clone)]
 pub struct SharedTokenService {
@@ -18,15 +18,9 @@ impl SharedTokenService {
     }
 
     pub fn update(&self, token: String) -> Result<()> {
-        let config_dir = self.dir_manager.secured_dir();
-        let token_file_path = config_dir.join("shared_token.enc");
-
-        if let Some(parent) = token_file_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-
+        let token_file_path = self.dir_manager.secured_dir().join("shared_token.enc");
         let encrypted_token = self.encryption_service.encrypt(&token)?;
-        fs::write(token_file_path, encrypted_token)?;
+        atomic_write(&token_file_path, encrypted_token)?;
         Ok(())
     }
 } 
