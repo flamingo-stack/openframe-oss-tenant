@@ -52,15 +52,6 @@ export default function InvitePage() {
     if (!invitationId) return;
 
     const ssoProvider = FORM_TO_SSO[provider];
-    // The accept endpoint only supports external providers (google/microsoft).
-    if (ssoProvider === 'openframe-sso') {
-      toast({
-        title: 'Provider Not Supported',
-        description: 'This invitation cannot be accepted with OpenFrame SSO. Please use Google or Microsoft.',
-        variant: 'destructive',
-      });
-      return;
-    }
 
     setIsSubmitting(true);
     try {

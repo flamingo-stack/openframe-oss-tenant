@@ -201,7 +201,7 @@ class AuthApiClient {
 
   acceptInvitationSso(payload: {
     invitationId: string;
-    provider: 'google' | 'microsoft';
+    provider: 'openframe-sso' | 'google' | 'microsoft';
     switchTenant?: boolean;
     redirectTo?: string;
   }) {
