@@ -87,9 +87,14 @@ export default function InvitePage() {
     return <InviteLinkInvalidModal onBackToLogin={handleBack} />;
   }
 
-  const formProviders = FORM_PROVIDER_ORDER.filter(provider =>
-    providers.some(sp => SSO_TO_FORM[sp.provider] === provider),
-  );
+  // OpenFrame SSO is the platform's own sign-in, so it's always offered;
+  // external providers come from the backend response.
+  const formProviders: AuthSsoProvider[] = [
+    'openframe',
+    ...FORM_PROVIDER_ORDER.filter(
+      provider => provider !== 'openframe' && providers.some(sp => SSO_TO_FORM[sp.provider] === provider),
+    ),
+  ];
 
   return (
     <AuthShell mobileTagline={AUTH_MOBILE_TAGLINE} footer={<BackToLoginLink onClick={handleBack} />}>
