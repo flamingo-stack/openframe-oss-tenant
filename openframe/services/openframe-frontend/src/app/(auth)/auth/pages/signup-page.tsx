@@ -36,6 +36,11 @@ export default function SignupPage() {
 
   const handleSsoSignup = async (provider: string) => {
     if (storedOrgName && storedDomain) {
+      // Stale session data without email — restart from the choice step
+      if (!storedEmail) {
+        router.push('/auth/');
+        return;
+      }
       await registerOrganizationSso({
         tenantName: storedOrgName,
         tenantDomain: storedDomain,
