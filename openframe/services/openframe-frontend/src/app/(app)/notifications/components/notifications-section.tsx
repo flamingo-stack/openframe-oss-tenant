@@ -198,7 +198,7 @@ function SectionTable({
           stickyHeaderOffset={stickyHeaderOffset}
           rightSlot={<DataTable.RowCount itemName="result" />}
         />
-        <DataTable.Body rowClassName="mb-1" renderSubRow={renderSubRow} />
+        <DataTable.Body rowClassName="mb-1" renderSubRow={renderSubRow} autoHeight />
         <DataTable.InfiniteFooter
           hasNextPage={hasNext}
           isFetchingNextPage={isLoadingNext}

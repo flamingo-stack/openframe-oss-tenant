@@ -33,6 +33,7 @@ export const notificationsDrawerRelayFragment = graphql`
             }
             ... on AdminAiTicketMessageContext {
               ticketId
+              dialogId
             }
             ... on TicketStatusChangedContext {
               ticketId

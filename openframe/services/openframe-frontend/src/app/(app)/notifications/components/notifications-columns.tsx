@@ -1,15 +1,22 @@
 'use client';
 
-import type { Notification } from '@flamingo-stack/openframe-frontend-core';
+import type { Notification, NotificationSeverity } from '@flamingo-stack/openframe-frontend-core';
 import {
   ArrowRightUpIcon,
   CheckCircleIcon,
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Button, type ColumnDef, type Row, SplitButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { isPendingApproval, resolveNotificationAction } from '@/app/components/notifications/notification-navigation';
+import {
+  Button,
+  type ColumnDef,
+  dotColorByVariant,
+  type Row,
+  SplitButton,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { cn, formatTicketRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
+import { getNotificationCategoryIcon } from '@/app/components/notifications/notification-category-icons';
+import { resolveNotificationAction } from '@/app/components/notifications/notification-navigation';
 import { openMingoDialogInDrawer } from '@/app/components/notifications/open-mingo-dialog';
-import { formatDate, formatTime } from '@/lib/format-date';
 
 export interface NotificationRow {
   id: string;
@@ -26,6 +33,13 @@ interface BuildColumnsArgs {
   onDelete?: (id: string) => void;
 }
 
+/** Row label color per the Figma table row: DANGER red, WARNING amber, SUCCESS green, INFO/default primary. */
+const titleColorBySeverity: Partial<Record<NotificationSeverity, string>> = {
+  DANGER: 'text-ods-error',
+  WARNING: 'text-ods-warning',
+  SUCCESS: 'text-ods-success',
+};
+
 export function buildNotificationColumns({
   rowVariant,
   onMarkRead,
@@ -37,28 +51,55 @@ export function buildNotificationColumns({
       accessorKey: 'title',
       header: 'Notification',
       enableSorting: false,
-      meta: { width: 'flex-1 min-w-0' },
-      cell: ({ row }: { row: Row<NotificationRow> }) => (
-        <div className="flex min-w-0 flex-col gap-[var(--spacing-system-xxs)]">
-          <span className="truncate text-h4 text-ods-text-primary">{row.original.title}</span>
-          {row.original.description ? (
-            <span className="truncate text-h6 text-ods-text-secondary">{row.original.description}</span>
-          ) : null}
-        </div>
-      ),
+      meta: { width: 'flex-[2] min-w-0' },
+      cell: ({ row }: { row: Row<NotificationRow> }) => {
+        const { category, type, severity, variant = 'default' } = row.original.notification;
+        return (
+          <div className="flex min-w-0 items-center gap-[var(--spacing-system-m)]">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-ods-border text-ods-text-secondary">
+              {getNotificationCategoryIcon(category) ?? (
+                <span className={cn('size-1.5 rounded-full', dotColorByVariant[variant])} />
+              )}
+            </div>
+            <div className="flex min-w-0 flex-col gap-[var(--spacing-system-xxs)]">
+              <span
+                className={cn(
+                  'truncate text-h4',
+                  (severity && titleColorBySeverity[severity]) ?? 'text-ods-text-primary',
+                )}
+              >
+                {/* Context-derived kind label; title stands in when the context is generic. */}
+                {type ?? row.original.title}
+              </span>
+              <span className="truncate text-h6 text-ods-text-secondary">
+                {formatTicketRelativeTime(new Date(row.original.createdAt).toISOString())}
+              </span>
+            </div>
+          </div>
+        );
+      },
     },
     {
-      id: 'time',
-      accessorKey: 'createdAt',
-      header: 'Time',
+      id: 'details',
+      accessorKey: 'description',
+      header: 'Details',
       enableSorting: false,
-      meta: { width: 'w-[160px]' },
-      cell: ({ row }: { row: Row<NotificationRow> }) => (
-        <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
-          <span className="text-h4 text-ods-text-primary">{formatTime(row.original.createdAt)}</span>
-          <span className="text-h6 text-ods-text-secondary">{formatDate(row.original.createdAt)}</span>
-        </div>
-      ),
+      meta: { width: 'flex-[3] min-w-0' },
+      cell: ({ row }: { row: Row<NotificationRow> }) => {
+        // The title moves here only when the kind label owns the first column;
+        // otherwise it's already shown there and only the description remains.
+        const showTitle = !!row.original.notification.type;
+        return (
+          <div className="flex min-w-0 flex-col">
+            {showTitle ? <span className="truncate text-h4 text-ods-text-primary">{row.original.title}</span> : null}
+            {row.original.description ? (
+              <span className="line-clamp-3 break-words text-h6 text-ods-text-secondary">
+                {row.original.description}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
     },
     {
       id: 'action',
@@ -73,14 +114,13 @@ export function buildNotificationColumns({
         // new tab. Route actions keep the open-in-new-tab anchor behavior.
         const isRoute = 'route' in action;
         // Opening clears unread (the drawer has no URL, so the location-based
-        // auto-reader can't) — except a pending approval, which stays unread
-        // until it's approved/rejected. `onMarkRead` is only wired for the
-        // unread variant; it's a no-op for already-read rows.
+        // auto-reader can't). `onMarkRead` is only wired for the unread
+        // variant; it's a no-op for already-read rows.
         const openDrawer = isRoute
           ? undefined
           : () => {
               openMingoDialogInDrawer(action.mingoDialogId);
-              if (!isPendingApproval(row.original.notification)) onMarkRead?.(row.original.id);
+              onMarkRead?.(row.original.id);
             };
         return (
           <div data-no-row-click className="flex w-full justify-end">

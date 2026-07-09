@@ -181,11 +181,12 @@ export function makeDeleteNotificationUpdater(id: string, pairs: NotificationCon
   };
 }
 
-type KnownSeverity = 'INFO' | 'WARNING' | 'DANGER';
+type KnownSeverity = 'INFO' | 'SUCCESS' | 'WARNING' | 'DANGER';
+
+const KNOWN_SEVERITIES: ReadonlySet<string> = new Set<KnownSeverity>(['INFO', 'SUCCESS', 'WARNING', 'DANGER']);
 
 function normalizeSeverity(value: NotificationSeverity | undefined): KnownSeverity | undefined {
-  if (value === 'INFO' || value === 'WARNING' || value === 'DANGER') return value;
-  return undefined;
+  return value && KNOWN_SEVERITIES.has(value) ? (value as KnownSeverity) : undefined;
 }
 
 export function severityToVariant(severity: KnownSeverity | undefined): NotificationVariant {
@@ -194,6 +195,8 @@ export function severityToVariant(severity: KnownSeverity | undefined): Notifica
       return 'error';
     case 'WARNING':
       return 'warning';
+    case 'SUCCESS':
+      return 'success';
     case 'INFO':
       return 'info';
     default:
@@ -206,8 +209,22 @@ export function parseSeverity(
 ): KnownSeverity | undefined {
   if (!input) return undefined;
   const upper = String(input).toUpperCase();
-  if (upper === 'INFO' || upper === 'WARNING' || upper === 'DANGER') return upper as KnownSeverity;
-  return undefined;
+  return KNOWN_SEVERITIES.has(upper) ? (upper as KnownSeverity) : undefined;
+}
+
+/**
+ * Human label for a `NotificationContext.type` discriminator: SNAKE_CASE → Title Case
+ * (e.g. TICKET_STATUS_CHANGED → "Ticket Status Changed"). Data-driven so new backend
+ * context types label themselves; the catch-all discriminators carry no meaning → undefined.
+ */
+export function contextTypeLabel(contextType: string | null | undefined): string | undefined {
+  if (!contextType || contextType === 'UNKNOWN' || contextType === 'GENERIC') return undefined;
+  return contextType
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 const EPOCH_MS_THRESHOLD = 1e12;
@@ -250,6 +267,7 @@ export interface NotificationNodeShape {
   readonly description: string | null | undefined;
   readonly createdAt: unknown;
   readonly read: boolean;
+  readonly category?: string | null;
   readonly context: {
     // biome-ignore lint/style/useNamingConvention: GraphQL __typename discriminator
     readonly __typename: string;
@@ -298,12 +316,14 @@ export function mapNotificationNode(node: NotificationNodeShape): Notification {
 
   return {
     id: node.id,
+    type: contextTypeLabel(context.type),
     title: node.title,
     description: node.description ?? undefined,
     createdAt: parseCreatedAt(node.createdAt),
     read: node.read,
     severity,
     variant: severityToVariant(severity),
+    category: node.category ?? undefined,
     meta,
   };
 }

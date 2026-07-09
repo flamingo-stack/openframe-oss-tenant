@@ -1,15 +1,14 @@
 'use client';
 
 import {
-  DeviceCard,
-  Drawer,
-  DrawerBody,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  Tag,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
+  AppLayoutDrawer,
+  AppLayoutDrawerBody,
+  AppLayoutDrawerContent,
+  AppLayoutDrawerDescription,
+  AppLayoutDrawerHeader,
+  AppLayoutDrawerTitle,
+} from '@flamingo-stack/openframe-frontend-core/components/navigation';
+import { DeviceCard, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type React from 'react';
 import { DeviceDetailsButton } from '@/app/(app)/devices/components/device-details-button';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
@@ -88,19 +87,23 @@ export function LogDrawer({
   const hasDevice = !!deviceId && deviceId !== 'null' && deviceId !== '';
 
   return (
-    <Drawer
+    <AppLayoutDrawer
       open={isOpen}
       onOpenChange={open => {
         if (!open) onClose();
       }}
     >
-      <DrawerContent side="right" offsetHeader className="max-w-[400px]">
+      {/* md:w matches the mobileBreakpoint: below it the panel is forced
+          full-bleed, so a fixed width there would detach it from the right edge */}
+      <AppLayoutDrawerContent side="right" className="md:w-[400px]">
         {/* Header */}
-        <DrawerHeader>
-          <DrawerTitle>Log Details</DrawerTitle>
+        <AppLayoutDrawerHeader>
+          <AppLayoutDrawerTitle>Log Details</AppLayoutDrawerTitle>
 
           {description && (
-            <DrawerDescription className="text-h4 leading-6 text-ods-text-primary">{description}</DrawerDescription>
+            <AppLayoutDrawerDescription className="text-h4 leading-6 text-ods-text-primary">
+              {description}
+            </AppLayoutDrawerDescription>
           )}
 
           {(statusTag || timestamp) && (
@@ -109,10 +112,10 @@ export function LogDrawer({
               {timestamp && <span className="text-h6 text-ods-text-secondary">{timestamp}</span>}
             </div>
           )}
-        </DrawerHeader>
+        </AppLayoutDrawerHeader>
 
         {/* Body */}
-        <DrawerBody>
+        <AppLayoutDrawerBody>
           <div className="flex-1 space-y-4 overflow-y-auto min-h-0">
             {/* Info Card — vertical fields: Value on top, Label below */}
             {infoFields && infoFields.length > 0 && (
@@ -138,8 +141,8 @@ export function LogDrawer({
               <DrawerDeviceCard deviceId={deviceId} />
             </div>
           )}
-        </DrawerBody>
-      </DrawerContent>
-    </Drawer>
+        </AppLayoutDrawerBody>
+      </AppLayoutDrawerContent>
+    </AppLayoutDrawer>
   );
 }
