@@ -136,6 +136,7 @@ export function useChat({
     onApprove: approvals.handleApproveRequest,
     onReject: approvals.handleRejectRequest,
     approvalStatuses: approvals.approvalStatuses,
+    resolvedByNames: approvals.resolvedByNames,
   });
 
   useEffect(() => {
@@ -228,15 +229,20 @@ export function useChat({
       },
       onApprove: (requestId?: string) => approvalsRef.current.handleApproveRequest(requestId),
       onReject: (requestId?: string) => approvalsRef.current.handleRejectRequest(requestId),
-      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+      onApprovalResolved: (
+        requestId: string,
+        status: ChatApprovalStatus,
+        _approvalType: string,
+        resolvedByName?: string | null,
+      ) => {
         if (status === 'approved' || status === 'rejected') {
           // Live messages — covers approvals in the current session bubble.
-          messagesRef.current.updateApprovalStatusById(requestId, status);
+          messagesRef.current.updateApprovalStatusById(requestId, status, resolvedByName);
           // Historical messages — when the originating approval lives in a
           // resumed-dialog bubble owned by React Query, the live-state
           // updater above misses it. The approvalStatuses map drives
           // `processHistoricalMessages` to overlay the new status.
-          approvalsRef.current.applyResolvedStatus(requestId, status);
+          approvalsRef.current.applyResolvedStatus(requestId, status, resolvedByName);
         }
       },
       onToolExecuted: (segment: ToolExecutionSegment) => {

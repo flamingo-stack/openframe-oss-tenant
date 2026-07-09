@@ -41,6 +41,7 @@ export const notificationsSectionRelayFragment = graphql`
             }
             ... on AdminAiTicketMessageContext {
               ticketId
+              dialogId
             }
             ... on TicketStatusChangedContext {
               ticketId

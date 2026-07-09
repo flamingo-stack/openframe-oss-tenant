@@ -155,6 +155,7 @@ function getDialogMessagesQuery() {
               approvalRequestId
               approved
               approvalType
+              resolvedByName
             }
 
             ... on ContextCompactionStartData {
