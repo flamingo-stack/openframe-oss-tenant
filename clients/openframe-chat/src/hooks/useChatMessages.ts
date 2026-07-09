@@ -164,23 +164,32 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
   // when APPROVAL_RESULT arrives after the originating message has ended
   // (e.g. interrupt-cancel) — the cross-message handler keeps the resolved
   // status on the original card without spawning a duplicate bubble.
-  const updateApprovalStatusById = useCallback((requestId: string, status: 'approved' | 'rejected') => {
-    setMessages(prev =>
-      prev.map(message => {
-        if (message.role !== 'assistant' || !Array.isArray(message.content)) return message;
-        const updatedContent = (message.content as MessageSegment[]).map(segment => {
-          if (segment.type === 'approval_request' && segment.data?.requestId === requestId) {
-            return { ...segment, status };
-          }
-          if (segment.type === 'approval_batch' && segment.data?.approvalRequestId === requestId) {
-            return { ...segment, status } as ApprovalBatchSegment;
-          }
-          return segment;
-        });
-        return { ...message, content: updatedContent };
-      }),
-    );
-  }, []);
+  // `resolvedByName` (from the APPROVAL_RESULT chunk) feeds the status pill
+  // ("Approved by {name}").
+  const updateApprovalStatusById = useCallback(
+    (requestId: string, status: 'approved' | 'rejected', resolvedByName?: string | null) => {
+      setMessages(prev =>
+        prev.map(message => {
+          if (message.role !== 'assistant' || !Array.isArray(message.content)) return message;
+          const updatedContent = (message.content as MessageSegment[]).map(segment => {
+            if (segment.type === 'approval_request' && segment.data?.requestId === requestId) {
+              return { ...segment, status, resolvedByName: resolvedByName ?? segment.resolvedByName };
+            }
+            if (segment.type === 'approval_batch' && segment.data?.approvalRequestId === requestId) {
+              return {
+                ...segment,
+                status,
+                resolvedByName: resolvedByName ?? segment.resolvedByName,
+              } as ApprovalBatchSegment;
+            }
+            return segment;
+          });
+          return { ...message, content: updatedContent };
+        }),
+      );
+    },
+    [],
+  );
 
   // Cross-message tool execution updater: merges EXECUTING_TOOL/EXECUTED_TOOL
   // results into the originating standalone segment OR the matching batch's

@@ -41,15 +41,15 @@ export default function SignupPage() {
   }, [isAuthenticated, router]);
 
   // This screen only completes the Create Organization step — without the org
-  // details from it (direct URL visit, expired sessionStorage) there is nothing
-  // to register, so send the user back to the form.
+  // details from it (direct URL visit, expired/stale sessionStorage) there is
+  // nothing to register, so send the user back to the form.
   useEffect(() => {
-    if (!storedOrgName || !storedDomain) {
+    if (!storedOrgName || !storedDomain || !storedEmail) {
       router.replace('/auth');
     }
-  }, [storedOrgName, storedDomain, router]);
+  }, [storedOrgName, storedDomain, storedEmail, router]);
 
-  if (!storedOrgName || !storedDomain) return null;
+  if (!storedOrgName || !storedDomain || !storedEmail) return null;
 
   const isTooShort = !!password && password.length < MIN_PASSWORD_LENGTH;
   const isMismatch = !!confirmPassword && password !== confirmPassword;
