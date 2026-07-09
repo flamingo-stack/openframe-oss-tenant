@@ -106,7 +106,7 @@ export function NotificationsPageView() {
 
   const newActions: PageActionButton[] = [
     {
-      label: 'Mark All as Done',
+      label: 'Mark All Complete',
       icon: <CheckCircleIcon className="text-ods-text-secondary" />,
       onClick: markAllRead,
       variant: 'outline',
