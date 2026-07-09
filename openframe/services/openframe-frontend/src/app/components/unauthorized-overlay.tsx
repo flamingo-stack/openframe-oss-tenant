@@ -54,7 +54,8 @@ export function UnauthorizedOverlay({ onRetry }: UnauthorizedOverlayProps) {
       return;
     }
     if (loginUrl) {
-      window.location.href = loginUrl;
+      // Land on the Login tab directly — the auth host's root defaults to Sign Up
+      window.location.href = `${loginUrl.replace(/\/+$/, '')}/auth/login/`;
     } else {
       // Fallback: reload or no-op
       if (onRetry) onRetry();
