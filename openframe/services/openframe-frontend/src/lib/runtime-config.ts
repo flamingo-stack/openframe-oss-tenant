@@ -57,10 +57,10 @@ export const runtimeEnv = {
     return getEnvVar('NEXT_PUBLIC_MOBILE_TENANT_ID') || '';
   },
   /**
-   * `new-onboarding` flag fallback when the backend doesn't return it. The onboarding
-   * UI is currently pure static (no backend), so this just controls visibility:
-   * defaults ON in development, OFF in production. Override with
-   * `NEXT_PUBLIC_FF_NEW_ONBOARDING=true|false`.
+   * `new-onboarding` flag fallback when the backend doesn't return it. Controls
+   * whether the onboarding chrome (Initial Setup card + Get Started tour, both backed
+   * by `tenant/userOnboardingProgress`) is shown: defaults ON in development, OFF in
+   * production. Override with `NEXT_PUBLIC_FF_NEW_ONBOARDING=true|false`.
    */
   newOnboardingFlag(): boolean {
     const explicit = getEnvVar('NEXT_PUBLIC_FF_NEW_ONBOARDING');
