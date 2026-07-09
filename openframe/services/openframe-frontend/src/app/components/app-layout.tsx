@@ -1,5 +1,6 @@
 'use client';
 
+import { useOptionalNotifications } from '@flamingo-stack/openframe-frontend-core';
 import { ChatIdentityProvider } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import {
   AppLayoutDrawer,
@@ -8,7 +9,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/navigation';
 import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
 import { usePathname, useRouter } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMingoLauncherStore } from '@/app/(app)/mingo/stores/mingo-launcher-store';
 import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
 import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
@@ -87,20 +88,28 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     router.push(userId ? employeeDetailHref(userId) : '/settings');
   }, [router, userId]);
 
-  // Close the drawer on route navigation. The drawer is non-modal (header +
-  // sidebar stay interactive while it's open), so clicking a nav link or an
-  // in-chat link that routes should land the user on the new page rather than
-  // leaving the panel covering it. The lib's EmbeddableChat leaves this
-  // pathname-driven close to the embedder (it has no router), so we own it
-  // here. Runs on `pathname` change; the initial no-op (already closed) is
-  // harmless - React bails on a same-value `setState`.
+  // Notifications context (provided by NotificationsDataProvider in the root
+  // layout). Read via ref so the pathname effect below doesn't depend on the
+  // context value's render-to-render identity.
+  const notificationsCtx = useOptionalNotifications();
+  const closeNotificationsRef = useRef(notificationsCtx?.close);
+  closeNotificationsRef.current = notificationsCtx?.close;
+
+  // Close the in-layout panels (mingo chat + notifications drawer) on route
+  // navigation. They are non-modal (header + sidebar stay interactive while
+  // open), so clicking a nav link or an in-chat link that routes should land
+  // the user on the new page rather than leaving a panel covering it. The lib
+  // leaves this pathname-driven close to the embedder (it has no router), so
+  // we own it here. Runs on `pathname` change; the initial no-op (already
+  // closed) is harmless - React bails on a same-value `setState`.
   //
-  // `pathname` is the intentional trigger but isn't read in the body (we pull
-  // the store action imperatively via getState() so it isn't a dependency), so
-  // biome's exhaustive-deps rule sees it as "extra". That's deliberate.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the intentional re-run trigger; the close() action is read imperatively
+  // `pathname` is the intentional trigger but isn't read in the body (the
+  // close actions are read imperatively via getState()/ref so they aren't
+  // dependencies), so biome's exhaustive-deps rule sees it as "extra".
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the intentional re-run trigger; the close() actions are read imperatively
   useEffect(() => {
     useMingoLauncherStore.getState().close();
+    closeNotificationsRef.current?.();
   }, [pathname]);
 
   const { isLocked } = useSubscriptionLock();

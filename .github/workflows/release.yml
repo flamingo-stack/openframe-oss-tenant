@@ -41,7 +41,6 @@ env:
 jobs:
   version:
     name: Resolve Version
-    if: github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/version.yml
     with:
       version: ${{ inputs.version }}
@@ -198,7 +197,7 @@ jobs:
         working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         env:
-          VERSION: ${{ needs.version.outputs.version || 'latest' }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           if [[ "${{ matrix.name }}" == "openframe-client" && "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
@@ -297,7 +296,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         with:
           name: app-of-apps
-          tag: ${{ inputs.version || '9.9.9' }}
+          tag: ${{ needs.version.outputs.version == 'latest' && '9.9.9' || needs.version.outputs.version }}
           path: ./manifests/app-of-apps
           registry: ${{ env.REGISTRY }}
           repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
@@ -346,7 +345,7 @@ jobs:
 
       - name: Generate release header
         run: |
-          VERSION="${{ needs.version.outputs.version || 'latest' }}"
+          VERSION="${{ needs.version.outputs.version }}"
           IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):'"${VERSION}"'`"')
 
           cat > RELEASE_HEADER.md <<EOF
@@ -375,8 +374,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.version.outputs.version || 'latest' }}
-          name: "🦩 ${{ needs.version.outputs.version || 'latest' }}"
+          tag_name: ${{ needs.version.outputs.version }}
+          name: "🦩 ${{ needs.version.outputs.version }}"
           draft: false
           prerelease: ${{ github.event_name == 'push' }}
           token: ${{ secrets.GITHUB_TOKEN }}
