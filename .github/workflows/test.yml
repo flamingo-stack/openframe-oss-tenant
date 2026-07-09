@@ -210,7 +210,7 @@ jobs:
           tar -xzf "/tmp/${OPENFRAME_CLI_ARCHIVE}" -C /tmp
           install -m 0755 /tmp/openframe /usr/local/bin/openframe
           openframe --version
-          openframe bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
+          openframe bootstrap --non-interactive --verbose
 
       - name: Setup Telepresence
         uses: ./.github/steps/setup-telepresence
