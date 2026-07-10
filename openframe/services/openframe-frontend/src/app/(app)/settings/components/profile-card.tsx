@@ -113,6 +113,7 @@ export function ProfileCard({ onEditProfile, onVerifyEmail }: ProfileCardProps) 
         description="This replays your Get Started tour from the beginning. Your existing data isn't affected."
         confirmLabel="Reset Onboarding"
         cancelLabel="Cancel"
+        variant="warning"
         isPending={isResettingOnboarding}
         pendingLabel="Resetting..."
         onConfirm={() => resetUser(() => setIsResetConfirmOpen(false))}

@@ -7,6 +7,7 @@ import {
   type QuickActionChip,
   useEmptyStateConfig,
 } from '@flamingo-stack/openframe-frontend-core/components/chat';
+import { Video } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { CheckCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useChatRuntime } from '@flamingo-stack/openframe-frontend-core/contexts';
@@ -16,6 +17,9 @@ import { useMingoLauncherStore } from '@/app/(app)/mingo/stores/mingo-launcher-s
 import { useMingoMessagesStore } from '@/app/(app)/mingo/stores/mingo-messages-store';
 
 const GUARDRAILS_HREF = '/settings/ai-settings?tab=guardrails';
+
+// Placeholder demo clip until the real onboarding videos are ready.
+const DEMO_VIDEO_ID = 'i4H_XqrI3RA';
 
 /**
  * Inner body of the "Meet Mingo" onboarding step — an intro to the Mingo AI co-pilot.
@@ -105,43 +109,45 @@ export function MingoStep({
           )}
         </div>
 
-        <div className="flex aspect-[976/558] w-full flex-1 items-center justify-center rounded-md border border-ods-text-secondary bg-ods-border">
-          <span className="font-mono text-h2 text-ods-text-secondary">DEMO VIDEO</span>
+        <div className="w-full flex-1">
+          <Video kind="youtube" url={DEMO_VIDEO_ID} title="Meet Mingo demo video" priority />
         </div>
       </div>
 
-      {/* Footer actions */}
-      <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
+      {/* Footer actions — right column mirrors the intro/video split above so the
+          buttons line up flush with the demo video block. */}
+      <div className="flex w-full flex-col gap-[var(--spacing-system-l)] md:flex-row">
         <div className="hidden flex-1 md:block" />
-        <div className="hidden flex-1 md:block" />
-        {!completed ? (
+        <div className="flex w-full flex-1 flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
+          {!completed ? (
+            <Button
+              variant="outline"
+              leftIcon={<CheckCircleIcon className="size-5" />}
+              onClick={() => onComplete?.()}
+              loading={completing}
+              disabled={completing}
+              className="w-full md:flex-1"
+            >
+              Mark as Complete
+            </Button>
+          ) : (
+            // Keep the completed step's primary button its own width — don't let it
+            // stretch into the removed "Mark as Complete" slot.
+            <div className="hidden md:block md:flex-1" aria-hidden />
+          )}
           <Button
-            variant="outline"
-            leftIcon={<CheckCircleIcon className="size-5" />}
-            onClick={() => onComplete?.()}
-            loading={completing}
-            disabled={completing}
+            variant="accent"
+            onClick={() => {
+              // Opening a Mingo chat completes the step in the background (if not already
+              // done) — no spinner; the drawer opening is the feedback.
+              if (!completed) onCompleteBackground?.();
+              startNewChat();
+            }}
             className="w-full md:flex-1"
           >
-            Mark as Complete
+            Start New Chat
           </Button>
-        ) : (
-          // Keep the completed step's primary button its own width — don't let it
-          // stretch into the removed "Mark as Complete" slot.
-          <div className="hidden md:block md:flex-1" aria-hidden />
-        )}
-        <Button
-          variant="accent"
-          onClick={() => {
-            // Opening a Mingo chat completes the step in the background (if not already
-            // done) — no spinner; the drawer opening is the feedback.
-            if (!completed) onCompleteBackground?.();
-            startNewChat();
-          }}
-          className="w-full md:flex-1"
-        >
-          Start New Chat
-        </Button>
+        </div>
       </div>
     </div>
   );
