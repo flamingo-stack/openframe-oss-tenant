@@ -398,7 +398,7 @@ function LogsTableContent({
           </div>
         ),
         enableSorting: false,
-        meta: { width: 'w-[200px]' },
+        meta: { width: 'w-[200px]', alwaysShowHeader: true },
       },
       {
         accessorKey: 'status',
@@ -720,7 +720,7 @@ export function LogsTableSkeleton() {
         accessorKey: 'logId',
         header: 'Log ID',
         enableSorting: false,
-        meta: { width: 'w-[200px]' },
+        meta: { width: 'w-[200px]', alwaysShowHeader: true },
       },
       {
         accessorKey: 'status',
