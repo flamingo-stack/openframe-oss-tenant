@@ -359,9 +359,10 @@ function LogsTableContent({
     () => [
       {
         accessorKey: 'logId',
-        // Custom header: label + calendar popover with timestamp sort + date-range filter
+        // Custom header: label + calendar popover with timestamp sort + date-range filter.
+        // No own vertical padding — the lib HeaderCell wrapper already pads the row.
         header: () => (
-          <div className="group flex w-full items-center gap-[var(--spacing-system-xsf)] py-[var(--spacing-system-sf)] select-none">
+          <div className="group flex items-center gap-[var(--spacing-system-xsf)] select-none">
             <span className="text-h5 text-ods-text-secondary whitespace-nowrap transition-colors duration-200 group-hover:text-ods-text-primary">
               Log ID
             </span>
@@ -377,7 +378,10 @@ function LogsTableContent({
                   <CalendarIcon
                     className={cn(
                       'w-4 h-4 transition-colors duration-200',
-                      dateRange ? 'text-ods-accent' : 'text-ods-text-secondary group-hover:text-ods-text-primary',
+                      // Active when a date range or a non-default sort is applied
+                      dateRange || sortDirection !== 'desc'
+                        ? 'text-ods-accent'
+                        : 'text-ods-text-secondary group-hover:text-ods-text-primary',
                     )}
                   />
                 </button>
