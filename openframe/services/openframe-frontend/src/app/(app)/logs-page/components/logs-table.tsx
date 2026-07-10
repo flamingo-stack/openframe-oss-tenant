@@ -189,6 +189,8 @@ interface LogsTableContentProps {
   dateRange: DateRange | undefined;
   sortDirection: UiSortDirection;
   onDateFilterApply: (result: DateFilterResult) => void;
+  /** Sort direction commits immediately from the popover select, without Apply */
+  onSortDirectionChange: (sort: UiSortDirection) => void;
   debouncedSearch: string;
   tableFilters: Record<string, string[]>;
   onFilterChange: (filters: Record<string, any[]>) => void;
@@ -214,6 +216,7 @@ function LogsTableContent({
   dateRange,
   sortDirection,
   onDateFilterApply,
+  onSortDirectionChange,
   debouncedSearch,
   tableFilters,
   onFilterChange,
@@ -369,6 +372,7 @@ function LogsTableContent({
               sort={sortDirection}
               range={dateRange}
               onApply={onDateFilterApply}
+              onSortChange={onSortDirectionChange}
               aria-label="Sort and filter logs by date"
               className={cn(
                 '!h-auto !w-auto !min-w-0 !rounded-sm !border-0 !bg-transparent !p-0 !shadow-none',
@@ -523,7 +527,15 @@ function LogsTableContent({
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [logFilters, getLogDetailsUrl, organizationLocked, dateRange, sortDirection, onDateFilterApply],
+    [
+      logFilters,
+      getLogDetailsUrl,
+      organizationLocked,
+      dateRange,
+      sortDirection,
+      onDateFilterApply,
+      onSortDirectionChange,
+    ],
   );
 
   // Mobile filter groups reuse the same column filter options (built from
@@ -842,6 +854,15 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     [setParams],
   );
 
+  // Sort select commits immediately (no Apply)
+  const handleSortDirectionChange = useCallback(
+    (sort: UiSortDirection) => {
+      setParam('sortDirection', sort);
+      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
+    },
+    [setParam],
+  );
+
   const tableFilters = useMemo(
     () => ({
       status: params.severities,
@@ -928,6 +949,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
           dateRange={dateRange}
           sortDirection={sortDirection}
           onDateFilterApply={handleDateFilterApply}
+          onSortDirectionChange={handleSortDirectionChange}
           debouncedSearch={debouncedSearch}
           tableFilters={tableFilters}
           onFilterChange={handleFilterChange}
