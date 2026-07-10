@@ -1,64 +1,61 @@
 'use client';
 
-import { PageLayout, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { ExternalLinkIcon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Input, PageLayout, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { BillingRow, SectionBlock, TestModeBanner } from './billing-section';
 
-// Mirrors a DashboardInfoCard (~94px tall): text column (title + big value)
-// with a circular progress on the right, inside the same card chrome.
-function InfoCardSkeleton() {
+// A value placeholder sized to sit on the right of a BillingRow.
+function Value({ width }: { width: string }) {
+  return <Skeleton className={`h-4 ${width}`} />;
+}
+
+// Mirrors a DashboardInfoCard: real uppercase title, skeleton value, and an
+// optional progress ring (shown for committed packages, hidden for PAYG).
+function InfoCardSkeleton({ title, withProgress = true }: { title: string; withProgress?: boolean }) {
   return (
     <div className="h-[94px] bg-ods-card border border-ods-border rounded-sm p-[var(--spacing-system-m)] flex gap-[var(--spacing-system-s)] items-center">
       <div className="flex-1 flex flex-col gap-2">
-        <Skeleton className="h-3 w-28" />
+        <p className="text-h5 text-ods-text-secondary">{title}</p>
         <Skeleton className="h-7 w-24" />
       </div>
-      <Skeleton className="size-12 rounded-full shrink-0" />
+      {withProgress && <Skeleton className="size-12 rounded-full shrink-0" />}
     </div>
   );
 }
 
-// Mirrors a BillingRow: label on the left, divider, value on the right.
-function BillingRowSkeleton({ labelWidth, valueWidth }: { labelWidth: string; valueWidth: string }) {
-  return (
-    <div className="flex gap-2 items-center w-full">
-      <Skeleton className={`h-4 ${labelWidth}`} />
-      <div className="flex-1 h-px bg-ods-border min-w-4" />
-      <Skeleton className={`h-4 ${valueWidth}`} />
-    </div>
-  );
-}
+const INVOICE_COLUMNS = ['INVOICE', 'DUE DATE', 'AMOUNT', 'STATUS'] as const;
+const INVOICE_ROW_KEYS = ['a', 'b', 'c'] as const;
 
-// Mirrors a SectionBlock (~166px card): uppercase title above a fixed-height card.
-function SectionBlockSkeleton({
-  title,
-  rows,
-}: {
-  title: string;
-  rows: ReadonlyArray<{ labelWidth: string; valueWidth: string }>;
-}) {
+// Mirrors the Invoices History table: real column headers, skeleton cells, and
+// the real (static) external-link action chrome.
+function InvoicesTableSkeleton() {
   return (
-    <div className="flex flex-col gap-1 h-full">
-      <p className="text-h5 text-ods-text-secondary uppercase tracking-[-0.02em]">{title}</p>
-      <div className="h-[166px] bg-ods-card border border-ods-border rounded-md p-4 flex flex-col gap-3">
-        {rows.map((row, i) => (
-          <BillingRowSkeleton key={i} labelWidth={row.labelWidth} valueWidth={row.valueWidth} />
+    <div className="flex flex-col">
+      <div className="flex items-center gap-4 px-3 py-3 border-b border-ods-border">
+        {INVOICE_COLUMNS.map(col => (
+          <p key={col} className="text-h5 text-ods-text-secondary flex-1">
+            {col}
+          </p>
         ))}
+        <Skeleton className="h-3 w-16 shrink-0" />
       </div>
+      {INVOICE_ROW_KEYS.map(key => (
+        <div key={key} className="flex items-center gap-4 px-3 py-3 border-b border-ods-border last:border-b-0">
+          <Skeleton className="h-4 w-24 flex-1" />
+          <Skeleton className="h-4 w-20 flex-1" />
+          <Skeleton className="h-4 w-16 flex-1" />
+          <div className="flex-1">
+            <Skeleton className="h-6 w-20 rounded-md" />
+          </div>
+          <div className="flex items-center justify-center p-3 bg-ods-card border border-ods-border rounded-md text-ods-text-secondary shrink-0">
+            <ExternalLinkIcon className="size-6" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
-
-const CURRENT_PLAN_ROWS = [
-  { labelWidth: 'w-28', valueWidth: 'w-16' },
-  { labelWidth: 'w-20', valueWidth: 'w-24' },
-  { labelWidth: 'w-24', valueWidth: 'w-20' },
-  { labelWidth: 'w-24', valueWidth: 'w-16' },
-];
-
-const USAGE_OVERVIEW_ROWS = [
-  { labelWidth: 'w-28', valueWidth: 'w-10' },
-  { labelWidth: 'w-32', valueWidth: 'w-10' },
-];
 
 export function BillingUsageSkeleton() {
   const handleBack = useSafeBack('/settings');
@@ -69,14 +66,29 @@ export function BillingUsageSkeleton() {
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       backButton={{ label: 'Back', onClick: handleBack }}
     >
+      <TestModeBanner />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-system-m)]">
-        <InfoCardSkeleton />
-        <InfoCardSkeleton />
+        <InfoCardSkeleton title="Device Usage" />
+        <InfoCardSkeleton title="AI Usage" withProgress={false} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-system-l)] items-stretch">
-        <SectionBlockSkeleton title="Current Plan" rows={CURRENT_PLAN_ROWS} />
-        <SectionBlockSkeleton title="Usage Overview" rows={USAGE_OVERVIEW_ROWS} />
+        <SectionBlock title="Current Plan">
+          <BillingRow label="Device Package" value={<Value width="w-16" />} />
+          <BillingRow label="AI Package" value={<Value width="w-28" />} />
+          <BillingRow label="Next Payment" value={<Value width="w-16" />} />
+        </SectionBlock>
+        <SectionBlock title="Usage Overview">
+          <BillingRow label="Active devices" value={<Value width="w-8" />} />
+          <BillingRow label="Inactive devices" value={<Value width="w-8" />} />
+        </SectionBlock>
+      </div>
+
+      <div className="flex flex-col gap-[var(--spacing-system-l)]">
+        <h2 className="text-h2 text-ods-text-primary">Invoices History</h2>
+        <Input startAdornment={<SearchIcon />} placeholder="Search for Invoice" className="w-full" readOnly />
+        <InvoicesTableSkeleton />
       </div>
     </PageLayout>
   );

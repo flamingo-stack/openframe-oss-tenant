@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckboxBlock, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { Fragment, type ReactNode, Suspense, useCallback, useState } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { subscriptionSettingsViewQuery as SubscriptionSettingsViewQueryType } from '@/__generated__/subscriptionSettingsViewQuery.graphql';
@@ -8,8 +8,8 @@ import { useSubscriptionLock } from '@/app/components/subscription-lock/subscrip
 import { SubscriptionStatus } from '@/app/components/subscription-lock/subscription-status';
 import { TrialEndedBanner } from '@/app/components/subscription-lock/trial-ended-banner';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
-import type { OpenframeProduct, PlanLine, ProductUpdates } from '../types/subscription.types';
-import { buildProductCancelUpdates, isPlanChanged } from '../utils/subscription.utils';
+import type { OpenframeProduct, ProductUpdates } from '../types/subscription.types';
+import { isPlanChanged } from '../utils/subscription.utils';
 import { ModelTokenRates } from './model-token-rates';
 import { PlanChangeSummary, type PlanChangeSummaryItem } from './plan-change-summary';
 import { ProductSubscriptionCard } from './product-subscription-card';
@@ -26,10 +26,9 @@ interface ProductDisplay {
   customLabel: string;
   customSubtitle: string;
   helpText?: ReactNode;
+  /** Whether the card offers a Custom Amount option. AI tokens are PAYG-only. */
+  allowCustom?: boolean;
 }
-
-/** Disabling a product cancels its committed package, falling back to always-on PAYG. */
-const PAYG_PLAN_LINE: PlanLine = { payg: true, quantity: null, billingPeriod: null, annualTotal: null };
 
 const ADDITIONAL_DEVICES_HELPER_TEXT =
   'You can add more devices anytime. Additional devices beyond your package are charged at pay-as-you-go rates and added to your next invoice.';
@@ -52,6 +51,8 @@ const PRODUCT_DISPLAY: Partial<Record<OpenframeProduct, ProductDisplay>> = {
     customLabel: 'Custom Amount',
     customSubtitle: 'Choose your number of tokens',
     helpText: <ModelTokenRates />,
+    // AI tokens are pay-as-you-go only — no committed Custom Amount.
+    allowCustom: false,
   },
 };
 
@@ -113,36 +114,27 @@ function SubscriptionSettingsContent() {
       new Set(p.packageOptions.map(opt => opt.billingPeriod).filter(Boolean)).size > 1,
   );
 
-  const [aiEnabled, setAiEnabled] = useState(true);
-
   const [updatesMap, setUpdatesMap] = useState<Partial<Record<OpenframeProduct, ProductUpdates>>>({});
 
   const handleUpdatesChange = useCallback((productName: OpenframeProduct, updates: ProductUpdates) => {
     setUpdatesMap(prev => ({ ...prev, [productName]: updates }));
   }, []);
 
-  const considered = products.filter(p => !(p.name === 'AI_ASSISTANCE' && !aiEnabled));
-  const aiCancelUpdates = aiEnabled
-    ? []
-    : buildProductCancelUpdates('AI_ASSISTANCE', subscriptionProducts.find(sp => sp.name === 'AI_ASSISTANCE') ?? null);
-  const packageUpdates = [...considered.flatMap(p => updatesMap[p.name]?.packageUpdates ?? []), ...aiCancelUpdates];
-  const checkoutProducts = considered.map(p => updatesMap[p.name]?.checkout).filter(c => c != null);
-  const hasInvalidCustom = considered.some(p => {
+  const packageUpdates = products.flatMap(p => updatesMap[p.name]?.packageUpdates ?? []);
+  const checkoutProducts = products.map(p => updatesMap[p.name]?.checkout).filter(c => c != null);
+  const hasInvalidCustom = products.some(p => {
     const updates = updatesMap[p.name];
     return updates != null && !updates.valid;
   });
 
-  // Current vs selected plan, one row per product. AI being turned off cancels
-  // its committed package, so its "next" line falls back to always-on PAYG.
+  // Current vs selected plan, one row per product.
   const summaryItems: PlanChangeSummaryItem[] = products.flatMap(product => {
     const display = PRODUCT_DISPLAY[product.name];
     const comparison = updatesMap[product.name]?.comparison;
     if (!display || !comparison) return [];
-    const isAiOff = product.name === 'AI_ASSISTANCE' && !aiEnabled;
-    const effective = isAiOff ? { current: comparison.current, next: PAYG_PLAN_LINE } : comparison;
     // Skip products that are neither active today nor being committed to.
-    if (!effective.current && effective.next.payg) return [];
-    return [{ label: display.rowLabel, comparison: effective }];
+    if (!comparison.current && comparison.next.payg) return [];
+    return [{ label: display.rowLabel, comparison }];
   });
 
   // Only meaningful for the update flow (active subscription). Driven by the
@@ -160,13 +152,6 @@ function SubscriptionSettingsContent() {
     >
       {isLocked && lockCopy && <TrialEndedBanner lockCopy={lockCopy} />}
 
-      <CheckboxBlock
-        checked={aiEnabled}
-        onCheckedChange={setAiEnabled}
-        label="Enable AI Assistants"
-        description="Enhance your workflow with AI assistants."
-      />
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {products.map(product => {
           const display = PRODUCT_DISPLAY[product.name];
@@ -177,7 +162,6 @@ function SubscriptionSettingsContent() {
               <ProductSubscriptionCard
                 productRef={product}
                 subscriptionProductRef={subProduct}
-                disabled={product.name === 'AI_ASSISTANCE' && !aiEnabled}
                 reserveBillingPeriodSpace={anyHasBillingToggle}
                 onUpdatesChange={updates => handleUpdatesChange(product.name, updates)}
                 {...display}

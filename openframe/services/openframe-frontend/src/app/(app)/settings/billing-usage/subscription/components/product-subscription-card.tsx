@@ -73,6 +73,8 @@ interface ProductSubscriptionCardProps {
   customSubtitle: string;
   helpText?: ReactNode;
   disabled?: boolean;
+  /** Whether the card offers a Custom Amount option. Defaults to true. */
+  allowCustom?: boolean;
   /**
    * Reserve vertical space for the billing-period toggle even when this card
    * has none, so cards stay aligned when a sibling card shows the toggle.
@@ -121,6 +123,7 @@ export function ProductSubscriptionCard({
   customSubtitle,
   helpText,
   disabled = false,
+  allowCustom = true,
   reserveBillingPeriodSpace = false,
   onUpdatesChange,
 }: ProductSubscriptionCardProps) {
@@ -163,6 +166,7 @@ export function ProductSubscriptionCard({
     customLabel,
     customSubtitle,
     payAsYouGoOption: product.payAsYouGoOption ?? null,
+    allowCustom,
   });
 
   // "MONTHLY" → "monthly" / "YEARLY" → "yearly", so period-aware copy matches
@@ -210,43 +214,45 @@ export function ProductSubscriptionCard({
             options={radioOptions}
             className="[&>div]:!rounded-none [&>div]:!border-0"
           />
-          <div
-            aria-hidden={disabled || selection.selectedPackageId !== CUSTOM_OPTION_ID}
-            className={cn(
-              'grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none',
-              !disabled && selection.selectedPackageId === CUSTOM_OPTION_ID
-                ? 'grid-rows-[1fr] opacity-100'
-                : 'grid-rows-[0fr] opacity-0 pointer-events-none',
-            )}
-          >
-            <div className="overflow-hidden">
-              <div className="flex flex-col gap-1 pl-12 pr-3 pb-2">
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  aria-label={`Number of ${packageUnitLabel}`}
-                  value={selection.customQuantity ?? ''}
-                  onChange={event => setCustomQuantity(event.target.value.replace(/\D/g, ''))}
-                  endAdornment={packageUnitLabel}
-                  tabIndex={!disabled && selection.selectedPackageId === CUSTOM_OPTION_ID ? undefined : -1}
-                />
-                {customNotDivisible ? (
-                  <p className="text-h6 text-ods-error">
-                    {`Must be a multiple of ${formatCompact(unitSize)} ${packageUnitLabel}`}
-                  </p>
-                ) : (
-                  customPrice && (
-                    <p className="text-h6 text-ods-text-secondary">
-                      {`$${formatMoney(customPrice.total)}${periodSuffix}`}
-                      {customPrice.discountPercent > 0 && (
-                        <span className="text-ods-success"> (-{customPrice.discountPercent}%)</span>
-                      )}
+          {allowCustom && (
+            <div
+              aria-hidden={disabled || selection.selectedPackageId !== CUSTOM_OPTION_ID}
+              className={cn(
+                'grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none',
+                !disabled && selection.selectedPackageId === CUSTOM_OPTION_ID
+                  ? 'grid-rows-[1fr] opacity-100'
+                  : 'grid-rows-[0fr] opacity-0 pointer-events-none',
+              )}
+            >
+              <div className="overflow-hidden">
+                <div className="flex flex-col gap-1 pl-12 pr-3 pb-2">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    aria-label={`Number of ${packageUnitLabel}`}
+                    value={selection.customQuantity ?? ''}
+                    onChange={event => setCustomQuantity(event.target.value.replace(/\D/g, ''))}
+                    endAdornment={packageUnitLabel}
+                    tabIndex={!disabled && selection.selectedPackageId === CUSTOM_OPTION_ID ? undefined : -1}
+                  />
+                  {customNotDivisible ? (
+                    <p className="text-h6 text-ods-error">
+                      {`Must be a multiple of ${formatCompact(unitSize)} ${packageUnitLabel}`}
                     </p>
-                  )
-                )}
+                  ) : (
+                    customPrice && (
+                      <p className="text-h6 text-ods-text-secondary">
+                        {`$${formatMoney(customPrice.total)}${periodSuffix}`}
+                        {customPrice.discountPercent > 0 && (
+                          <span className="text-ods-success"> (-{customPrice.discountPercent}%)</span>
+                        )}
+                      </p>
+                    )
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </Card>

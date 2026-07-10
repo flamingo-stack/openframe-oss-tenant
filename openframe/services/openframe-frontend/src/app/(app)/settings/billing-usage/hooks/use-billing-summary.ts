@@ -155,6 +155,15 @@ export function useBillingSummary(subscription: SubscriptionData) {
       showProgress: !aiIsPayg,
     },
     ui: { warnings, showOverageBlock, accentClass, accentBorderClass },
-    billing: { nextPayment, nextBilling, latestPendingInvoice, trialExpirationDate },
+    billing: {
+      nextPayment,
+      nextBilling,
+      latestPendingInvoice,
+      trialExpirationDate,
+      // Non-null only once cancellation is scheduled (PENDING_CANCELLATION /
+      // CANCELED) — used by the "Subscription Cancelled" modal after the store
+      // is invalidated and the query refetches.
+      cancellationEffectiveAt: subscription?.cancellationEffectiveAt ?? null,
+    },
   };
 }

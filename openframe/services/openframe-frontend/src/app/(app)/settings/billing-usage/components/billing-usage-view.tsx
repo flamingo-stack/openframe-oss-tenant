@@ -17,8 +17,9 @@ import { featureFlags } from '@/lib/feature-flags';
 import { useBillingSummary } from '../hooks/use-billing-summary';
 import { useCancelSubscription } from '../hooks/use-cancel-subscription';
 import { useCancellationImpact } from '../hooks/use-cancellation-impact';
+import { useResumeSubscription } from '../hooks/use-resume-subscription';
 import { formatCount, formatCurrency, formatDateOrDash } from '../lib/format';
-import { BillingRow, SectionBlock } from './billing-section';
+import { BillingRow, SectionBlock, TestModeBanner } from './billing-section';
 import { BillingUsageSkeleton } from './billing-usage-skeleton';
 import { CancelOfferModal } from './cancel-offer-modal';
 import { type CancelReason, CancelSubscriptionModal } from './cancel-subscription-modal';
@@ -36,12 +37,17 @@ export function BillingUsageView() {
 function BillingUsageContent() {
   const router = useRouter();
   const handleBack = useSafeBack('/settings');
+  // Bumped after a resume so the billing query refetches from the network — the
+  // resumeSubscription mutation returns a bare Boolean, so the Relay store can't
+  // reflect the new status on its own.
+  const [refreshKey, setRefreshKey] = useState(0);
   const data = useLazyLoadQuery<BillingUsageViewQueryType>(
     billingUsageViewQuery,
     {},
-    { fetchPolicy: 'store-and-network' },
+    { fetchPolicy: 'store-and-network', fetchKey: refreshKey },
   );
   const cancelSubscription = useCancelSubscription();
+  const resumeSubscription = useResumeSubscription();
   const [cancelStep, setCancelStep] = useState<'idle' | 'reason' | 'offer' | 'cancelled'>('idle');
   const [cancelReason, setCancelReason] = useState<CancelReason | null>(null);
   const [cancelComment, setCancelComment] = useState<string>('');
@@ -78,8 +84,12 @@ function BillingUsageContent() {
   const primaryAction = flags.isPendingCancellation
     ? {
         label: 'Renew Subscription',
-        onClick: () => router.push('/settings/billing-usage/subscription'),
+        // Still inside the paid period → clear the scheduled cancellation in
+        // place via resumeSubscription (no checkout needed), then refetch.
+        onClick: () => resumeSubscription.mutate({ onSuccess: () => setRefreshKey(k => k + 1) }),
         variant: 'accent' as const,
+        loading: resumeSubscription.isPending,
+        disabled: resumeSubscription.isPending,
       }
     : flags.isOverdue
       ? {
@@ -114,12 +124,7 @@ function BillingUsageContent() {
       actions={[primaryAction]}
       menuActions={menuActions}
     >
-      <div className="flex items-start gap-[var(--spacing-system-s)] rounded-md bg-[var(--ods-open-yellow-base)] p-[var(--spacing-system-s)] text-ods-text-on-accent">
-        <AlertTriangleIcon className="size-6 shrink-0" />
-        <p className="flex-1 text-h3 font-bold">
-          Test mode — invoices and usage shown here are samples. No real charges are being made.
-        </p>
-      </div>
+      <TestModeBanner />
 
       <div
         className={cn('grid gap-[var(--spacing-system-m)]', flags.hasAi ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1')}
@@ -213,9 +218,7 @@ function BillingUsageContent() {
                 </>
               }
             />
-          ) : (
-            <BillingRow label="Next Billing" value={formatDateOrDash(billing.nextBilling)} />
-          )}
+          ) : null}
         </SectionBlock>
         <SectionBlock title="Usage Overview">
           <BillingRow label="Active devices" value={formatCount(device.active)} />
@@ -256,6 +259,7 @@ function BillingUsageContent() {
                 activeDevices: device.active,
                 tickets: impact.tickets,
                 kbArticles: impact.kbArticles,
+                scripts: impact.scripts,
                 monitoringPolicies: impact.monitoringPolicies,
                 savedQueries: impact.savedQueries,
               }
@@ -278,14 +282,22 @@ function BillingUsageContent() {
           cancelSubscription.mutate({
             reason: cancelReason ?? undefined,
             description: cancelComment || undefined,
-            onSuccess: () => setCancelStep('cancelled'),
+            onSuccess: () => {
+              setCancelStep('cancelled');
+              // Force the mounted billing query to re-request now that the store
+              // was invalidated, so the page reflects the pending-cancellation state.
+              setRefreshKey(k => k + 1);
+            },
           });
         }}
       />
 
       <SubscriptionCancelledModal
         isOpen={cancelStep === 'cancelled'}
-        endDate={billing.nextBilling}
+        // After the successful cancel invalidates the store and the query
+        // refetches, cancellationEffectiveAt is populated; fall back to the
+        // period end until that lands.
+        endDate={billing.cancellationEffectiveAt ?? billing.nextBilling}
         onClose={() => setCancelStep('idle')}
       />
     </PageLayout>
@@ -318,6 +330,8 @@ const billingUsageViewQuery = graphql`
       }
       pendingInvoices {
         id
+        invoiceNumber
+        status
         hostedInvoiceUrl
         amountDue
         currency

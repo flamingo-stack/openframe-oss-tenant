@@ -94,6 +94,28 @@ const fetchRelay: FetchFunction = async (request, variables) => {
   return json;
 };
 
+/**
+ * Custom record-id resolution for normalization.
+ *
+ * `SubscriptionOptionDetail.id` is documented as a "stable unique identifier for
+ * Relay normalization" but the backend can emit several options that share the
+ * same composite id (its slot disambiguation is buggy — e.g. an EXPIRED, an
+ * ACTIVE and a PENDING_ACTIVATION option all collapse to `...:<date>#1`). Relay
+ * would normalize those into a single record (last-write-wins), silently
+ * dropping the ACTIVE option so the current-plan view falls back to PAYG.
+ *
+ * Returning `undefined` for this type opts it out of global normalization: Relay
+ * stores each list entry under a parent-scoped client id (by field + index)
+ * instead, so colliding backend ids no longer merge. Safe because these options
+ * are never fetched via `node(id:)` and are only read inline through their
+ * parent subscription/product. Everything else keeps the default id-based
+ * normalization.
+ */
+function resolveDataId(value: { readonly id?: unknown }, typeName: string): string | undefined {
+  if (typeName === 'SubscriptionOptionDetail') return undefined;
+  return typeof value.id === 'string' ? value.id : undefined;
+}
+
 let relayEnvironment: IEnvironment | null = null;
 
 /**
@@ -105,6 +127,8 @@ export function getRelayEnvironment(): IEnvironment {
       network: Network.create(fetchRelay),
       store: new Store(new RecordSource()),
       isServer: true,
+      // biome-ignore lint/style/useNamingConvention: Relay's Environment option key is fixed.
+      getDataID: resolveDataId,
     });
   }
 
@@ -116,6 +140,8 @@ export function getRelayEnvironment(): IEnvironment {
     relayEnvironment = new Environment({
       network: Network.create(fetchRelay),
       store,
+      // biome-ignore lint/style/useNamingConvention: Relay's Environment option key is fixed.
+      getDataID: resolveDataId,
     });
   }
 
