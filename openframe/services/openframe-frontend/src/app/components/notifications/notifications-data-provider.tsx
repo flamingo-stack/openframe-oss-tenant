@@ -609,7 +609,9 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
       const category = payload.category ?? null;
       const isUpdate = payload.eventType === 'UPDATED';
       const suppress = isWatchingNotificationDialog(payload);
+      const resolution = payload.context?.resolution ?? null;
 
+      let resolutionAutoRead = false;
       commitLocalUpdate(environmentRef.current, store => {
         const existing = store.get(relayId);
         // An UPDATED event mutates a notification in place (e.g. an approval that was
@@ -625,8 +627,14 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
         node.setLinkedRecord(writeNotificationContext(store, `${relayId}:context`, payload), 'context');
 
         if (isUpdate) {
-          // Leave createdAt, read state and connection membership untouched — the backend
-          // re-publishes the resolution only; the reactive tile reads the new status.
+          // A resolution means the approval was handled (this tab's chat card, another tab,
+          // or another admin) — it needs no further attention, so retire it to the read
+          // connection. Other in-place updates leave createdAt, read state and connection
+          // membership untouched; the reactive tile reads the refreshed fields.
+          if (resolution && node.getValue('read') === false) {
+            makeMarkReadUpdater(relayId, [UNFILTERED_NOTIFICATION_PAIR])(store);
+            resolutionAutoRead = true;
+          }
           return;
         }
 
@@ -651,8 +659,20 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
         adjustUnreadCount(store, category, 1);
       });
 
-      // In-place update: read state is unchanged, so no popup, no desktop mirror, no badge re-fetch.
-      if (isUpdate) return;
+      // In-place update: no popup and no desktop mirror. When a resolution auto-read the
+      // notification, persist it server-side and refresh badges either way so they stay
+      // truthful even if the mutation fails — same contract as the suppress path below.
+      if (isUpdate) {
+        if (resolutionAutoRead) {
+          commitMutation<MarkReadMutationType>(environmentRef.current, {
+            mutation: markNotificationReadMutation,
+            variables: { id: relayId },
+            onCompleted: () => refreshUnreadCounts(environmentRef.current),
+            onError: () => refreshUnreadCounts(environmentRef.current),
+          });
+        }
+        return;
+      }
 
       if (suppress) {
         // Persist the auto-read server-side; refresh sidebar badges either way
