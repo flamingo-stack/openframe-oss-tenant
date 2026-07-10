@@ -585,7 +585,9 @@ function LogsTableContent({
   }, []);
 
   const hasActiveFilters = Object.values(tableFilters).some(values => values.length > 0);
-  const hasQuery = Boolean(debouncedSearch) || hasActiveFilters;
+  // The applied date range counts as a query too — an empty result must keep
+  // the table header so the date filter stays reachable to pick another period.
+  const hasQuery = Boolean(debouncedSearch) || hasActiveFilters || Boolean(dateRange);
   const noRows = !isPending && transformedLogs.length === 0;
 
   // Standalone (unscoped) Logs page: the rich onboarding EmptyState replaces the
@@ -635,7 +637,9 @@ function LogsTableContent({
   return (
     <>
       <DataTable table={table}>
-        {!scopedEmpty && (
+        {/* Keep the header while a query (search/filters/date range) is active,
+            even with zero rows — its controls are the only way to change it. */}
+        {!(scopedEmpty && !hasQuery) && (
           <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
         )}
         <DataTable.Body
