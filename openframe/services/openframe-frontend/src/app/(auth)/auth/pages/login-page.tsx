@@ -4,7 +4,7 @@ import { AuthShell, type AuthSsoProvider } from '@flamingo-stack/openframe-front
 import { TabSelector } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LoginSection } from '@/app/(auth)/auth/components/login-form-section';
 import { useAuth } from '@/app/(auth)/auth/hooks/use-auth';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
@@ -29,6 +29,11 @@ export default function LoginPage() {
   const { isAuthenticated } = useAuthStore();
   const { email, hasDiscoveredTenants, availableProviders, isLoading, loginWithSso, discoverTenants } = useAuth();
 
+  // The SSO state (locked email + provider buttons) is shown only after a
+  // discovery made on THIS visit — a persisted discovery from a previous
+  // session would otherwise trap the user on a screen with a locked email.
+  const [discoveredThisVisit, setDiscoveredThisVisit] = useState(false);
+
   useEffect(() => {
     if (isAuthenticated && !isAuthOnlyMode()) {
       router.push('/dashboard');
@@ -44,16 +49,19 @@ export default function LoginPage() {
         description: "You don't have an account yet. Please create an organization first.",
         variant: 'destructive',
       });
+      return;
     }
+    if (result) setDiscoveredThisVisit(true);
   };
 
   const handleSso = (provider: AuthSsoProvider) => {
     void loginWithSso(FORM_TO_SSO[provider]);
   };
 
-  const formProviders = hasDiscoveredTenants
-    ? FORM_PROVIDER_ORDER.filter(provider => availableProviders.some(id => SSO_TO_FORM[id] === provider))
-    : undefined;
+  const formProviders =
+    discoveredThisVisit && hasDiscoveredTenants
+      ? FORM_PROVIDER_ORDER.filter(provider => availableProviders.some(id => SSO_TO_FORM[id] === provider))
+      : undefined;
 
   const tabs = (
     <TabSelector
