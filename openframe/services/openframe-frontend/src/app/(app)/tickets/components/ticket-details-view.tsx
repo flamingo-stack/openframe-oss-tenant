@@ -43,7 +43,7 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation } from 'react-relay';
 import type { startTimerMutation as StartTimerMutationType } from '@/__generated__/startTimerMutation.graphql';
@@ -122,6 +122,8 @@ function withActivityTracking(item: ActionsMenuItem, subtype: EventSubtype): Act
 
 export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const handleBackToTickets = useSafeBack('/tickets');
   const { toast } = useToast();
   // When the Mingo sidebar carries per-ticket context, the embedded technician
@@ -278,7 +280,15 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     dialog?.creationSource === CREATION_SOURCE.FAE_FORM || dialog?.creationSource === CREATION_SOURCE.ADMIN_DASHBOARD;
   const ticketInfoExpanded = isTicketInfoExpanded ?? defaultTicketInfoExpanded;
   const [activeChatTab, setActiveChatTab] = useState('client');
-  const [mainTab, setMainTab] = useState<'details' | 'chat'>('details');
+  const mainTab = searchParams.get('tab') === 'chat' ? 'chat' : 'details';
+  const handleMainTabChange = useCallback(
+    (tabId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('tab', tabId);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
 
   const clientDisplayName =
     dialog?.deviceHostname ||
@@ -881,11 +891,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
             {/* Desktop (lg+): main pane (tabs / chat / details) beside a persistent details sidebar */}
             <div className="hidden lg:flex flex-1 min-w-0 flex-col gap-[var(--spacing-system-xxs)] min-h-0">
               {showDetailsTabs ? (
-                <TabNavigation
-                  tabs={mainTabs}
-                  activeTab={mainTab}
-                  onTabChange={id => setMainTab(id as 'details' | 'chat')}
-                >
+                <TabNavigation tabs={mainTabs} activeTab={mainTab} onTabChange={handleMainTabChange}>
                   {active =>
                     active === 'chat' ? (
                       <div className="flex-1 min-h-0 flex flex-col pt-[var(--spacing-system-mf)]">{clientChatBody}</div>
@@ -912,11 +918,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                 Ticket Details tab; the client chat (when present) gets its own tab without them. */}
             <div className="flex lg:hidden flex-1 min-w-0 flex-col gap-[var(--spacing-system-xxs)] min-h-0">
               {hasClientChat ? (
-                <TabNavigation
-                  tabs={mainTabs}
-                  activeTab={mainTab}
-                  onTabChange={id => setMainTab(id as 'details' | 'chat')}
-                >
+                <TabNavigation tabs={mainTabs} activeTab={mainTab} onTabChange={handleMainTabChange}>
                   {active =>
                     active === 'chat' ? (
                       <div className="flex-1 min-h-0 flex flex-col pt-[var(--spacing-system-mf)]">{clientChatBody}</div>

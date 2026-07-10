@@ -57,16 +57,13 @@ export function useUpdateSubscription() {
             return;
           }
 
-          // An upgrade generates a pending invoice; a downgrade doesn't. We no
-          // longer auto-open the invoice — point the user to the invoices list
-          // instead, and word the downgrade case (no invoice) accordingly.
-          const hasPendingInvoice = result.subscription.pendingInvoices.length > 0;
-
+          // An upgrade may generate a pending invoice; a downgrade doesn't. We no
+          // longer auto-open the invoice — use a neutral message that points the
+          // user to the invoices list without asserting an invoice was created.
           toast({
             title: 'Subscription Updated',
-            description: hasPendingInvoice
-              ? 'An invoice was generated for your changes — check the invoices list in Billing & Usage to complete payment.'
-              : "Your changes have been applied and take effect from your next billing cycle. No invoice is needed — you'll see it reflected in your invoices list.",
+            description:
+              'Your changes have been applied. Check the invoices list in Billing & Usage for any pending payments.',
             variant: 'success',
           });
 

@@ -34,6 +34,17 @@ const TICKET_CONTEXT_TYPES = new Set<string>([
 ]);
 
 /**
+ * Ticket contexts announcing a new message in the ticket's client chat; they land on the
+ * Chat tab instead of Details. Mingo ticket messages (`ADMIN_AI_TICKET_MESSAGE`) are
+ * excluded — with `mingo-sidebar-context` on, that conversation lives in the sidebar
+ * drawer, not the page's Client Chat tab.
+ */
+const TICKET_CHAT_CONTEXT_TYPES = new Set<string>([
+  CUSTOMER_MESSAGE_PUBLISHED_CONTEXT_TYPE,
+  ADMIN_MESSAGE_PUBLISHED_CONTEXT_TYPE,
+]);
+
+/**
  * A notification's primary action. Either a plain `route` the host pushes onto
  * the router, or — for a Mingo dialog once the standalone `/mingo` page is
  * retired behind `mingo-sidebar` — a `mingoDialogId` the host opens in the
@@ -42,7 +53,8 @@ const TICKET_CONTEXT_TYPES = new Set<string>([
 export type NotificationAction = { label: string; route: string } | { label: string; mingoDialogId: string };
 
 const mingoDialogRoute = (dialogId: string) => `/mingo?dialogId=${encodeURIComponent(dialogId)}`;
-const ticketRoute = (ticketId: string) => `/tickets/dialog?id=${encodeURIComponent(ticketId)}`;
+const ticketRoute = (ticketId: string, tab?: 'chat') =>
+  `/tickets/dialog?id=${encodeURIComponent(ticketId)}${tab ? `&tab=${tab}` : ''}`;
 
 /**
  * Action for a Mingo dialog. With `mingo-sidebar` ON the `/mingo` page is gone
@@ -73,7 +85,8 @@ export function resolveNotificationAction(notification: Notification): Notificat
   }
 
   if (contextType && TICKET_CONTEXT_TYPES.has(contextType) && ticketId) {
-    return { label: 'Ticket Details', route: ticketRoute(ticketId) };
+    const tab = TICKET_CHAT_CONTEXT_TYPES.has(contextType) ? 'chat' : undefined;
+    return { label: 'Ticket Details', route: ticketRoute(ticketId, tab) };
   }
 
   if (contextType === ADMIN_AI_MESSAGE_CONTEXT_TYPE && dialogId) {
