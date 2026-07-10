@@ -40,4 +40,7 @@ export interface LogFilterInput {
   organizationIds?: string[];
   deviceId?: string;
   userId?: string[];
+  /** Inclusive UTC ISO-8601 bounds of the timestamp range filter */
+  timestampFrom?: string;
+  timestampTo?: string;
 }
