@@ -35,10 +35,11 @@ export async function performLogout() {
     return;
   }
 
+  // After an explicit Log Out the user goes straight to the Login tab.
   const sharedHostUrl = runtimeEnv.sharedHostUrl();
   if (sharedHostUrl) {
-    window.location.href = `${sharedHostUrl}/auth`;
+    window.location.href = `${sharedHostUrl}/auth/login`;
   } else {
-    window.location.href = '/auth';
+    window.location.href = '/auth/login';
   }
 }

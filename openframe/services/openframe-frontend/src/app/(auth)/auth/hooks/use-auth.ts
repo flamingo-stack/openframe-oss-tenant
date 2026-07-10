@@ -287,8 +287,9 @@ export function useAuth() {
     if (effectiveTenantId) {
       authApiClient.logout(effectiveTenantId);
     } else {
+      // After an explicit logout the user goes straight to the Login tab.
       const sharedHostUrl = runtimeEnv.sharedHostUrl();
-      window.location.href = `${sharedHostUrl}/auth`;
+      window.location.href = `${sharedHostUrl}/auth/login`;
     }
   }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setAvailableProviders, tenantInfo, queryClient]);
 
