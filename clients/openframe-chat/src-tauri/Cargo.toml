@@ -26,9 +26,7 @@ tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-single-instance = "2"
-tauri-plugin-notification = "2"
 tauri-plugin-opener = "2"
-notify-rust = "4"
 aes-gcm = "0.10"
 base64 = "0.21"
 async-nats = { git = "https://github.com/flamingo-stack/nats.rs.git", branch = "main", features = ["websockets"] }
@@ -43,9 +41,32 @@ rand = "0.8"
 dirs = "5"
 winreg = "0.52"
 mslnk = "0.1.8"
+windows = { version = "0.61", features = ["Data_Xml_Dom", "UI_Notifications"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6"
 objc2 = "0.6.4"
 objc2-app-kit = { version = "0.3.2", features = ["NSApplication", "NSImage"] }
 objc2-core-services = { version = "0.3.2", features = ["AE", "AERegistry"] }
-objc2-foundation = { version = "0.3.2", features = ["NSData", "NSAppleEventManager", "NSAppleEventDescriptor", "objc2-core-services"] }
+objc2-foundation = { version = "0.3.2", features = [
+    "NSAppleEventDescriptor",
+    "NSAppleEventManager",
+    "NSArray",
+    "NSBundle",
+    "NSData",
+    "NSDictionary",
+    "NSError",
+    "NSSet",
+    "NSString",
+    "objc2-core-services",
+] }
+objc2-user-notifications = { version = "0.3.2", features = [
+    "UNNotification",
+    "UNNotificationAction",
+    "UNNotificationCategory",
+    "UNNotificationContent",
+    "UNNotificationRequest",
+    "UNNotificationResponse",
+    "UNNotificationTrigger",
+    "UNUserNotificationCenter",
+] }

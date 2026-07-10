@@ -21,6 +21,7 @@ import {
 import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChatDialogScreen } from '../components/ChatDialogScreen';
@@ -399,17 +400,16 @@ export function ChatView() {
     return () => clearInterval(interval);
   }, [isTicketPreview, previewTicketId, resumeDialog]);
 
-  // Rust emits notification:click when the window gains focus shortly after a
-  // NATS-driven OS notification; open the entity it came from. The ref keeps
-  // the Tauri listener registered once instead of churning per render.
+  // Rust emits notification:click with the clicked OS notification's target
+  // (see nats_bridge/notifications.rs); open the entity it came from. The ref
+  // keeps the Tauri listener registered once instead of churning per render.
   const notificationClickRef = useRef({ handleTicketClick, resumeDialog, dialogId });
   notificationClickRef.current = { handleTicketClick, resumeDialog, dialogId };
 
   useEffect(() => {
     if (!isTauri) return;
     type NotificationClickPayload = { kind: string; id: string };
-    const unlistenPromise = listen<NotificationClickPayload>('notification:click', event => {
-      const { kind, id } = event.payload;
+    const handleClick = ({ kind, id }: NotificationClickPayload) => {
       if (!id) return;
       if (kind === 'ticket') {
         void notificationClickRef.current.handleTicketClick(id);
@@ -418,7 +418,15 @@ export function ChatView() {
         // Already viewing this dialog — the live subscription has the message.
         if (id !== dialogId) void resumeDialog(id);
       }
-    });
+    };
+    const unlistenPromise = listen<NotificationClickPayload>('notification:click', event => handleClick(event.payload));
+    // A click that launched the app is stashed Rust-side until this listener
+    // exists; pulling it also opens the gate for future direct emits.
+    invoke<NotificationClickPayload | null>('take_pending_notification_click')
+      .then(payload => {
+        if (payload) handleClick(payload);
+      })
+      .catch(() => undefined);
     return () => {
       unlistenPromise.then(unlisten => unlisten()).catch(() => undefined);
     };
