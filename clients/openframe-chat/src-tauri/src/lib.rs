@@ -22,12 +22,12 @@ static DOCK_QUIT_ACTION: std::sync::OnceLock<Box<dyn Fn() + Send + Sync>> =
 // Apple event carries kAEQuitReason), as opposed to a plain Dock "Quit".
 #[cfg(target_os = "macos")]
 fn is_system_quit() -> bool {
+    use objc2_core_services::kAEQuitReason;
     use objc2_foundation::NSAppleEventManager;
-    const K_AE_QUIT_REASON: u32 = 0x7768_793F; // 'why?'
     match NSAppleEventManager::sharedAppleEventManager().currentAppleEvent() {
         Some(event) => {
-            event.paramDescriptorForKeyword(K_AE_QUIT_REASON).is_some()
-                || event.attributeDescriptorForKeyword(K_AE_QUIT_REASON).is_some()
+            event.paramDescriptorForKeyword(kAEQuitReason).is_some()
+                || event.attributeDescriptorForKeyword(kAEQuitReason).is_some()
         }
         None => false,
     }
