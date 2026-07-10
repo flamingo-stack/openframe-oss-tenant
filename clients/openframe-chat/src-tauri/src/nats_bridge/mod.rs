@@ -108,7 +108,9 @@ struct Inner {
     event_channel: RwLock<Option<Channel<NatsEvent>>>,
     /// `true` once the WebView pulled `take_pending_notification_click`,
     /// i.e. its `notification:click` listener is mounted. Until then click
-    /// payloads are parked in `stashed_click` (cold-start clicks).
+    /// payloads are parked in `stashed_click` (cold-start clicks). Only
+    /// accessed while holding the `stashed_click` lock, which serializes the
+    /// ready-flip + drain against concurrent emit-or-stash decisions.
     webview_click_ready: AtomicBool,
     stashed_click: StdMutex<Option<serde_json::Value>>,
 }

@@ -92,13 +92,15 @@ impl NatsBridge {
     /// mounted. Marks the gate open and drains any click that happened before
     /// (cold-start launch via a notification).
     pub fn take_startup_click(&self) -> Option<serde_json::Value> {
+        // Flip ready and drain under the stash lock — see emit_or_stash.
+        let mut stash = match self.inner.stashed_click.lock() {
+            Ok(g) => g,
+            Err(p) => p.into_inner(),
+        };
         self.inner
             .webview_click_ready
             .store(true, Ordering::Release);
-        match self.inner.stashed_click.lock() {
-            Ok(mut g) => g.take(),
-            Err(p) => p.into_inner().take(),
-        }
+        stash.take()
     }
 }
 
@@ -106,14 +108,19 @@ impl NatsBridge {
 /// not signalled readiness yet (cold start: the click that launched the app
 /// happens before React mounts the listener).
 fn emit_or_stash(inner: &Inner, payload: serde_json::Value) {
+    // The readiness check and the stash write share the stash lock: checked
+    // outside it, a concurrent take_startup_click could flip ready and drain
+    // between our check and store, stranding the payload until the next
+    // webview reload.
+    let mut stash = match inner.stashed_click.lock() {
+        Ok(g) => g,
+        Err(p) => p.into_inner(),
+    };
     if inner.webview_click_ready.load(Ordering::Acquire) {
         let _ = inner.app.emit_to("main", "notification:click", payload);
     } else {
         tracing::info!("[NATS] webview not ready — stashing notification click");
-        match inner.stashed_click.lock() {
-            Ok(mut g) => *g = Some(payload),
-            Err(p) => *p.into_inner() = Some(payload),
-        }
+        *stash = Some(payload);
     }
 }
 
