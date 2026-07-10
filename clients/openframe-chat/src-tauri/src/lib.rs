@@ -18,6 +18,21 @@ use tauri::ActivationPolicy;
 static DOCK_QUIT_ACTION: std::sync::OnceLock<Box<dyn Fn() + Send + Sync>> =
     std::sync::OnceLock::new();
 
+// True when AppKit is terminating us for a logout/restart/shutdown (the quit
+// Apple event carries kAEQuitReason), as opposed to a plain Dock "Quit".
+#[cfg(target_os = "macos")]
+fn is_system_quit() -> bool {
+    use objc2_foundation::NSAppleEventManager;
+    const K_AE_QUIT_REASON: u32 = 0x7768_793F; // 'why?'
+    match NSAppleEventManager::sharedAppleEventManager().currentAppleEvent() {
+        Some(event) => {
+            event.paramDescriptorForKeyword(K_AE_QUIT_REASON).is_some()
+                || event.attributeDescriptorForKeyword(K_AE_QUIT_REASON).is_some()
+        }
+        None => false,
+    }
+}
+
 #[cfg(target_os = "macos")]
 unsafe extern "C" fn on_application_should_terminate(
     _this: *mut objc2::runtime::AnyObject,
@@ -27,7 +42,12 @@ unsafe extern "C" fn on_application_should_terminate(
     if let Some(action) = DOCK_QUIT_ACTION.get() {
         action();
     }
-    0 // NSTerminateCancel
+    // A logout/restart/shutdown must proceed or macOS blocks it; a Dock "Quit" stays in the tray.
+    if is_system_quit() {
+        1 // NSTerminateNow
+    } else {
+        0 // NSTerminateCancel
+    }
 }
 
 #[cfg(target_os = "macos")]
