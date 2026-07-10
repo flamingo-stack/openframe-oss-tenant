@@ -27,7 +27,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { isAuthenticated } = useAuthStore();
-  const { email, hasDiscoveredTenants, availableProviders, isLoading, loginWithSso, discoverTenants } = useAuth();
+  const { hasDiscoveredTenants, availableProviders, isLoading, loginWithSso, discoverTenants } = useAuth();
 
   // The SSO state (locked email + provider buttons) is shown only after a
   // discovery made on THIS visit — a persisted discovery from a previous
@@ -79,13 +79,8 @@ export default function LoginPage() {
 
   return (
     <AuthShell tabs={tabs}>
-      <LoginSection
-        initialEmail={email}
-        ssoProviders={formProviders}
-        onContinue={handleContinue}
-        onSso={handleSso}
-        isLoading={isLoading}
-      />
+      {/* No initialEmail on purpose — the field always starts empty */}
+      <LoginSection ssoProviders={formProviders} onContinue={handleContinue} onSso={handleSso} isLoading={isLoading} />
     </AuthShell>
   );
 }
