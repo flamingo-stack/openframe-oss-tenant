@@ -673,6 +673,14 @@ function LogsTableContent({
         filterGroups={filterGroups}
         onFilterChange={onFilterChange}
         currentFilters={tableFilters}
+        // Date sort + range — last section, committed together with the group
+        // filters (the outer handler merges both into a single URL write).
+        dateFilter={{
+          title: 'Date',
+          sort: sortDirection,
+          range: dateRange,
+          onChange: onDateFilterApply,
+        }}
       />
 
       <LogDrawer
@@ -841,17 +849,39 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     };
   }, [params.severities, params.toolTypes, params.organizationIds, deviceId, lockedOrgIds, dateRange]);
 
+  // The mobile FilterModal commits the group filters and the date filter as
+  // two callbacks in the same tick; sequential setParams calls clobber each
+  // other (each re-reads the stale URL), so merge them into one write.
+  const pendingParamsRef = useRef<Record<string, string | string[]> | null>(null);
+  const queueParamsWrite = useCallback(
+    (updates: Record<string, string | string[]>) => {
+      if (pendingParamsRef.current) {
+        Object.assign(pendingParamsRef.current, updates);
+        return;
+      }
+      pendingParamsRef.current = updates;
+      queueMicrotask(() => {
+        const merged = pendingParamsRef.current;
+        pendingParamsRef.current = null;
+        if (merged) {
+          setParams(merged);
+        }
+      });
+      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
+    },
+    [setParams],
+  );
+
   const handleDateFilterApply = useCallback(
     (result: DateFilterResult) => {
-      setParams({
+      queueParamsWrite({
         // Default direction stays out of the URL
         sortDirection: result.sort === 'desc' ? '' : result.sort,
         dateFrom: result.range?.from ? toDayParam(result.range.from) : '',
         dateTo: result.range?.to ? toDayParam(result.range.to) : '',
       });
-      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
     },
-    [setParams],
+    [queueParamsWrite],
   );
 
   const tableFilters = useMemo(
@@ -865,14 +895,13 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, any[]>) => {
-      setParams({
+      queueParamsWrite({
         severities: columnFilters.status || [],
         toolTypes: columnFilters.tool || [],
         organizationIds: columnFilters.source || [],
       });
-      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
     },
-    [setParams],
+    [queueParamsWrite],
   );
 
   // Mutable ref so inner component can expose refresh without re-renders
