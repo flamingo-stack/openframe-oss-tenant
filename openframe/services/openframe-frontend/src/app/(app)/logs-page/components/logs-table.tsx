@@ -4,6 +4,7 @@ import { ToolBadge } from '@flamingo-stack/openframe-frontend-core';
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ArrowRightUpIcon,
+  CalendarIcon,
   ClipboardListIcon,
   EyeAltIcon,
   EyeIcon,
@@ -189,8 +190,6 @@ interface LogsTableContentProps {
   dateRange: DateRange | undefined;
   sortDirection: UiSortDirection;
   onDateFilterApply: (result: DateFilterResult) => void;
-  /** Sort direction commits immediately from the popover select, without Apply */
-  onSortDirectionChange: (sort: UiSortDirection) => void;
   debouncedSearch: string;
   tableFilters: Record<string, string[]>;
   onFilterChange: (filters: Record<string, any[]>) => void;
@@ -216,7 +215,6 @@ function LogsTableContent({
   dateRange,
   sortDirection,
   onDateFilterApply,
-  onSortDirectionChange,
   debouncedSearch,
   tableFilters,
   onFilterChange,
@@ -372,13 +370,18 @@ function LogsTableContent({
               sort={sortDirection}
               range={dateRange}
               onApply={onDateFilterApply}
-              onSortChange={onSortDirectionChange}
-              aria-label="Sort and filter logs by date"
-              className={cn(
-                '!h-auto !w-auto !min-w-0 !rounded-sm !border-0 !bg-transparent !p-0 !shadow-none',
-                '[&_svg]:!size-4 transition-colors duration-200',
-                dateRange ? '!text-ods-accent' : '!text-ods-text-secondary group-hover:!text-ods-text-primary',
-              )}
+              // Compact inline trigger — keeps the header row height identical to
+              // the other columns (the default lib trigger is a 48px Button).
+              trigger={
+                <button type="button" aria-label="Sort and filter logs by date" className="flex items-center">
+                  <CalendarIcon
+                    className={cn(
+                      'w-4 h-4 transition-colors duration-200',
+                      dateRange ? 'text-ods-accent' : 'text-ods-text-secondary group-hover:text-ods-text-primary',
+                    )}
+                  />
+                </button>
+              }
             />
           </div>
         ),
@@ -527,15 +530,7 @@ function LogsTableContent({
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [
-      logFilters,
-      getLogDetailsUrl,
-      organizationLocked,
-      dateRange,
-      sortDirection,
-      onDateFilterApply,
-      onSortDirectionChange,
-    ],
+    [logFilters, getLogDetailsUrl, organizationLocked, dateRange, sortDirection, onDateFilterApply],
   );
 
   // Mobile filter groups reuse the same column filter options (built from
@@ -845,22 +840,14 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const handleDateFilterApply = useCallback(
     (result: DateFilterResult) => {
       setParams({
-        sortDirection: result.sort,
+        // Default direction stays out of the URL
+        sortDirection: result.sort === 'desc' ? '' : result.sort,
         dateFrom: result.range?.from ? toDayParam(result.range.from) : '',
         dateTo: result.range?.to ? toDayParam(result.range.to) : '',
       });
       document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
     },
     [setParams],
-  );
-
-  // Sort select commits immediately (no Apply)
-  const handleSortDirectionChange = useCallback(
-    (sort: UiSortDirection) => {
-      setParam('sortDirection', sort);
-      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
-    },
-    [setParam],
   );
 
   const tableFilters = useMemo(
@@ -949,7 +936,6 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
           dateRange={dateRange}
           sortDirection={sortDirection}
           onDateFilterApply={handleDateFilterApply}
-          onSortDirectionChange={handleSortDirectionChange}
           debouncedSearch={debouncedSearch}
           tableFilters={tableFilters}
           onFilterChange={handleFilterChange}
