@@ -3,6 +3,7 @@ use tracing::{info, warn, debug};
 use tokio::process::Command;
 use crate::models::{InstalledTool, Installation};
 use crate::services::InstalledToolsService;
+use crate::services::OrphanPurgeService;
 use crate::services::ToolCommandParamsResolver;
 use crate::services::ToolKillService;
 use crate::platform::DirectoryManager;
@@ -22,6 +23,7 @@ pub struct ToolUninstallService {
     command_params_resolver: ToolCommandParamsResolver,
     tool_kill_service: ToolKillService,
     directory_manager: DirectoryManager,
+    orphan_purge_service: OrphanPurgeService,
 }
 
 impl ToolUninstallService {
@@ -31,19 +33,36 @@ impl ToolUninstallService {
         tool_kill_service: ToolKillService,
         directory_manager: DirectoryManager,
     ) -> Self {
+        let orphan_purge_service = OrphanPurgeService::new(installed_tools_service.clone());
         Self {
             installed_tools_service,
             command_params_resolver,
             tool_kill_service,
             directory_manager,
+            orphan_purge_service,
         }
     }
 
     pub async fn uninstall_by_tool_agent_id(&self, tool_agent_id: &str) -> Result<UninstallOutcome> {
         match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             None => {
-                info!("Tool {} not present in registry, nothing to uninstall", tool_agent_id);
-                Ok(UninstallOutcome::NotInstalled)
+                // Not in the local registry. It may still be installed OUTSIDE OpenFrame's
+                // management (an orphan, e.g. a Tactical RMM agent left from a previous product).
+                // Try a registry-independent purge by its fixed vendor coordinates; if we have no
+                // recipe for it, fall back to the original "nothing to uninstall" behaviour.
+                match self.orphan_purge_service.purge_if_orphan(tool_agent_id).await {
+                    Ok(true) => {
+                        info!("Orphan tool {} removed via registry-independent purge", tool_agent_id);
+                        Ok(UninstallOutcome::Removed)
+                    }
+                    Ok(false) => {
+                        info!("Tool {} not in registry and no orphan recipe, nothing to uninstall", tool_agent_id);
+                        Ok(UninstallOutcome::NotInstalled)
+                    }
+                    Err(e) => Err(e).with_context(|| {
+                        format!("Registry-independent purge failed for orphan tool: {}", tool_agent_id)
+                    }),
+                }
             }
             Some(tool) => {
                 self.uninstall_tool(&tool).await
