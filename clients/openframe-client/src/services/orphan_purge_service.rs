@@ -86,8 +86,19 @@ impl OrphanPurgeService {
         }
     }
 
-    /// Remove the tool by its fixed vendor coordinates. Steps log and continue on failure.
+    /// Remove the tool by its fixed vendor coordinates, then verify. Individual steps log and
+    /// continue; if the tool is still present afterwards we return Err so the NATS uninstall message
+    /// is left un-ACKed for redelivery (the startup reconcile is only the slow backstop).
     async fn purge(&self, recipe: &OrphanRecipe) -> Result<()> {
+        Self::run_purge_steps(recipe).await;
+        if Self::is_present(recipe).await {
+            anyhow::bail!("{} still present after purge attempt", recipe.display_name);
+        }
+        Ok(())
+    }
+
+    /// Best-effort removal steps; failures are logged and swallowed — `purge` does the verification.
+    async fn run_purge_steps(recipe: &OrphanRecipe) {
         #[cfg(target_os = "windows")]
         {
             use tokio::process::Command;
@@ -123,8 +134,6 @@ impl OrphanPurgeService {
                     warn!("Orphan purge: failed to remove {} (continuing): {:#}", recipe.win_program_dir, e);
                 }
             }
-
-            Ok(())
         }
 
         #[cfg(target_os = "macos")]
@@ -149,8 +158,6 @@ impl OrphanPurgeService {
                     }
                 }
             }
-
-            Ok(())
         }
 
         #[cfg(all(unix, not(target_os = "macos")))]
@@ -177,8 +184,6 @@ impl OrphanPurgeService {
                     }
                 }
             }
-
-            Ok(())
         }
     }
 }
