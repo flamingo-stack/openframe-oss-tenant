@@ -36,7 +36,7 @@ const SETTINGS_NAV_ITEMS = [
     description: 'Subscription details, usage data, and payment settings',
   },
   {
-    href: routes.settings.aiSettings,
+    href: routes.settings.aiSettings(),
     icon: ShieldCheckIcon,
     title: 'AI Settings & Guardrails',
     description: 'Configure AI assistant model and safety policies',

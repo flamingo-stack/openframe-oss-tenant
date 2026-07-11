@@ -19,6 +19,7 @@ import { useAiModelStatus } from '@/app/hooks/use-ai-model';
 import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { featureFlags } from '@/lib/feature-flags';
+import { routes } from '@/lib/routes';
 import { useMingoChat } from './hooks/use-mingo-chat';
 import { useMingoDialog } from './hooks/use-mingo-dialog';
 import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection';
@@ -250,7 +251,7 @@ export default function Mingo() {
   // then, so the imperative read is stable.) Also covers the non-SaaS guard.
   useEffect(() => {
     if (!isSaasTenantMode() || featureFlags.mingoSidebar.enabled()) {
-      router.replace('/dashboard');
+      router.replace(routes.dashboard);
       return;
     }
   }, [router]);

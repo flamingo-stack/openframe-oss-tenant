@@ -19,6 +19,7 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import Link from 'next/link';
 import { type ChangeEvent, useMemo, useState } from 'react';
+import { routes } from '@/lib/routes';
 import { useInvitations } from '../../settings/hooks/use-invitations';
 import { useStepActionState } from '../use-step-action-state';
 
@@ -139,7 +140,7 @@ export function CompanyTeamStep({
       {/* Footer actions */}
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <Link
-          href="/settings/employees"
+          href={routes.settings.employees}
           className="flex flex-1 items-center gap-[var(--spacing-system-xs)] text-ods-text-secondary transition-colors hover:text-ods-text-primary"
         >
           <ExternalLinkIcon size={24} className="shrink-0" />

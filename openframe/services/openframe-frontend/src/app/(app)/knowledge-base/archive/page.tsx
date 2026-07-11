@@ -6,9 +6,10 @@ import { KnowledgeBaseTagsRow } from '@/app/(app)/knowledge-base/components/know
 import { useTagSearchState } from '@/app/(app)/knowledge-base/hooks/use-tag-search-state';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { routes } from '@/lib/routes';
 
 export default function ArchivePage() {
-  const handleBack = useSafeBack('/knowledge-base');
+  const handleBack = useSafeBack(routes.knowledgeBase.list);
   const { search, debouncedSearch, setSearch, tagIds, tagSearchOptions, addTag, removeTag, clearAll } =
     useTagSearchState();
   const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();

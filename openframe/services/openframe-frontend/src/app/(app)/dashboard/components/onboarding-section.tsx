@@ -33,12 +33,12 @@ export function OnboardingSection() {
   }, [router]);
 
   const handleTeamAction = React.useCallback(async () => {
-    router.push('/settings/employees');
+    router.push(routes.settings.employees);
   }, [router]);
 
   const handleSsoAction = React.useCallback(async () => {
     trackDashboardActivity(EVENT_SUBTYPE.ADD_SSO_IDP);
-    router.push('/settings/sso');
+    router.push(routes.settings.sso);
   }, [router]);
 
   const handleKnowledgeBaseAction = React.useCallback(async () => {

@@ -20,7 +20,7 @@ interface EditScriptPageProps {
 
 export function EditScriptPage({ scriptId }: EditScriptPageProps) {
   const isEditMode = Boolean(scriptId);
-  const handleBackToList = useSafeBack('/scripts');
+  const handleBackToList = useSafeBack(routes.scripts.list());
   const handleBackToDetails = useSafeBack(scriptId ? routes.scripts.details(scriptId) : routes.scripts.list());
   const backButton = useMemo(
     () => (isEditMode ? { label: 'Back', onClick: handleBackToDetails } : { label: 'Back', onClick: handleBackToList }),

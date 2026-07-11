@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { CreateOrganizationSection } from '@/app/(auth)/auth/components/create-organization-section';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { isAuthOnlyMode } from '@/lib/app-mode';
+import { routes } from '@/lib/routes';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (isAuthenticated && !isAuthOnlyMode()) {
-      router.push('/dashboard');
+      router.push(routes.dashboard);
     }
   }, [isAuthenticated, router]);
 

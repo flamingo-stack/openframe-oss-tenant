@@ -34,7 +34,7 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
   });
 
   const backToArticle = useSafeBack(routes.knowledgeBase.details(articleId ?? ''));
-  const backToKb = useSafeBack('/knowledge-base');
+  const backToKb = useSafeBack(routes.knowledgeBase.list);
   const backButton = useMemo(
     () => (isEditMode && articleId ? { label: 'Back', onClick: backToArticle } : { label: 'Back', onClick: backToKb }),
     [isEditMode, articleId, backToArticle, backToKb],
@@ -79,7 +79,7 @@ function EditFormBody({ articleId, initialFolderId }: { articleId: string; initi
 }
 
 function ArticleFormFallback({ isEditMode }: { isEditMode: boolean }) {
-  const handleBack = useSafeBack('/knowledge-base');
+  const handleBack = useSafeBack(routes.knowledgeBase.list);
   return (
     <PageLayout
       title={isEditMode ? 'Edit Article' : 'New Article'}

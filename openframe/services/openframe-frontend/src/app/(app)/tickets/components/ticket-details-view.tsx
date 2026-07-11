@@ -125,7 +125,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const handleBackToTickets = useSafeBack('/tickets');
+  const handleBackToTickets = useSafeBack(routes.tickets.list);
   const { toast } = useToast();
   // When the Mingo sidebar carries per-ticket context, the embedded technician
   // (Mingo) chat is redundant: its panel, NATS subscription, history fetch, and

@@ -9,6 +9,7 @@ import type {
   UpdateSubscriptionInput,
   useUpdateSubscriptionMutation as UseUpdateSubscriptionMutationType,
 } from '@/__generated__/useUpdateSubscriptionMutation.graphql';
+import { routes } from '@/lib/routes';
 
 export type { PackageUpdateInput, UpdateSubscriptionInput };
 
@@ -67,7 +68,7 @@ export function useUpdateSubscription() {
             variant: 'success',
           });
 
-          router.push('/settings/billing-usage');
+          router.push(routes.settings.billingUsage);
         },
         onError: err => {
           toast({

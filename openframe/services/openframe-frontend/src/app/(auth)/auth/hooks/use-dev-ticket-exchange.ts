@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import { authApiClient } from '@/lib/auth-api-client';
+import { routes } from '@/lib/routes';
 import { authSessionQueryKey } from './use-auth-session';
 import { useTokenStorage } from './use-token-storage';
 
@@ -38,7 +39,7 @@ export function useDevTicketExchange() {
             variant: 'success',
           });
 
-          router.push('/dashboard');
+          router.push(routes.dashboard);
         }
 
         return {

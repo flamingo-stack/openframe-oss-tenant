@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { authApiClient } from '@/lib/auth-api-client';
 import { nativeLogin } from '@/lib/native-login';
 import { isNativeShell } from '@/lib/native-shell';
+import { routes } from '@/lib/routes';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { isBearerAuthMode } from '@/lib/token-store';
 import { AUTH_ERROR_CODE } from '../constants/auth-error-codes';
@@ -216,7 +217,7 @@ export function useAuth() {
           // System-browser login sheet; tokens land in the Keychain.
           await nativeLogin({ tenantId: tenantInfo.tenantId, provider });
           triggerAuthRecheck();
-          router.push('/dashboard');
+          router.push(routes.dashboard);
           setIsLoading(false);
           return;
         }

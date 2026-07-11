@@ -102,7 +102,7 @@ function buildActions(
   if (parentId === null) {
     actions.unshift({
       label: 'Archive',
-      href: '/knowledge-base/archive',
+      href: routes.knowledgeBase.archive,
       icon: <BoxArchiveIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
       variant: 'outline',
     });
@@ -547,7 +547,7 @@ function FolderBodyContent({ parentId }: { parentId: string }) {
 }
 
 function KnowledgeBaseBodyFallback({ parentId }: KnowledgeBaseBodyProps) {
-  const handleBack = useSafeBack('/knowledge-base');
+  const handleBack = useSafeBack(routes.knowledgeBase.list);
   const title = parentId === null ? ROOT_TITLE : ' ';
   const backButton: KnowledgeBaseBackButton | undefined =
     parentId === null ? undefined : { label: 'Back', onClick: handleBack };

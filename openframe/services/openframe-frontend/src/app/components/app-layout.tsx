@@ -25,6 +25,7 @@ import { LogoutConfirmModal } from '@/app/components/shared/logout-confirm-modal
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { isNativeShell } from '@/lib/native-shell';
+import { routes } from '@/lib/routes';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
@@ -202,7 +203,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     if (!initialSetupComplete) {
       topBar = (
         <InitialSetupBar
-          onStart={() => router.push('/dashboard')}
+          onStart={() => router.push(routes.dashboard)}
           started={tenantDone > 0}
           showAction={!isDashboardPage}
         />

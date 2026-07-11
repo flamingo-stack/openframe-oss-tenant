@@ -52,7 +52,7 @@ const STATUS_VARIANT: Record<ArticleStatus, 'success' | 'warning' | 'grey'> = {
 };
 
 function ArticleDetailsContent({ articleId }: { articleId: string }) {
-  const handleBack = useSafeBack('/knowledge-base');
+  const handleBack = useSafeBack(routes.knowledgeBase.list);
   const { toast } = useToast();
   const article = useKnowledgeBaseItem(articleId);
   const { publishArticle, isPending: isPublishing } = usePublishArticle();
@@ -268,7 +268,7 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
 }
 
 function ArticleDetailsFallback() {
-  const handleBack = useSafeBack('/knowledge-base');
+  const handleBack = useSafeBack(routes.knowledgeBase.list);
   return (
     <PageLayout
       title=""

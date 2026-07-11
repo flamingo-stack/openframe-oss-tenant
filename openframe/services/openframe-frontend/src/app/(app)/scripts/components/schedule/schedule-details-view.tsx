@@ -78,7 +78,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
     [router, pathname, searchParams],
   );
 
-  const handleBack = useSafeBack('/scripts/?tab=schedules');
+  const handleBack = useSafeBack(routes.scripts.list({ tab: 'schedules' }));
 
   const editDevicesHref = routes.scripts.schedules.devices(scheduleId);
   const editScheduleHref = routes.scripts.schedules.edit(scheduleId);

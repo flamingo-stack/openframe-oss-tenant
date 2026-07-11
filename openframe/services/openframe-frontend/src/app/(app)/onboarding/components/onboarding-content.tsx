@@ -7,6 +7,7 @@ import { type ComponentType, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { UserOnboardingStep } from '@/generated/schema-enums';
 import { useOnboardingMutations } from '@/graphql/onboarding/use-onboarding-mutations';
+import { routes } from '@/lib/routes';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { countCompleted, isStepDone, USER_ONBOARDING_STEPS } from '../onboarding-steps';
 import { USER_ONBOARDING_GROUPS } from '../user-onboarding-groups';
@@ -67,7 +68,7 @@ export function OnboardingContent() {
   const { completeUserStep, completeUserStepInBackground, completeUser, skipUser, isMutating } =
     useOnboardingMutations();
 
-  const leaveOnboarding = () => router.push('/dashboard');
+  const leaveOnboarding = () => router.push(routes.dashboard);
 
   // The personal Get Started tour is only available after the tenant Initial Setup
   // is complete. If the user lands here (deep link, stale tab) beforehand, send them
@@ -75,7 +76,7 @@ export function OnboardingContent() {
   const initialSetupComplete = tenant?.completed ?? false;
   useEffect(() => {
     if (isLoaded && !initialSetupComplete) {
-      router.replace('/dashboard');
+      router.replace(routes.dashboard);
     }
   }, [isLoaded, initialSetupComplete, router]);
 

@@ -45,6 +45,7 @@ export const TAB_IDS = {
   scriptsV2Details: ['details', 'executions'],
   monitoring: ['policies', 'queries'],
   settings: ['ai-settings', 'architecture', 'company-and-users', 'api-keys', 'sso-configuration', 'profile'],
+  aiSettings: ['customer', 'mingo', 'guardrails'],
   notifications: ['history'],
 } as const;
 
@@ -56,6 +57,7 @@ export type ScheduleDetailTab = (typeof TAB_IDS.scheduleDetails)[number];
 export type ScriptsV2DetailTab = (typeof TAB_IDS.scriptsV2Details)[number];
 export type MonitoringTab = (typeof TAB_IDS.monitoring)[number];
 export type SettingsTab = (typeof TAB_IDS.settings)[number];
+export type AiSettingsTab = (typeof TAB_IDS.aiSettings)[number];
 export type NotificationsTab = (typeof TAB_IDS.notifications)[number];
 
 // --------------------------------------------------------------------------
@@ -181,7 +183,8 @@ export const routes = {
     root: (o?: { tab?: SettingsTab }) => withQuery('/settings', { tab: o?.tab }),
     employees: '/settings/employees',
     employeeDetails: (id: string | number) => withQuery('/settings/employees/details', { id }),
-    aiSettings: '/settings/ai-settings',
+    aiSettings: (o?: { tab?: AiSettingsTab; edit?: boolean }) =>
+      withQuery('/settings/ai-settings', { tab: o?.tab, edit: o?.edit }),
     apiKeys: '/settings/api-keys',
     sso: '/settings/sso',
     architecture: '/settings/architecture',

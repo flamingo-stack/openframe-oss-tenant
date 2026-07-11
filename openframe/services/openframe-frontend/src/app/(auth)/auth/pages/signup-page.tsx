@@ -12,6 +12,7 @@ import { useAuth } from '@/app/(auth)/auth/hooks/use-auth';
 import { useRegistrationProviders } from '@/app/(auth)/auth/hooks/use-registration-providers';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { isAuthOnlyMode, isSaasSharedMode } from '@/lib/app-mode';
+import { routes } from '@/lib/routes';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -36,7 +37,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (isAuthenticated && !isAuthOnlyMode()) {
-      router.push('/dashboard');
+      router.push(routes.dashboard);
     }
   }, [isAuthenticated, router]);
 

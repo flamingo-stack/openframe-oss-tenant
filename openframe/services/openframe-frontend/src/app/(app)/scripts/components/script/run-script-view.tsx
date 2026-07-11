@@ -114,7 +114,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
 
   const handleViewLogs = useCallback(() => {
     setShowExecutionModal(false);
-    router.push(`/logs-page`);
+    router.push(routes.logs.page);
   }, [router]);
 
   const onFormError = useCallback(

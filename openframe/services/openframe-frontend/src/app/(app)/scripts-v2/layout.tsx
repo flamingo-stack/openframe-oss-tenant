@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
+import { routes } from '@/lib/routes';
 import { useFeatureFlagsStore } from '@/stores/feature-flags-store';
 
 /**
@@ -22,7 +23,7 @@ export default function ScriptsV2Layout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!enabled) {
-      router.replace('/scripts');
+      router.replace(routes.scripts.list());
     }
   }, [enabled, router]);
 

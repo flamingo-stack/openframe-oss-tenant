@@ -18,7 +18,7 @@ interface ScriptDetailsViewProps {
 
 export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   const { scriptDetails, isLoading, error } = useScriptDetails(scriptId);
-  const handleBack = useSafeBack('/scripts');
+  const handleBack = useSafeBack(routes.scripts.list());
 
   // Register this script as the Mingo "open view" (cleared → recent on unmount).
   useTrackOpenView(
