@@ -21,6 +21,7 @@ import {
 import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChatDialogScreen } from '../components/ChatDialogScreen';
@@ -31,7 +32,7 @@ import { useApplyAiAppearance } from '../hooks/useApplyAiAppearance';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
-import { useTenantInfoQuery } from '../hooks/useTenantInfoQuery';
+import { useMspOrganization } from '../hooks/useMspOrganization';
 import { type TicketDetails, useTickets } from '../hooks/useTickets';
 import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
 import { type DialogTokenUsage, dialogGraphQlService } from '../services/dialogGraphQLService';
@@ -163,9 +164,16 @@ export function ChatView() {
   const { status, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
 
-  // Header shows the MSP company name (from tenant info) in place of the tenant domain.
-  const { data: tenantInfo } = useTenantInfoQuery({ enabled: true });
-  const mspCompanyName = tenantInfo?.name?.trim() || undefined;
+  // MSP branding (from tenant info): the company name replaces the tenant
+  // domain next to the assistant, and the header's MSP organization bar
+  // (logo + name + website) uses the same source as the welcome screen.
+  const {
+    name: mspCompanyName,
+    website: mspWebsite,
+    logoUrl: mspLogoUrl,
+    isLoading: isMspLoading,
+    openWebsite: openMspWebsite,
+  } = useMspOrganization();
 
   // Connected: fire-and-forget so ChatInput clears the draft immediately. Returning
   // sendMessage's promise would make the lib defer clearing until it resolves (once
@@ -392,17 +400,16 @@ export function ChatView() {
     return () => clearInterval(interval);
   }, [isTicketPreview, previewTicketId, resumeDialog]);
 
-  // Rust emits notification:click when the window gains focus shortly after a
-  // NATS-driven OS notification; open the entity it came from. The ref keeps
-  // the Tauri listener registered once instead of churning per render.
+  // Rust emits notification:click with the clicked OS notification's target
+  // (see nats_bridge/notifications.rs); open the entity it came from. The ref
+  // keeps the Tauri listener registered once instead of churning per render.
   const notificationClickRef = useRef({ handleTicketClick, resumeDialog, dialogId });
   notificationClickRef.current = { handleTicketClick, resumeDialog, dialogId };
 
   useEffect(() => {
     if (!isTauri) return;
     type NotificationClickPayload = { kind: string; id: string };
-    const unlistenPromise = listen<NotificationClickPayload>('notification:click', event => {
-      const { kind, id } = event.payload;
+    const handleClick = ({ kind, id }: NotificationClickPayload) => {
       if (!id) return;
       if (kind === 'ticket') {
         void notificationClickRef.current.handleTicketClick(id);
@@ -411,7 +418,15 @@ export function ChatView() {
         // Already viewing this dialog — the live subscription has the message.
         if (id !== dialogId) void resumeDialog(id);
       }
-    });
+    };
+    const unlistenPromise = listen<NotificationClickPayload>('notification:click', event => handleClick(event.payload));
+    // A click that launched the app is stashed Rust-side until this listener
+    // exists; pulling it also opens the gate for future direct emits.
+    invoke<NotificationClickPayload | null>('take_pending_notification_click')
+      .then(payload => {
+        if (payload) handleClick(payload);
+      })
+      .catch(() => undefined);
     return () => {
       unlistenPromise.then(unlisten => unlisten()).catch(() => undefined);
     };
@@ -442,6 +457,19 @@ export function ChatView() {
         serverUrl={mspCompanyName}
         onBack={hasMessages ? handleNewChat : undefined}
         ticketInfo={ticketInfo}
+        // MSP branding bar — home screen (chats list) only; on open-chat
+        // screens this slot is used by the ticket details row.
+        mspOrganization={
+          !isDialogActive && mspCompanyName
+            ? {
+                name: mspCompanyName,
+                website: mspWebsite,
+                logoUrl: mspLogoUrl,
+                onOpenWebsite: openMspWebsite,
+              }
+            : undefined
+        }
+        isMspLoading={!isDialogActive && isMspLoading}
         headerActions={
           <>
             {!hasMessages && (

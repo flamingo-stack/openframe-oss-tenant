@@ -9,9 +9,9 @@ spec:
   project: default
 
   sources:
-    - repoURL: {{ .Values.deployment.oss.repository.URL }}
-      targetRevision: {{ .Values.deployment.oss.repository.branch }}
-      path: "{{ .Values.deployment.oss.repository.baseDir }}/{{ .Values.deployment.oss.repository.appsDir }}"
+    - repoURL: {{ .Values.repository.URL }}
+      targetRevision: {{ .Values.repository.branch }}
+      path: "{{ .Values.repository.baseDir }}/{{ .Values.repository.appsDir }}"
       helm:
         values: |
           {{ omit .Values "argo-cd" | toYaml | nindent 10 }}

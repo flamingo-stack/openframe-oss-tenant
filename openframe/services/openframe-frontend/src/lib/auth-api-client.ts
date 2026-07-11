@@ -123,8 +123,8 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' });
   }
 
-  validateAccessCode<T = any>(email: string, code: string) {
-    const path = `/sas/oauth/access-code/validate?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+  checkEmailAvailability<T = any>(email: string) {
+    const path = `/sas/tenant/email-available?email=${encodeURIComponent(email)}`;
     return requestPublic<T>(path, { method: 'GET' });
   }
 
@@ -140,7 +140,6 @@ class AuthApiClient {
     password: string;
     tenantName: string;
     tenantDomain: string;
-    accessCode?: string;
   }) {
     return request<T>('/sas/oauth/register', {
       method: 'POST',
@@ -153,7 +152,6 @@ class AuthApiClient {
     tenantDomain: string;
     email: string;
     provider: 'google' | 'microsoft';
-    accessCode: string;
     redirectTo?: string;
   }) {
     const params = new URLSearchParams({
@@ -161,7 +159,6 @@ class AuthApiClient {
       tenantDomain: payload.tenantDomain,
       email: payload.email,
       provider: payload.provider,
-      accessCode: payload.accessCode,
     });
 
     if (payload.redirectTo) {
@@ -204,7 +201,7 @@ class AuthApiClient {
 
   acceptInvitationSso(payload: {
     invitationId: string;
-    provider: 'google' | 'microsoft';
+    provider: 'openframe-sso' | 'google' | 'microsoft';
     switchTenant?: boolean;
     redirectTo?: string;
   }) {

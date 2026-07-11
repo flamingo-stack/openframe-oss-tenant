@@ -23,6 +23,7 @@ import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/util
 import { type ComponentType, useMemo, useState } from 'react';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import type { Device, Software } from '../../types/device.types';
+import { TabEmptyState } from './tab-empty-state';
 
 interface SoftwareTabProps {
   device: Device | null;
@@ -165,17 +166,21 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
 
   if (!device) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No device data available</div>
-      </div>
+      <TabEmptyState
+        icon={<WebDesignIcon />}
+        title="No software found"
+        description="Installed software for this device will appear here."
+      />
     );
   }
 
   if (allSoftware.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No software data available for this device</div>
-      </div>
+      <TabEmptyState
+        icon={<WebDesignIcon />}
+        title="No software found"
+        description="Installed software for this device will appear here."
+      />
     );
   }
 

@@ -21,6 +21,8 @@ interface BuildPackageRadioOptionsArgs {
   customLabel: string;
   customSubtitle: string;
   payAsYouGoOption: PayAsYouGoOption | null;
+  /** Whether to offer a Custom Amount option (false for PAYG-only products). */
+  allowCustom: boolean;
 }
 
 export function buildPackageRadioOptions({
@@ -32,6 +34,7 @@ export function buildPackageRadioOptions({
   customLabel,
   customSubtitle,
   payAsYouGoOption,
+  allowCustom,
 }: BuildPackageRadioOptionsArgs) {
   const paygOption = payAsYouGoOption
     ? [{ value: PAYG_OPTION_ID, label: 'Pay as you go', description: formatPaygSubtitle(payAsYouGoOption) }]
@@ -51,5 +54,9 @@ export function buildPackageRadioOptions({
     };
   });
 
-  return [...paygOption, ...tierOptions, { value: CUSTOM_OPTION_ID, label: customLabel, description: customSubtitle }];
+  const customOption = allowCustom
+    ? [{ value: CUSTOM_OPTION_ID, label: customLabel, description: customSubtitle }]
+    : [];
+
+  return [...paygOption, ...tierOptions, ...customOption];
 }

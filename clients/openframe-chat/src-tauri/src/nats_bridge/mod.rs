@@ -15,7 +15,11 @@
 
 mod connection;
 mod dialogs;
+#[cfg(target_os = "macos")]
+mod macos_un;
 mod notifications;
+#[cfg(target_os = "windows")]
+mod windows_toast;
 
 pub(crate) use connection::mask_token;
 
@@ -34,7 +38,6 @@ use crate::token_watcher::TokenSource;
 use crate::ServerUrlState;
 
 use dialogs::DialogState;
-use notifications::PendingNotification;
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -103,9 +106,13 @@ struct Inner {
     /// webview still succeeds, so stale channels can't be detected by send
     /// failures and must not accumulate.
     event_channel: RwLock<Option<Channel<NatsEvent>>>,
-    /// Most recent notification's dialog id + when it was fired. Consumed
-    /// by the window-focus handler to emit `notification:click`.
-    pending_notification: StdMutex<Option<PendingNotification>>,
+    /// `true` once the WebView pulled `take_pending_notification_click`,
+    /// i.e. its `notification:click` listener is mounted. Until then click
+    /// payloads are parked in `stashed_click` (cold-start clicks). Only
+    /// accessed while holding the `stashed_click` lock, which serializes the
+    /// ready-flip + drain against concurrent emit-or-stash decisions.
+    webview_click_ready: AtomicBool,
+    stashed_click: StdMutex<Option<serde_json::Value>>,
 }
 
 impl NatsBridge {
@@ -123,7 +130,7 @@ impl NatsBridge {
         } else {
             tracing::warn!("[NATS] no machineId in config — OS notifications disabled");
         }
-        Self {
+        let bridge = Self {
             inner: Arc::new(Inner {
                 client: RwLock::new(None),
                 state: RwLock::new(ConnectionState::Disconnected),
@@ -140,9 +147,13 @@ impl NatsBridge {
                 notification_task: RwLock::new(None),
                 dialogs: RwLock::new(HashMap::new()),
                 event_channel: RwLock::new(None),
-                pending_notification: StdMutex::new(None),
+                webview_click_ready: AtomicBool::new(false),
+                stashed_click: StdMutex::new(None),
             }),
-        }
+        };
+        #[cfg(target_os = "macos")]
+        macos_un::init(&bridge.inner);
+        bridge
     }
 
     /// Spawn the connect task. Idempotent: subsequent calls are no-ops.

@@ -18,6 +18,21 @@ use tauri::ActivationPolicy;
 static DOCK_QUIT_ACTION: std::sync::OnceLock<Box<dyn Fn() + Send + Sync>> =
     std::sync::OnceLock::new();
 
+// True when AppKit is terminating us for a logout/restart/shutdown (the quit
+// Apple event carries kAEQuitReason), as opposed to a plain Dock "Quit".
+#[cfg(target_os = "macos")]
+fn is_system_quit() -> bool {
+    use objc2_core_services::kAEQuitReason;
+    use objc2_foundation::NSAppleEventManager;
+    match NSAppleEventManager::sharedAppleEventManager().currentAppleEvent() {
+        Some(event) => {
+            event.paramDescriptorForKeyword(kAEQuitReason).is_some()
+                || event.attributeDescriptorForKeyword(kAEQuitReason).is_some()
+        }
+        None => false,
+    }
+}
+
 #[cfg(target_os = "macos")]
 unsafe extern "C" fn on_application_should_terminate(
     _this: *mut objc2::runtime::AnyObject,
@@ -27,7 +42,12 @@ unsafe extern "C" fn on_application_should_terminate(
     if let Some(action) = DOCK_QUIT_ACTION.get() {
         action();
     }
-    0 // NSTerminateCancel
+    // A logout/restart/shutdown must proceed or macOS blocks it; a Dock "Quit" stays in the tray.
+    if is_system_quit() {
+        1 // NSTerminateNow
+    } else {
+        0 // NSTerminateCancel
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -63,6 +83,7 @@ pub(crate) fn activate_main_window(app: &tauri::AppHandle) {
         }
         if let Some(window) = handle.get_webview_window("main") {
             let _ = window.show();
+            let _ = window.unminimize();
             let _ = window.set_focus();
         }
     });
@@ -183,6 +204,29 @@ fn register_app_id() {
     }
 }
 
+/// Register the openframe-chat:// URI scheme (HKCU, no elevation). Toast
+/// clicks activate through it — see nats_bridge/windows_toast.rs. Re-written
+/// on every launch so the command always points at the current exe path.
+#[cfg(target_os = "windows")]
+fn register_url_scheme() {
+    use winreg::{enums::*, RegKey};
+
+    let Ok(exe) = std::env::current_exe() else {
+        log::warn!("url scheme: current_exe unavailable — skipping registration");
+        return;
+    };
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let Ok((key, _)) = hkcu.create_subkey(r"Software\Classes\openframe-chat") else {
+        log::warn!("url scheme: failed to create registry key");
+        return;
+    };
+    let _ = key.set_value("", &"URL:OpenFrame Chat");
+    let _ = key.set_value("URL Protocol", &"");
+    if let Ok((command, _)) = key.create_subkey(r"shell\open\command") {
+        let _ = command.set_value("", &format!("\"{}\" \"%1\"", exe.display()));
+    }
+}
+
 #[cfg(target_os = "windows")]
 fn register_start_menu_shortcut() {
     use mslnk::ShellLink;
@@ -235,9 +279,9 @@ fn register_start_menu_shortcut() {
 
 /// Materializes the embedded app icon to a user-writable path and points the
 /// AUMID's `IconUri` at it. The agent ships only the chat executable — no Tauri
-/// `resources/` on disk — so a bundled-resource path never exists; and
-/// notify-rust ignores per-notification icons on Windows, leaving this registry
-/// icon as the only logo source for toasts and the Action Center.
+/// `resources/` on disk — so a bundled-resource path never exists; our toast
+/// XML sets no per-notification image, leaving this registry icon as the only
+/// logo source for toasts and the Action Center.
 #[cfg(target_os = "windows")]
 fn register_notification_icon(app: &tauri::AppHandle) {
     use winreg::{enums::*, RegKey};
@@ -281,6 +325,14 @@ fn nats_set_notifications_enabled(bridge: State<'_, NatsBridge>, enabled: bool) 
     bridge.set_notifications_enabled(enabled);
 }
 
+/// Called once by the WebView when its notification:click listener mounts.
+/// Opens the click gate and returns a click that happened before the WebView
+/// was ready (a notification click that cold-started the app), if any.
+#[tauri::command]
+fn take_pending_notification_click(bridge: State<'_, NatsBridge>) -> Option<serde_json::Value> {
+    bridge.take_startup_click()
+}
+
 #[tauri::command]
 async fn nats_subscribe_dialog(
     bridge: State<'_, NatsBridge>,
@@ -315,6 +367,7 @@ pub fn run() {
     {
         register_app_id();
         register_start_menu_shortcut();
+        register_url_scheme();
     }
 
     println!("[startup] openframe-chat starting (version {})", env!("CARGO_PKG_VERSION"));
@@ -358,6 +411,13 @@ pub fn run() {
     builder = builder
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             log::info!("single-instance: second launch intercepted");
+            // Windows toast clicks arrive as a protocol launch of a second
+            // instance with the openframe-chat:// URI in argv.
+            if let Some(uri) = argv.iter().find(|arg| arg.starts_with("openframe-chat://")) {
+                if let Some(bridge) = app.try_state::<NatsBridge>() {
+                    bridge.handle_notification_uri(uri);
+                }
+            }
             let background_relaunch = argv.iter().any(|arg| arg == "--background");
             if !background_relaunch {
                 if let Some(window) = app.get_webview_window("main") {
@@ -380,7 +440,6 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .setup(move |app| {
             if std::env::var("OPENFRAME_DISABLE_LOG").is_err() {
@@ -464,6 +523,14 @@ pub fn run() {
             app.manage(bridge.clone());
             bridge.start();
             log::info!("NATS bridge initialized");
+
+            // Cold start from a Windows toast click: the protocol launch put
+            // the URI in our own argv. The payload is stashed until the
+            // WebView pulls take_pending_notification_click.
+            #[cfg(target_os = "windows")]
+            if let Some(uri) = std::env::args().find(|arg| arg.starts_with("openframe-chat://")) {
+                bridge.handle_notification_uri(&uri);
+            }
             
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
 
@@ -571,7 +638,18 @@ pub fn run() {
                     &PredefinedMenuItem::separator(app)?,
                     &quit_to_tray_i,
                 ])?;
-                let app_menu = Menu::with_items(app, &[&app_submenu])?;
+                // Edit submenu is required on macOS: WKWebView routes ⌘X/⌘C/⌘V/⌘A
+                // through these menu items. Without it, paste into inputs is dead.
+                let edit_submenu = Submenu::with_items(app, "Edit", true, &[
+                    &PredefinedMenuItem::undo(app, None)?,
+                    &PredefinedMenuItem::redo(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::cut(app, None)?,
+                    &PredefinedMenuItem::copy(app, None)?,
+                    &PredefinedMenuItem::paste(app, None)?,
+                    &PredefinedMenuItem::select_all(app, None)?,
+                ])?;
+                let app_menu = Menu::with_items(app, &[&app_submenu, &edit_submenu])?;
                 app.set_menu(app_menu)?;
 
                 app.on_menu_event(|app, event| {
@@ -663,10 +741,7 @@ pub fn run() {
                     let _ = window.hide();
                 }
                 WindowEvent::Focused(true) => {
-                    // Click-on-notification heuristic: when the main window
-                    // gains focus shortly after a NATS-driven notification
-                    // fired, ask the bridge to emit notification:click so
-                    // the WebView can navigate to the source dialog.
+                    // The user is looking at the chat — clear the unread badge.
                     if window.label() == "main" {
                         if let Some(bridge) = window.app_handle().try_state::<NatsBridge>() {
                             bridge.on_main_window_focused();
@@ -684,6 +759,7 @@ pub fn run() {
             log_from_js,
             nats_status,
             nats_set_notifications_enabled,
+            take_pending_notification_click,
             nats_subscribe_dialog,
             nats_unsubscribe_dialog,
             nats_register_event_channel,

@@ -1,8 +1,10 @@
 'use client';
 
-import { DashboardInfoCard, Skeleton, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
+import { DashboardInfoCard, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
+import { routes } from '@/lib/routes';
 import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
 import { useDevicesOverview } from '../hooks/use-dashboard-stats';
+import { DevicesOverviewSkeleton } from './dashboard-skeletons';
 
 type DeviceStatusCard = {
   status: string;
@@ -47,17 +49,7 @@ export function DevicesOverviewSection() {
   ];
 
   if (devices.isLoading) {
-    return (
-      <div className="space-y-4">
-        <TitleBlock title="Devices Overview" className="pt-0 mb-0" />
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statusCards.map(card => (
-            <Skeleton key={card.status} className="h-20 w-full" />
-          ))}
-        </div>
-      </div>
-    );
+    return <DevicesOverviewSkeleton />;
   }
 
   return (
@@ -79,7 +71,10 @@ export function DevicesOverviewSection() {
             progressVariant={card.progressVariant}
             percentageDisplay="plain"
             progressSize={{ base: 24, md: 56 }}
-            href={`/devices?statuses=${card.status}`}
+            href={
+              // Archived devices live on their own page; /devices only lists the rest.
+              card.status === DEVICE_STATUS.ARCHIVED ? routes.devices.archive : `/devices?statuses=${card.status}`
+            }
           />
         ))}
       </div>

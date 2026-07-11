@@ -1,6 +1,7 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import { graphql, useMutation } from 'react-relay';
 import type {
@@ -37,6 +38,7 @@ const updateSubscriptionMutation = graphql`
 
 export function useUpdateSubscription() {
   const { toast } = useToast();
+  const router = useRouter();
   const [commit, isInFlight] = useMutation<UseUpdateSubscriptionMutationType>(updateSubscriptionMutation);
 
   const mutate = useCallback(
@@ -55,25 +57,17 @@ export function useUpdateSubscription() {
             return;
           }
 
-          const latestPending = [...result.subscription.pendingInvoices].sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-          )[0];
-
-          if (latestPending) {
-            toast({
-              title: 'Redirecting to Payment',
-              description: 'Complete your payment to activate changes.',
-              variant: 'success',
-            });
-            window.location.href = latestPending.hostedInvoiceUrl;
-            return;
-          }
-
+          // An upgrade may generate a pending invoice; a downgrade doesn't. We no
+          // longer auto-open the invoice — use a neutral message that points the
+          // user to the invoices list without asserting an invoice was created.
           toast({
             title: 'Subscription Updated',
-            description: 'Your subscription changes have been applied.',
+            description:
+              'Your changes have been applied. Check the invoices list in Billing & Usage for any pending payments.',
             variant: 'success',
           });
+
+          router.push('/settings/billing-usage');
         },
         onError: err => {
           toast({
@@ -84,7 +78,7 @@ export function useUpdateSubscription() {
         },
       });
     },
-    [commit, toast],
+    [commit, toast, router],
   );
 
   return { mutate, isPending: isInFlight };

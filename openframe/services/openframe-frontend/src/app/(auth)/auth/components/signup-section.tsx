@@ -13,13 +13,11 @@ interface RegisterRequest {
   lastName: string;
   email: string;
   password: string;
-  accessCode: string;
 }
 
 interface AuthSignupSectionProps {
   orgName: string;
   domain: string;
-  accessCode: string;
   email?: string;
   onSubmit: (data: RegisterRequest) => void;
   onSso?: (provider: string) => void;
@@ -33,7 +31,6 @@ interface AuthSignupSectionProps {
 export function AuthSignupSection({
   orgName,
   domain,
-  accessCode,
   email: prefillEmail,
   onSubmit,
   onSso,
@@ -71,7 +68,6 @@ export function AuthSignupSection({
       lastName: lastName.trim(),
       email: email.trim(),
       password,
-      accessCode: accessCode,
     };
 
     onSubmit(data);

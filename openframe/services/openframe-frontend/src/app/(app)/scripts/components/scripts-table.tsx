@@ -46,6 +46,7 @@ import { EmptyState } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import { useScripts } from '../hooks/use-scripts';
 
 interface UiScriptEntry {
@@ -95,7 +96,9 @@ export function ScriptsTable() {
       name: script.name,
       description: script.description,
       shellType: script.shell,
-      addedBy: normalizeToolTypeWithFallback('tactical'),
+      // TODO(openframe-rmm): Tactical RMM removed — "Added By" was always the Tactical tool
+      // badge. Populate from the real source once the OpenFrame RMM scripts API is wired up.
+      addedBy: normalizeToolTypeWithFallback(''),
       supportedPlatforms: script.supported_platforms || [],
       category: script.category || 'General',
       timeout: script.default_timeout || 300,
@@ -166,9 +169,9 @@ export function ScriptsTable() {
   const visibleScripts = useMemo(() => filteredScripts.slice(0, visibleCount), [filteredScripts, visibleCount]);
 
   const renderRowActions = useCallback((script: UiScriptEntry) => {
-    const runHref = `/scripts/details/run?id=${script.id}`;
-    const editHref = `/scripts/edit?id=${script.id}`;
-    const detailsHref = `/scripts/details?id=${script.id}`;
+    const runHref = routes.scripts.run(script.id);
+    const editHref = routes.scripts.edit(script.id);
+    const detailsHref = routes.scripts.details(script.id);
     const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
 
     const groups: ActionsMenuGroup[] = [
@@ -303,7 +306,7 @@ export function ScriptsTable() {
         cell: ({ row }: { row: Row<UiScriptEntry> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              onClick={openInNewTab(`/scripts/details?id=${row.original.id}`)}
+              onClick={openInNewTab(routes.scripts.details(row.original.id))}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -357,7 +360,7 @@ export function ScriptsTable() {
     onColumnFiltersChange: handleColumnFiltersChange,
   });
 
-  const scriptRowHref = useCallback((script: UiScriptEntry) => `/scripts/details?id=${script.id}`, []);
+  const scriptRowHref = useCallback((script: UiScriptEntry) => routes.scripts.details(script.id), []);
 
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + pageSize), []);
 
@@ -371,7 +374,7 @@ export function ScriptsTable() {
   }, [params.search]);
 
   const handleNewScript = useCallback(() => {
-    router.push('/scripts/create');
+    router.push(routes.scripts.new);
   }, [router]);
 
   const handleMobileFilterChange = useCallback(

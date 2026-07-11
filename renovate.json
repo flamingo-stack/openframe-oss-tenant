@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "enabledManagers": ["maven", "npm", "helmv3", "regex", "cargo"],
+  "enabledManagers": ["maven", "npm", "helmv3", "cargo"],
   "labels": ["dependencies", "openframe-libs"],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 0,
@@ -59,55 +59,6 @@
       "enabled": false
     },
     {
-      "description": "Updates for fleetm Docker image",
-      "matchManagers": ["regex"],
-      "matchPackageNames": ["ghcr.io/flamingo-stack/fleetmdm/fleet"],
-      "groupName": "FleetMDM",
-      "groupSlug": "fleetmdm-image",
-      "commitMessageTopic": "FleetMDM",
-      "semanticCommitType": "chore",
-      "semanticCommitScope": "deps",
-      "labels": ["dependencies", "fleetmdm"],
-      "prPriority": 10,
-      "enabled": true,
-      "ignoreUnstable": true,
-      "allowedVersions": "!/^9\\.9\\.9$/",
-      "separateMajorMinor": false
-    },
-    {
-      "description": "Updates for meshcentral Docker image",
-      "matchManagers": ["regex"],
-      "matchPackageNames": ["ghcr.io/flamingo-stack/meshcentral/meshcentral"],
-      "groupName": "MeshCentral",
-      "groupSlug": "meshcentral-image",
-      "commitMessageTopic": "MeshCentral",
-      "semanticCommitType": "chore",
-      "semanticCommitScope": "deps",
-      "labels": ["dependencies", "meshcentral"],
-      "prPriority": 10,
-      "enabled": true,
-      "ignoreUnstable": true,
-      "separateMajorMinor": false
-    },
-    {
-      "description": "Updates for tacticalrmm Docker images",
-      "matchManagers": ["regex"],
-      "matchPackageNames": [
-        "ghcr.io/flamingo-stack/tacticalrmm/tactical",
-        "ghcr.io/flamingo-stack/tactical-frontend/tactical-frontend"
-      ],
-      "groupName": "TacticalRMM",
-      "groupSlug": "tacticalrmm-image",
-      "commitMessageTopic": "TacticalRMM",
-      "semanticCommitType": "chore",
-      "semanticCommitScope": "deps",
-      "labels": ["dependencies", "tacticalrmm"],
-      "prPriority": 10,
-      "enabled": true,
-      "ignoreUnstable": true,
-      "separateMajorMinor": false
-    },
-    {
       "description": "Updates for fleetm Helm chart",
       "matchManagers": ["helmv3"],
       "matchPackageNames": ["fleet"],
@@ -125,9 +76,25 @@
       "separateMajorMinor": false
     },
     {
-      "description": "Only update fleetmdm chart",
+      "description": "Updates for meshcentral Helm chart",
       "matchManagers": ["helmv3"],
-      "matchPackageNames": ["!fleet"],
+      "matchPackageNames": ["meshcentral"],
+      "matchSourceUrls": ["oci://ghcr.io/flamingo-stack/meshcentral/helm-charts"],
+      "groupName": "MeshCentral Helm chart",
+      "groupSlug": "meshcentral-helm-chart",
+      "commitMessageTopic": "MeshCentral Helm chart",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "labels": ["dependencies", "meshcentral"],
+      "prPriority": 10,
+      "enabled": true,
+      "ignoreUnstable": true,
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Only update whitelisted charts",
+      "matchManagers": ["helmv3"],
+      "matchPackageNames": ["!fleet", "!meshcentral"],
       "enabled": false
     },
     {
@@ -149,53 +116,6 @@
       "commitMessageTopic": "openframe-chat deps",
       "labels": ["dependencies", "clients", "openframe-chat"],
       "prPriority": 20
-    }
-  ],
-
-  "regexManagers": [
-    {
-      "description": "Track fleetmdm image tag in the fleet chart values.yaml",
-      "fileMatch": [
-        "^manifests/integrated-tools/fleet/values\\.yaml$"
-      ],
-      "matchStrings": [
-        "imageTag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
-      ],
-      "depNameTemplate": "ghcr.io/flamingo-stack/fleetmdm/fleet",
-      "datasourceTemplate": "docker"
-    },
-    {
-      "description": "Track meshcentral image tag",
-      "fileMatch": [
-        "^manifests/integrated-tools/meshcentral/values\\.yaml$"
-      ],
-      "matchStrings": [
-        "repository: meshcentral\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
-      ],
-      "depNameTemplate": "ghcr.io/flamingo-stack/meshcentral/meshcentral",
-      "datasourceTemplate": "docker"
-    },
-    {
-      "description": "Track tactical-base image tag",
-      "fileMatch": [
-        "^manifests/integrated-tools/tactical-rmm/values\\.yaml$"
-      ],
-      "matchStrings": [
-        "repository: tactical\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
-      ],
-      "depNameTemplate": "ghcr.io/flamingo-stack/tacticalrmm/tactical",
-      "datasourceTemplate": "docker"
-    },
-    {
-      "description": "Track tactical-frontend image tag",
-      "fileMatch": [
-        "^manifests/integrated-tools/tactical-rmm/values\\.yaml$"
-      ],
-      "matchStrings": [
-        "repository: tactical-frontend\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
-      ],
-      "depNameTemplate": "ghcr.io/flamingo-stack/tactical-frontend/tactical-frontend",
-      "datasourceTemplate": "docker"
     }
   ],
 

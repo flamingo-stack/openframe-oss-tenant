@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { rejectScriptsMigrationPending } from '../lib/scripts-migration';
 import type {
   AgentsModifyResponse,
   CreateScriptSchedulePayload,
@@ -12,54 +12,34 @@ import { scriptScheduleQueryKeys } from './use-script-schedule';
 
 // ============ API Functions ============
 
-async function createScriptScheduleApi(payload: CreateScriptSchedulePayload): Promise<ScriptScheduleDetail> {
-  const res = await tacticalApiClient.createScriptSchedule(payload);
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to create schedule (${res.status})`);
-  }
-  return res.data;
+// TODO(openframe-rmm): Tactical RMM removed — script-schedule mutations have no backend
+// until the OpenFrame RMM scripts API is wired up. All reject so the UI surfaces a clear
+// "migration pending" toast instead of a silent no-op. See scripts-migration.ts.
+async function createScriptScheduleApi(_payload: CreateScriptSchedulePayload): Promise<ScriptScheduleDetail> {
+  return rejectScriptsMigrationPending();
 }
 
-async function updateScriptScheduleApi(params: {
+async function updateScriptScheduleApi(_params: {
   id: string;
   payload: UpdateScriptSchedulePayload;
 }): Promise<ScriptScheduleDetail> {
-  const res = await tacticalApiClient.updateScriptSchedule(params.id, params.payload);
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to update schedule (${res.status})`);
-  }
-  return res.data;
+  return rejectScriptsMigrationPending();
 }
 
-async function deleteScriptScheduleApi(id: string): Promise<void> {
-  const res = await tacticalApiClient.deleteScriptSchedule(id);
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to delete schedule (${res.status})`);
-  }
+async function deleteScriptScheduleApi(_id: string): Promise<void> {
+  rejectScriptsMigrationPending();
 }
 
-async function replaceScheduleAgentsApi(params: { id: string; agents: string[] }): Promise<AgentsModifyResponse> {
-  const res = await tacticalApiClient.replaceScriptScheduleAgents(params.id, params.agents);
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to update agents (${res.status})`);
-  }
-  return res.data;
+async function replaceScheduleAgentsApi(_params: { id: string; agents: string[] }): Promise<AgentsModifyResponse> {
+  return rejectScriptsMigrationPending();
 }
 
-async function addScheduleAgentsApi(params: { id: string; agents: string[] }): Promise<AgentsModifyResponse> {
-  const res = await tacticalApiClient.addScriptScheduleAgents(params.id, params.agents);
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to add agents (${res.status})`);
-  }
-  return res.data;
+async function addScheduleAgentsApi(_params: { id: string; agents: string[] }): Promise<AgentsModifyResponse> {
+  return rejectScriptsMigrationPending();
 }
 
-async function removeScheduleAgentsApi(params: { id: string; agents: string[] }): Promise<AgentsModifyResponse> {
-  const res = await tacticalApiClient.removeScriptScheduleAgents(params.id, params.agents);
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to remove agents (${res.status})`);
-  }
-  return res.data;
+async function removeScheduleAgentsApi(_params: { id: string; agents: string[] }): Promise<AgentsModifyResponse> {
+  return rejectScriptsMigrationPending();
 }
 
 // ============ Hooks ============

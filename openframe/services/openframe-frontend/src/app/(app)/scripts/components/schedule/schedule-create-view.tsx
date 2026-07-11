@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { useScriptSchedule } from '../../hooks/use-script-schedule';
 import { useCreateScriptSchedule, useUpdateScriptSchedule } from '../../hooks/use-script-schedule-mutations';
 import {
@@ -96,7 +97,9 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const repeatEnabled = watch('repeatEnabled');
   const supportedPlatforms = watch('supportedPlatforms');
 
-  const handleBack = useSafeBack(isEditMode ? `/scripts/schedules?id=${scheduleId}` : '/scripts/?tab=schedules');
+  const handleBack = useSafeBack(
+    isEditMode && scheduleId ? routes.scripts.schedules.details(scheduleId) : routes.scripts.list({ tab: 'schedules' }),
+  );
 
   const togglePlatform = useCallback(
     (platform: Platform) => {
@@ -137,7 +140,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             description: `Schedule "${data.name}" updated successfully.`,
             variant: 'success',
           });
-          safeBackOrReplace(router, `/scripts/schedules?id=${scheduleId}`);
+          safeBackOrReplace(router, routes.scripts.schedules.details(scheduleId));
         } else {
           const result = await createMutation.mutateAsync(payload);
           toast({
@@ -145,7 +148,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             description: `Schedule "${data.name}" created successfully.`,
             variant: 'success',
           });
-          router.replace(`/scripts/schedules?id=${result.id}`);
+          router.replace(routes.scripts.schedules.details(result.id));
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : `Failed to ${isEditMode ? 'update' : 'create'} schedule`;

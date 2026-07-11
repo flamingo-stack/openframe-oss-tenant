@@ -116,6 +116,26 @@ function toCatalogOptionId(globalId: string): string {
 }
 
 /**
+ * Catalog `packageOptionId` to attach a committed quantity to for `period`.
+ * Prefer the period-matched package option, then the first package option; then
+ * fall back to the product's pay-as-you-go option. The fallback matters for
+ * products that expose *no* committed `packageOptions` (e.g. AI Assistant, which
+ * is catalog-PAYG-only) — without it a valid Custom Amount there resolves to a
+ * null id, so the diff/checkout came out empty and the submit button stayed
+ * disabled even though the plan-change preview showed a change. With the
+ * fallback, Custom Amount behaves like it does for a product that has package
+ * options (Devices). Returns null only when the product has neither.
+ */
+function committedOptionId(product: ProductData, period: BillingPeriod): string | null {
+  const option =
+    product.packageOptions.find(opt => opt.billingPeriod === period) ??
+    product.packageOptions[0] ??
+    product.payAsYouGoOption ??
+    null;
+  return option ? toCatalogOptionId(option.id) : null;
+}
+
+/**
  * Backend `quantity`, catalog `priceTier.from`/`upTo`, and the Custom Amount
  * input all speak the same real product count (devices, tokens) — no unit
  * conversion. `unitSize` (devices: 1, AI tokens: 100_000) is only a granularity
@@ -156,11 +176,7 @@ export function diffPackageUpdates(
     return activeCancelId ? [{ productName: product.name, packageOptionId: activeCancelId, action: 'CANCEL' }] : [];
   }
 
-  const nextPackageOption =
-    product.packageOptions.find(opt => opt.billingPeriod === currentSelection.billingPeriod) ??
-    product.packageOptions[0] ??
-    null;
-  const nextPackageId = nextPackageOption ? toCatalogOptionId(nextPackageOption.id) : null;
+  const nextPackageId = committedOptionId(product, currentSelection.billingPeriod);
 
   let nextQuantity: number | null = null;
   if (currentSelection.selectedPackageId === CUSTOM_OPTION_ID) {
@@ -199,30 +215,6 @@ export function isPlanChanged({ current, next }: PlanComparison): boolean {
   return (current.quantity ?? null) !== (next.quantity ?? null);
 }
 
-interface CancelablePackageOption {
-  readonly packageOptionId: string;
-  readonly status: SubscriptionProductData['packageOptions'][number]['status'];
-}
-
-interface CancelableSubscriptionProduct {
-  readonly packageOptions: ReadonlyArray<CancelablePackageOption>;
-}
-
-/**
- * When the user disables the AI Assistant checkbox while there is an active
- * AI subscription, we still need to CANCEL its active package — the view
- * filters AI out of the per-card diff, so this lives at the view level.
- */
-export function buildProductCancelUpdates(
-  productName: ProductData['name'],
-  subscriptionProduct: CancelableSubscriptionProduct | null,
-): PackageUpdateInput[] {
-  if (!subscriptionProduct) return [];
-  return subscriptionProduct.packageOptions
-    .filter(opt => opt.status === 'ACTIVE')
-    .map(opt => ({ productName, packageOptionId: opt.packageOptionId, action: 'CANCEL' }));
-}
-
 /**
  * Desired end-state for `createCheckoutSession` (used when there is no active
  * paid subscription: TRIAL / TRIAL_EXPIRED / CANCELED). Unlike `diffPackageUpdates`
@@ -236,11 +228,6 @@ export function buildCheckoutProduct(
     return { productName: product.name, payAsYouGoEnabled: true };
   }
 
-  const periodOption =
-    product.packageOptions.find(opt => opt.billingPeriod === currentSelection.billingPeriod) ??
-    product.packageOptions[0] ??
-    null;
-
   let quantity: number | null = null;
   if (currentSelection.selectedPackageId === CUSTOM_OPTION_ID) {
     quantity = validCustomQuantity(product, currentSelection.customQuantity);
@@ -251,7 +238,7 @@ export function buildCheckoutProduct(
 
   return {
     productName: product.name,
-    packageOptionId: periodOption ? toCatalogOptionId(periodOption.id) : null,
+    packageOptionId: committedOptionId(product, currentSelection.billingPeriod),
     quantity,
     payAsYouGoEnabled: true,
   };

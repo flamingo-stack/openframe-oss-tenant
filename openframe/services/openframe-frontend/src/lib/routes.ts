@@ -30,6 +30,7 @@ export const TAB_IDS = {
     'overview',
     'vulnerabilities',
     'policies',
+    'queries',
     'security',
     'agents',
     'tickets',
@@ -40,6 +41,7 @@ export const TAB_IDS = {
     'software',
   ],
   scripts: ['list', 'schedules'],
+  scheduleDetails: ['schedule-scripts', 'schedule-devices', 'schedule-history'],
   scriptsV2Details: ['details', 'executions'],
   monitoring: ['policies', 'queries'],
   settings: ['ai-settings', 'architecture', 'company-and-users', 'api-keys', 'sso-configuration', 'profile'],
@@ -50,6 +52,7 @@ export type CustomerListTab = (typeof TAB_IDS.customersList)[number];
 export type CustomerDetailTab = (typeof TAB_IDS.customerDetails)[number];
 export type DeviceDetailTab = (typeof TAB_IDS.deviceDetails)[number];
 export type ScriptsTab = (typeof TAB_IDS.scripts)[number];
+export type ScheduleDetailTab = (typeof TAB_IDS.scheduleDetails)[number];
 export type ScriptsV2DetailTab = (typeof TAB_IDS.scriptsV2Details)[number];
 export type MonitoringTab = (typeof TAB_IDS.monitoring)[number];
 export type SettingsTab = (typeof TAB_IDS.settings)[number];
@@ -101,12 +104,13 @@ export const routes = {
     list: (o?: { tab?: CustomerListTab }) => withQuery('/customers', { tab: o?.tab }),
     details: (id: string | number, o?: { tab?: CustomerDetailTab }) =>
       withQuery('/customers/details', { id, tab: o?.tab }),
-    editNew: '/customers/edit?id=new',
+    new: '/customers/new',
     edit: (id: string | number) => withQuery('/customers/edit', { id }),
   },
 
   devices: {
     list: '/devices',
+    archive: '/devices/archive',
     new: (o?: { organizationId?: string }) => withQuery('/devices/new', { organizationId: o?.organizationId }),
     details: (id: string | number, o?: { tab?: DeviceDetailTab; action?: 'runScript' }) =>
       withQuery('/devices/details', { id, tab: o?.tab, action: o?.action }),
@@ -117,13 +121,14 @@ export const routes = {
 
   scripts: {
     list: (o?: { tab?: ScriptsTab }) => withQuery('/scripts', { tab: o?.tab }),
-    create: '/scripts/create',
+    new: '/scripts/new',
     details: (id: string | number) => withQuery('/scripts/details', { id }),
     run: (id: string | number) => withQuery('/scripts/details/run', { id }),
     edit: (id: string | number) => withQuery('/scripts/edit', { id }),
     schedules: {
-      create: '/scripts/schedules/create',
-      details: (id: string | number) => withQuery('/scripts/schedules', { id }),
+      new: '/scripts/schedules/new',
+      details: (id: string | number, o?: { tab?: ScheduleDetailTab }) =>
+        withQuery('/scripts/schedules', { id, tab: o?.tab }),
       edit: (id: string | number) => withQuery('/scripts/schedules/edit', { id }),
       devices: (id: string | number) => withQuery('/scripts/schedules/devices', { id }),
     },
@@ -131,7 +136,7 @@ export const routes = {
 
   scriptsV2: {
     list: '/scripts-v2',
-    create: '/scripts-v2/create',
+    new: '/scripts-v2/new',
     archived: '/scripts-v2/archived',
     details: (id: string | number, o?: { tab?: ScriptsV2DetailTab }) =>
       withQuery('/scripts-v2/details', { id, tab: o?.tab }),
@@ -143,17 +148,17 @@ export const routes = {
   monitoring: {
     root: (o?: { tab?: MonitoringTab }) => withQuery('/monitoring', { tab: o?.tab }),
     query: (id: string | number) => withQuery('/monitoring/query', { id }),
-    queryEditNew: '/monitoring/query/edit?id=new',
+    queryNew: '/monitoring/query/new',
     queryEdit: (id: string | number) => withQuery('/monitoring/query/edit', { id }),
     policy: (id: string | number) => withQuery('/monitoring/policy', { id }),
-    policyEditNew: '/monitoring/policy/edit?id=new',
+    policyNew: '/monitoring/policy/new',
     policyEdit: (id: string | number) => withQuery('/monitoring/policy/edit', { id }),
   },
 
   tickets: {
     list: '/tickets',
     new: (o?: { edit?: string }) => withQuery('/tickets/new', { edit: o?.edit }),
-    dialog: (id: string | number) => withQuery('/tickets/dialog', { id }),
+    dialog: (id: string | number, o?: { tab?: 'chat' }) => withQuery('/tickets/dialog', { id, tab: o?.tab }),
     archive: '/tickets/archive',
     statuses: '/tickets/statuses',
   },

@@ -6,11 +6,11 @@ import { useState } from 'react';
 import { isSaasSharedMode } from '@/lib/app-mode';
 import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@/lib/auth-api-client';
 import { AUTH_ERROR_CODE } from '../constants/auth-error-codes';
-import { useDomainAvailability } from '../hooks/use-registration-availability';
+import { useDomainAvailability, useEmailAvailability } from '../hooks/use-registration-availability';
 import { ForgotPasswordModal } from './forgot-password-modal';
 
 interface AuthChoiceSectionProps {
-  onCreateOrganization: (orgName: string, domain: string, accessCode: string, email: string) => void;
+  onCreateOrganization: (orgName: string, domain: string, email: string) => void;
   onSignIn: (email: string) => Promise<void>;
   isLoading?: boolean;
 }
@@ -26,11 +26,8 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const [domain, setDomain] = useState('');
   const [orgEmail, setOrgEmail] = useState('');
   const [signInEmail, setSignInEmail] = useState('');
-  const [accessCode, setAccessCode] = useState('');
-  const [accessCodeError, setAccessCodeError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isCheckingDomain, setIsCheckingDomain] = useState(false);
-  const [isValidatingAccessCode, setIsValidatingAccessCode] = useState(false);
   const [suggestedDomains, setSuggestedDomains] = useState<string[]>([]);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
@@ -41,8 +38,8 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const isOrgEmailValid = emailRegex.test(orgEmail.trim());
   const isSignInEmailValid = emailRegex.test(signInEmail.trim());
 
-  // Real-time domain availability check (debounced). Real-time email validation is
-  // temporarily disabled — pending a dedicated BE endpoint for email registration checks.
+  // Real-time availability checks (debounced).
+  const emailStatus = useEmailAvailability(orgEmail);
   const { status: domainStatus, suggestions: liveDomainSuggestions } = useDomainAvailability(
     domain,
     orgName,
@@ -55,59 +52,9 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const handleCreateOrganization = async () => {
     if (!orgName.trim() || !isOrgNameValid || !isOrgEmailValid) return;
 
-    if (isSaasShared) {
-      if (!accessCode.trim()) {
-        setAccessCodeError('Access code is required');
-        return;
-      }
-      setAccessCodeError(null);
-
-      setIsValidatingAccessCode(true);
-      try {
-        const validateResponse = await authApiClient.validateAccessCode(orgEmail.trim(), accessCode.trim());
-
-        if (!validateResponse.ok || !validateResponse.data) {
-          const error = validateResponse?.data?.code || 'Failed to validate access code';
-
-          if (error.includes(AUTH_ERROR_CODE.ACCESS_CODE_ALREADY_USED)) {
-            setAccessCodeError('This access code has already been used');
-            toast({
-              title: 'Access Code Already Used',
-              description: 'This access code has already been used.',
-              variant: 'destructive',
-            });
-          } else if (
-            [AUTH_ERROR_CODE.ACCESS_CODE_VALIDATION_FAILED, AUTH_ERROR_CODE.INVALID_ACCESS_CODE].includes(error)
-          ) {
-            setAccessCodeError('Invalid access code');
-            toast({
-              title: 'Invalid Access Code',
-              description: 'The access code is not valid.',
-              variant: 'destructive',
-            });
-          } else {
-            setAccessCodeError('Access code validation failed');
-            toast({
-              title: 'Validation Failed',
-              description: error,
-              variant: 'destructive',
-            });
-          }
-          return;
-        }
-      } catch (error) {
-        console.error('Access code validation error:', error);
-        setAccessCodeError('Failed to validate access code');
-        toast({
-          title: 'Validation Error',
-          description: 'Unable to validate access code.',
-          variant: 'destructive',
-        });
-        return;
-      } finally {
-        setIsValidatingAccessCode(false);
-      }
-    }
+    // Block submit while the email check is pending or if it flagged the email as
+    // registered — keeps the Enter-key paths aligned with the disabled Continue button.
+    if (emailStatus === 'checking' || emailStatus === 'taken') return;
 
     if (isSaasShared && domain.trim()) {
       setIsCheckingDomain(true);
@@ -122,7 +69,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
 
           if (available) {
             const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`;
-            onCreateOrganization(orgName.trim(), fullDomain, isSaasShared ? accessCode.trim() : '', orgEmail.trim());
+            onCreateOrganization(orgName.trim(), fullDomain, orgEmail.trim());
           } else {
             toast({
               title: 'Domain Not Available',
@@ -165,7 +112,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
         setIsCheckingDomain(false);
       }
     } else {
-      onCreateOrganization(orgName.trim(), domain, '', orgEmail.trim());
+      onCreateOrganization(orgName.trim(), domain, orgEmail.trim());
     }
   };
 
@@ -214,6 +161,15 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               />
               {orgEmail.trim() && !isOrgEmailValid && (
                 <p className="text-xs text-ods-error mt-1">Enter a valid email address</p>
+              )}
+              {isOrgEmailValid && emailStatus === 'checking' && (
+                <p className="text-xs text-ods-text-secondary mt-1">Checking availability…</p>
+              )}
+              {isOrgEmailValid && emailStatus === 'taken' && (
+                <p className="text-xs text-ods-error mt-1">This email is already registered. Sign in instead.</p>
+              )}
+              {isOrgEmailValid && emailStatus === 'available' && (
+                <p className="text-xs text-ods-success mt-1">Email is available</p>
               )}
             </div>
             <div className="flex-1 flex flex-col gap-1">
@@ -315,29 +271,6 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             </div>
           </div>
 
-          {/* Access Code field for SaaS shared mode */}
-          {isSaasShared && (
-            <div className="flex flex-col gap-1">
-              <Label>Access Code</Label>
-              <Input
-                value={accessCode}
-                onChange={e => {
-                  setAccessCode(e.target.value);
-                  if (accessCodeError) setAccessCodeError(null);
-                }}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !isLoading) {
-                    handleCreateOrganization();
-                  }
-                }}
-                placeholder="Enter Code Here"
-                disabled={isLoading}
-                className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? 'border-ods-error' : ''}`}
-              />
-              {accessCodeError && <p className="text-xs text-ods-error mt-1">{accessCodeError}</p>}
-            </div>
-          )}
-
           {/* Button Row */}
           <div className="flex gap-6 items-center">
             <div className="flex-1"></div>
@@ -347,17 +280,18 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 disabled={
                   !orgName.trim() ||
                   !isOrgEmailValid ||
-                  (isSaasShared && (!domain.trim() || !accessCode.trim())) ||
+                  emailStatus === 'taken' ||
+                  emailStatus === 'checking' ||
+                  (isSaasShared && !domain.trim()) ||
                   (isSaasShared && (domainStatus === 'taken' || domainStatus === 'checking')) ||
                   isLoading ||
-                  isValidatingAccessCode ||
                   isCheckingDomain
                 }
-                loading={isLoading || isValidatingAccessCode || isCheckingDomain}
+                loading={isLoading || isCheckingDomain}
                 variant="accent"
                 className="!w-full md:!w-full"
               >
-                {isValidatingAccessCode ? 'Validating...' : isCheckingDomain ? 'Checking...' : 'Continue'}
+                {isCheckingDomain ? 'Checking...' : 'Continue'}
               </Button>
             </div>
           </div>

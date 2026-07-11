@@ -19,6 +19,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { useScriptSchedule } from '../../hooks/use-script-schedule';
 import { ScheduleDetailSkeleton } from './schedule-details-skeleton';
 import { ScheduleDevicesTab } from './schedule-devices-tab';
@@ -79,8 +80,8 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
 
   const handleBack = useSafeBack('/scripts/?tab=schedules');
 
-  const editDevicesHref = `/scripts/schedules/devices?id=${scheduleId}`;
-  const editScheduleHref = `/scripts/schedules/edit?id=${scheduleId}`;
+  const editDevicesHref = routes.scripts.schedules.devices(scheduleId);
+  const editScheduleHref = routes.scripts.schedules.edit(scheduleId);
 
   const actions = useMemo(
     () => [

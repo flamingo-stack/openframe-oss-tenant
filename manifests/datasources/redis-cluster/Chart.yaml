@@ -1,0 +1,11 @@
+apiVersion: v2
+name: redis-cluster-wrapper
+description: Wrapper chart for Redis Cluster (sharded)
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
+
+dependencies:
+  - name: redis-cluster
+    version: "~11.5.0"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts

@@ -1,33 +1,18 @@
 'use client';
 
-import {
-  ChatsIcon,
-  CheckCircleIcon,
-  ComputerMouseIcon,
-  TagIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Autocomplete, type AutocompleteOption, Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter } from 'next/navigation';
-import { type ReactNode, useMemo, useState } from 'react';
-import { useDevices } from '../../devices/hooks/use-devices';
+import { Video } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { CheckCircleIcon, DotsLoaderIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { usePathname, useRouter } from 'next/navigation';
+import type { ReactNode } from 'react';
+import { isSaasTenantMode } from '@/lib/app-mode';
+import { useTicketStatistics } from '../../tickets/hooks/use-ticket-statistics';
+import { onboardingHintUrl } from '../onboarding-coach-marks';
 
-/** Icon + title + description row, shared by the numbered steps. */
-function StepRow({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
-  return (
-    <div className="flex w-full items-start gap-[var(--spacing-system-m)]">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-ods-border bg-ods-bg text-ods-text-secondary [&_svg]:size-4 md:h-12 md:w-12 md:[&_svg]:size-6">
-        {icon}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <p className="text-h3 font-bold text-ods-text-primary">{title}</p>
-        <p className="text-h4 text-ods-text-primary">{description}</p>
-      </div>
-    </div>
-  );
-}
+// Placeholder demo clip until the real onboarding videos are ready.
+const DEMO_VIDEO_ID = 'Ch984JTweV8';
 
-/** Uppercase section label + content, e.g. "STEP 1". */
+/** Uppercase section label + content, e.g. "INSIDE A TICKET". */
 function LabeledBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex w-full flex-col gap-[var(--spacing-system-xxs)]">
@@ -46,90 +31,49 @@ const INSIDE_TICKET_POINTS = [
 ];
 
 /**
- * Inner body of the "Tickets" onboarding step — an informational walkthrough. The Step 1
- * device picker reuses the devices list ({@link ../../devices/hooks/use-devices}) and links
- * into the device's remote shell; the footer links to the Tickets section.
+ * Inner body of the "Tickets" onboarding step — an informational walkthrough: an intro
+ * with a demo-video placeholder, the "Inside a ticket" capabilities list, and the footer.
+ * The footer shows a passive "waiting" state until the first ticket exists, then a primary
+ * "Go to Tickets" action ({@link ../../tickets/hooks/use-ticket-statistics}).
  */
-export function TicketsStep() {
+export function TicketsStep({
+  onComplete,
+  onCompleteBackground,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  onCompleteBackground?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+}) {
   const router = useRouter();
-  const { toast } = useToast();
-  const { devices } = useDevices();
+  const pathname = usePathname();
 
-  const [deviceId, setDeviceId] = useState('');
-
-  const deviceOptions: AutocompleteOption[] = useMemo(
-    () => devices.map(d => ({ label: d.displayName || d.hostname || d.machineId, value: d.machineId })),
-    [devices],
-  );
-
-  const connectToDevice = () => {
-    if (!deviceId) {
-      toast({ title: 'Select a device', description: 'Choose a device to connect to', variant: 'destructive' });
-      return;
-    }
-    router.push(`/devices/details/remote-shell?id=${deviceId}`);
-  };
+  // Once at least one ticket exists, the "waiting" pending state gives way to a
+  // primary "Go to Tickets" action. Tickets are a saas-tenant feature, so skip
+  // the (chat-graphql) fetch elsewhere — no tickets → keep the pending state.
+  const { totalCount: ticketCount } = useTicketStatistics({ enabled: isSaasTenantMode() });
+  const hasTickets = ticketCount > 0;
 
   return (
     <div className="flex w-full flex-col gap-[var(--spacing-system-l)]">
       {/* Intro (left) / demo video (right) */}
       <div className="flex w-full flex-col items-start gap-[var(--spacing-system-l)] md:flex-row">
-        <p className="flex-1 text-h4 text-ods-text-primary">
-          Every conversation AI Assistant handles is logged as a ticket. Your team can review what happened, add
-          context, and step in whenever needed.
-        </p>
-        <div className="flex aspect-[976/558] w-full flex-1 items-center justify-center rounded-md border border-ods-text-secondary bg-ods-border">
-          <span className="font-mono text-h2 text-ods-text-secondary">DEMO VIDEO</span>
+        <div className="flex min-w-0 flex-1 flex-col gap-[var(--spacing-system-l)]">
+          <p className="text-h4 text-ods-text-primary">
+            Every conversation AI Assistant handles is logged as a ticket. Your team can review what happened, add
+            context, and step in whenever needed.
+          </p>
+          <p className="text-h4 text-ods-text-primary">
+            {
+              'Deploy the agent on your own device, open Fae, and send a message like "Check for software updates." Then head to the Tickets section and watch your conversation show up as a fresh ticket, with the full chat history and every detail captured.'
+            }
+          </p>
         </div>
-      </div>
-
-      {/* Steps */}
-      <div className="flex w-full flex-col gap-[var(--spacing-system-l)]">
-        <LabeledBlock label="Step 1">
-          <div className="flex w-full flex-col overflow-hidden rounded-md border border-ods-border bg-ods-card [&>*]:border-b [&>*]:border-ods-border [&>*:last-child]:border-b-0">
-            <div className="p-[var(--spacing-system-m)]">
-              <StepRow
-                icon={<ComputerMouseIcon size={24} />}
-                title="Connect Remotely to Device"
-                description="Use remote access tool to open a session on the device you just connected to your Customer."
-              />
-            </div>
-            <div className="flex flex-col items-stretch gap-[var(--spacing-system-m)] p-[var(--spacing-system-m)] md:flex-row md:items-end">
-              <div className="min-w-0 flex-1">
-                <Autocomplete
-                  options={deviceOptions}
-                  value={deviceId || null}
-                  onChange={val => setDeviceId(val ?? '')}
-                  label="Select Device for Remote Connection"
-                  placeholder="Choose device"
-                />
-              </div>
-              <Button variant="outline" onClick={connectToDevice} className="w-full md:w-auto">
-                Connect to Device
-              </Button>
-            </div>
-          </div>
-        </LabeledBlock>
-
-        <LabeledBlock label="Step 2">
-          <div className="w-full rounded-md border border-ods-border bg-ods-card p-[var(--spacing-system-m)]">
-            <StepRow
-              icon={<ChatsIcon size={24} />}
-              title="Send a Message to Assistant"
-              description={'Open OpenFrame and write something like: "Check for software updates".'}
-            />
-          </div>
-        </LabeledBlock>
-
-        <LabeledBlock label="Step 3">
-          <div className="w-full rounded-md border border-ods-border bg-ods-card p-[var(--spacing-system-m)]">
-            <StepRow
-              icon={<TagIcon size={24} />}
-              title="Go to Tickets Section"
-              description="You will see a new ticket, the assistant chat history, and all ticket details."
-            />
-          </div>
-        </LabeledBlock>
+        <div className="w-full flex-1">
+          <Video kind="youtube" url={DEMO_VIDEO_ID} title="Tickets demo video" priority />
+        </div>
       </div>
 
       {/* Inside a ticket */}
@@ -151,21 +95,48 @@ export function TicketsStep() {
         </div>
       </LabeledBlock>
 
-      {/* Footer actions */}
-      <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
+      {/* Footer actions — right column mirrors the intro/video split above so the
+          buttons line up flush with the demo video block. */}
+      <div className="flex w-full flex-col gap-[var(--spacing-system-l)] md:flex-row">
         <div className="hidden flex-1 md:block" />
-        <div className="hidden flex-1 md:block" />
-        <Button
-          variant="outline"
-          leftIcon={<CheckCircleIcon className="size-5" />}
-          onClick={() => toast({ title: 'Step marked complete', variant: 'success' })}
-          className="w-full md:flex-1"
-        >
-          Mark as Complete
-        </Button>
-        <Button variant="accent" onClick={() => router.push('/tickets')} className="w-full md:flex-1">
-          Go to Tickets
-        </Button>
+        <div className="flex w-full flex-1 flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
+          {!completed ? (
+            <Button
+              variant="outline"
+              leftIcon={<CheckCircleIcon className="size-5" />}
+              onClick={() => onComplete?.()}
+              loading={completing}
+              disabled={completing}
+              className="w-full md:flex-1"
+            >
+              Mark as Complete
+            </Button>
+          ) : (
+            // Keep the completed step's primary button its own width — don't let it
+            // stretch into the removed "Mark as Complete" slot.
+            <div className="hidden md:block md:flex-1" aria-hidden />
+          )}
+          {/* No tickets yet → passive "waiting" state; once one arrives → primary action. */}
+          {hasTickets ? (
+            <Button
+              variant="accent"
+              onClick={() => {
+                // Reaching Tickets from onboarding completes the step in the background
+                // (if not already done) — no spinner, navigation is the feedback.
+                if (!completed) onCompleteBackground?.();
+                router.push(onboardingHintUrl('/tickets', 'tickets', pathname));
+              }}
+              className="w-full md:flex-1"
+            >
+              Go to Tickets
+            </Button>
+          ) : (
+            <div className="flex w-full items-center justify-center gap-[var(--spacing-system-xs)] px-[var(--spacing-system-m)] py-[var(--spacing-system-sf)] text-ods-text-secondary md:flex-1">
+              <DotsLoaderIcon size={24} />
+              <span className="whitespace-nowrap text-h4">Waiting for first ticket</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

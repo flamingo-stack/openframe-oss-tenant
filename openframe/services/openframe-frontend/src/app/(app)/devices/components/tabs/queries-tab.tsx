@@ -10,6 +10,7 @@ import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { routes } from '@/lib/routes';
 import { useHostQueries } from '../../hooks/use-host-queries';
 import type { Device } from '../../types/device.types';
+import { TabEmptyState } from './tab-empty-state';
 
 interface QueriesTabProps {
   device: Device | null;
@@ -49,9 +50,11 @@ export function QueriesTab({ device }: QueriesTabProps) {
 
   if (!device) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-h4">No device data available</div>
-      </div>
+      <TabEmptyState
+        icon={<BracketCurlyEllipsisVrIcon />}
+        title="No queries found"
+        description="Scheduled queries for this device will appear here."
+      />
     );
   }
 

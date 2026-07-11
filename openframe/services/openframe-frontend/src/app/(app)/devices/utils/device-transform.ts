@@ -5,13 +5,11 @@ import { Device, DevicesGraphQlNode } from '../types/device.types';
  * For list view - lightweight, no external API calls
  */
 export function createDeviceListItem(node: DevicesGraphQlNode): Device {
-  const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM');
-
   return {
     // Core Identifiers
     id: node.id,
     machineId: node.machineId || '',
-    hostname: node.hostname || node.displayName || '',
+    hostname: node.hostname || '',
     displayName: node.displayName || node.hostname,
 
     // Hardware - CPU (not available in list view)
@@ -101,6 +99,5 @@ export function createDeviceListItem(node: DevicesGraphQlNode): Device {
 
     // Reference IDs
     fleetId: undefined,
-    tacticalAgentId: tactical?.agentToolId,
   };
 }

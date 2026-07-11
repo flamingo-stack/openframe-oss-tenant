@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { fleetApiClient } from '@/lib/fleet-api-client';
-import { DEFAULT_DEVICES_LIST_STATUSES } from '../../../devices/constants/device-statuses';
+import { DEVICE_ENRICHMENT_STATUSES } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
 import type { Device, DevicesGraphQlNode, GraphQlResponse } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
@@ -24,7 +24,7 @@ async function fetchDevicesPage(
   const response = await apiClient.post<GraphQlResponse<DevicesResponseData>>('/api/graphql', {
     query: GET_DEVICES_QUERY,
     variables: {
-      filter: { statuses: DEFAULT_DEVICES_LIST_STATUSES },
+      filter: { statuses: DEVICE_ENRICHMENT_STATUSES },
       first: DEVICES_PAGE_SIZE,
       after: cursor,
       search: '',

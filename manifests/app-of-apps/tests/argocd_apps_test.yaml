@@ -85,10 +85,10 @@ tests:
     asserts:
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "deployment:"
+          pattern: "repository:"
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "environment:"
+          pattern: "URL:"
 
   # ========================================
   # DOCUMENT COUNT TESTS
@@ -105,10 +105,10 @@ tests:
 
   - it: should handle custom repository configuration
     set:
-      deployment.oss.repository.URL: "https://example.com/custom-repo.git"
-      deployment.oss.repository.branch: "custom-branch"
-      deployment.oss.repository.baseDir: "custom-dir"
-      deployment.oss.repository.appsDir: "custom-apps-dir"
+      repository.URL: "https://example.com/custom-repo.git"
+      repository.branch: "custom-branch"
+      repository.baseDir: "custom-dir"
+      repository.appsDir: "custom-apps-dir"
     asserts:
       - equal:
           path: spec.sources[0].repoURL

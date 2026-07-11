@@ -198,7 +198,7 @@ function SectionTable({
           stickyHeaderOffset={stickyHeaderOffset}
           rightSlot={<DataTable.RowCount itemName="result" />}
         />
-        <DataTable.Body rowClassName="mb-1" renderSubRow={renderSubRow} />
+        <DataTable.Body rowClassName="mb-1" renderSubRow={renderSubRow} autoHeight />
         <DataTable.InfiniteFooter
           hasNextPage={hasNext}
           isFetchingNextPage={isLoadingNext}
@@ -206,7 +206,11 @@ function SectionTable({
           skeletonRows={2}
         />
       </DataTable>
-      {rowVariant === 'read' && <p className="text-center text-h6 text-ods-text-secondary">{HISTORY_RETENTION_NOTE}</p>}
+      {rowVariant === 'read' && (
+        <p className="mt-[var(--spacing-system-l)] text-center text-h6 text-ods-text-secondary">
+          {HISTORY_RETENTION_NOTE}
+        </p>
+      )}
     </>
   );
 }

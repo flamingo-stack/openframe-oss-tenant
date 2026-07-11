@@ -11,9 +11,20 @@ import {
   Skeleton,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useEffect, useId, useState } from 'react';
+import { Suspense, useEffect, useId, useState } from 'react';
+import { graphql, type PreloadedQuery, usePreloadedQuery, useQueryLoader } from 'react-relay';
+import type { cancelSubscriptionModalPreviewQuery as CancelSubscriptionModalPreviewQueryType } from '@/__generated__/cancelSubscriptionModalPreviewQuery.graphql';
 import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { formatDate } from '@/lib/format-date';
+
+// Live-from-Stripe preview of the effective cancellation date, fetched lazily
+// only when the modal opens (subscription.cancellationEffectiveAt is null while
+// still ACTIVE, so this dedicated preview field is the correct source).
+const cancelSubscriptionModalPreviewQuery = graphql`
+  query cancelSubscriptionModalPreviewQuery {
+    subscriptionCancellationPreview
+  }
+`;
 
 export type CancelReason = 'TOO_EXPENSIVE' | 'NOT_USING_ENOUGH' | 'MISSING_FEATURE' | 'TECHNICAL_ISSUES' | 'OTHER';
 
@@ -29,6 +40,7 @@ export interface DataLossStats {
   activeDevices: number;
   tickets: number;
   kbArticles: number;
+  scripts: number;
   monitoringPolicies: number;
   savedQueries: number;
 }
@@ -74,12 +86,23 @@ export function CancelSubscriptionModal({
   const reasonId = useId();
   const commentId = useId();
 
+  const [previewRef, loadPreview] = useQueryLoader<CancelSubscriptionModalPreviewQueryType>(
+    cancelSubscriptionModalPreviewQuery,
+  );
+
   useEffect(() => {
     if (!isOpen) {
       setReason('');
       setComment('');
+      return;
     }
-  }, [isOpen]);
+    // Load lazily on first open and reuse the cached result on subsequent opens
+    // (store-or-network + a retained queryRef = no refetch each time), matching
+    // how the data-loss metrics are cached rather than refetched every open.
+    if (!previewRef) {
+      loadPreview({}, { fetchPolicy: 'store-or-network' });
+    }
+  }, [isOpen, loadPreview, previewRef]);
 
   const handleConfirm = () => {
     if (!reason || isPending) return;
@@ -112,7 +135,13 @@ export function CancelSubscriptionModal({
     >
       <div className="text-h4 text-ods-text-primary gap-[var(--spacing-system-xs)] flex">
         <span>Your subscription will remain active until:</span>
-        <span className="text-ods-warning">{formatEndDate(endDate)}</span>
+        {previewRef ? (
+          <Suspense fallback={<Skeleton className="h-5 w-20" />}>
+            <CancellationEffectiveDate queryRef={previewRef} fallback={endDate} />
+          </Suspense>
+        ) : (
+          <span className="text-ods-warning">{formatEndDate(endDate)}</span>
+        )}
       </div>
       <p className="text-h4 text-ods-text-primary">
         Pay-as-you-go top-ups are disabled immediately. Any usage already accrued will be charged at the end of the
@@ -157,6 +186,19 @@ export function CancelSubscriptionModal({
   );
 }
 
+// Reads the preloaded preview and renders the effective cancellation date,
+// falling back to the caller-provided date when Stripe exposes no period end.
+function CancellationEffectiveDate({
+  queryRef,
+  fallback,
+}: {
+  queryRef: PreloadedQuery<CancelSubscriptionModalPreviewQueryType>;
+  fallback: string | null;
+}) {
+  const data = usePreloadedQuery(cancelSubscriptionModalPreviewQuery, queryRef);
+  return <span className="text-ods-warning">{formatEndDate(data.subscriptionCancellationPreview ?? fallback)}</span>;
+}
+
 function DataLossItem({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start text-h3 text-ods-text-primary">
@@ -195,6 +237,12 @@ function DataLossBox({ stats }: { stats: DataLossStats }) {
         {` knowledge base articles`}
       </DataLossItem>
     ),
+    stats.scripts > 0 && (
+      <DataLossItem key="scripts">
+        <Stat value={stats.scripts} />
+        {` scripts`}
+      </DataLossItem>
+    ),
     (showPolicies || showQueries) && (
       <DataLossItem key="fleet">
         {showPolicies && (
@@ -229,9 +277,9 @@ function DataLossBox({ stats }: { stats: DataLossStats }) {
   );
 }
 
-// Mirrors the data-loss box structure (header chrome + 4 bulleted rows) so the
+// Mirrors the data-loss box structure (header chrome + 5 bulleted rows) so the
 // loading state keeps the same shape instead of a flat rectangle.
-const SKELETON_ROW_WIDTHS = ['w-1/2', 'w-3/4', 'w-2/5', 'w-3/4'] as const;
+const SKELETON_ROW_WIDTHS = ['w-1/2', 'w-3/4', 'w-2/5', 'w-1/3', 'w-3/4'] as const;
 
 function DataLossSkeleton() {
   return (

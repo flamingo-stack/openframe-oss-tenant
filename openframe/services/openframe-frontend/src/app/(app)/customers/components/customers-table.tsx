@@ -59,7 +59,7 @@ export function CustomersTable({ status }: CustomersTableProps) {
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const handleAddCustomer = useCallback(() => {
-    router.push(routes.customers.editNew);
+    router.push(routes.customers.new);
   }, [router]);
 
   const showEmptyState = !isLoading && !debouncedSearch && customers.length === 0;

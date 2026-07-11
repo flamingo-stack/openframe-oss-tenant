@@ -12,6 +12,7 @@ import { formatDate, formatTimeWithSeconds } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { routes } from '@/lib/routes';
 import type { Device } from '../types/device.types';
+import { getDeviceName } from '../utils/device-name';
 
 function formatDateWithTime(iso?: string): React.ReactNode {
   if (!iso) return 'Unknown';
@@ -55,7 +56,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
   const iconSize = 'w-4 h-4 md:w-6 md:h-6';
   const typeIcon = renderDeviceTypeIcon(device.type, `${iconSize} text-ods-text-secondary`);
 
-  const hostnameCell = <InfoCell value={device.hostname || 'Unknown'} label="Hostname" />;
+  const hostnameCell = <InfoCell value={getDeviceName(device)} label="Hostname" />;
   const typeCell = <InfoCell value={device.type || 'Unknown'} label="Type" icon={typeIcon} />;
   const deviceCell = (
     <InfoCell

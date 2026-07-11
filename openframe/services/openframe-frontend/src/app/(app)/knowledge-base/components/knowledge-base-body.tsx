@@ -27,6 +27,7 @@ import type { knowledgeBaseBodySubtreeRelayQuery as SubtreeQueryType } from '@/_
 import { EmptyState } from '@/app/components/shared';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { routes } from '@/lib/routes';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
 import {
   getKnowledgeBaseArticlesConnectionId,
@@ -520,7 +521,7 @@ function RootBodyContent() {
 
 function FolderBodyContent({ parentId }: { parentId: string }) {
   const folder = useKnowledgeBaseItem(parentId);
-  const parentUrl = folder?.parentId ? `/knowledge-base/folders?id=${folder.parentId}` : '/knowledge-base';
+  const parentUrl = folder?.parentId ? routes.knowledgeBase.folder(folder.parentId) : '/knowledge-base';
   const handleBack = useSafeBack(parentUrl);
 
   if (!folder || folder.type !== 'FOLDER') {

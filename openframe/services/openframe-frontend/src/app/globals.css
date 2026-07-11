@@ -98,7 +98,9 @@ html[data-native-shell] body::before {
   left: 0;
   right: 0;
   height: var(--native-safe-top, env(safe-area-inset-top));
-  background: var(--ods-card, #212121);
+  /* Same semantic token bg-ods-card resolves to, so the band stays seamless
+     with the header across theme changes. */
+  background: var(--color-bg-card);
   z-index: 60;
 }
 

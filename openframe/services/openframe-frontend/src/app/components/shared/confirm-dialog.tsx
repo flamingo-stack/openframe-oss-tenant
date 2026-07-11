@@ -1,6 +1,5 @@
 'use client';
 
-import { Loading01Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   ModalV2,
@@ -33,7 +32,11 @@ interface ConfirmDialogProps {
   /** `destructive` (red), `warning` (yellow), or `default` (accent) — controls confirm button color. */
   variant?: 'destructive' | 'warning' | 'default';
   isPending?: boolean;
-  /** Label shown on the confirm button while `isPending` is true. */
+  /**
+   * @deprecated No-op. The confirm button now uses the core `Button`'s standard
+   * `loading` state, which hides the label and shows a centered spinner while
+   * `isPending` is true. Kept for backward compatibility with existing callers.
+   */
   pendingLabel?: string;
   onConfirm: () => void | Promise<void>;
   /** Optional slot between description and footer (e.g. command box, single CTA). */
@@ -62,11 +65,9 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   variant = 'destructive',
   isPending = false,
-  pendingLabel,
   onConfirm,
   extraContent,
 }: ConfirmDialogProps) {
-  const confirmText = isPending && pendingLabel ? pendingLabel : confirmLabel;
   const handleClose = () => onOpenChange(false);
   const confirm = CONFIRM_VARIANT[variant];
 
@@ -86,11 +87,10 @@ export function ConfirmDialog({
         <Button
           variant={confirm.variant}
           onClick={onConfirm}
-          disabled={isPending}
-          leftIcon={isPending ? <Loading01Icon size={20} className="animate-spin" /> : undefined}
+          loading={isPending}
           className={cn('flex-1', confirm.className)}
         >
-          {confirmText}
+          {confirmLabel}
         </Button>
       </ModalV2Footer>
     </ModalV2>

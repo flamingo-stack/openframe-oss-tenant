@@ -1,9 +1,11 @@
 'use client';
 
 import { InfoCard } from '@flamingo-stack/openframe-frontend-core';
+import { TerminalMonitorIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import type { ReactNode } from 'react';
 import { formatDateTime } from '@/lib/format-date';
 import type { Device } from '../../types/device.types';
+import { TabEmptyState } from './tab-empty-state';
 
 interface OsTabProps {
   device: Device | null;
@@ -39,13 +41,19 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+function OsEmptyState() {
+  return (
+    <TabEmptyState
+      icon={<TerminalMonitorIcon />}
+      title="No OS data found"
+      description="Operating system details for this device will appear here."
+    />
+  );
+}
+
 export function OsTab({ device }: OsTabProps) {
   if (!device) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-h4">No device data available</div>
-      </div>
-    );
+    return <OsEmptyState />;
   }
 
   // OPERATING SYSTEM — name/version/build/platform identity from Fleet + GraphQL.
@@ -82,11 +90,7 @@ export function OsTab({ device }: OsTabProps) {
   ]);
 
   if (!hasOs && bootItems.length === 0 && managementItems.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-h4">No OS data available for this device</div>
-      </div>
-    );
+    return <OsEmptyState />;
   }
 
   return (

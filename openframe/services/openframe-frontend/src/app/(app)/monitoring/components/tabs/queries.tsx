@@ -95,7 +95,7 @@ export function Queries() {
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddQuery = useCallback(() => {
-    router.push(routes.monitoring.queryEditNew);
+    router.push(routes.monitoring.queryNew);
   }, [router]);
 
   // Show the empty state instead of the search bar + table only when there is

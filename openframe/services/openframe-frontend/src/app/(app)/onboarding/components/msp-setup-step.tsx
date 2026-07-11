@@ -15,13 +15,22 @@ import {
   useUpdateTenantInfo,
 } from '../../settings/hooks/use-tenant-info';
 import type { TenantImage } from '../../settings/types/tenant-info';
+import { useStepActionState } from '../use-step-action-state';
 
 /**
  * Inner body of the "Complete MSP Setup" onboarding step. Reuses the same tenant-info
  * data layer and core components as the settings "Edit Organization" form
  * ({@link ../../settings/components/edit-organization-modal}) so both stay in sync.
  */
-export function MspSetupStep() {
+export function MspSetupStep({
+  onComplete,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: tenantInfo } = useTenantInfo();
@@ -88,11 +97,15 @@ export function MspSetupStep() {
   }, [toast, queryClient]);
 
   const handleSave = useCallback(() => {
-    updateTenantInfo.mutate({ name, website });
-  }, [name, website, updateTenantInfo]);
+    // A successful save completes the onboarding step (in addition to the explicit
+    // "Mark as Complete" button) — but only the first time, so re-saving an
+    // already-complete step doesn't re-fire completion.
+    updateTenantInfo.mutate({ name, website }, { onSuccess: () => !completed && onComplete?.() });
+  }, [name, website, updateTenantInfo, onComplete, completed]);
 
   const displayImageUrl = getFullImageUrl(imageUrl, imageHash);
   const isSaving = updateTenantInfo.isPending;
+  const actions = useStepActionState({ completing, primaryBusy: isSaving });
 
   return (
     <div className="flex w-full flex-col gap-[var(--spacing-system-l)]">
@@ -140,16 +153,36 @@ export function MspSetupStep() {
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <div className="hidden flex-1 md:block" />
         <div className="hidden flex-1 md:block" />
+        {!completed ? (
+          <Button
+            variant="outline"
+            leftIcon={<CheckCircleIcon className="size-5" />}
+            onClick={() => {
+              actions.begin('complete');
+              onComplete?.();
+            }}
+            loading={actions.complete.loading}
+            disabled={actions.complete.disabled}
+            className="w-full md:flex-1"
+          >
+            Mark as Complete
+          </Button>
+        ) : (
+          // Keep the completed step's primary button its own width — don't let it
+          // stretch into the removed "Mark as Complete" slot.
+          <div className="hidden md:block md:flex-1" aria-hidden />
+        )}
         <Button
-          variant="outline"
-          leftIcon={<CheckCircleIcon className="size-5" />}
-          onClick={() => toast({ title: 'Step marked complete', variant: 'success' })}
+          variant="accent"
+          onClick={() => {
+            actions.begin('primary');
+            handleSave();
+          }}
+          loading={actions.primary.loading}
+          disabled={actions.primary.disabled}
           className="w-full md:flex-1"
         >
-          Mark as Complete
-        </Button>
-        <Button variant="accent" onClick={handleSave} disabled={isSaving} className="w-full md:flex-1">
-          {isSaving ? 'Saving...' : 'Save Organization'}
+          Save Organization
         </Button>
       </div>
     </div>

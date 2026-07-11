@@ -1,26 +1,47 @@
 'use client';
 
-import { DotsLoaderIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Autocomplete, type AutocompleteOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { CheckCircleIcon, DotsLoaderIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Autocomplete, type AutocompleteOption, Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useDevicesOverview } from '@/app/(app)/dashboard/hooks/use-dashboard-stats';
 import { OrgAvatar } from '@/app/components/shared';
 import { OsPlatformSelector } from '@/app/components/shared/os-platform-selector';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '@/lib/platforms';
 import { useDeviceOrganizations } from '../../devices/hooks/use-device-organizations';
 import { useInstallCommand } from '../../devices/hooks/use-install-command';
+import { onboardingHintUrl } from '../onboarding-coach-marks';
 
 /**
  * Inner body of the "Device Management" onboarding step. Reuses the device-page building
  * blocks ({@link ../../devices/new/new-device-content}) — the customer `Autocomplete`,
  * `OsPlatformSelector`, and the `useDeviceOrganizations` / `useInstallCommand` hooks — to
- * surface the install command. The step completes automatically once the device connects.
+ * surface the install command. Once a device is connected the step is completed
+ * explicitly via "Mark as Complete" (which persists to the backend).
  */
-export function DeviceSetupStep() {
+export function DeviceSetupStep({
+  onComplete,
+  onCompleteBackground,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  onCompleteBackground?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+} = {}) {
   const { toast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
   const orgs = useDeviceOrganizations(100);
+
+  // Once at least one device exists, the install flow gives way to the
+  // "Go to Devices" + "Mark as Complete" actions.
+  const { total: deviceCount } = useDevicesOverview();
+  const hasDevice = deviceCount > 0;
 
   const [organizationId, setOrganizationId] = useState('');
   const [platform, setPlatform] = useState<OSPlatformId>(DEFAULT_OS_PLATFORM);
@@ -115,17 +136,52 @@ export function DeviceSetupStep() {
         </button>
       </div>
 
-      {/* Auto-complete notice (left) / waiting status (right) */}
-      <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
-        {/* One line on mobile, broken into two lines from md up. */}
-        <p className="text-h6 text-ods-text-secondary md:flex-1">
-          This step completes automatically <span className="md:block">No action needed here</span>
-        </p>
-        <div className="flex items-center justify-center gap-[var(--spacing-system-xs)] px-[var(--spacing-system-m)] py-[var(--spacing-system-sf)] text-ods-text-secondary md:justify-end">
-          <DotsLoaderIcon size={24} />
-          <span className="whitespace-nowrap text-h4">Waiting for first device</span>
+      {/* Device connected → "Mark as Complete" + "Go to Devices"; otherwise the
+          waiting status. Completion is explicit (persisted to the backend). */}
+      {hasDevice ? (
+        <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
+          <p className="text-h6 text-ods-text-secondary md:flex-1">
+            Device connected. <span className="md:block">Manage it from the Devices page.</span>
+          </p>
+          <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:w-auto md:flex-row md:items-center">
+            {!completed && (
+              <Button
+                variant="outline"
+                leftIcon={<CheckCircleIcon className="size-5" />}
+                onClick={() => onComplete?.()}
+                loading={completing}
+                disabled={completing}
+                className="w-full md:w-auto"
+              >
+                Mark as Complete
+              </Button>
+            )}
+            <Button
+              variant="accent"
+              onClick={() => {
+                // "Go to Devices" is only reachable once a device is connected, so
+                // navigating here completes the step — in the background, no spinner.
+                if (!completed) onCompleteBackground?.();
+                router.push(onboardingHintUrl('/devices', 'devices', pathname));
+              }}
+              className="w-full md:w-auto"
+            >
+              Go to Devices
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
+          {/* One line on mobile, broken into two lines from md up. */}
+          <p className="text-h6 text-ods-text-secondary md:flex-1">
+            Run the command on a client machine <span className="md:block">to connect your first device</span>
+          </p>
+          <div className="flex items-center justify-center gap-[var(--spacing-system-xs)] px-[var(--spacing-system-m)] py-[var(--spacing-system-sf)] text-ods-text-secondary md:justify-end">
+            <DotsLoaderIcon size={24} />
+            <span className="whitespace-nowrap text-h4">Waiting for first device</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

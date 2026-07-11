@@ -14,16 +14,15 @@ import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/util
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
-import { featureFlags } from '@/lib/feature-flags';
 import { routes } from '@/lib/routes';
 import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useDeviceActionsMenu } from '../hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../hooks/use-device-details';
+import { getDeviceName } from '../utils/device-name';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceDetailsSkeleton } from './device-details-skeleton';
 import { RunScriptModal } from './run-script/run-script-modal';
-import { ScriptsModal } from './scripts-modal';
 import { DEVICE_TABS } from './tabs/device-tabs';
 
 const DETAIL_ICON_SIZE = 'w-[var(--icon-size-icon-size)] h-[var(--icon-size-icon-size)]';
@@ -95,7 +94,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       ? {
           type: CONTEXT_ENTITY_KIND.DEVICE,
           id: deviceId,
-          label: normalizedDevice.displayName || normalizedDevice.hostname || deviceId,
+          label: getDeviceName(normalizedDevice) || deviceId,
         }
       : null,
   );
@@ -121,6 +120,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     if (actionAvailability?.runScriptEnabled) primaryItems.push(deviceMenuItems.runScript);
     if (actionAvailability?.manageFilesEnabled) primaryItems.push(deviceMenuItems.manageFiles);
     if (deviceMenuItems.archive) destructiveItems.push(deviceMenuItems.archive);
+    if (deviceMenuItems.unarchive) destructiveItems.push(deviceMenuItems.unarchive);
     if (deviceMenuItems.delete) destructiveItems.push(deviceMenuItems.delete);
 
     if (primaryItems.length > 0) {
@@ -131,10 +131,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     }
     return groups;
   }, [actionAvailability, deviceMenuItems]);
-
-  const handleRunScripts = (scriptIds: string[]) => {
-    console.log('Running scripts:', scriptIds, 'on device:', deviceId);
-  };
 
   const handleDeviceLogs = () => {
     const params = new URLSearchParams(window.location.search);
@@ -164,8 +160,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     { ...deviceMenuItems.remoteShell, variant: 'outline' },
   ];
 
-  const title =
-    normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device';
+  const title = getDeviceName(normalizedDevice) || 'Unknown Device';
   const lastUpdated = normalizedDevice.updatedAt || normalizedDevice.lastSeen;
   const subtitle = lastUpdated ? `Updated ${formatRelativeTime(lastUpdated)}` : undefined;
   const statusConfig = getDeviceStatusConfig(normalizedDevice.status);
@@ -194,25 +189,14 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         )}
       </TabNavigation>
 
-      {/* Run Script — new (scripts-v2) modal with the native GraphQL run API when
-          the flag is on; the legacy Tactical ScriptsModal otherwise. */}
-      {featureFlags.scriptsV2.enabled() ? (
-        <RunScriptModal
-          isOpen={isScriptsModalOpen}
-          onClose={() => setIsScriptsModalOpen(false)}
-          machineId={normalizedDevice.machineId}
-          onViewDeviceLogs={handleDeviceLogs}
-        />
-      ) : (
-        <ScriptsModal
-          isOpen={isScriptsModalOpen}
-          onClose={() => setIsScriptsModalOpen(false)}
-          deviceId={actionAvailability?.tacticalAgentId || deviceId}
-          device={normalizedDevice}
-          onRunScripts={handleRunScripts}
-          onDeviceLogs={handleDeviceLogs}
-        />
-      )}
+      {/* Run Script — native scripts-v2 modal (GraphQL run API). The legacy Tactical
+          ScriptsModal was removed together with the Tactical RMM integration. */}
+      <RunScriptModal
+        isOpen={isScriptsModalOpen}
+        onClose={() => setIsScriptsModalOpen(false)}
+        machineId={normalizedDevice.machineId}
+        onViewDeviceLogs={handleDeviceLogs}
+      />
 
       {confirmationDialogs}
     </PageLayout>

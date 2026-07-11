@@ -78,11 +78,12 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
   const pendingMode = useMingoLauncherStore(s => s.pendingMode);
   const consumePendingPrompt = useMingoLauncherStore(s => s.consumePendingPrompt);
 
-  // Legacy Mingo-mode launch (no current caller — kept for a future agent-mode
-  // launcher): drain straight into a fresh Mingo dialog. `consumePendingPrompt`
-  // nulls the prompt as it reads it, so a header open (no prompt) and StrictMode's
-  // double-invoke are both no-ops. The Guide path is wired below — it needs
-  // `setActiveMode`, declared further down.
+  // Mingo agent-mode launch (`sendToMingo(prompt)` — e.g. the onboarding "Meet
+  // Mingo" quick-action chips): drain straight into a fresh Mingo dialog.
+  // `consumePendingPrompt` nulls the prompt as it reads it, so a header open (no
+  // prompt) and StrictMode's double-invoke are both no-ops. The panel is forced
+  // into Mingo mode by the mode-sync effect below (it needs `setActiveMode`,
+  // declared further down).
   useEffect(() => {
     if (!pendingPrompt || pendingMode !== 'mingo') return;
     const text = consumePendingPrompt();
@@ -96,12 +97,15 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
   // stored value synchronously on remount, so we reopen on the same transport.
   const [activeMode, setActiveMode] = useLocalStorage<ChatMode>(ACTIVE_MODE_KEY, 'mingo');
 
-  // Guide-mode launch ("Ask Mingo about X"): force the panel into Guide mode so
-  // the lib's `guidePendingPrompt` one-shot (forwarded below) sends through the
-  // SSE/Guide transport. The lib calls `onGuidePromptConsumed` once it sends,
-  // which clears the store and re-arms the one-shot for the next click.
+  // Mode-sync for a queued launch: force the panel into the queued transport so
+  // the prompt is sent (and shown) on the right one. Guide ("Ask Mingo about X")
+  // → Guide mode, where the lib's `guidePendingPrompt` one-shot (forwarded below)
+  // sends via SSE and calls `onGuidePromptConsumed` to clear + re-arm. Mingo
+  // (`sendToMingo`) → Mingo mode, so the fresh dialog the effect above opens is
+  // the one on screen. `pendingMode` and `ChatMode` share the `'guide' | 'mingo'`
+  // values, so it maps straight through.
   useEffect(() => {
-    if (pendingPrompt && pendingMode === 'guide') setActiveMode('guide');
+    if (pendingPrompt && pendingMode) setActiveMode(pendingMode);
   }, [pendingPrompt, pendingMode, setActiveMode]);
 
   // Entity-context picker config (the `+` "Assign Item" menu + `@` trigger).

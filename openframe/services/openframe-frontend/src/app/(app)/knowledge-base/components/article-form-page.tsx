@@ -4,6 +4,7 @@ import { PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import { notFound } from 'next/navigation';
 import { Suspense, useMemo } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { useEditArticleForm } from '../hooks/use-edit-article-form';
 import type { KnowledgeBaseItemNode } from '../hooks/use-knowledge-base-item';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
@@ -32,7 +33,7 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
     initialArticle,
   });
 
-  const backToArticle = useSafeBack(`/knowledge-base/details?id=${articleId ?? ''}`);
+  const backToArticle = useSafeBack(routes.knowledgeBase.details(articleId ?? ''));
   const backToKb = useSafeBack('/knowledge-base');
   const backButton = useMemo(
     () => (isEditMode && articleId ? { label: 'Back', onClick: backToArticle } : { label: 'Back', onClick: backToKb }),

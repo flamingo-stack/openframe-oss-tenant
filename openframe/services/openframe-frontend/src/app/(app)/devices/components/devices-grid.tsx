@@ -3,6 +3,7 @@ import { DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/u
 import { useRouter } from 'next/navigation';
 import { routes } from '@/lib/routes';
 import type { Device } from '../types/device.types';
+import { getDeviceName } from '../utils/device-name';
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../utils/device-status';
 
 interface DevicesGridProps {
@@ -11,9 +12,17 @@ interface DevicesGridProps {
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
   sentinelRef?: React.RefObject<HTMLDivElement | null>;
+  emptyMessage?: string;
 }
 
-export function DevicesGrid({ devices, isLoading, hasNextPage, isFetchingNextPage, sentinelRef }: DevicesGridProps) {
+export function DevicesGrid({
+  devices,
+  isLoading,
+  hasNextPage,
+  isFetchingNextPage,
+  sentinelRef,
+  emptyMessage = 'No devices found. Try adjusting your search or filters.',
+}: DevicesGridProps) {
   const router = useRouter();
 
   const handleDeviceClick = (device: Device) => {
@@ -29,7 +38,7 @@ export function DevicesGrid({ devices, isLoading, hasNextPage, isFetchingNextPag
         <DeviceCardSkeletonGrid count={12} />
       ) : devices.length === 0 ? (
         <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
-          <p className="text-ods-text-secondary">No devices found. Try adjusting your search or filters.</p>
+          <p className="text-ods-text-secondary">{emptyMessage}</p>
         </div>
       ) : (
         <>
@@ -42,7 +51,7 @@ export function DevicesGrid({ devices, isLoading, hasNextPage, isFetchingNextPag
                   device={{
                     id: device.id,
                     machineId: device.machineId,
-                    name: device.displayName || device.hostname || device.description || '',
+                    name: getDeviceName(device),
                     organization: device.organization || device.machineId,
                     lastSeen: device.lastSeen,
                     operatingSystem: getDeviceOperatingSystem(device.osType),

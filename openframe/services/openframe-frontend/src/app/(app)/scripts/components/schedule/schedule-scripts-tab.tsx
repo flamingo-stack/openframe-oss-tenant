@@ -5,6 +5,7 @@ import { Chevron01DownIcon } from '@flamingo-stack/openframe-frontend-core/compo
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
+import { routes } from '@/lib/routes';
 import type { ScriptScheduleAction, ScriptScheduleDetail } from '../../types/script-schedule.types';
 
 interface ScheduleScriptsTabProps {
@@ -35,7 +36,7 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
   }, []);
 
   const handleScriptDetails = useCallback(() => {
-    router.push(`/scripts/details?id=${scriptId}`);
+    router.push(routes.scripts.details(scriptId));
   }, [router, scriptId]);
 
   const argsData =

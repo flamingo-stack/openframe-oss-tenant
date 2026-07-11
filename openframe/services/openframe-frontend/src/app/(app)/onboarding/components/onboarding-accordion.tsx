@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckCircleIcon, Chevron02DownIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import React from 'react';
 
@@ -24,6 +24,14 @@ export interface OnboardingAccordionItemProps {
   requirementHint?: string;
   /** Whether the step starts expanded. Ignored for `disabled`. @default false */
   defaultExpanded?: boolean;
+  /**
+   * Loading state: the step's static content (icon, title, description) is known,
+   * but its completion status is not yet loaded. Renders the row exactly as an
+   * `active` step but with the trailing status control (Complete tag + chevron)
+   * replaced by a skeleton, and the body not mounted. Lets the page skeleton reuse
+   * this row verbatim instead of re-implementing it. @default false
+   */
+  loading?: boolean;
   /** Expanded body. Not implemented yet — the step body is wired up later. */
   children?: React.ReactNode;
 }
@@ -43,10 +51,11 @@ export function OnboardingAccordionItem({
   status = 'active',
   requirementHint,
   defaultExpanded = false,
+  loading = false,
   children,
 }: OnboardingAccordionItemProps) {
-  const isDisabled = status === 'disabled';
-  const isCompleted = status === 'completed';
+  const isDisabled = !loading && status === 'disabled';
+  const isCompleted = !loading && status === 'completed';
   const [expanded, setExpanded] = React.useState(!isDisabled && defaultExpanded);
 
   const toggle = React.useCallback(() => {
@@ -57,7 +66,7 @@ export function OnboardingAccordionItem({
     <div
       className={cn(
         'w-full border-b border-ods-border transition-colors duration-200 ease-out motion-reduce:transition-none',
-        expanded ? 'bg-ods-bg' : 'bg-ods-card',
+        expanded && !loading ? 'bg-ods-bg' : 'bg-ods-card',
       )}
     >
       {/* Header is not interactive — only the chevron button toggles the step. */}
@@ -89,8 +98,11 @@ export function OnboardingAccordionItem({
           </p>
         </div>
 
-        {/* Trailing: requirement hint (disabled) / complete tag + chevron / chevron */}
-        {isDisabled ? (
+        {/* Trailing: skeleton (loading) / requirement hint (disabled) / complete tag + chevron / chevron.
+            Status is the one thing the skeleton doesn't know, so only this control is a placeholder. */}
+        {loading ? (
+          <Skeleton className="h-11 w-11 shrink-0 rounded-md md:h-12 md:w-12" />
+        ) : isDisabled ? (
           requirementHint ? (
             <p className="shrink-0 whitespace-nowrap text-right text-[14px] font-medium leading-5 text-ods-text-secondary">
               {requirementHint}
@@ -123,11 +135,12 @@ export function OnboardingAccordionItem({
       </div>
 
       {/* Step body, animated via grid-rows 0fr→1fr. Not mounted for disabled steps, so a
-          locked step never runs its form's data hooks. */}
-      {!isDisabled && (
+          locked step never runs its form's data hooks — nor while loading, so the skeleton
+          never mounts a step's (suspending) data hooks. */}
+      {!isDisabled && !loading && (
         <div
           className={cn(
-            'grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none',
+            'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
             expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
           )}
         >

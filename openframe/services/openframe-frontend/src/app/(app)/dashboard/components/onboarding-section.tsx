@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
+import { routes } from '@/lib/routes';
 import { useOnboardingCompletion } from '../hooks/use-onboarding-completion';
 
 /**
@@ -23,12 +24,12 @@ export function OnboardingSection() {
   const { completionStatus, isLoading } = useOnboardingCompletion();
 
   const handleOrganizationAction = React.useCallback(async () => {
-    router.push('/customers/edit?id=new');
+    router.push(routes.customers.new);
   }, [router]);
 
   const handleDeviceAction = React.useCallback(async () => {
     trackDashboardActivity(EVENT_SUBTYPE.ADD_DEVICE);
-    router.push('/devices/new');
+    router.push(routes.devices.new());
   }, [router]);
 
   const handleTeamAction = React.useCallback(async () => {

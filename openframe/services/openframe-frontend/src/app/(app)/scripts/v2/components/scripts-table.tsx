@@ -748,7 +748,7 @@ export function ScriptsTable({ archived = false }: ScriptsTableProps = {}) {
   );
 
   const handleNewScript = useCallback(() => {
-    router.push(routes.scriptsV2.create);
+    router.push(routes.scriptsV2.new);
   }, [router]);
 
   const handleOpenArchive = useCallback(() => {

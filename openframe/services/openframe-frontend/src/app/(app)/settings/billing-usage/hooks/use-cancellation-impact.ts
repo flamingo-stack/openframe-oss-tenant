@@ -27,6 +27,16 @@ const KB_ARTICLES_QUERY = `
   }
 `;
 
+// ACTIVE only — the default (null statuses) also counts ARCHIVED scripts, which
+// aren't "data you'll lose" in the same sense.
+const SCRIPTS_QUERY = `
+  query CancellationScripts {
+    scripts(filter: { statuses: [ACTIVE] }, first: 1) {
+      filteredCount
+    }
+  }
+`;
+
 interface GraphQlEnvelope<T> {
   data?: T;
   errors?: Array<{ message: string }>;
@@ -36,6 +46,7 @@ export interface CancellationImpact {
   /** Total tickets across every status (active, on-hold, resolved, …). */
   tickets: number;
   kbArticles: number;
+  scripts: number;
   monitoringPolicies: number;
   savedQueries: number;
 }
@@ -62,6 +73,16 @@ async function fetchKbArticles(): Promise<number> {
   return res.data?.data?.articles?.filteredCount ?? 0;
 }
 
+async function fetchScriptsCount(): Promise<number> {
+  const res = await apiClient.post<GraphQlEnvelope<{ scripts?: { filteredCount: number } }>>(MAIN_GRAPHQL_ENDPOINT, {
+    query: SCRIPTS_QUERY,
+  });
+  if (!res.ok || res.data?.errors?.length) {
+    throw new Error(res.error || res.data?.errors?.[0]?.message || 'Failed to load scripts count');
+  }
+  return res.data?.data?.scripts?.filteredCount ?? 0;
+}
+
 /**
  * Best-effort "what you'll lose" counts for the cancellation modal. Sourced from three
  * transports (ai-agent GraphQL, main GraphQL, Fleet REST); each is settled independently so
@@ -74,9 +95,10 @@ export function useCancellationImpact({ enabled }: { enabled: boolean }) {
     enabled,
     staleTime: 60_000,
     queryFn: async () => {
-      const [tickets, kbArticles, policies, queries] = await Promise.allSettled([
+      const [tickets, kbArticles, scripts, policies, queries] = await Promise.allSettled([
         fetchTicketsTotal(),
         fetchKbArticles(),
+        fetchScriptsCount(),
         fleetApiClient.getPoliciesCount(),
         fleetApiClient.getQueriesCount(),
       ]);
@@ -84,6 +106,7 @@ export function useCancellationImpact({ enabled }: { enabled: boolean }) {
       return {
         tickets: tickets.status === 'fulfilled' ? tickets.value : 0,
         kbArticles: kbArticles.status === 'fulfilled' ? kbArticles.value : 0,
+        scripts: scripts.status === 'fulfilled' ? scripts.value : 0,
         monitoringPolicies:
           policies.status === 'fulfilled' && policies.value.ok ? (policies.value.data?.count ?? 0) : 0,
         savedQueries: queries.status === 'fulfilled' && queries.value.ok ? (queries.value.data?.count ?? 0) : 0,

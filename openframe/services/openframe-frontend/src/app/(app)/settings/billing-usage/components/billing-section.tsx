@@ -1,4 +1,18 @@
+import { AlertTriangleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
+
+// Static "Test mode" banner. Shared by the live view and its loading skeleton so
+// the copy/chrome are defined once.
+export function TestModeBanner() {
+  return (
+    <div className="flex items-start gap-[var(--spacing-system-s)] rounded-md bg-[var(--ods-open-yellow-base)] p-[var(--spacing-system-s)] text-ods-text-on-accent">
+      <AlertTriangleIcon className="size-6 shrink-0" />
+      <p className="flex-1 text-h3 font-bold">
+        Test mode — invoices and usage shown here are samples. No real charges are being made.
+      </p>
+    </div>
+  );
+}
 
 export function SectionBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return (

@@ -1,15 +1,19 @@
 'use client';
 
 import { Button, Input } from '@flamingo-stack/openframe-frontend-core';
-import { ExternalLinkIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { CheckCircleIcon, ExternalLinkIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { ImageUploader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { routes } from '@/lib/routes';
 import { uploadWithAuth } from '@/lib/upload-with-auth';
 import { type CreateCustomerRequest, useCreateCustomer } from '../../customers/hooks/use-create-customer';
 import { dashboardQueryKeys } from '../../dashboard/utils/query-keys';
+import { onboardingHintUrl } from '../onboarding-coach-marks';
+import { useStepActionState } from '../use-step-action-state';
 
 const emptyAddress = { street1: '', street2: '', city: '', state: '', postalCode: '', country: '' };
 
@@ -17,10 +21,20 @@ const emptyAddress = { street1: '', street2: '', city: '', state: '', postalCode
  * Inner body of the "Customers Setup" onboarding step. Reuses the customer-page form
  * building blocks ({@link ../../customers/components/new-customer-page}) — the
  * `useCreateCustomer` mutation, `Input` and `ImageUploader` — for a quick first-client
- * form. The full form lives at `/customers/edit?id=new`.
+ * form. The full form lives at routes.customers.new.
  */
-export function CustomerSetupStep() {
+export function CustomerSetupStep({
+  onComplete,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+} = {}) {
   const { toast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const { createOrganization } = useCreateCustomer();
 
@@ -92,6 +106,12 @@ export function CustomerSetupStep() {
       ]);
 
       toast({ title: 'Customer created', description: `${name.trim()} has been created`, variant: 'success' });
+      // A successful create completes the onboarding step — but only the first time,
+      // so creating another customer on an already-complete step doesn't re-fire it.
+      if (!completed) onComplete?.();
+      // Onboarding always renders this step, so a create here means "continue from
+      // onboarding" — send the user to Customers with the coach-mark hint.
+      router.push(onboardingHintUrl('/customers', 'customers', pathname));
     } catch (e) {
       toast({
         title: 'Save failed',
@@ -101,9 +121,21 @@ export function CustomerSetupStep() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [name, website, pendingFile, isSubmitting, createOrganization, queryClient, toast]);
+  }, [
+    name,
+    website,
+    pendingFile,
+    isSubmitting,
+    createOrganization,
+    queryClient,
+    toast,
+    router,
+    pathname,
+    onComplete,
+    completed,
+  ]);
 
-  const saveDisabled = !name.trim() || isSubmitting;
+  const actions = useStepActionState({ completing, primaryBusy: isSubmitting });
 
   return (
     <div className="flex w-full flex-col gap-[var(--spacing-system-l)]">
@@ -151,7 +183,7 @@ export function CustomerSetupStep() {
       {/* Full form link (left) / mandatory hint + save (right) */}
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <Link
-          href="/customers/edit?id=new"
+          href={routes.customers.new}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-1 items-center gap-[var(--spacing-system-xs)] text-ods-text-secondary transition-colors hover:text-ods-text-primary"
@@ -160,19 +192,39 @@ export function CustomerSetupStep() {
           <span className="text-h4 underline">Full Organization Form</span>
         </Link>
 
-        {/* On mobile the button comes first (full width) with the hint centered below it;
-            on desktop the hint sits left of the button, matching the design grid. */}
+        {/* Mark as Complete (hidden once the step is done) + Save Customer.
+            Buttons share the right half, each flex-1; they stack full-width on mobile. */}
         <div className="flex flex-1 flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
-          <p className="order-2 flex-1 text-center text-[14px] font-medium leading-5 text-ods-text-secondary md:order-1 md:text-right">
-            This step is mandatory
-          </p>
+          {!completed ? (
+            <Button
+              variant="outline"
+              leftIcon={<CheckCircleIcon className="size-5" />}
+              onClick={() => {
+                actions.begin('complete');
+                onComplete?.();
+              }}
+              loading={actions.complete.loading}
+              disabled={actions.complete.disabled}
+              className="w-full md:flex-1"
+            >
+              Mark as Complete
+            </Button>
+          ) : (
+            // Keep the completed step's primary button its own width — don't let it
+            // stretch into the removed "Mark as Complete" slot.
+            <div className="hidden md:block md:flex-1" aria-hidden />
+          )}
           <Button
             variant="accent"
-            onClick={handleSave}
-            disabled={saveDisabled}
-            className="order-1 w-full md:order-2 md:flex-1"
+            onClick={() => {
+              actions.begin('primary');
+              handleSave();
+            }}
+            disabled={!name.trim() || actions.primary.disabled}
+            loading={actions.primary.loading}
+            className="w-full md:flex-1"
           >
-            {isSubmitting ? 'Saving...' : 'Save Customer'}
+            Save Customer
           </Button>
         </div>
       </div>

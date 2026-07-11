@@ -15,26 +15,16 @@ import { ContextItemsList } from '@flamingo-stack/openframe-frontend-core/compon
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { CONTEXT_ENTITY_KIND } from './context-types';
 import { type ContextItemsProps, matches, useClientPaging } from './items-shared';
 
 // ──────────────────────── Script (legacy / Tactical) ─────────────────────────
 
+// TODO(openframe-rmm): Tactical RMM removed — the legacy script context source has no
+// backend. Returns an empty list (flag-ON scripts still resolve via the Relay `ScriptItems`
+// in relay-items.tsx). Delete this source once the flag-OFF `/scripts` path is retired.
 async function fetchAllScripts(): Promise<ChatContextItem[]> {
-  const res = await tacticalApiClient.getScripts();
-  if (!res.ok) throw new Error(res.error || 'Failed to load scripts');
-  const list = (Array.isArray(res.data) ? res.data : []) as Array<{
-    id: number | string;
-    name?: string;
-    description?: string;
-  }>;
-  return list.map(s => ({
-    type: CONTEXT_ENTITY_KIND.SCRIPT,
-    id: String(s.id),
-    label: s.name || String(s.id),
-    description: s.description || undefined,
-  }));
+  return [];
 }
 
 export function LegacyScriptItems({ query, selectedKeys, onToggle, atLimit }: ContextItemsProps) {

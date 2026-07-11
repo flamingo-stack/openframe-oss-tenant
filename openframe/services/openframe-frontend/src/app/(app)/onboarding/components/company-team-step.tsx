@@ -20,6 +20,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import Link from 'next/link';
 import { type ChangeEvent, useMemo, useState } from 'react';
 import { useInvitations } from '../../settings/hooks/use-invitations';
+import { useStepActionState } from '../use-step-action-state';
 
 type InviteRow = { email: string; role: string };
 
@@ -32,12 +33,21 @@ const newRow = (): InviteRow => ({ email: '', role: 'ADMIN' });
  * blocks from settings ({@link ../../settings/components/add-users-modal}) — the same
  * row model and the `useInvitations().inviteUsers` mutation.
  */
-export function CompanyTeamStep() {
+export function CompanyTeamStep({
+  onComplete,
+  completed,
+  completing,
+}: {
+  onComplete?: () => void;
+  completed?: boolean;
+  completing?: boolean;
+}) {
   const { toast } = useToast();
   const { inviteUsers } = useInvitations();
 
   const [rows, setRows] = useState<InviteRow[]>([newRow()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const actions = useStepActionState({ completing, primaryBusy: isSubmitting });
 
   const canSubmit = useMemo(() => rows.some(r => EMAIL_REGEX.test(r.email.trim())), [rows]);
 
@@ -55,6 +65,9 @@ export function CompanyTeamStep() {
       await inviteUsers(emails);
       toast({ title: 'Invites sent', description: `${emails.length} user(s) invited`, variant: 'success' });
       setRows([newRow()]);
+      // Sending invites completes the onboarding step — but only the first time, so
+      // inviting more people on an already-complete step doesn't re-fire it.
+      if (!completed) onComplete?.();
     } catch (err) {
       toast({
         title: 'Invite failed',
@@ -72,53 +85,55 @@ export function CompanyTeamStep() {
         Invite your technicians to OpenFrame. They&apos;ll receive an email with a link to set up their account.
       </p>
 
-      <div className="flex flex-col gap-[var(--spacing-system-xs)]">
+      <div className="flex flex-col">
         {/* Column labels — shown once above the rows */}
         <div className="grid grid-cols-1 gap-[var(--spacing-system-xs)] md:grid-cols-2">
           <Label>User Email</Label>
           <Label className="hidden md:block">Role</Label>
         </div>
 
-        {rows.map((row, idx) => (
-          <div key={idx} className="grid grid-cols-1 items-center gap-[var(--spacing-system-xs)] md:grid-cols-2">
-            <Input
-              placeholder="Enter Email Here"
-              value={row.email}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setRow(idx, { email: e.target.value })}
-              invalid={row.email.length > 0 && !EMAIL_REGEX.test(row.email)}
-            />
-            <div className="flex items-center gap-[var(--spacing-system-xs)]">
-              <Select value={row.role} onValueChange={v => setRow(idx, { role: v })}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_OPTIONS.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {rows.length > 1 && (
-                <Button variant="outline" size="icon" onClick={() => removeRow(idx)} className="shrink-0">
-                  <TrashIcon className="size-5 text-[var(--ods-attention-red-error-action)]" />
-                </Button>
-              )}
+        <div className="flex flex-col gap-[var(--spacing-system-xs)]">
+          {rows.map((row, idx) => (
+            <div key={idx} className="grid grid-cols-1 items-center gap-[var(--spacing-system-xs)] md:grid-cols-2">
+              <Input
+                placeholder="Enter Email Here"
+                value={row.email}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setRow(idx, { email: e.target.value })}
+                invalid={row.email.length > 0 && !EMAIL_REGEX.test(row.email)}
+              />
+              <div className="flex items-center gap-[var(--spacing-system-xs)]">
+                <Select value={row.role} onValueChange={v => setRow(idx, { role: v })}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {rows.length > 1 && (
+                  <Button variant="outline" size="icon" onClick={() => removeRow(idx)} className="shrink-0">
+                    <TrashIcon className="size-5 text-[var(--ods-attention-red-error-action)]" />
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        <Button
-          type="button"
-          variant="outline"
-          size="small"
-          className="self-start"
-          onClick={addRow}
-          leftIcon={<PlusCircleIcon size={24} className="text-ods-text-primary" />}
-        >
-          Add More Users
-        </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="small"
+            className="self-start"
+            onClick={addRow}
+            leftIcon={<PlusCircleIcon size={24} className="text-ods-text-primary" />}
+          >
+            Add More Users
+          </Button>
+        </div>
       </div>
 
       {/* Footer actions */}
@@ -131,22 +146,36 @@ export function CompanyTeamStep() {
           <span className="text-h4 underline">Manage Roles</span>
         </Link>
         <div className="hidden flex-1 md:block" />
-        <Button
-          variant="outline"
-          leftIcon={<CheckCircleIcon className="size-5" />}
-          onClick={() => toast({ title: 'Step marked complete', variant: 'success' })}
-          className="w-full md:flex-1"
-        >
-          Mark as Complete
-        </Button>
+        {!completed ? (
+          <Button
+            variant="outline"
+            leftIcon={<CheckCircleIcon className="size-5" />}
+            onClick={() => {
+              actions.begin('complete');
+              onComplete?.();
+            }}
+            loading={actions.complete.loading}
+            disabled={actions.complete.disabled}
+            className="w-full md:flex-1"
+          >
+            Mark as Complete
+          </Button>
+        ) : (
+          // Keep the completed step's primary button its own width — don't let it
+          // stretch into the removed "Mark as Complete" slot.
+          <div className="hidden md:block md:flex-1" aria-hidden />
+        )}
         <Button
           variant="accent"
-          onClick={handleSendInvites}
-          disabled={!canSubmit || isSubmitting}
-          loading={isSubmitting}
+          onClick={() => {
+            actions.begin('primary');
+            handleSendInvites();
+          }}
+          disabled={!canSubmit || actions.primary.disabled}
+          loading={actions.primary.loading}
           className="w-full md:flex-1"
         >
-          {isSubmitting ? 'Sending...' : 'Send Invites'}
+          Send Invites
         </Button>
       </div>
     </div>
