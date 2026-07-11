@@ -522,11 +522,8 @@ impl Client {
 
         self.tool_uninstall_message_listener.start().await?;
 
-        // Best-effort startup reconcile: remove any tool that is installed on this host but NOT
-        // managed by OpenFrame (an orphan, e.g. a Tactical RMM agent left over from a previous
-        // product that keeps hammering the gateway). Runs detached so it never blocks startup and
-        // never fails the client; reaches every box that self-updates to this build without needing
-        // a NATS re-dispatch.
+        // Startup reconcile: purge any tool present on this host but not managed by OpenFrame (an
+        // orphan, e.g. a leftover Tactical RMM agent). Detached so it never blocks or fails startup.
         {
             let orphan_purge_service =
                 crate::services::OrphanPurgeService::new(self.installed_tools_service.clone());

@@ -46,10 +46,8 @@ impl ToolUninstallService {
     pub async fn uninstall_by_tool_agent_id(&self, tool_agent_id: &str) -> Result<UninstallOutcome> {
         match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             None => {
-                // Not in the local registry. It may still be installed OUTSIDE OpenFrame's
-                // management (an orphan, e.g. a Tactical RMM agent left from a previous product).
-                // Try a registry-independent purge by its fixed vendor coordinates; if we have no
-                // recipe for it, fall back to the original "nothing to uninstall" behaviour.
+                // Not in the registry, but it may be installed outside OpenFrame management (an
+                // orphan). Try a registry-independent purge; if there's no recipe, nothing to do.
                 match self.orphan_purge_service.purge_if_orphan(tool_agent_id).await {
                     Ok(true) => {
                         info!("Orphan tool {} removed via registry-independent purge", tool_agent_id);

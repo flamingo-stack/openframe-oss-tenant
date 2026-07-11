@@ -1,22 +1,12 @@
 //! Registry-independent removal of orphaned tools.
 //!
-//! The normal uninstall path ([`crate::services::ToolUninstallService`]) can only remove tools
-//! OpenFrame installed itself, because it looks them up in the local `installed_tools.json`
-//! registry. A tool installed *outside* OpenFrame management (an "orphan" — e.g. a Tactical RMM
-//! agent left behind from a previous product) is absent from that registry, so the native
-//! `tool-uninstall` message silently no-ops while the agent keeps hammering the gateway forever.
-//!
-//! This service closes that gap. It removes an orphan by its fixed vendor coordinates (see
-//! [`crate::services::orphan_tool_recipes`]) instead of an OpenFrame-managed path, via two entry
-//! points:
-//!   * [`OrphanPurgeService::purge_if_orphan`] — driven by the `tool-uninstall` NATS message when
-//!     the tool is not in the registry (keeps the server-side dispatch audit trail).
-//!   * [`OrphanPurgeService::reconcile_all`] — runs at startup and removes any known orphan present
-//!     on this host but not managed by OpenFrame, with no dependency on a NATS re-dispatch. This
-//!     reaches every box that self-updates to a client build containing it.
-//!
-//! Every step is best-effort and idempotent: "service already gone" / "directory already gone" are
-//! treated as success, so re-running is safe.
+//! [`ToolUninstallService`](crate::services::ToolUninstallService) can only remove tools OpenFrame
+//! installed itself (they must be in `installed_tools.json`). A tool installed outside OpenFrame
+//! management — e.g. a Tactical RMM agent left from a previous product that keeps hammering the
+//! gateway — is absent from that registry, so the native uninstall no-ops. This service removes
+//! such orphans by their fixed vendor coordinates ([`orphan_tool_recipes`]), via two entry points:
+//! `purge_if_orphan` (driven by the tool-uninstall NATS message) and `reconcile_all` (startup).
+//! Every step is best-effort and idempotent.
 
 use anyhow::Result;
 use tracing::{info, warn};
@@ -34,24 +24,17 @@ impl OrphanPurgeService {
         Self { installed_tools_service }
     }
 
-    /// Message-driven entry point. Called for a `tool_agent_id` that is NOT in the local registry.
-    ///
-    /// * `Ok(true)`  — we have a recipe for this tool (it was purged, or it was already absent).
-    ///                 The caller should treat the uninstall as done and ACK the message.
-    /// * `Ok(false)` — no recipe; not an orphan we know how to remove. Caller keeps the existing
-    ///                 "not installed, nothing to do" behaviour.
-    /// * `Err(_)`    — a removal step failed while the tool was present; caller should leave the
-    ///                 message un-ACKed for redelivery.
+    /// Called for a `tool_agent_id` not found in the local registry.
+    /// `Ok(true)` = we have a recipe (purged, or already absent) → caller ACKs.
+    /// `Ok(false)` = no recipe → caller keeps the "nothing to do" behaviour.
+    /// `Err(_)` = a step failed while the tool was present → caller leaves the message for redelivery.
     pub async fn purge_if_orphan(&self, tool_agent_id: &str) -> Result<bool> {
         let Some(recipe) = orphan_tool_recipes::get(tool_agent_id) else {
             return Ok(false);
         };
 
         if !Self::is_present(recipe).await {
-            info!(
-                "Orphan purge: {} not present on this host, nothing to remove",
-                recipe.display_name
-            );
+            info!("Orphan purge: {} not present on this host, nothing to remove", recipe.display_name);
             return Ok(true);
         }
 
@@ -60,54 +43,34 @@ impl OrphanPurgeService {
         Ok(true)
     }
 
-    /// Startup reconcile. For every known recipe: if the tool is present on this host but OpenFrame
-    /// does not manage it, remove it. Never returns an error — purely best-effort background work.
+    /// Startup reconcile: purge any known recipe that is present on this host but not managed by
+    /// OpenFrame. Best-effort; never errors.
     pub async fn reconcile_all(&self) {
         for recipe in orphan_tool_recipes::RECIPES.iter().copied() {
             if !Self::is_present(recipe).await {
                 continue;
             }
 
-            match self
-                .installed_tools_service
-                .get_by_tool_agent_id(recipe.tool_agent_id)
-                .await
-            {
-                Ok(Some(_)) => {
-                    // OpenFrame installed and manages this one — the normal uninstall path owns it.
-                    info!(
-                        "Orphan reconcile: {} present but OpenFrame-managed, leaving it alone",
-                        recipe.display_name
-                    );
-                }
+            match self.installed_tools_service.get_by_tool_agent_id(recipe.tool_agent_id).await {
+                // OpenFrame manages this install — the normal uninstall path owns it.
+                Ok(Some(_)) => info!("Orphan reconcile: {} present but OpenFrame-managed, skipping", recipe.display_name),
                 Ok(None) => {
-                    warn!(
-                        "Orphan reconcile: {} present but UNMANAGED by OpenFrame — purging",
-                        recipe.display_name
-                    );
+                    warn!("Orphan reconcile: {} present but UNMANAGED — purging", recipe.display_name);
                     if let Err(e) = self.purge(recipe).await {
-                        warn!(
-                            "Orphan reconcile: purge of {} failed (will retry next start): {:#}",
-                            recipe.display_name, e
-                        );
+                        warn!("Orphan reconcile: purge of {} failed (retry next start): {:#}", recipe.display_name, e);
                     }
                 }
-                Err(e) => warn!(
-                    "Orphan reconcile: registry check for {} failed: {:#}",
-                    recipe.display_name, e
-                ),
+                Err(e) => warn!("Orphan reconcile: registry check for {} failed: {:#}", recipe.display_name, e),
             }
         }
     }
 
-    /// Is the tool actually installed on this host right now?
     async fn is_present(recipe: &OrphanRecipe) -> bool {
         #[cfg(target_os = "windows")]
         {
             use tokio::process::Command;
             match Command::new("sc").args(["query", recipe.win_service]).output().await {
                 Ok(out) => out.status.success(),
-                // sc unavailable for some reason — fall back to the install dir.
                 Err(_) => std::path::Path::new(recipe.win_program_dir).exists(),
             }
         }
@@ -123,22 +86,18 @@ impl OrphanPurgeService {
         }
     }
 
-    /// Remove the tool by its fixed vendor coordinates. Idempotent; individual steps log and
-    /// continue on failure so a partially-removed install still makes progress.
+    /// Remove the tool by its fixed vendor coordinates. Steps log and continue on failure.
     async fn purge(&self, recipe: &OrphanRecipe) -> Result<()> {
         #[cfg(target_os = "windows")]
         {
             use tokio::process::Command;
 
-            // 1. Stop, force-kill, and delete the SCM service (allow_delete = true).
-            if let Err(e) =
-                crate::platform::system_service::stop_service(recipe.win_service, true).await
-            {
-                warn!("Orphan purge: stop/delete service {} failed (continuing): {:#}",
-                      recipe.win_service, e);
+            // Stop + force-kill + delete the SCM service.
+            if let Err(e) = crate::platform::system_service::stop_service(recipe.win_service, true).await {
+                warn!("Orphan purge: stop/delete service {} failed (continuing): {:#}", recipe.win_service, e);
             }
 
-            // 2. Run the vendor's silent uninstaller (Inno Setup) if it is on disk.
+            // Run the vendor's silent Inno uninstaller if present.
             let program_dir = std::path::Path::new(recipe.win_program_dir);
             if program_dir.exists() {
                 if let Some(uninstaller) = find_windows_uninstaller(program_dir, recipe.win_uninstaller_glob) {
@@ -152,20 +111,16 @@ impl OrphanPurgeService {
                     if let Err(e) = run {
                         warn!("Orphan purge: uninstaller launch failed (continuing): {:#}", e);
                     }
-                    // Inno relaunches itself from a temp copy and returns immediately; give it time
-                    // to finish before we sweep the directory.
+                    // Inno relaunches from a temp copy and returns immediately.
                     tokio::time::sleep(std::time::Duration::from_secs(15)).await;
                 }
             }
 
-            // 3. Purge the vendor registry key (64-bit view).
             delete_registry_key_hklm_64(recipe.win_registry_key);
 
-            // 4. Force-remove the install directory (handles locked/read-only files).
             if program_dir.exists() {
                 if let Err(e) = crate::platform::remove_directory_with_retry(program_dir, 5).await {
-                    warn!("Orphan purge: failed to remove {} (continuing): {:#}",
-                          recipe.win_program_dir, e);
+                    warn!("Orphan purge: failed to remove {} (continuing): {:#}", recipe.win_program_dir, e);
                 }
             }
 
@@ -178,26 +133,18 @@ impl OrphanPurgeService {
 
             let plist = format!("/Library/LaunchDaemons/{}.plist", recipe.mac_service);
 
-            // 1. Unload the launchd daemon (launchctl unload via system_service) + hard bootout.
-            if let Err(e) =
-                crate::platform::system_service::stop_service(recipe.mac_service, true).await
-            {
+            if let Err(e) = crate::platform::system_service::stop_service(recipe.mac_service, true).await {
                 warn!("Orphan purge: unload {} failed (continuing): {:#}", plist, e);
             }
             let _ = Command::new("sudo")
                 .args(["launchctl", "bootout", &format!("system/{}", recipe.mac_service)])
                 .output()
                 .await;
-
-            // 2. Remove the plist.
             let _ = Command::new("sudo").args(["rm", "-f", &plist]).output().await;
 
-            // 3. Purge install/config directories.
             for dir in recipe.unix_dirs {
                 if std::path::Path::new(dir).exists() {
-                    if let Err(e) =
-                        crate::platform::remove_directory_with_retry(std::path::Path::new(dir), 5).await
-                    {
+                    if let Err(e) = crate::platform::remove_directory_with_retry(std::path::Path::new(dir), 5).await {
                         warn!("Orphan purge: failed to remove {} (continuing): {:#}", dir, e);
                     }
                 }
@@ -210,32 +157,22 @@ impl OrphanPurgeService {
         {
             use tokio::process::Command;
 
-            let unit = recipe.nix_service_unit; // e.g. "tacticalagent.service"
+            let unit = recipe.nix_service_unit;
             let service_name = unit.trim_end_matches(".service");
 
-            // 1. Stop the unit (system_service::stop_service only stops on Linux)...
-            if let Err(e) =
-                crate::platform::system_service::stop_service(service_name, true).await
-            {
+            // stop_service only stops on Linux; disable + remove the unit so it never restarts.
+            if let Err(e) = crate::platform::system_service::stop_service(service_name, true).await {
                 warn!("Orphan purge: stop {} failed (continuing): {:#}", unit, e);
             }
-            // ...then disable it and remove the unit files so it never starts again.
             let _ = Command::new("sudo").args(["systemctl", "disable", unit]).output().await;
             for base in ["/etc/systemd/system", "/lib/systemd/system", "/usr/lib/systemd/system"] {
-                let _ = Command::new("sudo")
-                    .args(["rm", "-f"])
-                    .arg(format!("{}/{}", base, unit))
-                    .output()
-                    .await;
+                let _ = Command::new("sudo").args(["rm", "-f"]).arg(format!("{}/{}", base, unit)).output().await;
             }
             let _ = Command::new("sudo").args(["systemctl", "daemon-reload"]).output().await;
 
-            // 2. Purge install/config directories.
             for dir in recipe.unix_dirs {
                 if std::path::Path::new(dir).exists() {
-                    if let Err(e) =
-                        crate::platform::remove_directory_with_retry(std::path::Path::new(dir), 5).await
-                    {
+                    if let Err(e) = crate::platform::remove_directory_with_retry(std::path::Path::new(dir), 5).await {
                         warn!("Orphan purge: failed to remove {} (continuing): {:#}", dir, e);
                     }
                 }
@@ -249,10 +186,8 @@ impl OrphanPurgeService {
 /// Find the Inno Setup uninstaller (`unins*.exe`) inside `program_dir`.
 #[cfg(target_os = "windows")]
 fn find_windows_uninstaller(program_dir: &std::path::Path, prefix: &str) -> Option<std::path::PathBuf> {
-    let entries = std::fs::read_dir(program_dir).ok()?;
-    for entry in entries.flatten() {
-        let name = entry.file_name();
-        let name = name.to_string_lossy().to_lowercase();
+    for entry in std::fs::read_dir(program_dir).ok()?.flatten() {
+        let name = entry.file_name().to_string_lossy().to_lowercase();
         if name.starts_with(prefix) && name.ends_with(".exe") {
             return Some(entry.path());
         }
@@ -266,23 +201,12 @@ fn delete_registry_key_hklm_64(subkey: &str) {
     use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ, KEY_WRITE, KEY_WOW64_64KEY};
     use winreg::RegKey;
 
-    // Split "SOFTWARE\TacticalRMM" into parent ("SOFTWARE") + leaf ("TacticalRMM") so we can open
-    // the parent with the 64-bit flag and recursively drop the leaf.
-    let (parent, leaf) = match subkey.rsplit_once('\\') {
-        Some((p, l)) => (p, l),
-        None => ("", subkey),
-    };
+    let (parent, leaf) = subkey.rsplit_once('\\').unwrap_or(("", subkey));
 
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let parent_key = match hklm.open_subkey_with_flags(
-        parent,
-        KEY_READ | KEY_WRITE | KEY_WOW64_64KEY,
-    ) {
+    let parent_key = match hklm.open_subkey_with_flags(parent, KEY_READ | KEY_WRITE | KEY_WOW64_64KEY) {
         Ok(k) => k,
-        Err(_) => {
-            // Parent absent -> nothing to delete.
-            return;
-        }
+        Err(_) => return, // parent absent -> nothing to delete
     };
 
     match parent_key.delete_subkey_all(leaf) {
