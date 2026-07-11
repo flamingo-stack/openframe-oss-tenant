@@ -3,6 +3,7 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
+import { OrganizationSortField, SortDirection } from '@/generated/schema-enums';
 import { apiClient } from '@/lib/api-client';
 import { GET_ORGANIZATIONS_QUERY } from '../queries/customers-queries';
 
@@ -37,6 +38,7 @@ export interface OrganizationNode {
   contractEndDate?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  lastActivityAt?: string | null;
   contactInformation?: {
     contacts?: Array<{ contactName?: string | null; email?: string | null }> | null;
   } | null;
@@ -58,7 +60,7 @@ export function mapOrganizationNode(node: OrganizationNode): Customer {
     mrrUsd: node.monthlyRevenue ?? 0,
     numberOfEmployees: node.numberOfEmployees ?? 0,
     contractDue: node.contractEndDate ?? '',
-    lastActivity: node.updatedAt || node.createdAt || new Date().toISOString(),
+    lastActivity: node.lastActivityAt || node.updatedAt || node.createdAt || new Date().toISOString(),
     imageUrl: node.image?.imageUrl ?? null,
     imageHash: node.image?.hash ?? null,
   };
@@ -80,16 +82,32 @@ interface GraphQlResponse<T> {
   errors?: Array<{ message: string }>;
 }
 
+/** Server-side last-activity range (UTC instants) + sort direction. */
+export interface CustomersDateQuery {
+  lastActivityFrom?: string;
+  lastActivityTo?: string;
+  sortDirection: 'asc' | 'desc';
+}
+
 export const customersQueryKeys = {
   all: ['organizations'] as const,
-  list: (search: string, status?: string) => ['organizations', 'list', search, status] as const,
+  list: (search: string, status?: string, dateQuery?: CustomersDateQuery) =>
+    [
+      'organizations',
+      'list',
+      search,
+      status,
+      dateQuery?.lastActivityFrom,
+      dateQuery?.lastActivityTo,
+      dateQuery?.sortDirection,
+    ] as const,
 };
 
-export function useCustomers(search = '', status?: string) {
+export function useCustomers(search = '', status?: string, dateQuery?: CustomersDateQuery) {
   const { toast } = useToast();
 
   const query = useInfiniteQuery<CustomersPage, Error>({
-    queryKey: customersQueryKeys.list(search, status),
+    queryKey: customersQueryKeys.list(search, status, dateQuery),
     queryFn: async ({ pageParam }) => {
       const response = await apiClient.post<
         GraphQlResponse<{
@@ -110,7 +128,18 @@ export function useCustomers(search = '', status?: string) {
           search: search || '',
           first: ORGANIZATIONS_PAGE_SIZE,
           after: (pageParam as string) || null,
-          filter: status ? { status } : undefined,
+          filter:
+            status || dateQuery?.lastActivityFrom || dateQuery?.lastActivityTo
+              ? {
+                  ...(status ? { status } : {}),
+                  ...(dateQuery?.lastActivityFrom ? { lastActivityFrom: dateQuery.lastActivityFrom } : {}),
+                  ...(dateQuery?.lastActivityTo ? { lastActivityTo: dateQuery.lastActivityTo } : {}),
+                }
+              : undefined,
+          orderBy: {
+            field: OrganizationSortField.LAST_ACTIVITY,
+            direction: dateQuery?.sortDirection === 'asc' ? SortDirection.ASC : SortDirection.DESC,
+          },
         },
       });
 

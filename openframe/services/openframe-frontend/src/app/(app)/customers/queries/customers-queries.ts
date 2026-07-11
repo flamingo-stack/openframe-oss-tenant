@@ -1,6 +1,6 @@
 export const GET_ORGANIZATIONS_QUERY = `#graphql
-  query GetOrganizations($search: String, $first: Int, $after: String, $filter: OrganizationFilterInput) {
-    organizations(search: $search, first: $first, after: $after, filter: $filter) {
+  query GetOrganizations($search: String, $first: Int, $after: String, $filter: OrganizationFilterInput, $orderBy: OrganizationSortInput) {
+    organizations(search: $search, first: $first, after: $after, filter: $filter, orderBy: $orderBy) {
       edges {
         node {
           id
@@ -24,6 +24,7 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
           }
           createdAt
           updatedAt
+          lastActivityAt
           status
           statusChangedAt
         }

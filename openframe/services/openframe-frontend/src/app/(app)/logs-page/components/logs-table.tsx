@@ -32,7 +32,6 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn, normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
-import { endOfDay, format, parse, startOfDay } from 'date-fns';
 import {
   forwardRef,
   Suspense,
@@ -52,6 +51,7 @@ import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EMBEDDED_PAGE_OFFSET, EmptyState, LogDrawer } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { LogSortField, SortDirection } from '@/generated/schema-enums';
+import { dateRangeFromParams, dateRangeToInstantBounds, toDayParam } from '@/lib/date-filter-params';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { openInNewTab } from '@/lib/open-in-new-tab';
@@ -121,14 +121,6 @@ const logsTableRelayFragment = graphql`
     }
   }
 `;
-
-// Day-granular date filter <-> URL param (local yyyy-MM-dd)
-const DAY_PARAM_FORMAT = 'yyyy-MM-dd';
-const toDayParam = (date: Date): string => format(date, DAY_PARAM_FORMAT);
-const parseDayParam = (value: string): Date | undefined => {
-  const parsed = parse(value, DAY_PARAM_FORMAT, new Date());
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
-};
 
 // ----------------------------------------------------------------
 // Types
@@ -823,11 +815,10 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const lockedOrgIds = useMemo(() => (organizationId ? [organizationId] : undefined), [organizationId]);
 
   // Applied date filter (Log ID column) restored from the URL
-  const dateRange: DateRange | undefined = useMemo(() => {
-    const from = params.dateFrom ? parseDayParam(params.dateFrom) : undefined;
-    const to = params.dateTo ? parseDayParam(params.dateTo) : undefined;
-    return from || to ? { from, to } : undefined;
-  }, [params.dateFrom, params.dateTo]);
+  const dateRange: DateRange | undefined = useMemo(
+    () => dateRangeFromParams(params.dateFrom, params.dateTo),
+    [params.dateFrom, params.dateTo],
+  );
 
   const sortDirection: UiSortDirection = params.sortDirection === 'asc' ? 'asc' : 'desc';
 
@@ -840,16 +831,14 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   );
 
   const backendFilters: LogFilterInput = useMemo(() => {
-    // Inclusive UTC instants covering the selected local days; a single picked
-    // day (no `to`) filters that one day.
-    const upperBoundDay = dateRange?.to ?? dateRange?.from;
+    const bounds = dateRangeToInstantBounds(dateRange);
     return {
       severities: params.severities,
       toolTypes: params.toolTypes,
       organizationIds: lockedOrgIds ?? params.organizationIds,
       deviceId,
-      timestampFrom: dateRange?.from ? startOfDay(dateRange.from).toISOString() : undefined,
-      timestampTo: upperBoundDay ? endOfDay(upperBoundDay).toISOString() : undefined,
+      timestampFrom: bounds.from,
+      timestampTo: bounds.to,
     };
   }, [params.severities, params.toolTypes, params.organizationIds, deviceId, lockedOrgIds, dateRange]);
 

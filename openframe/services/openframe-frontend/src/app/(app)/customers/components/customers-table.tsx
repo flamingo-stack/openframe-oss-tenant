@@ -3,22 +3,34 @@
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   BuildingsIcon,
+  Filter02Icon,
   GraphMixSquareIcon,
   IdCardIcon,
   PlusCircleIcon,
   ShieldCheckIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { DataTable, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import {
+  Button,
+  DataTable,
+  type DateFilterResult,
+  type DateRange,
+  FilterModal,
+  PageLayout,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
-import { useCustomers } from '../hooks/use-customers';
-import { CustomersSearchInput, CustomersTableBody } from './customers-table-columns';
+import { dateRangeFromParams, dateRangeToInstantBounds, toDayParam } from '@/lib/date-filter-params';
+import { type CustomersDateQuery, useCustomers } from '../hooks/use-customers';
+import { type CustomersDateFilter, CustomersSearchInput, CustomersTableBody } from './customers-table-columns';
+
+const EMPTY_FILTER_GROUPS: never[] = [];
+const noopFilterChange = () => {};
 
 interface CustomersTableProps {
   status?: string;
@@ -28,8 +40,11 @@ export function CustomersTable({ status }: CustomersTableProps) {
   const router = useRouter();
   const askMingo = useAskMingo();
 
-  const { params, setParam } = useApiParams({
+  const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
+    dateFrom: { type: 'string', default: '' },
+    dateTo: { type: 'string', default: '' },
+    sortDirection: { type: 'string', default: 'desc' },
   });
 
   // Local search keeps typing responsive; the shared hook debounces it to the
@@ -40,10 +55,42 @@ export function CustomersTable({ status }: CustomersTableProps) {
     debouncedSearch,
   } = useSearchParam(params.search, value => setParam('search', value), 500);
   const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  // Applied last-activity filter restored from the URL
+  const dateRange: DateRange | undefined = useMemo(
+    () => dateRangeFromParams(params.dateFrom, params.dateTo),
+    [params.dateFrom, params.dateTo],
+  );
+  const sortDirection: CustomersDateQuery['sortDirection'] = params.sortDirection === 'asc' ? 'asc' : 'desc';
+
+  const dateQuery: CustomersDateQuery = useMemo(() => {
+    const bounds = dateRangeToInstantBounds(dateRange);
+    return { lastActivityFrom: bounds.from, lastActivityTo: bounds.to, sortDirection };
+  }, [dateRange, sortDirection]);
+
+  const handleDateFilterApply = useCallback(
+    (result: DateFilterResult) => {
+      setParams({
+        // Default direction stays out of the URL
+        sortDirection: result.sort === 'desc' ? '' : result.sort,
+        dateFrom: result.range?.from ? toDayParam(result.range.from) : '',
+        dateTo: result.range?.to ? toDayParam(result.range.to) : '',
+      });
+      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
+    },
+    [setParams],
+  );
+
+  const dateFilter: CustomersDateFilter = useMemo(
+    () => ({ sortDirection, range: dateRange, onApply: handleDateFilterApply }),
+    [sortDirection, dateRange, handleDateFilterApply],
+  );
 
   const { customers, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useCustomers(
     debouncedSearch,
     status,
+    dateQuery,
   );
 
   const isInitialMountRef = useRef(true);
@@ -61,7 +108,7 @@ export function CustomersTable({ status }: CustomersTableProps) {
     router.push('/customers/new');
   }, [router]);
 
-  const showEmptyState = !isLoading && !debouncedSearch && customers.length === 0;
+  const showEmptyState = !isLoading && !debouncedSearch && !dateRange && customers.length === 0;
 
   const actions = useMemo(
     () => [
@@ -122,14 +169,23 @@ export function CustomersTable({ status }: CustomersTableProps) {
             <div className="flex-1 min-w-0">
               <CustomersSearchInput value={localSearch} onChange={setLocalSearch} />
             </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileFilterOpen(true)}
+              aria-label="Open filters"
+              leftIcon={<Filter02Icon />}
+            />
           </div>
 
           <CustomersTableBody
             customers={customers}
             isLoading={isLoading}
-            emptyMessage="No customers found. Try adjusting your search."
+            emptyMessage="No customers found. Try adjusting your search or filters."
             skeletonRows={10}
             stickyHeaderOffset={stickyHeaderOffset}
+            dateFilter={dateFilter}
             footerSlot={
               hasNextPage && (
                 <DataTable.InfiniteFooter
@@ -143,6 +199,19 @@ export function CustomersTable({ status }: CustomersTableProps) {
           />
         </div>
       )}
+
+      <FilterModal
+        isOpen={mobileFilterOpen}
+        onClose={() => setMobileFilterOpen(false)}
+        filterGroups={EMPTY_FILTER_GROUPS}
+        onFilterChange={noopFilterChange}
+        dateFilter={{
+          title: 'Last Activity',
+          sort: sortDirection,
+          range: dateRange,
+          onChange: handleDateFilterApply,
+        }}
+      />
     </PageLayout>
   );
 }
