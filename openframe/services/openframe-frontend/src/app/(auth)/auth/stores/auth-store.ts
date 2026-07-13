@@ -150,6 +150,10 @@ export const useAuthStore = create<AuthState>()(
               set(state => {
                 if (state.user) {
                   const { image, ...rest } = fullProfile;
+                  // Roles come from the auth session (/me); the profile GET can
+                  // return a different set, so dropping it here keeps the role
+                  // label stable instead of flickering when both responses land.
+                  delete rest.roles;
                   Object.assign(state.user, rest);
                   if (
                     image &&
