@@ -95,7 +95,7 @@ export function ReleaseDetailClient() {
       VideoDisplaySection={VideoDisplaySection}
       roadmapApiEndpoint={EP.roadmap}
       deliveryApiEndpoint={EP.delivery}
-      backButton={{ label: 'Back', href: `${HELP_CENTER_BASE}/releases` }}
+      backButton={{ label: 'Back to releases', href: `${HELP_CENTER_BASE}/releases` }}
     />
   );
 }

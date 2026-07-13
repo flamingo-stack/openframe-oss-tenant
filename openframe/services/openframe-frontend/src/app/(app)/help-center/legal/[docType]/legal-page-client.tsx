@@ -43,7 +43,7 @@ export function LegalPageClient() {
       shell={false}
       docType={docType}
       apiEndpoint={EP.legal(docType)}
-      backButton={{ label: 'Back', href: HELP_CENTER_BASE }}
+      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
       {...copy}
     />
   );

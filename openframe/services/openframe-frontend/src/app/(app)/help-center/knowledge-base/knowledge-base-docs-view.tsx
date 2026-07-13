@@ -62,7 +62,7 @@ export function KnowledgeBaseDocsView({ docPath }: { docPath: string }) {
       resolveLinkEndpoint={EP.docsResolveLink}
       searchEndpoint={EP.docsSearch}
       documentTypeRenderers={{ markdown: markdownRenderer }}
-      backButton={{ label: 'Back', href: HELP_CENTER_BASE }}
+      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
     />
   );
 }

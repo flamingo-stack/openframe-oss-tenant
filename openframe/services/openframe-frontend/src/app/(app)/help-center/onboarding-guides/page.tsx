@@ -17,7 +17,7 @@ export default function OnboardingGuidesCatalogRoute() {
       guidesEndpoint={EP.onboarding}
       sectionsEndpoint={EP.onboardingSections}
       basePath={`${HELP_CENTER_BASE}/onboarding-guides`}
-      backButton={{ label: 'Back', href: HELP_CENTER_BASE }}
+      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
     />
   );
 }

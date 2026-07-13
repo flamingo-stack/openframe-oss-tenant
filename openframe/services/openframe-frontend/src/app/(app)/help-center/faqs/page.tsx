@@ -16,7 +16,7 @@ export default function FaqsRoute() {
       shell={false}
       subtitle="Answers to the most common questions about OpenFrame."
       apiBaseUrl={CONTENT_API_BASE}
-      backButton={{ label: 'Back', href: HELP_CENTER_BASE }}
+      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
     />
   );
 }
