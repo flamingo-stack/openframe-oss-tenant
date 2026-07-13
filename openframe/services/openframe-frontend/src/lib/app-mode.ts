@@ -3,6 +3,7 @@
  * Controls whether the app runs in auth-only mode or full application mode
  */
 
+import { isNativeShell } from './native-shell';
 import { runtimeEnv } from './runtime-config';
 
 export type AppMode = 'oss-tenant' | 'saas-tenant' | 'saas-shared';
@@ -90,8 +91,10 @@ export function isRouteAllowedInCurrentMode(pathname: string): boolean {
   }
 
   if (mode === 'saas-tenant') {
-    // App-only mode: block all auth routes
-    return !pathname.startsWith('/auth');
+    // App-only mode: block all auth routes — except in the native shell, where
+    // the auth pages are the sign-in entry point (email → tenant discovery →
+    // provider selection → system-browser OAuth).
+    return isNativeShell() || !pathname.startsWith('/auth');
   }
 
   if (mode === 'oss-tenant') {
@@ -116,6 +119,10 @@ export function getDefaultRedirectPath(isAuthenticated: boolean): string {
   }
 
   if (mode === 'saas-tenant') {
+    // Native shell has auth pages enabled — land unauthenticated users there.
+    if (isNativeShell() && !isAuthenticated) {
+      return '/auth';
+    }
     // App-only: send users to the app landing (no auth pages)
     return '/dashboard';
   }

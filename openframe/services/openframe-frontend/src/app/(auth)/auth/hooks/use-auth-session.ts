@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { isNativeShell } from '@/lib/native-shell';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { useAuthStore } from '../stores/auth-store';
 
@@ -40,6 +41,14 @@ export function useAuthSession() {
   const query = useQuery<MeResponse | null>({
     queryKey: authSessionQueryKey,
     queryFn: async () => {
+      // Host-less native-shell boot (dynamic tenant, before the first login):
+      // there is no gateway to ask yet — an API fetch would hit the bundle's
+      // own asset origin and never yield a 401 (Tauri's SPA fallback even
+      // answers 200 with HTML). Resolve as signed-out so RouteGuard lands on
+      // /auth for tenant discovery instead of an endless shell skeleton.
+      if (isNativeShell() && !runtimeEnv.tenantHostUrl()) {
+        return null;
+      }
       const response = await apiClient.me<MeResponse>();
       if (response.ok && response.data?.authenticated) {
         return response.data;

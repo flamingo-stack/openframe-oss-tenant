@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { PublicEnvScript } from 'next-runtime-env';
 import { Suspense } from 'react';
 import './globals.css';
@@ -82,6 +82,22 @@ export const metadata: Metadata = {
   },
 };
 
+// The viewport MUST be declared here, not as a manual <meta> in <head>: with no
+// `viewport` export Next injects its own default tag after the manual one, and
+// WebKit applies the last tag — which silently dropped maximum-scale and
+// viewport-fit. Scale is pinned only in static-export (native WebView shell)
+// builds to kill WebKit's focus-on-input auto-zoom; the web build keeps
+// default scaling so browser pinch-zoom stays available.
+export function generateViewport(): Viewport {
+  const isStaticExport = process.env.OPENFRAME_BUILD_TARGET === 'export';
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
+    ...(isStaticExport ? { maximumScale: 1, userScalable: false } : {}),
+  };
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   // Static-export (native-shell) builds have no server to populate
   // next-runtime-env, so the Capacitor/Tauri shell injects window.__ENV before
@@ -90,10 +106,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning className={`dark ${azeretMono.variable} ${dmSans.variable}`}>
       <head>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-        />
         {!isStaticExport && <PublicEnvScript />}
         {/* Seeds the sidebar width before first paint so the SSR'd skeleton
             honors the persisted collapsed state instead of flashing expanded. */}

@@ -68,16 +68,11 @@ const mingoDialogAction = (dialogId: string): NotificationAction =>
     ? { label: 'Open Chat', mingoDialogId: dialogId }
     : { label: 'Open Chat', route: mingoDialogRoute(dialogId) };
 
-/**
- * Resolve the navigation action a notification offers (button label + route), or null when it
- * points at no entity the admin UI can open (e.g. a client-side AI dialog).
- */
-export function resolveNotificationAction(notification: Notification): NotificationAction | null {
-  const meta = notification.meta ?? {};
-  const contextType = typeof meta.contextType === 'string' ? meta.contextType : null;
-  const dialogId = typeof meta.dialogId === 'string' ? meta.dialogId : null;
-  const ticketId = typeof meta.ticketId === 'string' ? meta.ticketId : null;
-
+function resolveAction(
+  contextType: string | null,
+  ticketId: string | null,
+  dialogId: string | null,
+): NotificationAction | null {
   // Approval requests live in their ticket when one exists, otherwise the mingo dialog.
   if (contextType === ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE) {
     if (ticketId) return { label: 'Ticket Details', route: ticketRoute(ticketId) };
@@ -95,6 +90,32 @@ export function resolveNotificationAction(notification: Notification): Notificat
   }
 
   return null;
+}
+
+/**
+ * Resolve the navigation action a notification offers (button label + route), or null when it
+ * points at no entity the admin UI can open (e.g. a client-side AI dialog).
+ */
+export function resolveNotificationAction(notification: Notification): NotificationAction | null {
+  const meta = notification.meta ?? {};
+  return resolveAction(
+    typeof meta.contextType === 'string' ? meta.contextType : null,
+    typeof meta.ticketId === 'string' ? meta.ticketId : null,
+    typeof meta.dialogId === 'string' ? meta.dialogId : null,
+  );
+}
+
+/**
+ * Route for a raw NATS notification envelope (`context.type/ticketId/dialogId`), before it has
+ * been shaped into a store record — the native shell's OS-toast click path (`notification:click`
+ * from the Rust notification plane) hands the wire payload over as-is. Drawer-only actions
+ * (mingoDialogId) have no URL and resolve to null — callers fall back.
+ */
+export function resolveNatsNotificationRoute(payload: unknown): string | null {
+  const context = (payload as { context?: Record<string, unknown> } | null | undefined)?.context ?? {};
+  const str = (value: unknown) => (typeof value === 'string' && value ? value : null);
+  const action = resolveAction(str(context.type), str(context.ticketId), str(context.dialogId));
+  return action && 'route' in action ? action.route : null;
 }
 
 /** Convenience for callers that only need a router route (drawer actions yield null). */

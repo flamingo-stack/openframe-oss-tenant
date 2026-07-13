@@ -7,7 +7,7 @@
  * and mirror them in module memory because many callers (fetch interceptors,
  * WebSocket URL builders) need synchronous reads.
  */
-import { isNativeShell, nativeAuthPlugin } from './native-shell';
+import { isNativeShell, nativeAuthPlugin, onNativeTokenUpdate } from './native-shell';
 import { runtimeEnv } from './runtime-config';
 
 export const ACCESS_TOKEN_KEY = 'of_access_token';
@@ -27,6 +27,13 @@ export function initTokenStore(): Promise<void> {
   if (!hydration) {
     hydration = (async () => {
       if (!isNativeShell()) return;
+      // Shells with a shell-side refresher rotate tokens while the webview is
+      // idle — mirror every rotation into the cache. The event carries the
+      // full stored set, so an empty payload means the session is over.
+      onNativeTokenUpdate(tokens => {
+        cachedAccessToken = tokens.accessToken || null;
+        cachedRefreshToken = tokens.refreshToken || null;
+      });
       try {
         const tokens = await nativeAuthPlugin()?.getTokens();
         cachedAccessToken = tokens?.accessToken || null;

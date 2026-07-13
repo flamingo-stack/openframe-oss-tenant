@@ -32,6 +32,7 @@ import { getNavigationItems } from '../../lib/navigation-config';
 import { AppShellSkeleton } from './app-shell-skeleton';
 import { ChatDrawerErrorBoundary } from './chat-drawer-error-boundary';
 import { InitialSetupBar } from './initial-setup-bar';
+import { NativePushInitializer } from './native-push-initializer';
 import { type UnreadCountsByCategory, UnreadCountsHydrator } from './notifications/unread-counts-hydrator';
 import { OnboardingCoachMark } from './onboarding-coach-mark';
 import { OnboardingProgressHydrator } from './onboarding-progress-hydrator';
@@ -378,9 +379,12 @@ function AppLayoutInner({ children, mainClassName }: { children: React.ReactNode
   }
 
   return (
-    <SubscriptionGuard fallback={<AppShellSkeleton />}>
-      <AppShell mainClassName={mainClassName}>{children}</AppShell>
-    </SubscriptionGuard>
+    <>
+      <NativePushInitializer />
+      <SubscriptionGuard fallback={<AppShellSkeleton />}>
+        <AppShell mainClassName={mainClassName}>{children}</AppShell>
+      </SubscriptionGuard>
+    </>
   );
 }
 

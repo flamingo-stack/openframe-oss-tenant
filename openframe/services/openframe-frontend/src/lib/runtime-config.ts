@@ -1,4 +1,5 @@
 import { env } from 'next-runtime-env';
+import { getStoredTenantHost } from './native-shell';
 
 function getEnvVar(key: string): string | undefined {
   try {
@@ -20,7 +21,10 @@ function getEnvVar(key: string): string | undefined {
 
 export const runtimeEnv = {
   tenantHostUrl(): string {
-    return getEnvVar('NEXT_PUBLIC_TENANT_HOST_URL') || '';
+    // Native shell: a host learned at login (callback origin, server-resolved
+    // from the tenant registry) backs up the build-time value so one binary
+    // can serve any tenant.
+    return getEnvVar('NEXT_PUBLIC_TENANT_HOST_URL') || getStoredTenantHost() || '';
   },
   sharedHostUrl(): string {
     return getEnvVar('NEXT_PUBLIC_SHARED_HOST_URL') || '';

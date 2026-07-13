@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { authApiClient } from '@/lib/auth-api-client';
 import { nativeLogin } from '@/lib/native-login';
+import { unregisterNativePush } from '@/lib/native-push';
 import { isNativeShell } from '@/lib/native-shell';
 import { routes } from '@/lib/routes';
 import { runtimeEnv } from '@/lib/runtime-config';
@@ -26,6 +27,7 @@ export interface TenantDiscoveryResponse {
   has_existing_accounts: boolean;
   tenant_id?: string | null;
   auth_providers?: string[] | null;
+  domain?: string | null;
 }
 
 interface RegisterRequest {
@@ -104,7 +106,7 @@ export function useAuth() {
         const tenantInfo = {
           tenantId: data.tenant_id,
           tenantName: '',
-          tenantDomain: 'localhost',
+          tenantDomain: data.domain || 'localhost',
         };
         const providers = data.auth_providers || ['openframe-sso'];
 
@@ -214,8 +216,15 @@ export function useAuth() {
         setTenantId(tenantInfo.tenantId);
 
         if (isNativeShell()) {
-          // System-browser login sheet; tokens land in the Keychain.
-          await nativeLogin({ tenantId: tenantInfo.tenantId, provider });
+          const { tenantHostChanged } = await nativeLogin({
+            tenantId: tenantInfo.tenantId,
+            provider,
+            tenantDomain: tenantInfo.tenantDomain !== 'localhost' ? tenantInfo.tenantDomain : undefined,
+          });
+          if (tenantHostChanged) {
+            window.location.assign('/dashboard');
+            return;
+          }
           triggerAuthRecheck();
           router.push(routes.dashboard);
           setIsLoading(false);
@@ -254,8 +263,14 @@ export function useAuth() {
       storeTenantId || currentUser?.tenantId || currentUser?.organizationId || tenantInfo?.tenantId;
 
     // In the native shell revoke server-side BEFORE clearing local tokens —
-    // logoutAsync needs the stored refresh token to send the Refresh-Token header.
+    // logoutAsync needs the stored refresh token to send the Refresh-Token header,
+    // and the push-token DELETE is an authenticated call.
     if (isNativeShell()) {
+      try {
+        await unregisterNativePush();
+      } catch {
+        // Best-effort; the backend also prunes tokens on APNs rejections.
+      }
       try {
         await authApiClient.logoutAsync(effectiveTenantId);
       } catch {

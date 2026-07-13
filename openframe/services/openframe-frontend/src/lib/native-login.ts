@@ -6,21 +6,44 @@
  * gateway; not for production tenants.
  */
 import { authApiClient } from './auth-api-client';
-import { nativeAuthPlugin } from './native-shell';
+import { nativeAuthPlugin, storeTenantHost } from './native-shell';
 import { runtimeEnv } from './runtime-config';
 import { setTokens } from './token-store';
 
 const CALLBACK_PATH = '/auth/mobile-callback';
 
-export async function nativeLogin(options: { tenantId: string; provider?: string }): Promise<void> {
+export interface NativeLoginResult {
+  /**
+   * True when the callback landed on a different host than the one the app
+   * booted with (first login of a host-less build, or a tenant change). The
+   * learned host is already persisted, but module-level state may still hold
+   * the old value — callers should do a full navigation instead of an SPA
+   * route so every client re-initializes against the new host.
+   */
+  tenantHostChanged: boolean;
+}
+
+export async function nativeLogin(options: {
+  tenantId: string;
+  provider?: string;
+  tenantDomain?: string;
+}): Promise<NativeLoginResult> {
   const plugin = nativeAuthPlugin();
   if (!plugin) {
     throw new Error('Native auth plugin unavailable');
   }
 
-  const tenantHost = runtimeEnv.tenantHostUrl();
+  const discoveredHost = options.tenantDomain
+    ? options.tenantDomain.startsWith('http')
+      ? options.tenantDomain
+      : `https://${options.tenantDomain}`
+    : '';
+  const bootHost = runtimeEnv.tenantHostUrl();
+  const tenantHost = discoveredHost || bootHost;
   if (!tenantHost) {
-    throw new Error('NEXT_PUBLIC_TENANT_HOST_URL is not configured');
+    throw new Error(
+      'No tenant host available — discovery returned no domain and NEXT_PUBLIC_TENANT_HOST_URL is not configured',
+    );
   }
 
   // The BFF only accepts http(s) redirect targets, so the callback is an https
@@ -50,4 +73,17 @@ export async function nativeLogin(options: { tenantId: string; provider?: string
   }
 
   await setTokens({ accessToken, refreshToken });
+
+  const learnedHost = new URL(resultUrl).origin;
+  storeTenantHost(learnedHost);
+  // Also persist it shell-side: the shell refreshes tokens (and later runs
+  // background NATS) with its own networking, which must not depend on
+  // webview localStorage.
+  try {
+    await plugin.setTenantHost?.({ origin: learnedHost });
+  } catch {
+    // Optional capability — older shells (mobile) don't implement it.
+  }
+
+  return { tenantHostChanged: learnedHost !== bootHost.replace(/\/$/, '') };
 }
