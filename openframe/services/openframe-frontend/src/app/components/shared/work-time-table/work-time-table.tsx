@@ -130,7 +130,7 @@ const timeColumn: ColumnDef<WorkTimeRow> = {
     </div>
   ),
   enableSorting: false,
-  meta: { width: 'w-32 shrink-0 flex-none' },
+  meta: { width: 'w-24 md:w-32 shrink-0 flex-none' },
 };
 
 const customerColumn: ColumnDef<WorkTimeRow> = {
@@ -154,7 +154,7 @@ const customerColumn: ColumnDef<WorkTimeRow> = {
     );
   },
   enableSorting: false,
-  meta: { width: 'min-w-0 flex-1' },
+  meta: { width: 'min-w-0 flex-1', hideAt: 'md' },
 };
 
 const ticketNotesColumn: ColumnDef<WorkTimeRow> = {
@@ -171,7 +171,7 @@ const ticketNotesColumn: ColumnDef<WorkTimeRow> = {
     );
   },
   enableSorting: false,
-  meta: { width: 'min-w-0 flex-1' },
+  meta: { width: 'min-w-0 flex-1', hideAt: 'md' },
 };
 
 function buildColumns(
@@ -206,7 +206,7 @@ function buildColumns(
       </div>
     ),
     enableSorting: false,
-    meta: { width: 'w-28 shrink-0 flex-none', align: 'right' },
+    meta: { width: 'w-24 md:w-28 shrink-0 flex-none', align: 'right' },
   };
 
   return [

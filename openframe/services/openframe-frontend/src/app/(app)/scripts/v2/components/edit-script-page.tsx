@@ -170,7 +170,6 @@ function EditScriptForm({ scriptId, initialValues, initialTags, loading = false 
         title={isEditMode ? 'Edit Script' : 'New Script'}
         backFallback={isEditMode && scriptId ? routes.scriptsV2.details(scriptId) : routes.scriptsV2.list}
         actions={actions}
-        className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       >
         <ScriptFormFields
           form={form}

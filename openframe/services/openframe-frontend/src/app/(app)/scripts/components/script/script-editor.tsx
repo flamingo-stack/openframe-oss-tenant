@@ -11,6 +11,32 @@ const Editor = dynamic(() => import('@monaco-editor/react').then(m => m.default)
 
 const ODS_THEME_NAME = 'ods-dark';
 
+// Monaco's Safari/WebKit clipboard workaround cancels its pending clipboard-write
+// promise on every click and logs the benign CancellationError as a console error
+// (microsoft/monaco-editor#4389, unfixed upstream). Override the standalone log
+// service to drop cancellation errors — the same treatment vscode's own
+// onUnexpectedError gives them. Applied on the first editor mount, then shared by
+// every Monaco instance on the page.
+const noop = () => {};
+const MONACO_SERVICE_OVERRIDES = {
+  logService: {
+    getLevel: () => 3, // LogLevel.Info — parity with monaco's default
+    setLevel: noop,
+    onDidChangeLogLevel: () => ({ dispose: noop }),
+    trace: noop,
+    debug: noop,
+    info: (...args: unknown[]) => console.info(...args),
+    warn: (...args: unknown[]) => console.warn(...args),
+    error: (...args: unknown[]) => {
+      const [head] = args;
+      if (head instanceof Error && head.name === 'Canceled' && head.message === 'Canceled') return;
+      console.error(...args);
+    },
+    flush: noop,
+    dispose: noop,
+  },
+};
+
 const SHELL_TO_LANGUAGE: Record<string, string> = {
   powershell: 'powershell',
   cmd: 'bat',
@@ -128,6 +154,7 @@ export function ScriptEditor({
         language={language}
         value={value}
         theme={ODS_THEME_NAME}
+        overrideServices={MONACO_SERVICE_OVERRIDES}
         beforeMount={handleBeforeMount}
         onMount={handleMount}
         onChange={handleChange}

@@ -157,7 +157,7 @@ export function LoggingStep({
       {
         id: 'open',
         enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+        meta: { width: 'w-12 shrink-0 flex-none', hideAt: 'md', align: 'right' },
         cell: ({ row }: { row: Row<LogRow> }) => (
           <div data-no-row-click className="pointer-events-auto flex items-center justify-end">
             <Button

@@ -361,7 +361,7 @@ function ScriptExecutionsContent({
           </div>
         ),
         enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+        meta: { width: 'w-12 shrink-0 flex-none', hideAt: 'md', align: 'right' },
       },
     ],
     [renderRowActions, router, executionHref, statusOptions, initiatorOptions, machineOptions],

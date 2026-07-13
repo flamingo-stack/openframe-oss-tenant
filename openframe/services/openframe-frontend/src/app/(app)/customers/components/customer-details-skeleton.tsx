@@ -116,7 +116,7 @@ const EMPTY_SKELETON_ROWS: unknown[] = [];
  * Renders an empty `DataTable` with `loading=true` so the skeleton matches the
  * real table's column layout 1:1.
  */
-function makeTableTabSkeleton(columns: Array<{ id: string; header: string; width: string }>) {
+function makeTableTabSkeleton(columns: Array<{ id: string; header: string; width: string; hideAt?: 'md' | 'lg' }>) {
   function Component({ titleWidth, actionWidth }: { titleWidth: string; actionWidth?: string }) {
     const colDefs = useMemo<ColumnDef<unknown>[]>(
       () =>
@@ -125,7 +125,7 @@ function makeTableTabSkeleton(columns: Array<{ id: string; header: string; width
           accessorKey: col.id,
           header: col.header,
           enableSorting: false,
-          meta: { width: col.width },
+          meta: { width: col.width, hideAt: col.hideAt },
         })),
       [],
     );
@@ -154,7 +154,7 @@ const DevicesTableSkeletonInner = makeTableTabSkeleton([
   { id: 'device', header: 'DEVICE', width: 'flex-1' },
   { id: 'status', header: 'STATUS', width: 'w-[200px]' },
   { id: 'os', header: 'OS', width: 'w-[200px]' },
-  { id: 'open', header: '', width: 'w-12 shrink-0' },
+  { id: 'open', header: '', width: 'w-12 shrink-0', hideAt: 'md' },
 ]);
 
 const TicketsTableSkeletonInner = makeTableTabSkeleton([
@@ -162,7 +162,7 @@ const TicketsTableSkeletonInner = makeTableTabSkeleton([
   { id: 'source', header: 'SOURCE', width: 'w-[240px]' },
   { id: 'created', header: 'CREATED', width: 'w-[180px]' },
   { id: 'status', header: 'STATUS', width: 'w-[140px]' },
-  { id: 'open', header: '', width: 'w-12 shrink-0' },
+  { id: 'open', header: '', width: 'w-12 shrink-0', hideAt: 'md' },
 ]);
 
 const LogsTableSkeletonInner = makeTableTabSkeleton([
@@ -171,7 +171,7 @@ const LogsTableSkeletonInner = makeTableTabSkeleton([
   { id: 'tool', header: 'TOOL', width: 'w-[150px]' },
   { id: 'source', header: 'SOURCE', width: 'w-[180px]' },
   { id: 'description', header: 'LOG DETAILS', width: 'flex-1' },
-  { id: 'open', header: '', width: 'w-12 shrink-0' },
+  { id: 'open', header: '', width: 'w-12 shrink-0', hideAt: 'md' },
 ]);
 
 export function CustomerDevicesTabSkeleton() {

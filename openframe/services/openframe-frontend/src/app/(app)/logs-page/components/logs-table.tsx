@@ -523,7 +523,7 @@ function LogsTableContent({
           </div>
         ),
         enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+        meta: { width: 'w-12 shrink-0 flex-none', hideAt: 'md', align: 'right' },
       },
     ],
     [logFilters, getLogDetailsUrl, organizationLocked, dateRange, sortDirection, onDateFilterApply],
@@ -758,7 +758,7 @@ export function LogsTableSkeleton() {
       {
         id: 'open',
         enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+        meta: { width: 'w-12 shrink-0 flex-none', hideAt: 'md', align: 'right' },
       },
     ],
     [],
