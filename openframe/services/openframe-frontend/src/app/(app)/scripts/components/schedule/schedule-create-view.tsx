@@ -189,7 +189,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
       <PageLayout
         title={isEditMode ? 'Edit Script Schedule' : 'New Script Schedule'}
         backButton={{
-          label: isEditMode ? 'Back' : 'Back',
+          label: 'Back',
           onClick: handleBack,
         }}
         actions={actions}

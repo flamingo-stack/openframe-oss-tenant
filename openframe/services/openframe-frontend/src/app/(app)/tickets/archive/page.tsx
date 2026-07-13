@@ -3,6 +3,7 @@
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { routes } from '@/lib/routes';
@@ -10,7 +11,7 @@ import { ArchivedTickets } from '../components/tickets-table';
 
 export default function TicketsArchive() {
   const router = useRouter();
-  const handleBack = useCallback(() => router.replace(routes.tickets.list), [router]);
+  const handleBack = useSafeBack(routes.tickets.list);
   const { params, setParam } = useApiParams({
     search: { type: 'string', default: '' },
     labelIds: { type: 'array', default: [] },

@@ -198,7 +198,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
         image={{ src: logoSrc || '', alt: organization.name || 'Customer' }}
         className="md:px-[var(--spacing-system-l)] md:pb-[var(--spacing-system-l)]"
         backButton={{
-          label: isArchived ? 'Back' : 'Back',
+          label: 'Back',
           onClick: handleBack,
         }}
         actions={actions}

@@ -103,7 +103,7 @@ export function TicketStatusesView() {
   return (
     <PageLayout
       title="Ticket Statuses"
-      backButton={{ label: 'Back to Tickets', onClick: handleBack }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       actions={actions}
       actionsVariant="primary-buttons"
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"

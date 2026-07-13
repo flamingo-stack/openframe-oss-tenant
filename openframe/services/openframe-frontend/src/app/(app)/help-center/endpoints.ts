@@ -21,7 +21,19 @@ import type { EndpointsRuntime } from '@flamingo-stack/openframe-frontend-core/c
 const CONTENT_BASE = '/content';
 const CONTENT = `${CONTENT_BASE}/api`;
 
-/** The route prefix this whole section is mounted under. */
+/**
+ * The route prefix this whole section is mounted under.
+ *
+ * Also the fixed `href` target for every Help Center page's back button.
+ * These pages are INTENTIONALLY left out of the app-wide "generic Back that
+ * returns to the actual previous page" (`useSafeBack`) unification: they are
+ * rendered by lib components (`RoadmapPage`, `FaqDocumentPage`,
+ * `HelpCenterList`, …) whose `backButton` prop only accepts `{ label, href }`
+ * — no `onClick`, so `useSafeBack` can't be wired in without a core-lib change.
+ * The specific labels ("Back to Help Center" / "Back to releases") are kept on
+ * purpose: they are accurate for this fixed destination. Switching to a lone
+ * "Back" would imply history-back that these buttons don't actually perform.
+ */
 export const HELP_CENTER_BASE = '/help-center';
 
 /** Route the knowledge-base docs hub (`<DocsHubPage>`) is mounted under — base
