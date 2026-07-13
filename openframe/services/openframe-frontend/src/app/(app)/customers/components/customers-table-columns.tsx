@@ -162,7 +162,7 @@ export const buildCustomersColumns = (dateFilter?: CustomersDateFilter): ColumnD
       </div>
     ),
     enableSorting: false,
-    meta: { width: 'w-12 shrink-0 flex-none ml-auto', align: 'right' },
+    meta: { width: 'w-12 shrink-0 flex-none ml-auto', hideAt: 'md', align: 'right' },
   },
 ];
 

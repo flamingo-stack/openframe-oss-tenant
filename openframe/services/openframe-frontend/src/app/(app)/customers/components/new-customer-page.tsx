@@ -341,6 +341,7 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
         label: 'Back',
         onClick: handleBack,
       }}
+      actionsVariant="primary-buttons"
       actions={[
         {
           label: isSubmitting ? 'Saving...' : 'Save Customer',

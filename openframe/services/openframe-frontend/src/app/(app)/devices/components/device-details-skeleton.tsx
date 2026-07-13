@@ -189,7 +189,7 @@ function SearchInputSkeleton({ placeholder }: { placeholder: string }) {
   );
 }
 
-type SkeletonColumn = { id: string; header?: string; width: string };
+type SkeletonColumn = { id: string; header?: string; width: string; hideAt?: 'md' | 'lg' };
 
 const EMPTY_TABLE_ROWS: unknown[] = [];
 
@@ -207,7 +207,7 @@ function TableTabSkeleton({ columns, placeholder }: { columns: SkeletonColumn[];
         accessorKey: col.id,
         header: col.header ?? '',
         enableSorting: false,
-        meta: { width: col.width },
+        meta: { width: col.width, hideAt: col.hideAt },
       })),
     [columns],
   );
@@ -252,7 +252,7 @@ const VULNERABILITIES_SKELETON_COLUMNS: SkeletonColumn[] = [
   { id: 'cve', header: 'CVE ID', width: 'w-[20%]' },
   { id: 'severity', header: 'Severity', width: 'w-[16%]' },
   { id: 'software', header: 'Software', width: 'flex-1 min-w-0' },
-  { id: 'discovered', header: 'Discovered', width: 'w-[18%]' },
+  { id: 'discovered', header: 'Discovered', width: 'w-[18%]', hideAt: 'md' },
   { id: 'open', header: '', width: 'w-12 shrink-0 flex-none' },
 ];
 
@@ -261,15 +261,15 @@ const POLICIES_SKELETON_COLUMNS: SkeletonColumn[] = [
   { id: 'severity', header: 'Severity', width: 'w-[100px]' },
   { id: 'platform', header: 'Platform', width: 'w-[140px]' },
   { id: 'status', header: 'Status', width: 'w-[140px]' },
-  { id: 'actions', header: '', width: 'min-w-[100px] w-auto shrink-0 flex-none' },
-  { id: 'open', header: '', width: 'w-12 shrink-0 flex-none' },
+  { id: 'actions', header: '', width: 'w-12 md:w-auto md:min-w-[100px] shrink-0 flex-none' },
+  { id: 'open', header: '', width: 'w-12 shrink-0 flex-none', hideAt: 'md' },
 ];
 
 const QUERIES_SKELETON_COLUMNS: SkeletonColumn[] = [
   { id: 'name', header: 'Name', width: 'flex-1 min-w-0' },
   { id: 'frequency', header: 'Frequency', width: 'w-[120px]' },
-  { id: 'actions', header: '', width: 'min-w-[100px] w-auto shrink-0 flex-none' },
-  { id: 'open', header: '', width: 'w-12 shrink-0 flex-none' },
+  { id: 'actions', header: '', width: 'w-12 md:w-auto md:min-w-[100px] shrink-0 flex-none' },
+  { id: 'open', header: '', width: 'w-12 shrink-0 flex-none', hideAt: 'md' },
 ];
 
 // Widths must stay 1:1 with the real tickets-tab columns (see tickets-tab.tsx)
@@ -278,7 +278,7 @@ const TICKETS_SKELETON_COLUMNS: SkeletonColumn[] = [
   { id: 'title', header: 'Title', width: 'flex-1' },
   { id: 'assignee', header: 'Assignee', width: 'w-[280px]' },
   { id: 'status', header: 'Status', width: 'w-[160px]' },
-  { id: 'open', header: '', width: 'w-12 shrink-0 flex-none' },
+  { id: 'open', header: '', width: 'w-12 shrink-0 flex-none', hideAt: 'md' },
 ];
 
 /**

@@ -15,7 +15,7 @@ interface ScriptPageChromeProps {
   /** Overflow ("...") menu groups — see `PageLayout.menuActions`. */
   menuActions?: ActionsMenuGroup[];
   actionsVariant?: ComponentProps<typeof PageLayout>['actionsVariant'];
-  /** `PageLayout` className — defaults to the details/run/executions page padding. */
+  /** `PageLayout` className — defaults to the standard page padding. */
   className?: string;
   children: ReactNode;
 }
@@ -34,7 +34,7 @@ export function ScriptPageChrome({
   actions,
   menuActions,
   actionsVariant,
-  className = 'md:px-[var(--spacing-system-l)] md:pb-[var(--spacing-system-l)]',
+  className = 'px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]',
   children,
 }: ScriptPageChromeProps) {
   const handleBack = useSafeBack(backFallback);

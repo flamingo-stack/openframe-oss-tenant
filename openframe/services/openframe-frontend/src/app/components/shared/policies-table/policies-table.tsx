@@ -151,7 +151,7 @@ export function PoliciesTable({
             </div>
           ) : null,
         enableSorting: false,
-        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
+        meta: { width: 'w-12 md:w-auto md:min-w-[100px] shrink-0 flex-none', align: 'right' },
       });
     }
 
@@ -172,7 +172,7 @@ export function PoliciesTable({
           </div>
         ) : null,
       enableSorting: false,
-      meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+      meta: { width: 'w-12 shrink-0 flex-none', hideAt: 'md', align: 'right' },
     });
 
     return cols;

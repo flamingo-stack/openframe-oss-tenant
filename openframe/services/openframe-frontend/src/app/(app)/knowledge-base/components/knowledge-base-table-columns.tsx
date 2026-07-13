@@ -59,7 +59,7 @@ export const KNOWLEDGE_BASE_OPEN_COLUMN: ColumnDef<KnowledgeBaseRow> = {
     </div>
   ),
   enableSorting: false,
-  meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+  meta: { width: 'w-12 shrink-0 flex-none', hideAt: 'md', align: 'right' },
 };
 
 export function getKnowledgeBaseColumns(mode: KnowledgeBaseTableMode): ColumnDef<KnowledgeBaseRow>[] {

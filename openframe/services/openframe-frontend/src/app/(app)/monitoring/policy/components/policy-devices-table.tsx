@@ -113,7 +113,7 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
             </div>
           ) : null,
         enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+        meta: { width: 'w-12 shrink-0 flex-none', hideAt: 'md', align: 'right' },
       },
     ],
     [],

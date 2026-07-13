@@ -393,8 +393,8 @@ export function DeviceSelector({
 
           if (disabledReason) {
             return (
-              <div data-no-row-click className="flex items-center justify-end gap-2 w-[130px] pointer-events-auto">
-                <span className="text-xs text-ods-text-secondary text-right leading-tight whitespace-pre-line">
+              <div data-no-row-click className="flex items-center justify-end gap-2 w-full pointer-events-auto">
+                <span className="max-md:hidden text-xs text-ods-text-secondary text-right leading-tight whitespace-pre-line">
                   {disabledReason}
                 </span>
                 <Button
@@ -414,7 +414,7 @@ export function DeviceSelector({
 
           if (activeSubTab === 'selected') {
             return (
-              <div data-no-row-click className="flex items-center justify-end w-[130px] pointer-events-auto">
+              <div data-no-row-click className="flex items-center justify-end w-full pointer-events-auto">
                 <Button
                   variant="outline"
                   size="icon"
@@ -428,7 +428,7 @@ export function DeviceSelector({
           }
 
           return (
-            <div data-no-row-click className="flex items-center justify-end w-[130px] pointer-events-auto">
+            <div data-no-row-click className="flex items-center justify-end w-full pointer-events-auto">
               <Button
                 variant="outline"
                 size="icon"
@@ -445,7 +445,7 @@ export function DeviceSelector({
           );
         },
         enableSorting: false,
-        meta: { width: 'min-w-[130px] w-auto shrink-0 flex-none', align: 'right' },
+        meta: { width: 'w-12 md:w-auto md:min-w-[130px] shrink-0 flex-none', align: 'right' },
       },
     ],
     [
