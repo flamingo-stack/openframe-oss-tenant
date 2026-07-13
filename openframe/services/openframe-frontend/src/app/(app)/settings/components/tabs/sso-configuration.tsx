@@ -20,6 +20,7 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { routes } from '@/lib/routes';
 import { type AvailableProvider, type ProviderConfig, useSsoConfig } from '../../hooks/use-sso-config';
 import { type TenantDomainInfo, useTenantDomain } from '../../hooks/use-tenant-domain';
@@ -360,6 +361,9 @@ export function SsoConfigurationTab() {
           });
           // Also enable the provider after saving
           await toggleProviderEnabled(modalState.providerKey, true);
+          // New onboarding has no SSO step, so the activation event fires on the
+          // actual provider save+enable (SINGULAR — backend counts it once per user).
+          trackDashboardActivity(EVENT_SUBTYPE.ADD_SSO_IDP);
           await loadData();
         }}
         onDisable={async () => {

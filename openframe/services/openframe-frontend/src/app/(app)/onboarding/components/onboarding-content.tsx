@@ -7,6 +7,7 @@ import { type ComponentType, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { UserOnboardingStep } from '@/generated/schema-enums';
 import { useOnboardingMutations } from '@/graphql/onboarding/use-onboarding-mutations';
+import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { routes } from '@/lib/routes';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { countCompleted, isStepDone, USER_ONBOARDING_STEPS } from '../onboarding-steps';
@@ -166,7 +167,10 @@ export function OnboardingContent() {
         confirmLabel="Skip Onboarding"
         cancelLabel="Cancel"
         variant="destructive"
-        onConfirm={() => skipUser(leaveOnboarding)}
+        onConfirm={() => {
+          trackDashboardActivity(EVENT_SUBTYPE.SKIP_ONBOARDING);
+          skipUser(leaveOnboarding);
+        }}
       />
     </PageLayout>
   );

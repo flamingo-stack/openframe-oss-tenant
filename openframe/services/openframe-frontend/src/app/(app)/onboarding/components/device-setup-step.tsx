@@ -10,6 +10,7 @@ import { useDevicesOverview } from '@/app/(app)/dashboard/hooks/use-dashboard-st
 import { OrgAvatar } from '@/app/components/shared';
 import { OsPlatformSelector } from '@/app/components/shared/os-platform-selector';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
+import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '@/lib/platforms';
 import { useDeviceOrganizations } from '../../devices/hooks/use-device-organizations';
 import { useInstallCommand } from '../../devices/hooks/use-install-command';
@@ -76,6 +77,7 @@ export function DeviceSetupStep({
       toast({ title: 'Secret unavailable', description: 'Registration secret not loaded yet', variant: 'destructive' });
       return;
     }
+    trackDashboardActivity(EVENT_SUBTYPE.ADD_DEVICE);
     copy(command);
   };
 
