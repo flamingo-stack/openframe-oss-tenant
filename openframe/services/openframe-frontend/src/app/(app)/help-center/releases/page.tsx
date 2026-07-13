@@ -15,7 +15,7 @@ export default function ReleasesRoute() {
       shell={false}
       releasesEndpoint={EP.productReleases}
       basePath={`${HELP_CENTER_BASE}/releases`}
-      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
+      backButton={{ label: 'Back', href: HELP_CENTER_BASE }}
     />
   );
 }

@@ -15,10 +15,6 @@ import { HELP_CENTER_BASE } from '../endpoints';
  */
 export default function TicketsPage() {
   return (
-    <HelpCenterList
-      title="Support Tickets"
-      shell={false}
-      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
-    />
+    <HelpCenterList title="Support Tickets" shell={false} backButton={{ label: 'Back', href: HELP_CENTER_BASE }} />
   );
 }

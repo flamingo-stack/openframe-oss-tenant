@@ -14,7 +14,7 @@ export default function BugFixesAndEnhancementsRoute() {
       shell={false}
       completedEndpoint={EP.deliveryCompleted}
       inProgressEndpoint={EP.deliveryInProgress}
-      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
+      backButton={{ label: 'Back', href: HELP_CENTER_BASE }}
     />
   );
 }

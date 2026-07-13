@@ -15,7 +15,7 @@ export default function RoadmapRoute() {
       roadmapEndpoint={EP.roadmap}
       buildRefreshUrl={EP.roadmapById}
       voteApiEndpoint={EP.roadmapVote}
-      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
+      backButton={{ label: 'Back', href: HELP_CENTER_BASE }}
     />
   );
 }

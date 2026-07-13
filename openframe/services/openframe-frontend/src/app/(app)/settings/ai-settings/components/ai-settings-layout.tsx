@@ -49,7 +49,7 @@ export function AiSettingsLayout({ children, actions, selector, mobileBottomActi
             className="hidden md:inline-flex group items-center justify-center self-start rounded-md gap-[var(--spacing-system-xsf)] py-[var(--spacing-system-sf)] text-ods-text-secondary hover:text-ods-text-primary transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ods-focus"
           >
             <Chevron02LeftIcon className="size-6 shrink-0" />
-            <span className="text-h4">Back to Settings</span>
+            <span className="text-h4">Back</span>
           </button>
           <h1 className="text-h2 text-ods-text-primary truncate">
             AI Settings<span className="hidden md:inline"> &amp; Guardrails</span>
