@@ -150,13 +150,23 @@ export function useSideChunkProcessor(
         setStreamingMessage(side, null);
       },
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
-        setTypingIndicator(side, !metadata?.isCompacting);
+        // Compaction emits must not FORCE the indicator off (the end-emit
+        // would unlock the composer until the continuation's first chunk);
+        // leave it as-is on compaction, set it on everything else.
+        if (!metadata?.isCompacting) setTypingIndicator(side, true);
         if (metadata?.append) {
           appendSegmentsToLastAssistant(side, segments, metadata?.streamSeq);
         } else {
           ensureAssistantMessage();
           updateStreamingMessageSegments(side, segments, metadata?.streamSeq);
         }
+      },
+      // EXECUTING_TOOL / approved APPROVAL_RESULT chunks land OUTSIDE the
+      // message_start/end window (approved commands run between the approval
+      // bubble and the continuation stream) — without this the composer
+      // unlocks while commands execute. Cleared by onStreamEnd / onError.
+      onAgentBusy: () => {
+        setTypingIndicator(side, true);
       },
       onError: (error: string) => {
         console.error(`[DialogDetails:${side}] stream error:`, error);

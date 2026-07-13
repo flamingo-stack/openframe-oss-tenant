@@ -371,6 +371,9 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
 
       setTyping: (dialogId: string, typing: boolean) => {
         set(state => {
+          // Value no-op — skip the Map clone/notify. onAgentBusy re-asserts
+          // typing on every EXECUTING_TOOL chunk, so this runs per chunk.
+          if ((state.typingStates.get(dialogId) || false) === typing) return state;
           const newMap = new Map(state.typingStates);
           newMap.set(dialogId, typing);
           return { typingStates: newMap };

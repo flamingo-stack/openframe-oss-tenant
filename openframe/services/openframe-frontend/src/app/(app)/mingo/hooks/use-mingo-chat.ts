@@ -269,7 +269,17 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     async (content: string, targetDialogId?: string, context?: MingoSendContext): Promise<boolean> => {
       const effectiveDialogId = targetDialogId || dialogId;
       if (!effectiveDialogId || !content.trim()) return false;
-      if (isTyping) return false;
+      if (isTyping) {
+        // User-typed sends never reach this guard (the composer is disabled
+        // while busy) — this catches programmatic senders (launcher prompts,
+        // quick actions) that would otherwise vanish with zero feedback.
+        toast({
+          title: 'Mingo is busy',
+          description: 'Wait for the current operation to finish, then try again',
+          duration: 4000,
+        });
+        return false;
+      }
 
       try {
         setTyping(effectiveDialogId, true);

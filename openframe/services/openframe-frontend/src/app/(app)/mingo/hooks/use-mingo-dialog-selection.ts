@@ -34,6 +34,7 @@ export function useMingoDialogSelection() {
     getStreamingMessage,
     setStreamingMessage,
     setTyping,
+    getTyping,
     getHighestStreamSeq,
     setLoadingDialog,
     setLoadingMessages,
@@ -59,11 +60,21 @@ export function useMingoDialogSelection() {
         [requestId]: APPROVAL_STATUS.APPROVED,
       }));
       updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.APPROVED);
+      // The agent resumes to execute the approved command(s) — lock the
+      // composer at click time; waiting for the EXECUTING_TOOL / continuation
+      // chunks leaves the input enabled for the whole approval round-trip.
+      // Released by the continuation's MESSAGE_END, an error chunk, Stop, or
+      // the server-IDLE self-heal below. Remember whether THIS click took the
+      // lock: if typing was already on (another approval's command still
+      // executing), a failure here must not release a lock it doesn't own.
+      const wasTyping = getTyping(activeDialogId);
+      setTyping(activeDialogId, true);
 
       try {
         await approveRequestMutation.mutateAsync(requestId);
         trackDashboardActivity(EVENT_SUBTYPE.APPROVE_MINGO_COMMAND);
       } catch (error) {
+        if (!wasTyping) setTyping(activeDialogId, false);
         toast({
           title: 'Approval Failed',
           description: error instanceof Error ? error.message : 'Unable to approve request',
@@ -72,7 +83,7 @@ export function useMingoDialogSelection() {
         });
       }
     },
-    [approveRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages],
+    [approveRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages, setTyping, getTyping],
   );
 
   const handleReject = useCallback(
@@ -84,11 +95,20 @@ export function useMingoDialogSelection() {
         [requestId]: APPROVAL_STATUS.REJECTED,
       }));
       updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.REJECTED);
+      // Lock on reject too (product choice for /mingo — the agent normally
+      // acknowledges a rejection with a follow-up turn; the lib adapter
+      // deliberately does NOT lock here, see use-nats-chat-adapter's
+      // handleReject). If no acknowledgment ever arrives, the server-IDLE
+      // self-heal below releases the lock on the next poll. Same lock
+      // ownership rule as approve.
+      const wasTyping = getTyping(activeDialogId);
+      setTyping(activeDialogId, true);
 
       try {
         await rejectRequestMutation.mutateAsync(requestId);
         trackDashboardActivity(EVENT_SUBTYPE.REJECT_MINGO_COMMAND);
       } catch (error) {
+        if (!wasTyping) setTyping(activeDialogId, false);
         toast({
           title: 'Rejection Failed',
           description: error instanceof Error ? error.message : 'Unable to reject request',
@@ -97,7 +117,7 @@ export function useMingoDialogSelection() {
         });
       }
     },
-    [rejectRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages],
+    [rejectRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages, setTyping, getTyping],
   );
 
   const handleApproveRef = useRef(handleApprove);
@@ -106,6 +126,21 @@ export function useMingoDialogSelection() {
   handleRejectRef.current = handleReject;
   const approvalStatusesRef = useRef(approvalStatuses);
   approvalStatusesRef.current = approvalStatuses;
+
+  // Composer-busy watchdog inputs. `typing without an open streaming message`
+  // is the suspicious state: it is asserted by approve/reject clicks and by
+  // onAgentBusy chunks (tool execution / approved approvals — including
+  // replayed dead tails), none of which have a guaranteed releasing
+  // MESSAGE_END. While in that state we poll the dialog and trust a FRESH
+  // server-side IDLE (fetched after the busy assertion) to clear the lock.
+  const isActiveTyping = useMingoMessagesStore(s =>
+    activeDialogId ? (s.typingStates.get(activeDialogId) ?? false) : false,
+  );
+  const lastBusyAssertAtRef = useRef(0);
+  useEffect(() => {
+    if (isActiveTyping) lastBusyAssertAtRef.current = Date.now();
+  }, [isActiveTyping]);
+  const suspiciousBusyRef = useRef(false);
 
   const dialogQuery = useQuery({
     queryKey: ['mingo-dialog', activeDialogId],
@@ -125,8 +160,11 @@ export function useMingoDialogSelection() {
     },
     enabled: !!activeDialogId,
     staleTime: 30 * 1000,
-    // Self-heals if every chunk carrying streamState=IDLE is dropped; off while idle.
-    refetchInterval: query => (query.state.data?.streamState === 'STREAMING' ? 15_000 : false),
+    // Self-heals if every chunk carrying streamState=IDLE is dropped; off while
+    // idle. Also polls while the composer is busy WITHOUT an open stream (see
+    // suspiciousBusyRef) so a stuck busy lock releases on server-IDLE proof.
+    refetchInterval: query =>
+      query.state.data?.streamState === 'STREAMING' || suspiciousBusyRef.current ? 15_000 : false,
   });
 
   const messagesQuery = useInfiniteQuery({
@@ -173,12 +211,20 @@ export function useMingoDialogSelection() {
     [messagesQuery.data?.pages],
   );
 
-  // Close a streaming entry left behind by unmounting mid-stream (onStreamEnd
-  // never fired, and the STREAM_END chunk is not guaranteed to replay). The
-  // server-side IDLE is authoritative; the seq baseline guards the race where
-  // a stale pre-stream fetch resolves as IDLE mid-stream — any chunk for this
-  // dialog since it was opened means a STREAM_END will follow and owns the
-  // closure.
+  // Self-heal stuck busy state off the authoritative server-side IDLE.
+  // Branch 1 (pre-existing): a streaming entry left behind by unmounting
+  // mid-stream (onStreamEnd never fired, and the STREAM_END chunk is not
+  // guaranteed to replay). The seq baseline guards the race where a stale
+  // pre-stream fetch resolves as IDLE mid-stream — any chunk for this dialog
+  // since it was opened means a STREAM_END will follow and owns the closure.
+  // Branch 2 (busy-lock heal): typing asserted with NO open streaming message
+  // — approve/reject click locks and onAgentBusy chunks (including replayed
+  // dead tails whose releasing MESSAGE_END is non-persisted and never
+  // replays). Nothing chunk-side is guaranteed to clear these, so a fetch
+  // that resolved AFTER the busy assertion and reports IDLE releases the
+  // lock. The timestamp gate keeps a stale pre-click IDLE from killing a
+  // legit optimistic lock; the suspicious-state poll above guarantees such a
+  // fresh fetch eventually happens.
   const dialogStreamState = dialogQuery.data?.streamState;
   const baselineSeqRef = useRef<{ dialogId: string | null; seq: number }>({ dialogId: null, seq: 0 });
   useEffect(() => {
@@ -189,15 +235,21 @@ export function useMingoDialogSelection() {
     // Only a post-mount fetch is trusted for closure — a cache-served IDLE
     // inside the staleTime window may predate a stream.
     if (dialogStreamState !== 'IDLE' || !dialogQuery.isFetchedAfterMount) return;
-    if (getHighestStreamSeq(activeDialogId) > baselineSeqRef.current.seq) return;
     if (getStreamingMessage(activeDialogId)) {
+      if (getHighestStreamSeq(activeDialogId) > baselineSeqRef.current.seq) return;
       setStreamingMessage(activeDialogId, null);
       setTyping(activeDialogId, false);
+      return;
     }
+    if (!isActiveTyping) return;
+    if (dialogQuery.dataUpdatedAt <= lastBusyAssertAtRef.current) return;
+    setTyping(activeDialogId, false);
   }, [
     activeDialogId,
     dialogStreamState,
     dialogQuery.isFetchedAfterMount,
+    dialogQuery.dataUpdatedAt,
+    isActiveTyping,
     getHighestStreamSeq,
     getStreamingMessage,
     setStreamingMessage,
@@ -210,6 +262,10 @@ export function useMingoDialogSelection() {
     activeDialogId ? (s.streamingMessages.get(activeDialogId)?.id ?? null) : null,
   );
   const streamingExemptId = dialogStreamState === 'IDLE' ? null : streamingEntryId;
+
+  // Busy without an open stream → keep the dialog poll alive (read by
+  // refetchInterval at poll time) so the branch-2 heal gets its fresh fetch.
+  suspiciousBusyRef.current = isActiveTyping && !streamingEntryId;
 
   const selectDialogMutation = useMutation({
     mutationFn: async (dialogId: string) => {

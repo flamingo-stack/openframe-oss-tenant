@@ -307,7 +307,12 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       },
 
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
-        setTyping(dialogId, !metadata?.isCompacting);
+        // Compaction emits (start AND end carry isCompacting) must not FORCE
+        // typing off: during the window the 'started' tail segment masks it
+        // via isCompacting, but the end-emit used to drop both flags at once,
+        // unlocking the composer until the continuation's first chunk. Leave
+        // typing as-is on compaction emits; set it on everything else.
+        if (!metadata?.isCompacting) setTyping(dialogId, true);
         if (metadata?.append) {
           appendSegmentsToLastAssistant(dialogId, segments, metadata?.streamSeq);
         } else {
@@ -321,6 +326,16 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         setTyping(dialogId, false);
         setStreamingMessage(dialogId, null);
         addErrorMessage(error);
+      },
+
+      // EXECUTING_TOOL / approved APPROVAL_RESULT chunks land OUTSIDE the
+      // message_start/end window (approved commands run between the approval
+      // bubble and the continuation stream), so onSegmentsUpdate never fires
+      // for them — without this the composer unlocks while commands execute.
+      // Also covers approvals resolved by another admin. Cleared by the
+      // continuation's onStreamEnd / onError / Stop.
+      onAgentBusy: () => {
+        setTyping(dialogId, true);
       },
 
       onTokenUsage: (data: TokenUsageData) => {
