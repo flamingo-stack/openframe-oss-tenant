@@ -66,11 +66,6 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      # Create the destination namespace on sync rather than depending on a
-      # separate namespace-* app to have created it first. That cross-app
-      # ordering was fragile (app-of-apps does not reliably gate wave 0 on the
-      # namespace being Healthy), causing `namespaces "<ns>" not found` on clean
-      # installs. CreateNamespace is idempotent (create-if-not-exists).
       - CreateNamespace=true
       - ServerSideApply={{ (get $app "syncOptions" | default dict).ServerSideApply | default false }}
       - RespectIgnoreDifferences={{ (get $app "syncOptions" | default dict).RespectIgnoreDifferences | default false }}

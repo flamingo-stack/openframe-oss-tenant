@@ -50,9 +50,6 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      # Create the destination namespace on sync rather than depending on a
-      # separate namespace-* app to have created it first (see platform-apps.yaml
-      # for the rationale — avoids the `namespaces "<ns>" not found` race).
       - CreateNamespace=true
       - ServerSideApply=false
       - RespectIgnoreDifferences=false
