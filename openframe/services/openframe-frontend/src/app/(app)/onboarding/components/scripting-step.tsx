@@ -22,6 +22,7 @@ import type { createScriptMutation as CreateScriptMutationType } from '@/__gener
 import { createScriptMutation } from '@/graphql/scripts/create-script-mutation';
 import { getRelayErrorMessage } from '@/lib/handle-api-error';
 import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '@/lib/platforms';
+import { routes } from '@/lib/routes';
 import { ScriptEditor } from '../../scripts/components/script/script-editor';
 import { EDIT_SCRIPT_DEFAULT_VALUES } from '../../scripts/types/edit-script.types';
 import { formToWriteInput } from '../../scripts/v2/utils/script-mappers';
@@ -94,9 +95,7 @@ export function ScriptingStep({
           toast({ title: 'Success', description: 'Script created successfully', variant: 'success' });
           // A successful create completes the onboarding step (if not already done).
           if (!completed) onComplete?.();
-          router.push(
-            newId ? onboardingHintUrl(`/scripts-v2/details?id=${newId}`, 'scripts', pathname) : '/scripts-v2',
-          );
+          router.push(newId ? onboardingHintUrl(routes.scriptsV2.details(newId), 'scripts', pathname) : '/scripts-v2');
         },
         onError: err => {
           toast({
@@ -259,7 +258,7 @@ export function ScriptingStep({
       {/* Footer: full-form link (left) + Mark as Complete + Add Script (right) */}
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <Link
-          href="/scripts-v2/new"
+          href={routes.scriptsV2.new}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-1 items-center gap-[var(--spacing-system-xs)] text-ods-text-secondary transition-colors hover:text-ods-text-primary"

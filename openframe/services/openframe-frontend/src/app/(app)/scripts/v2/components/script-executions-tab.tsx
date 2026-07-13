@@ -40,6 +40,7 @@ import { scriptExecutionsRelayFragment, scriptExecutionsRelayQuery } from '@/gra
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { decodeGlobalId } from '@/lib/relay-id';
+import { routes } from '@/lib/routes';
 import {
   executionResultText,
   executionStatusLabel,
@@ -174,7 +175,7 @@ function ScriptExecutionsContent({
     if (hasNext && !isLoadingNext) loadNext(PAGE_SIZE);
   }, [hasNext, isLoadingNext, loadNext]);
 
-  const executionHref = useCallback((execution: UiExecution) => `/scripts-v2/executions?id=${execution.id}`, []);
+  const executionHref = useCallback((execution: UiExecution) => routes.scriptsV2.execution(execution.id), []);
 
   const renderRowActions = useCallback(
     (execution: UiExecution) => {

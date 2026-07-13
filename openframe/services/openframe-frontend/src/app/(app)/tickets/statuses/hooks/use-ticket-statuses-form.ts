@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { type FieldErrors, useFieldArray, useForm } from 'react-hook-form';
 import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { useTicketStatusTransitionRules } from '../../hooks/use-ticket-status-transition-rules';
 import { type TicketStatusesPayload, ticketStatusesSchema } from '../types/ticket-statuses.types';
 import { useDeleteTicketStatusMutation, useSaveTicketStatusesMutation } from './use-ticket-statuses-mutations';
@@ -81,7 +82,7 @@ export function useTicketStatusesForm() {
       {
         onSuccess: saved => {
           reset({ customStatuses: saved });
-          safeBackOrReplace(router, '/tickets');
+          safeBackOrReplace(router, routes.tickets.list);
         },
       },
     );

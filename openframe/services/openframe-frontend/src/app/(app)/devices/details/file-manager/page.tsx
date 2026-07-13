@@ -9,6 +9,7 @@ import { getMeshCentralAgentId } from '@/app/(app)/devices/utils/device-action-u
 import { CONTEXT_ENTITY_KIND } from '@/app/(app)/mingo/context/context-types';
 import { useTrackOpenView } from '@/app/(app)/mingo/context/use-track-open-view';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 
 // Horizontal padding only — `PageLayout`'s `TitleBlock` already supplies the
 // top padding (`pt-[var(--spacing-system-l)]` = 16/24px, matching the former pt-4/md:pt-6).
@@ -16,7 +17,7 @@ const PAGE_PADDING = 'px-4 md:px-6';
 
 export default function FileManagerPage() {
   const deviceId = useSearchParams().get('id') ?? '';
-  const handleBack = useSafeBack(`/devices/details?id=${deviceId}`);
+  const handleBack = useSafeBack(routes.devices.details(deviceId));
 
   const { deviceDetails, isLoading, error } = useDeviceDetails(deviceId, { polling: false });
 

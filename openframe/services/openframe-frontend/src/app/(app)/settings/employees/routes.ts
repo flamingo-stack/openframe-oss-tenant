@@ -1,3 +1,6 @@
+import { routes } from '@/lib/routes';
+
 // Shared by the employees table (row link / open-in-new-tab) and the header
-// profile menu — keep the route in one place so every entry point stays in sync.
-export const employeeDetailHref = (id: string) => `/settings/employees/details?id=${id}`;
+// profile menu — kept as a thin alias over the central registry so every entry
+// point stays in sync.
+export const employeeDetailHref = (id: string) => routes.settings.employeeDetails(id);

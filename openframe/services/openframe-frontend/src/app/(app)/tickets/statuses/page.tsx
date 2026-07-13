@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { isSaasTenantMode } from '@/lib/app-mode';
+import { routes } from '@/lib/routes';
 import { TicketStatusesView } from './components/ticket-statuses-view';
 
 export default function TicketStatusesPage() {
@@ -10,7 +11,7 @@ export default function TicketStatusesPage() {
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
-      router.replace('/dashboard');
+      router.replace(routes.dashboard);
       return;
     }
   }, [router]);

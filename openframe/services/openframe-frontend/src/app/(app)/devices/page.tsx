@@ -9,6 +9,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { DevicesPanel, EmptyState } from '@/app/components/shared';
+import { routes } from '@/lib/routes';
 import { useHasOrganizations } from './hooks/use-has-organizations';
 
 export default function Devices() {
@@ -18,7 +19,7 @@ export default function Devices() {
   return (
     <DevicesPanel
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      archiveHref="/devices/archive"
+      archiveHref={routes.devices.archive}
       // Only treat the tenant as having no customers once the check resolves, so the
       // "Add a customer" banner doesn't flash during loading. While checking, the
       // panel still keeps "Add Device" disabled via isCheckingOrganizations.

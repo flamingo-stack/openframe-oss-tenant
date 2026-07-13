@@ -5,6 +5,7 @@ import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/i
 import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { useIntegratedTools } from '../../hooks/use-integrated-tools';
 
 interface ArchitectureTabProps {
@@ -12,7 +13,7 @@ interface ArchitectureTabProps {
 }
 
 export function ArchitectureTab({ title = 'Architecture Overview' }: ArchitectureTabProps) {
-  const handleBack = useSafeBack('/settings');
+  const handleBack = useSafeBack(routes.settings.root());
   const { tools, isLoading, fetchIntegratedTools } = useIntegratedTools();
   const [searchTerm, setSearchTerm] = useState('');
 

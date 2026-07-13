@@ -25,6 +25,7 @@ import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/util
 import { useCallback, useMemo, useState } from 'react';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import { getDeviceStatusConfig } from '../../../devices/utils/device-status';
 import { useQueryDevicesTable } from '../hooks/use-query-devices-table';
 import type { QueryDeviceRow } from '../types/query-device-row';
@@ -181,7 +182,7 @@ export function QueryDevicesTable({ queryId }: QueryDevicesTableProps) {
           row.original.machineId ? (
             <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
               <Button
-                onClick={openInNewTab(`/devices/details?id=${row.original.machineId}`)}
+                onClick={openInNewTab(routes.devices.details(row.original.machineId))}
                 variant="outline"
                 size="icon"
                 leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -206,7 +207,7 @@ export function QueryDevicesTable({ queryId }: QueryDevicesTableProps) {
   });
 
   const rowHref = useCallback(
-    (row: QueryDeviceRow) => (row.machineId ? `/devices/details?id=${row.machineId}` : undefined),
+    (row: QueryDeviceRow) => (row.machineId ? routes.devices.details(row.machineId) : undefined),
     [],
   );
 

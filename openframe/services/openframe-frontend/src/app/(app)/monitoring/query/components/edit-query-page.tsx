@@ -23,6 +23,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
 import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import type { Device } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
@@ -166,7 +167,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
   }, [queryDetails, isExistingQuery, reset]);
 
   const handleBack = useSafeBack(
-    isExistingQuery && numericId ? `/monitoring/query?id=${numericId}` : '/monitoring?tab=queries',
+    isExistingQuery && numericId ? routes.monitoring.query(numericId) : routes.monitoring.root({ tab: 'queries' }),
   );
 
   const onSubmit = useCallback(
@@ -188,7 +189,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             } catch {
               // Query saved but hosts failed — error toast shown by mutation hook
             }
-            safeBackOrReplace(router, `/monitoring/query?id=${numericId}`);
+            safeBackOrReplace(router, routes.monitoring.query(numericId));
           },
         });
       } else {
@@ -201,7 +202,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             } catch {
               // Query created but hosts failed — error toast shown by mutation hook
             }
-            router.replace('/monitoring?tab=queries');
+            router.replace(routes.monitoring.root({ tab: 'queries' }));
           },
         });
       }

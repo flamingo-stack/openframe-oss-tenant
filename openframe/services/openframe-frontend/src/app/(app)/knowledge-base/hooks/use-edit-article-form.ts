@@ -9,6 +9,7 @@ import { fetchQuery } from 'relay-runtime';
 import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { useApplyAssignmentsDiff, useAssignedItems } from '@/components/assignments';
 import { getRelayEnvironment } from '@/lib/relay/environment';
+import { routes } from '@/lib/routes';
 import { ARTICLE_FORM_DEFAULTS, type ArticleFormData, articleFormSchema } from '../types/article.types';
 import { useAddTag } from './use-add-tag';
 import { useArticleTempAttachments } from './use-article-temp-attachments';
@@ -179,7 +180,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
               }
 
               toast({ title: 'Success', description: 'Article updated', variant: 'success' });
-              safeBackOrReplace(router, `/knowledge-base/details?id=${articleId}`);
+              safeBackOrReplace(router, routes.knowledgeBase.details(articleId));
             } else {
               const targetConnectionId = getKnowledgeBaseArticlesConnectionId({
                 parentId: folderId,
@@ -218,7 +219,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                 });
               }
               toast({ title: 'Success', description: 'Article created', variant: 'success' });
-              router.replace(`/knowledge-base/details?id=${result.id}`);
+              router.replace(routes.knowledgeBase.details(result.id));
             }
           } catch {
           } finally {

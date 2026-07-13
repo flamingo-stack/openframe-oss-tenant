@@ -26,6 +26,7 @@ import { EmptyState } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { dateRangeFromParams, dateRangeToInstantBounds, toDayParam } from '@/lib/date-filter-params';
+import { routes } from '@/lib/routes';
 import { type CustomersDateQuery, useCustomers } from '../hooks/use-customers';
 import { type CustomersDateFilter, CustomersSearchInput, CustomersTableBody } from './customers-table-columns';
 
@@ -105,7 +106,7 @@ export function CustomersTable({ status }: CustomersTableProps) {
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const handleAddCustomer = useCallback(() => {
-    router.push('/customers/new');
+    router.push(routes.customers.new);
   }, [router]);
 
   const showEmptyState = !isLoading && !debouncedSearch && !dateRange && customers.length === 0;

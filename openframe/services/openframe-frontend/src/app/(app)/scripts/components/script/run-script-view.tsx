@@ -16,6 +16,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { useRunScriptData } from '../../hooks/use-run-script-data';
@@ -80,7 +81,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     }
   }, [scriptDetails, reset]);
 
-  const handleBack = useSafeBack(`/scripts/details?id=${scriptId}`);
+  const handleBack = useSafeBack(routes.scripts.details(scriptId));
 
   const onSubmit = useCallback(
     async (_data: RunFormData) => {
@@ -113,7 +114,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
 
   const handleViewLogs = useCallback(() => {
     setShowExecutionModal(false);
-    router.push(`/logs-page`);
+    router.push(routes.logs.page);
   }, [router]);
 
   const onFormError = useCallback(

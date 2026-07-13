@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { useQueries } from '@/app/(app)/monitoring/hooks/use-queries';
 import { formatQueryInterval, QueriesTable, type QueryTableRow } from '@/app/components/shared';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { routes } from '@/lib/routes';
 import { useHostQueries } from '../../hooks/use-host-queries';
 import type { Device } from '../../types/device.types';
 import { TabEmptyState } from './tab-empty-state';
@@ -42,8 +43,8 @@ export function QueriesTab({ device }: QueriesTabProps) {
         name: r.name,
         description: r.description,
         frequencyLabel: formatQueryInterval(intervalById.get(r.report_id) ?? 0),
-        actions: [{ label: 'Query Details', onClick: () => router.push(`/monitoring/query?id=${r.report_id}`) }],
-        href: `/monitoring/query?id=${r.report_id}`,
+        actions: [{ label: 'Query Details', onClick: () => router.push(routes.monitoring.query(r.report_id)) }],
+        href: routes.monitoring.query(r.report_id),
       }));
   }, [hostReports, intervalById, search, router]);
 

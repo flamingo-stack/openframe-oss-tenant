@@ -10,6 +10,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useMemo } from 'react';
+import { routes } from '@/lib/routes';
 import type { Device } from '../types/device.types';
 import { type DeviceActionAvailability, getDeviceActionAvailability } from '../utils/device-action-utils';
 import { buildDeviceMenuItems } from '../utils/device-menu-items';
@@ -64,7 +65,7 @@ export function useDeviceActionsMenu(
 
   const handleDestructiveSuccess = useCallback(() => {
     onActionComplete?.();
-    if (navigateOnDestructive) router.push('/devices');
+    if (navigateOnDestructive) router.push(routes.devices.list);
   }, [onActionComplete, navigateOnDestructive, router]);
 
   const { openArchive, openDelete, dialogs, unarchiveDevice, isUnarchiving } = useDeviceConfirmationDialogs(device, {
@@ -88,7 +89,7 @@ export function useDeviceActionsMenu(
     return normalizeOSType(osType) === 'WINDOWS';
   }, [device]);
 
-  const runScriptHref = `/devices/details?id=${deviceId}&action=runScript`;
+  const runScriptHref = routes.devices.details(deviceId, { action: 'runScript' });
 
   const handleRunScript = useCallback(() => {
     if (onRunScript) {

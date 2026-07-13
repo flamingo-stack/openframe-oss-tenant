@@ -16,6 +16,7 @@ import {
 import { useCallback, useMemo } from 'react';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import { usePolicyDevicesTable } from '../hooks/use-policy-devices-table';
 import type { PolicyDeviceRow } from '../types/policy-device-row';
 
@@ -102,7 +103,7 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
           row.original.machineId ? (
             <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
               <Button
-                onClick={openInNewTab(`/devices/details?id=${row.original.machineId}`)}
+                onClick={openInNewTab(routes.devices.details(row.original.machineId))}
                 variant="outline"
                 size="icon"
                 leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -126,7 +127,7 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
   });
 
   const policyDeviceRowHref = useCallback(
-    (row: PolicyDeviceRow) => (row.machineId ? `/devices/details?id=${row.machineId}` : undefined),
+    (row: PolicyDeviceRow) => (row.machineId ? routes.devices.details(row.machineId) : undefined),
     [],
   );
 

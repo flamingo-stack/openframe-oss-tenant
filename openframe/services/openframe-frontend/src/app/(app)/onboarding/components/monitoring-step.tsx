@@ -11,6 +11,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { routes } from '@/lib/routes';
 import type { Device } from '../../devices/types/device.types';
 import { getFleetHostId } from '../../devices/utils/device-action-utils';
 import { usePolicies } from '../../monitoring/hooks/use-policies';
@@ -96,7 +97,7 @@ export function MonitoringStep({
             }
             // A successful create completes the onboarding step (if not already done).
             if (!completed) onComplete?.();
-            router.push(onboardingHintUrl(`/monitoring/policy?id=${policy.id}`, 'policies', pathname));
+            router.push(onboardingHintUrl(routes.monitoring.policy(policy.id), 'policies', pathname));
           },
         },
       );
@@ -165,7 +166,7 @@ export function MonitoringStep({
       {/* Footer: full-form link (left) + Mark as Complete + Add Policy (right) */}
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <Link
-          href="/monitoring/policy/new"
+          href={routes.monitoring.policyNew}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-1 items-center gap-[var(--spacing-system-xs)] text-ods-text-secondary transition-colors hover:text-ods-text-primary"

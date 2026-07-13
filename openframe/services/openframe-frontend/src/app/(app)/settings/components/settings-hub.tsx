@@ -21,6 +21,7 @@ import { isOssTenantMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import { handleApiError } from '@/lib/handle-api-error';
+import { routes } from '@/lib/routes';
 import { AccountSettingsCard } from './account-settings-card';
 import { EditProfileModal } from './edit-profile-modal';
 import { EmailVerificationBanner } from './email-verification-banner';
@@ -29,37 +30,37 @@ import { SettingMenuItem } from './setting-menu-item';
 
 const SETTINGS_NAV_ITEMS = [
   {
-    href: '/settings/billing-usage',
+    href: routes.settings.billingUsage,
     icon: PiggyBankIcon,
     title: 'Billing & Usage',
     description: 'Subscription details, usage data, and payment settings',
   },
   {
-    href: '/settings/ai-settings',
+    href: routes.settings.aiSettings(),
     icon: ShieldCheckIcon,
     title: 'AI Settings & Guardrails',
     description: 'Configure AI assistant model and safety policies',
   },
   {
-    href: '/settings/architecture',
+    href: routes.settings.architecture,
     icon: Hierarchy02Icon,
     title: 'Architecture Overview',
     description: 'Configure system architecture and infrastructure settings',
   },
   {
-    href: '/settings/employees',
+    href: routes.settings.employees,
     icon: UsersGroupIcon,
     title: 'Employees',
     description: 'Manage employee accounts, roles, and permissions',
   },
   {
-    href: '/settings/api-keys',
+    href: routes.settings.apiKeys,
     icon: ShieldKeyholeIcon,
     title: 'API Keys Management',
     description: 'Generate and manage API access tokens',
   },
   {
-    href: '/settings/sso',
+    href: routes.settings.sso,
     icon: PasscodeIcon,
     title: 'SSO Configuration',
     description: 'Set up single sign-on providers and authentication',
@@ -158,9 +159,9 @@ export function SettingsHub() {
       {/* Navigation Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-system-m)]">
         {SETTINGS_NAV_ITEMS.filter(
-          item => item.href !== '/settings/billing-usage' || featureFlags.subscription.enabled(),
+          item => item.href !== routes.settings.billingUsage || featureFlags.subscription.enabled(),
         )
-          .filter(item => item.href !== '/settings/architecture' || isOssTenantMode())
+          .filter(item => item.href !== routes.settings.architecture || isOssTenantMode())
           .map(item => (
             <SettingMenuItem
               key={item.href}

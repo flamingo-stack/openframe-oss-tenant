@@ -3,6 +3,7 @@
 import { ExternalLinkIcon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Input, PageLayout, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { BillingRow, SectionBlock, TestModeBanner } from './billing-section';
 
 // A value placeholder sized to sit on the right of a BillingRow.
@@ -58,7 +59,7 @@ function InvoicesTableSkeleton() {
 }
 
 export function BillingUsageSkeleton() {
-  const handleBack = useSafeBack('/settings');
+  const handleBack = useSafeBack(routes.settings.root());
 
   return (
     <PageLayout

@@ -137,9 +137,37 @@ Helper functions: `isOssTenantMode()`, `isSaasTenantMode()`, `isSaasSharedMode()
 
 Flags are **server-loaded**, not env-based. Names defined in `src/lib/feature-flags.ts` (e.g. `billings`, `help-center`, `notifications`, `time-tracker`, `scripts-v2`, `mingo-sidebar`, `new-onboarding`, `cancel-subscription`); fetched via the `feFeatureFlags(names:)` GraphQL query (`src/app/hooks/use-feature-flags-query.ts`) into `src/stores/feature-flags-store.ts`. `src/components/feature-flags-gate.tsx` blocks app render until flags load for authenticated users.
 
+### Route Registry (MANDATORY)
+
+All internal navigation URLs are built through the typed registry `src/lib/routes.ts` — never
+hand-write an internal path string in `router.push`/`<Link href>`/`useSafeBack`/`redirect`:
+
+```ts
+import { routes } from '@/lib/routes';
+
+router.push(routes.monitoring.root({ tab: 'policies' }));   // /monitoring?tab=policies
+router.push(routes.customers.details(id, { tab: 'tickets' }));
+<Link href={routes.devices.details(deviceId)} />
+```
+
+**When adding a new page, tab, or component that links anywhere, update `routes.ts` first,
+following its typing:**
+- New page/route → add an entry to `routes` (static string, or a builder function when it takes
+  an id / query params), then use `routes.*` at every call site.
+- New `?tab=` view → add the tab id to `TAB_IDS` and reference the derived union / `TAB_IDS`
+  from the page's `TabItem[]` definition instead of re-typing string literals.
+- New query param on an existing route → extend that builder's typed options object.
+- Builders take `string | number` ids on purpose — guard nullable ids at the call site instead
+  of widening the type.
+
+Full rules, rationale, and the list of intentional exceptions (`not-found.tsx` legacy-redirect
+table, `pathname.startsWith()` active-state checks, external/API URLs):
+
+@./src/lib/ROUTES.md
+
 ### Application Modules
 
-Routes live under the `(app)` / `(auth)` route groups. **Detail pages use query params** (`/x/details?id=`), not dynamic segments (static-export constraint; read via `useRequiredIdParam`).
+Routes live under the `(app)` / `(auth)` route groups. **Detail pages use query params** (`/x/details?id=`), not dynamic segments (static-export constraint; read via `useRequiredIdParam`). URL strings themselves come from the route registry above.
 
 - **Authentication** (`/auth`) — Multi-provider SSO, signup, login, password reset, invite
 - **Dashboard** (`/dashboard`) — Overview stats + onboarding; standalone `/onboarding` behind flag `new-onboarding`
@@ -841,3 +869,4 @@ if (response.ok) {
 6. **Use react-hook-form + zod** for forms
 7. **Biome is the primary linter** — must pass before commits
 8. **Normalize multi-source device data** — Fleet-first priority; merge logic in `use-device-details.ts` `createDevice()`
+9. **Build internal URLs via `routes.*` from `src/lib/routes.ts`** — no raw path strings; new pages/tabs must be added to the registry (see `src/lib/ROUTES.md`)

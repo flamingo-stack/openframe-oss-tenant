@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { apiClient } from '@/lib/api-client';
+import { routes } from '@/lib/routes';
 import { API_ENDPOINTS } from '../constants';
 import {
   ASSIGN_TICKET_MUTATION,
@@ -86,7 +87,7 @@ export function useUpdateTicket() {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: dialogsQueryKeys.all });
       toast({ title: 'Success', description: 'Ticket updated successfully', variant: 'success' });
-      safeBackOrReplace(router, ticket?.id ? `/tickets/dialog?id=${ticket.id}` : '/tickets');
+      safeBackOrReplace(router, ticket?.id ? routes.tickets.dialog(ticket.id) : routes.tickets.list);
     },
     onError: err => {
       toast({

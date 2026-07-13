@@ -14,6 +14,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
+import { routes } from '@/lib/routes';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
 import { dashboardQueryKeys } from '../../dashboard/utils/query-keys';
@@ -94,7 +95,7 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
   const { updateOrganization } = useUpdateCustomer();
   const { organization } = useCustomerDetails(organizationId);
 
-  const handleBack = useSafeBack(organizationId ? `/customers/details?id=${organizationId}` : '/customers');
+  const handleBack = useSafeBack(organizationId ? routes.customers.details(organizationId) : routes.customers.list());
 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [preserved, setPreserved] = useState<PreservedFields>(DEFAULT_PRESERVED);
@@ -318,9 +319,9 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
         description: `${form.name} has been ${organizationId ? 'updated' : 'created'}`,
       });
       if (organizationId) {
-        safeBackOrReplace(router, `/customers/details?id=${organizationId}`);
+        safeBackOrReplace(router, routes.customers.details(organizationId));
       } else {
-        router.replace('/customers');
+        router.replace(routes.customers.list());
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to save customer';

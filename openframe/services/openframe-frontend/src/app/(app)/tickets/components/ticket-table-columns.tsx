@@ -18,6 +18,7 @@ import { type ReactNode, useMemo } from 'react';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import type { ClientDialogOwner, Dialog } from '../types/dialog.types';
 
 export interface StatusFilterOption {
@@ -123,7 +124,7 @@ export function getTicketTableColumns(options: TicketTableColumnsOptions = {}): 
   return [titleColumn, sourceColumn, middleColumn, statusColumn];
 }
 
-export const ticketRowHref = (ticket: Dialog): string => `/tickets/dialog?id=${ticket.id}`;
+export const ticketRowHref = (ticket: Dialog): string => routes.tickets.dialog(ticket.id);
 
 export function getTicketOpenColumn(getUnreadCount?: (ticket: Dialog) => number | undefined): ColumnDef<Dialog> {
   return {

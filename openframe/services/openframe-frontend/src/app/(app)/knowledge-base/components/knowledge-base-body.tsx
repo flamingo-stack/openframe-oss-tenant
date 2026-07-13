@@ -27,6 +27,7 @@ import type { knowledgeBaseBodySubtreeRelayQuery as SubtreeQueryType } from '@/_
 import { EmptyState } from '@/app/components/shared';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { routes } from '@/lib/routes';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
 import {
   getKnowledgeBaseArticlesConnectionId,
@@ -101,7 +102,7 @@ function buildActions(
   if (parentId === null) {
     actions.unshift({
       label: 'Archive',
-      href: '/knowledge-base/archive',
+      href: routes.knowledgeBase.archive,
       icon: <BoxArchiveIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
       variant: 'outline',
     });
@@ -520,7 +521,7 @@ function RootBodyContent() {
 
 function FolderBodyContent({ parentId }: { parentId: string }) {
   const folder = useKnowledgeBaseItem(parentId);
-  const parentUrl = folder?.parentId ? `/knowledge-base/folders?id=${folder.parentId}` : '/knowledge-base';
+  const parentUrl = folder?.parentId ? routes.knowledgeBase.folder(folder.parentId) : '/knowledge-base';
   const handleBack = useSafeBack(parentUrl);
 
   if (!folder || folder.type !== 'FOLDER') {
@@ -546,7 +547,7 @@ function FolderBodyContent({ parentId }: { parentId: string }) {
 }
 
 function KnowledgeBaseBodyFallback({ parentId }: KnowledgeBaseBodyProps) {
-  const handleBack = useSafeBack('/knowledge-base');
+  const handleBack = useSafeBack(routes.knowledgeBase.list);
   const title = parentId === null ? ROOT_TITLE : ' ';
   const backButton: KnowledgeBaseBackButton | undefined =
     parentId === null ? undefined : { label: 'Back', onClick: handleBack };

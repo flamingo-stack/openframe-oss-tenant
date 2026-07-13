@@ -3,6 +3,7 @@
 import { QuestionCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, PageLayout, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 
 // Static copy that never depends on the server response, so we render it for
 // real and skeleton only the server-derived option rows/prices.
@@ -10,7 +11,7 @@ const ADDITIONAL_DEVICES_HELPER_TEXT =
   'You can add more devices anytime. Additional devices beyond your package are charged at pay-as-you-go rates and added to your next invoice.';
 
 export function SubscriptionSettingsSkeleton() {
-  const handleBack = useSafeBack('/settings/billing-usage');
+  const handleBack = useSafeBack(routes.settings.billingUsage);
 
   return (
     <PageLayout

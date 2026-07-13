@@ -4,6 +4,7 @@ import { LoadError, NotFoundError, PageLayout, ScriptInfoSection } from '@flamin
 import { ArrowRightUpIcon, PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useMemo } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { useScriptDetails } from '../../hooks/use-script-details';
@@ -17,15 +18,15 @@ interface ScriptDetailsViewProps {
 
 export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   const { scriptDetails, isLoading, error } = useScriptDetails(scriptId);
-  const handleBack = useSafeBack('/scripts');
+  const handleBack = useSafeBack(routes.scripts.list());
 
   // Register this script as the Mingo "open view" (cleared → recent on unmount).
   useTrackOpenView(
     scriptDetails ? { type: CONTEXT_ENTITY_KIND.SCRIPT, id: scriptId, label: scriptDetails.name || scriptId } : null,
   );
 
-  const editHref = `/scripts/edit?id=${scriptId}`;
-  const runHref = scriptDetails?.id ? `/scripts/details/run?id=${scriptDetails.id}` : undefined;
+  const editHref = routes.scripts.edit(scriptId);
+  const runHref = scriptDetails?.id ? routes.scripts.run(scriptDetails.id) : undefined;
 
   const actions = useMemo(
     () => [

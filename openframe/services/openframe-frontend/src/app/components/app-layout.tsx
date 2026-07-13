@@ -25,12 +25,14 @@ import { LogoutConfirmModal } from '@/app/components/shared/logout-confirm-modal
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { isNativeShell } from '@/lib/native-shell';
+import { routes } from '@/lib/routes';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
 import { AppShellSkeleton } from './app-shell-skeleton';
 import { ChatDrawerErrorBoundary } from './chat-drawer-error-boundary';
 import { InitialSetupBar } from './initial-setup-bar';
+import { NativePushInitializer } from './native-push-initializer';
 import { type UnreadCountsByCategory, UnreadCountsHydrator } from './notifications/unread-counts-hydrator';
 import { OnboardingCoachMark } from './onboarding-coach-mark';
 import { OnboardingProgressHydrator } from './onboarding-progress-hydrator';
@@ -202,7 +204,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     if (!initialSetupComplete) {
       topBar = (
         <InitialSetupBar
-          onStart={() => router.push('/dashboard')}
+          onStart={() => router.push(routes.dashboard)}
           started={tenantDone > 0}
           showAction={!isDashboardPage}
         />
@@ -377,9 +379,12 @@ function AppLayoutInner({ children, mainClassName }: { children: React.ReactNode
   }
 
   return (
-    <SubscriptionGuard fallback={<AppShellSkeleton />}>
-      <AppShell mainClassName={mainClassName}>{children}</AppShell>
-    </SubscriptionGuard>
+    <>
+      <NativePushInitializer />
+      <SubscriptionGuard fallback={<AppShellSkeleton />}>
+        <AppShell mainClassName={mainClassName}>{children}</AppShell>
+      </SubscriptionGuard>
+    </>
   );
 }
 

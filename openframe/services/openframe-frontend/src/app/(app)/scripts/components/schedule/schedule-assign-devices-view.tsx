@@ -8,6 +8,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
 import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import { apiClient } from '@/lib/api-client';
+import { routes } from '@/lib/routes';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
 import type { Device, DevicesGraphQlNode, GraphQlResponse } from '../../../devices/types/device.types';
@@ -92,7 +93,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
     setIsInitialized(true);
   }
 
-  const handleBack = useSafeBack(`/scripts/schedules?id=${scheduleId}`);
+  const handleBack = useSafeBack(routes.scripts.schedules.details(scheduleId));
 
   const handleSave = useCallback(async () => {
     // TODO(openframe-rmm): Tactical RMM removed — assigning devices to a schedule mapped
@@ -112,7 +113,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
         description: `${agentIds.length} device(s) assigned to schedule.`,
         variant: 'success',
       });
-      safeBackOrReplace(router, `/scripts/schedules?id=${scheduleId}&tab=schedule-devices`);
+      safeBackOrReplace(router, routes.scripts.schedules.details(scheduleId, { tab: 'schedule-devices' }));
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to save devices';
       toast({ title: 'Save failed', description: msg, variant: 'destructive' });

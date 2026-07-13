@@ -25,6 +25,7 @@ import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState, PoliciesTable, type PolicyTableRow, type PolicyTableStatus } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { routes } from '@/lib/routes';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
 import type { Policy } from '../../types/policies.types';
@@ -96,7 +97,7 @@ export function Policies() {
     (policy: Policy) => [
       {
         label: 'Policy Details',
-        onClick: () => router.push(`/monitoring/policy?id=${policy.id}`),
+        onClick: () => router.push(routes.monitoring.policy(policy.id)),
       },
       {
         label: 'Delete Policy',
@@ -133,7 +134,7 @@ export function Policies() {
           // Temporarily hidden along with the Platform column. Restore to re-enable.
           // platforms: parsePlatforms(policy.platform),
           actions: rowActions(policy),
-          href: `/monitoring/policy?id=${policy.id}`,
+          href: routes.monitoring.policy(policy.id),
         };
       }),
     [visiblePolicies, rowActions],
@@ -142,7 +143,7 @@ export function Policies() {
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddPolicy = useCallback(() => {
-    router.push('/monitoring/policy/new');
+    router.push(routes.monitoring.policyNew);
   }, [router]);
 
   const actions = useMemo(

@@ -18,6 +18,7 @@ import type { UnreadCountsByCategory } from '@/app/components/notifications/unre
 import { NotificationCategory } from '@/generated/schema-enums';
 import { isAuthOnlyMode, isSaasTenantMode } from './app-mode';
 import { featureFlags } from './feature-flags';
+import { routes } from './routes';
 
 const CATEGORY_BY_NAV_ID: Record<string, NotificationCategory> = {
   dashboard: NotificationCategory.DASHBOARD,
@@ -69,21 +70,21 @@ export const getNavigationItems = (
       id: 'dashboard',
       label: 'Dashboard',
       icon: <ChartDonutIcon size={24} />,
-      path: '/dashboard',
+      path: routes.dashboard,
       isActive: pathname.startsWith('/dashboard'),
     },
     {
       id: 'organizations',
       label: 'Customers',
       icon: <IdCardIcon size={24} />,
-      path: '/customers',
+      path: routes.customers.list(),
       isActive: pathname.startsWith('/customers'),
     },
     {
       id: 'devices',
       label: 'Devices',
       icon: <MonitorIcon size={24} />,
-      path: '/devices',
+      path: routes.devices.list,
       isActive: pathname.startsWith('/devices'),
     },
     // Single "Scripts" entry — the flag swaps which implementation it points at
@@ -94,28 +95,28 @@ export const getNavigationItems = (
           id: 'scripts-v2',
           label: 'Scripts',
           icon: <BracketCurlyIcon size={24} />,
-          path: '/scripts-v2',
+          path: routes.scriptsV2.list,
           isActive: pathname.startsWith('/scripts-v2'),
         }
       : {
           id: 'scripts',
           label: 'Scripts',
           icon: <BracketCurlyIcon size={24} />,
-          path: '/scripts',
+          path: routes.scripts.list(),
           isActive: pathname.startsWith('/scripts') && !pathname.startsWith('/scripts-v2'),
         },
     {
       id: 'monitoring',
       label: 'Monitoring',
       icon: <RadarIcon size={24} />,
-      path: '/monitoring',
+      path: routes.monitoring.root(),
       isActive: pathname.startsWith('/monitoring'),
     },
     {
       id: 'logs',
       label: 'Logs',
       icon: <ClipboardListIcon size={24} />,
-      path: '/logs-page',
+      path: routes.logs.page,
       isActive: pathname.startsWith('/logs-page') || pathname.startsWith('/log-details'),
     },
   ];
@@ -125,7 +126,7 @@ export const getNavigationItems = (
       id: 'tickets',
       label: 'Tickets',
       icon: <TagIcon size={24} />,
-      path: '/tickets',
+      path: routes.tickets.list,
       isActive: pathname.startsWith('/tickets'),
     });
     // The legacy standalone `/mingo` page is fully superseded by the in-layout
@@ -136,7 +137,7 @@ export const getNavigationItems = (
         id: 'mingo',
         label: 'Mingo',
         icon: <MingoIcon className="w-6 h-6" />,
-        path: '/mingo',
+        path: routes.mingo(),
         isActive: pathname.startsWith('/mingo'),
       });
     }
@@ -147,7 +148,7 @@ export const getNavigationItems = (
       id: 'worktime',
       label: 'Worktime',
       icon: <ClockHistoryIcon size={24} />,
-      path: '/worktime',
+      path: routes.worktime,
       isActive: pathname.startsWith('/worktime'),
     });
   }
@@ -156,7 +157,7 @@ export const getNavigationItems = (
     id: 'knowledge-base',
     label: 'Knowledge Base',
     icon: <BookBookmarkIcon size={24} />,
-    path: '/knowledge-base',
+    path: routes.knowledgeBase.list,
     section: 'secondary',
     isActive: pathname.startsWith('/knowledge-base'),
   });
@@ -166,7 +167,7 @@ export const getNavigationItems = (
       id: 'help-center',
       label: 'Help Center',
       icon: <QuestionCircleIcon size={24} />,
-      path: '/help-center',
+      path: routes.helpCenter,
       section: 'secondary',
       isActive: pathname.startsWith('/help-center'),
     });
@@ -176,7 +177,7 @@ export const getNavigationItems = (
     id: 'settings',
     label: 'Settings',
     icon: <Settings02Icon size={24} />,
-    path: '/settings',
+    path: routes.settings.root(),
     section: 'secondary',
     isActive: pathname.startsWith('/settings'),
   });

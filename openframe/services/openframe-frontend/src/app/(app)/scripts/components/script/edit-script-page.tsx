@@ -5,6 +5,7 @@ import { Card } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { useEditScriptForm } from '../../hooks/use-edit-script-form';
 import { useScriptDetails } from '../../hooks/use-script-details';
 import { useTestRuns } from '../../hooks/use-test-runs';
@@ -19,8 +20,8 @@ interface EditScriptPageProps {
 
 export function EditScriptPage({ scriptId }: EditScriptPageProps) {
   const isEditMode = Boolean(scriptId);
-  const handleBackToList = useSafeBack('/scripts');
-  const handleBackToDetails = useSafeBack(`/scripts/details?id=${scriptId}`);
+  const handleBackToList = useSafeBack(routes.scripts.list());
+  const handleBackToDetails = useSafeBack(scriptId ? routes.scripts.details(scriptId) : routes.scripts.list());
   const backButton = useMemo(
     () => (isEditMode ? { label: 'Back', onClick: handleBackToDetails } : { label: 'Back', onClick: handleBackToList }),
     [isEditMode, handleBackToDetails, handleBackToList],

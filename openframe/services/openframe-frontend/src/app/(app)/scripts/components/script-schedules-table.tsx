@@ -34,6 +34,7 @@ import { EmptyState } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import { useScriptSchedules } from '../hooks/use-script-schedule';
 import type { ScriptScheduleListItem, ScriptScheduleTaskType } from '../types/script-schedule.types';
 import { formatScheduleDate } from '../types/script-schedule.types';
@@ -95,8 +96,8 @@ export function ScriptSchedulesTable() {
   }, [params.search]);
 
   const renderRowActions = useCallback((schedule: ScriptScheduleListItem) => {
-    const editHref = `/scripts/schedules/edit?id=${schedule.id}`;
-    const devicesHref = `/scripts/schedules/devices?id=${schedule.id}`;
+    const editHref = routes.scripts.schedules.edit(schedule.id);
+    const devicesHref = routes.scripts.schedules.devices(schedule.id);
     const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
 
     const groups: ActionsMenuGroup[] = [
@@ -195,7 +196,7 @@ export function ScriptSchedulesTable() {
         cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              onClick={openInNewTab(`/scripts/schedules?id=${row.original.id}`)}
+              onClick={openInNewTab(routes.scripts.schedules.details(row.original.id))}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -218,12 +219,15 @@ export function ScriptSchedulesTable() {
     enableSorting: false,
   });
 
-  const scheduleRowHref = useCallback((schedule: ScriptScheduleListItem) => `/scripts/schedules?id=${schedule.id}`, []);
+  const scheduleRowHref = useCallback(
+    (schedule: ScriptScheduleListItem) => routes.scripts.schedules.details(schedule.id),
+    [],
+  );
 
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + pageSize), []);
 
   const handleAddSchedule = useCallback(() => {
-    router.push('/scripts/schedules/new');
+    router.push(routes.scripts.schedules.new);
   }, [router]);
 
   // Show the empty state instead of the search bar + table only when there is

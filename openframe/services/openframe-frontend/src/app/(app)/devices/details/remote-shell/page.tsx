@@ -11,6 +11,7 @@ import { useTrackOpenView } from '@/app/(app)/mingo/context/use-track-open-view'
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
 import { MeshTunnel, TunnelState } from '@/lib/meshcentral/meshcentral-tunnel';
+import { routes } from '@/lib/routes';
 
 const WINDOWS_POWERSHELL_CMD =
   'powershell -NoLogo -NoProfile 2>nul || "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile 2>nul || "%SystemRoot%\\Sysnative\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile 2>nul || "%ProgramFiles%\\PowerShell\\7\\pwsh.exe" -NoLogo -NoProfile 2>nul || "%ProgramFiles(x86)%\\PowerShell\\7\\pwsh.exe" -NoLogo -NoProfile 2>nul';
@@ -24,8 +25,8 @@ export default function RemoteShellPage() {
     toastRef.current = toast;
   }, [toast]);
 
-  const safeBackToDevice = useSafeBack(`/devices/details?id=${deviceId}`);
-  const safeBackToDevices = useSafeBack('/devices');
+  const safeBackToDevice = useSafeBack(routes.devices.details(deviceId));
+  const safeBackToDevices = useSafeBack(routes.devices.list);
 
   const shellTypeParam = searchParams.get('shellType');
   const shellType = useMemo<'cmd' | 'powershell'>(() => {

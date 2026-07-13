@@ -1,4 +1,5 @@
 'use client';
+import { routes } from '@/lib/routes';
 
 /**
  * Self-fetching mention chips for the GraphQL-resolvable entity types (device,
@@ -86,13 +87,13 @@ const SCRIPT_QUERY = graphql`
 function hrefFor(kind: ContextEntityKind, rawId: string, globalId: string): string | undefined {
   switch (kind) {
     case CONTEXT_ENTITY_KIND.DEVICE:
-      return `/devices/details?id=${rawId}`;
+      return routes.devices.details(rawId);
     case CONTEXT_ENTITY_KIND.ORGANIZATION:
-      return `/customers/details?id=${rawId}`;
+      return routes.customers.details(rawId);
     case CONTEXT_ENTITY_KIND.KB_ARTICLE:
-      return `/knowledge-base/details?id=${globalId}`;
+      return routes.knowledgeBase.details(globalId);
     case CONTEXT_ENTITY_KIND.SCRIPT:
-      return `/scripts-v2/details?id=${globalId}`;
+      return routes.scriptsV2.details(globalId);
     default:
       return undefined;
   }

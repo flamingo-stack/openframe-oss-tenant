@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { routes } from '@/lib/routes';
 import { QueryDetailsView } from './components/query-details-view';
 
 export default function QueryPage() {
@@ -12,7 +13,7 @@ export default function QueryPage() {
   // kept as a redirect so old bookmarks land on the create form.
   useEffect(() => {
     if (paramId === 'new') {
-      router.replace('/monitoring/query/new');
+      router.replace(routes.monitoring.queryNew);
     }
   }, [paramId, router]);
 

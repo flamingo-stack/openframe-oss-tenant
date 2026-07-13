@@ -5,6 +5,7 @@ import { IdCardIcon } from '@flamingo-stack/openframe-frontend-core/components/i
 import { useMemo } from 'react';
 import { EmptyState } from '@/app/components/shared';
 import { getFullImageUrl } from '@/lib/image-url';
+import { routes } from '@/lib/routes';
 import { useCustomersOverview } from '../hooks/use-customers-overview';
 import { CustomersOverviewSkeleton } from './dashboard-skeletons';
 
@@ -38,7 +39,7 @@ export function CustomersOverviewSection() {
           <OrganizationCard
             organization={org}
             fetchedImageUrl={fullImageUrl}
-            href={`/customers/details?id=${org.organizationId}`}
+            href={routes.customers.details(org.organizationId)}
             deviceCount={org.total}
           />
 

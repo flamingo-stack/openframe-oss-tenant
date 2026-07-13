@@ -14,6 +14,7 @@ import type { billingUsageViewQuery as BillingUsageViewQueryType } from '@/__gen
 import { SubscriptionStatus } from '@/app/components/subscription-lock/subscription-status';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { featureFlags } from '@/lib/feature-flags';
+import { routes } from '@/lib/routes';
 import { useBillingSummary } from '../hooks/use-billing-summary';
 import { useCancelSubscription } from '../hooks/use-cancel-subscription';
 import { useCancellationImpact } from '../hooks/use-cancellation-impact';
@@ -36,7 +37,7 @@ export function BillingUsageView() {
 
 function BillingUsageContent() {
   const router = useRouter();
-  const handleBack = useSafeBack('/settings');
+  const handleBack = useSafeBack(routes.settings.root());
   // Bumped after a resume so the billing query refetches from the network — the
   // resumeSubscription mutation returns a bare Boolean, so the Relay store can't
   // reflect the new status on its own.
@@ -98,7 +99,7 @@ function BillingUsageContent() {
             if (billing.latestPendingInvoice) {
               window.location.href = billing.latestPendingInvoice.hostedInvoiceUrl;
             } else {
-              router.push('/settings/billing-usage/subscription');
+              router.push(routes.settings.billingSubscription);
             }
           },
           variant: 'accent' as const,
@@ -106,12 +107,12 @@ function BillingUsageContent() {
       : flags.isTrial
         ? {
             label: 'Activate Subscription',
-            onClick: () => router.push('/settings/billing-usage/subscription'),
+            onClick: () => router.push(routes.settings.billingSubscription),
             variant: 'accent' as const,
           }
         : {
             label: 'Update Subscription',
-            onClick: () => router.push('/settings/billing-usage/subscription'),
+            onClick: () => router.push(routes.settings.billingSubscription),
             variant: (flags.isNearLimits ? 'accent' : 'outline') as 'accent' | 'outline',
           };
 

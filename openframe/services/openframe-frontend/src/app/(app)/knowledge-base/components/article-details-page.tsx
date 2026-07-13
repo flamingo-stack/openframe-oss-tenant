@@ -24,6 +24,7 @@ import { AssignedItemsView } from '@/components/assignments';
 import { formatDate } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { decodeGlobalId } from '@/lib/relay-id';
+import { routes } from '@/lib/routes';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
@@ -51,7 +52,7 @@ const STATUS_VARIANT: Record<ArticleStatus, 'success' | 'warning' | 'grey'> = {
 };
 
 function ArticleDetailsContent({ articleId }: { articleId: string }) {
-  const handleBack = useSafeBack('/knowledge-base');
+  const handleBack = useSafeBack(routes.knowledgeBase.list);
   const { toast } = useToast();
   const article = useKnowledgeBaseItem(articleId);
   const { publishArticle, isPending: isPublishing } = usePublishArticle();
@@ -167,7 +168,7 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
       : [
           {
             label: 'Edit Article',
-            href: `/knowledge-base/edit?id=${article.id}`,
+            href: routes.knowledgeBase.edit(article.id),
             icon: <PenEditIcon size={24} className="text-ods-text-secondary" />,
             variant: 'outline',
           },
@@ -267,7 +268,7 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
 }
 
 function ArticleDetailsFallback() {
-  const handleBack = useSafeBack('/knowledge-base');
+  const handleBack = useSafeBack(routes.knowledgeBase.list);
   return (
     <PageLayout
       title=""

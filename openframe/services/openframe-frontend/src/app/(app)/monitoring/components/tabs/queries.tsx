@@ -16,6 +16,7 @@ import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState, formatQueryInterval, QueriesTable, type QueryTableRow } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { routes } from '@/lib/routes';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { useQueries } from '../../hooks/use-queries';
 import type { Query } from '../../types/queries.types';
@@ -67,7 +68,7 @@ export function Queries() {
     (query: Query) => [
       {
         label: 'Query Details',
-        onClick: () => router.push(`/monitoring/query?id=${query.id}`),
+        onClick: () => router.push(routes.monitoring.query(query.id)),
       },
       {
         label: 'Delete Query',
@@ -86,7 +87,7 @@ export function Queries() {
         description: query.description,
         frequencyLabel: formatQueryInterval(query.interval),
         actions: rowActions(query),
-        href: `/monitoring/query?id=${query.id}`,
+        href: routes.monitoring.query(query.id),
       })),
     [visibleQueries, rowActions],
   );
@@ -94,7 +95,7 @@ export function Queries() {
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddQuery = useCallback(() => {
-    router.push('/monitoring/query/new');
+    router.push(routes.monitoring.queryNew);
   }, [router]);
 
   // Show the empty state instead of the search bar + table only when there is

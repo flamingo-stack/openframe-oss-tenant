@@ -35,6 +35,7 @@ import { useDevicesUrlParams } from '@/app/(app)/devices/hooks/use-devices-url-p
 import { useGridInfiniteScroll } from '@/app/(app)/devices/hooks/use-grid-infinite-scroll';
 import { useTagFilterModal } from '@/app/(app)/devices/hooks/use-tag-filter-modal';
 import type { Device, DeviceFilterInput } from '@/app/(app)/devices/types/device.types';
+import { routes } from '@/lib/routes';
 import { DevicesFilterToolbar } from '../devices-filter-toolbar';
 import { EMBEDDED_PAGE_OFFSET } from '../embedded-page';
 
@@ -101,7 +102,7 @@ export interface DevicesPanelProps {
 export function DevicesPanel({
   title = 'Devices',
   backButton,
-  addDeviceHref = '/devices/new',
+  addDeviceHref = routes.devices.new(),
   showAddDevice = true,
   archiveHref,
   lockedFilters,
@@ -237,7 +238,7 @@ export function DevicesPanel({
     if (noOrganizations) {
       result.push({
         label: 'Add Customer',
-        href: '/customers/new',
+        href: routes.customers.new,
         icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
         variant: 'outline',
       });

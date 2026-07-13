@@ -13,6 +13,7 @@ import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { createScriptMutation } from '@/graphql/scripts/create-script-mutation';
 import { updateScriptMutation } from '@/graphql/scripts/update-script-mutation';
 import { getRelayErrorMessage } from '@/lib/handle-api-error';
+import { routes } from '@/lib/routes';
 import { EDIT_SCRIPT_DEFAULT_VALUES, type EditScriptFormData, editScriptSchema } from '../../types/edit-script.types';
 import { formToWriteInput } from '../utils/script-mappers';
 
@@ -77,7 +78,7 @@ export function useEditScriptForm({ scriptId, initialValues, isEditMode }: UseEd
           variables: { input: { id: scriptId, ...input } },
           onCompleted: () => {
             toast({ title: 'Success', description: 'Script updated successfully', variant: 'success' });
-            safeBackOrReplace(router, `/scripts-v2/details?id=${scriptId}`);
+            safeBackOrReplace(router, routes.scriptsV2.details(scriptId));
           },
           onError: err => {
             toast({
@@ -95,7 +96,7 @@ export function useEditScriptForm({ scriptId, initialValues, isEditMode }: UseEd
         onCompleted: response => {
           toast({ title: 'Success', description: 'Script created successfully', variant: 'success' });
           const newId = response.createScript?.id;
-          router.replace(newId ? `/scripts-v2/details?id=${newId}` : '/scripts-v2');
+          router.replace(newId ? routes.scriptsV2.details(newId) : routes.scriptsV2.list);
         },
         onError: err => {
           toast({

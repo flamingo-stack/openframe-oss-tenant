@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { DevicesPanel } from '@/app/components/shared';
+import { routes } from '@/lib/routes';
 
 interface CustomerDevicesTabProps {
   organizationId: string;
@@ -13,7 +14,7 @@ export function CustomerDevicesTab({ organizationId }: CustomerDevicesTabProps) 
   return (
     <DevicesPanel
       embedded
-      addDeviceHref={`/devices/new?organizationId=${organizationId}`}
+      addDeviceHref={routes.devices.new({ organizationId })}
       lockedFilters={lockedFilters}
       hideColumns={['organization']}
       hideFilters={['organization']}

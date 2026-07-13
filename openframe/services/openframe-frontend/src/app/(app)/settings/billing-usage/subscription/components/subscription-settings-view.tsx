@@ -8,6 +8,7 @@ import { useSubscriptionLock } from '@/app/components/subscription-lock/subscrip
 import { SubscriptionStatus } from '@/app/components/subscription-lock/subscription-status';
 import { TrialEndedBanner } from '@/app/components/subscription-lock/trial-ended-banner';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import type { OpenframeProduct, ProductUpdates } from '../types/subscription.types';
 import { isPlanChanged } from '../utils/subscription.utils';
 import { ModelTokenRates } from './model-token-rates';
@@ -88,7 +89,7 @@ export function SubscriptionSettingsView() {
 }
 
 function SubscriptionSettingsContent() {
-  const handleBack = useSafeBack('/settings/billing-usage');
+  const handleBack = useSafeBack(routes.settings.billingUsage);
   const { status, isLocked, lockCopy } = useSubscriptionLock();
   const data = useLazyLoadQuery<SubscriptionSettingsViewQueryType>(
     subscriptionSettingsViewQuery,

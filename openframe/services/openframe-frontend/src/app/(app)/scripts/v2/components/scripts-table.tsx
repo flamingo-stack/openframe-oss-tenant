@@ -57,6 +57,7 @@ import { unarchiveScriptMutation } from '@/graphql/scripts/unarchive-script-muta
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { decodeGlobalId } from '@/lib/relay-id';
+import { routes } from '@/lib/routes';
 import { initiatorInitials, initiatorName } from '../utils/execution-helpers';
 import { facetToSortedOptions } from '../utils/facet-options';
 import { platformsToEnums, platformsToIds, shellToEnum, shellToId } from '../utils/script-mappers';
@@ -214,8 +215,8 @@ function ScriptsTableContent({
 
   const renderRowActions = useCallback(
     (script: UiScriptEntry) => {
-      const runHref = `/scripts-v2/details/run?id=${script.id}`;
-      const editHref = `/scripts-v2/edit?id=${script.id}`;
+      const runHref = routes.scriptsV2.run(script.id);
+      const editHref = routes.scriptsV2.edit(script.id);
       const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
       const mutating = isArchiving || isUnarchiving;
 
@@ -461,7 +462,7 @@ function ScriptsTableContent({
         cell: ({ row }: { row: Row<UiScriptEntry> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              onClick={openInNewTab(`/scripts-v2/details?id=${row.original.id}`)}
+              onClick={openInNewTab(routes.scriptsV2.details(row.original.id))}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -515,7 +516,7 @@ function ScriptsTableContent({
     onColumnFiltersChange: handleColumnFiltersChange,
   });
 
-  const scriptRowHref = useCallback((script: UiScriptEntry) => `/scripts-v2/details?id=${script.id}`, []);
+  const scriptRowHref = useCallback((script: UiScriptEntry) => routes.scriptsV2.details(script.id), []);
 
   const hasActiveFilters = hasTagFilter || Object.values(tableFilters).some(values => values.length > 0);
   const showEmptyState = !debouncedSearch && !hasActiveFilters && !isPending && transformedScripts.length === 0;
@@ -683,7 +684,7 @@ interface ScriptsTableProps {
 
 export function ScriptsTable({ archived = false }: ScriptsTableProps = {}) {
   const router = useRouter();
-  const handleBack = useSafeBack('/scripts-v2');
+  const handleBack = useSafeBack(routes.scriptsV2.list);
 
   const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
@@ -747,11 +748,11 @@ export function ScriptsTable({ archived = false }: ScriptsTableProps = {}) {
   );
 
   const handleNewScript = useCallback(() => {
-    router.push('/scripts-v2/new');
+    router.push(routes.scriptsV2.new);
   }, [router]);
 
   const handleOpenArchive = useCallback(() => {
-    router.push('/scripts-v2/archived');
+    router.push(routes.scriptsV2.archived);
   }, [router]);
 
   // Archived list has no header actions (back button only); the active list shows

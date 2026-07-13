@@ -9,6 +9,7 @@ import { LoginSection } from '@/app/(auth)/auth/components/login-form-section';
 import { useAuth } from '@/app/(auth)/auth/hooks/use-auth';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { isAuthOnlyMode } from '@/lib/app-mode';
+import { routes } from '@/lib/routes';
 
 // Backend provider id ↔ LoginForm provider id
 const SSO_TO_FORM: Record<string, AuthSsoProvider> = {
@@ -36,7 +37,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated && !isAuthOnlyMode()) {
-      router.push('/dashboard');
+      router.push(routes.dashboard);
     }
   }, [isAuthenticated, router]);
 

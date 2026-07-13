@@ -10,6 +10,7 @@ import { InfoCell } from '@/app/components/shared/info-cell';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { formatDate, formatTimeWithSeconds } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
+import { routes } from '@/lib/routes';
 import type { Device } from '../types/device.types';
 import { getDeviceName } from '../utils/device-name';
 
@@ -48,7 +49,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
   const assignedUser = { username: null, imageUrl: null };
   const assignedUserImageUrl = getFullImageUrl(assignedUser?.imageUrl);
   const customerImageUrl = getFullImageUrl(device.organizationImageUrl, device.organizationImageHash);
-  const customerHref = device.organizationId ? `/customers/details?id=${device.organizationId}` : undefined;
+  const customerHref = device.organizationId ? routes.customers.details(device.organizationId) : undefined;
 
   // Cells defined once and reused across both responsive layouts below.
   // Icons: 16px on mobile, 24px on tablet+ (matches the responsive design).

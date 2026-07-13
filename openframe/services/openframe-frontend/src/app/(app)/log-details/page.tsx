@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { routes } from '@/lib/routes';
 import { LogDetailsView } from './components/log-details-view';
 
 export default function LogDetailsPage() {
@@ -17,7 +18,7 @@ export default function LogDetailsPage() {
   const missing = !id || !ingestDay || !toolType || !eventType || !timestamp;
 
   useEffect(() => {
-    if (missing) router.replace('/logs-page');
+    if (missing) router.replace(routes.logs.page);
   }, [missing, router]);
 
   if (missing) return null;

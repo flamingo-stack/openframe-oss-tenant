@@ -17,6 +17,7 @@ import {
 import { type ReactNode, useMemo } from 'react';
 import { formatDate, formatTime } from '@/lib/format-date';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 
 export type KnowledgeBaseRowType = 'ARTICLE' | 'FOLDER' | string;
 export type KnowledgeBaseRowStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | string | null | undefined;
@@ -41,7 +42,7 @@ const STATUS_VARIANT: Record<'DRAFT' | 'ARCHIVED', 'warning' | 'grey'> = {
 };
 
 export const knowledgeBaseRowHref = (item: KnowledgeBaseRow): string =>
-  item.type === 'ARTICLE' ? `/knowledge-base/details?id=${item.id}` : `/knowledge-base/folders?id=${item.id}`;
+  item.type === 'ARTICLE' ? routes.knowledgeBase.details(item.id) : routes.knowledgeBase.folder(item.id);
 
 export const KNOWLEDGE_BASE_OPEN_COLUMN: ColumnDef<KnowledgeBaseRow> = {
   id: 'open',

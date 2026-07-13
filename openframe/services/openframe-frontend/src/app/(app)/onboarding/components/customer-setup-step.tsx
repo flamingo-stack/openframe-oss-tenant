@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { routes } from '@/lib/routes';
 import { uploadWithAuth } from '@/lib/upload-with-auth';
 import { type CreateCustomerRequest, useCreateCustomer } from '../../customers/hooks/use-create-customer';
 import { dashboardQueryKeys } from '../../dashboard/utils/query-keys';
@@ -20,7 +21,7 @@ const emptyAddress = { street1: '', street2: '', city: '', state: '', postalCode
  * Inner body of the "Customers Setup" onboarding step. Reuses the customer-page form
  * building blocks ({@link ../../customers/components/new-customer-page}) — the
  * `useCreateCustomer` mutation, `Input` and `ImageUploader` — for a quick first-client
- * form. The full form lives at `/customers/new`.
+ * form. The full form lives at routes.customers.new.
  */
 export function CustomerSetupStep({
   onComplete,
@@ -182,7 +183,7 @@ export function CustomerSetupStep({
       {/* Full form link (left) / mandatory hint + save (right) */}
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <Link
-          href="/customers/new"
+          href={routes.customers.new}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-1 items-center gap-[var(--spacing-system-xs)] text-ods-text-secondary transition-colors hover:text-ods-text-primary"

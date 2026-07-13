@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { routes } from '@/lib/routes';
 import { PolicyDetailsView } from './components/policy-details-view';
 
 export default function PolicyPage() {
@@ -12,7 +13,7 @@ export default function PolicyPage() {
   // kept as a redirect so old bookmarks land on the create form.
   useEffect(() => {
     if (paramId === 'new') {
-      router.replace('/monitoring/policy/new');
+      router.replace(routes.monitoring.policyNew);
     }
   }, [paramId, router]);
 

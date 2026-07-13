@@ -9,6 +9,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import type { ActionsMenuItem } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
+import { routes } from '@/lib/routes';
 import type { DeviceActionAvailability } from './device-action-utils';
 
 /**
@@ -73,7 +74,7 @@ const WINDOWS_SHELLS = [
 ] as const;
 
 function buildRemoteShellItem(ctx: DeviceMenuItemContext): ActionsMenuItem {
-  const baseHref = `/devices/details/remote-shell?id=${ctx.deviceId}`;
+  const baseHref = routes.devices.remoteShell(ctx.deviceId);
   const disabled = !ctx.availability?.remoteShellEnabled;
   const icon = <TerminalIcon className={iconClass(ctx)} />;
 
@@ -116,14 +117,14 @@ function buildRemoteShellItem(ctx: DeviceMenuItemContext): ActionsMenuItem {
 export function buildDeviceMenuItems(ctx: DeviceMenuItemContext): DeviceMenuItems {
   const remoteShell = buildRemoteShellItem(ctx);
 
-  const remoteControlHref = `/devices/details/remote-desktop?id=${ctx.deviceId}`;
+  const remoteControlHref = routes.devices.remoteDesktop(ctx.deviceId);
   const remoteControlDisabled = !ctx.availability?.remoteControlEnabled;
 
-  const manageFilesHref = `/devices/details/file-manager?id=${ctx.deviceId}`;
+  const manageFilesHref = routes.devices.fileManager(ctx.deviceId);
   const manageFilesDisabled = !ctx.availability?.manageFilesEnabled;
 
-  const deviceDetailsHref = `/devices/details?id=${ctx.deviceId}`;
-  const deviceLogsHref = `/devices/details?id=${ctx.deviceId}&tab=overview`;
+  const deviceDetailsHref = routes.devices.details(ctx.deviceId);
+  const deviceLogsHref = routes.devices.details(ctx.deviceId, { tab: 'overview' });
 
   return {
     deviceDetails: {

@@ -4,6 +4,7 @@ import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { isSaasTenantMode } from '@/lib/app-mode';
+import { routes } from '@/lib/routes';
 import { TicketsView } from './components/tickets-view';
 
 export default function Tickets() {
@@ -11,7 +12,7 @@ export default function Tickets() {
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
-      router.replace('/dashboard');
+      router.replace(routes.dashboard);
       return;
     }
   }, [router]);

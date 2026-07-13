@@ -9,6 +9,7 @@ import {
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ComponentType } from 'react';
 import { SimpleModal } from '@/app/components/shared/simple-modal';
+import { routes } from '@/lib/routes';
 import type { CancelReason } from './cancel-subscription-modal';
 
 interface OfferPreset {
@@ -27,7 +28,7 @@ const OFFER_PRESETS: Record<CancelReason, OfferPreset> = {
     ctaTitle: 'Find a Plan that Fits',
     ctaDescription: `Keep everything you've built at a lower cost.`,
     ctaIcon: LayersMinusIcon,
-    ctaHref: '/settings/billing-usage/subscription',
+    ctaHref: routes.settings.billingSubscription,
   },
   NOT_USING_ENOUGH: {
     title: 'Compare Plans',
@@ -35,7 +36,7 @@ const OFFER_PRESETS: Record<CancelReason, OfferPreset> = {
     ctaTitle: 'Find a Plan that Fits',
     ctaDescription: `Keep everything you've built at a lower cost.`,
     ctaIcon: LayersMinusIcon,
-    ctaHref: '/settings/billing-usage/subscription',
+    ctaHref: routes.settings.billingSubscription,
   },
   MISSING_FEATURE: {
     title: 'Check the Roadmap',

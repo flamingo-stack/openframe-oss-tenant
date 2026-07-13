@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { isSaasTenantMode } from '@/lib/app-mode';
+import { routes } from '@/lib/routes';
 import { CreateEditTicketPage } from '../components/create-edit';
 
 export default function NewTicketPage() {
@@ -10,7 +11,7 @@ export default function NewTicketPage() {
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
-      router.replace('/tickets');
+      router.replace(routes.tickets.list);
     }
   }, [router]);
 

@@ -12,6 +12,7 @@ import { ScriptExecutionStatus } from '@/generated/schema-enums';
 import { scriptExecutionDetailRelayQuery } from '@/graphql/scripts/script-execution-detail-relay';
 import { getFullImageUrl } from '@/lib/image-url';
 import { decodeGlobalId } from '@/lib/relay-id';
+import { routes } from '@/lib/routes';
 import {
   executionResultText,
   executionStatusLabel,
@@ -127,7 +128,9 @@ function ScriptExecutionDetailsContent({ executionId }: ScriptExecutionDetailsVi
     <ScriptPageChrome
       title="Script Execution Details"
       subtitle={execution.executionId}
-      backFallback={execution.scriptId ? `/scripts-v2/details?id=${execution.scriptId}&tab=executions` : '/scripts-v2'}
+      backFallback={
+        execution.scriptId ? routes.scriptsV2.details(execution.scriptId, { tab: 'executions' }) : routes.scriptsV2.list
+      }
       actions={actions}
     >
       <div className="bg-ods-card border border-ods-border rounded-[8px] overflow-hidden">
@@ -296,7 +299,7 @@ export function ScriptExecutionDetailsView({ executionId }: ScriptExecutionDetai
         <ScriptPageChrome
           title="Script Execution Details"
           subtitle={'\u00A0'}
-          backFallback="/scripts-v2"
+          backFallback={routes.scriptsV2.list}
           actions={LOADING_EXECUTION_ACTIONS}
         >
           <ExecutionDetailsCardSkeleton />

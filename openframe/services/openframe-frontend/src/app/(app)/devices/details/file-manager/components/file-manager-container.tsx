@@ -5,6 +5,7 @@ import type { FileAction, FileItem } from '@flamingo-stack/openframe-frontend-co
 import { FileManager, FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { useMeshFileManager } from '../../../hooks/use-mesh-file-manager';
 import { DeleteConfirmationModal } from './delete-confirmation-modal';
 import { NewFolderModal } from './new-folder-modal';
@@ -69,7 +70,7 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, c
 
   const showFileManagerSkeleton =
     connectionState === 'disconnected' || (connectionState === 'connecting' && files.length === 0);
-  const handleBackToDevice = useSafeBack(`/devices/details?id=${deviceId}`);
+  const handleBackToDevice = useSafeBack(routes.devices.details(deviceId));
 
   const handleNavigate = useCallback(
     (path: string) => {

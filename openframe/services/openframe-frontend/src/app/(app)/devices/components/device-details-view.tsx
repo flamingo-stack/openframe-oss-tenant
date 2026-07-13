@@ -14,6 +14,7 @@ import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/util
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useDeviceActionsMenu } from '../hooks/use-device-actions-menu';
@@ -98,7 +99,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       : null,
   );
 
-  const handleBack = useSafeBack('/devices');
+  const handleBack = useSafeBack(routes.devices.list);
 
   const {
     items: deviceMenuItems,

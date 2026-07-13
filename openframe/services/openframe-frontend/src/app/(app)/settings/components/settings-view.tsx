@@ -2,10 +2,11 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useMemo, useState } from 'react';
+import { type SettingsTab } from '@/lib/routes';
 import { SettingsTabContent } from './settings-tab-content';
 import { getSettingsTabs, SettingsTabNavigation } from './tabs';
 
-type TabId = 'ai-settings' | 'architecture' | 'company-and-users' | 'api-keys' | 'sso-configuration' | 'profile';
+type TabId = SettingsTab;
 
 const DEFAULT_TAB: TabId = 'ai-settings';
 const TAB_PARAM = 'tab';

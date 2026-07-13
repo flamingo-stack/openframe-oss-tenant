@@ -19,6 +19,7 @@ import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
 import type { Device, DeviceFilters } from '../types/device.types';
 import { getDeviceName } from '../utils/device-name';
@@ -34,7 +35,7 @@ export function getDeviceTableRowActions(onRefresh?: () => void): (device: Devic
   return DeviceRowActions;
 }
 
-export const deviceRowHref = (device: Device): string => `/devices/details?id=${device.machineId || device.id}`;
+export const deviceRowHref = (device: Device): string => routes.devices.details(device.machineId || device.id);
 
 export const DEVICE_OPEN_COLUMN: ColumnDef<Device> = {
   id: 'open',

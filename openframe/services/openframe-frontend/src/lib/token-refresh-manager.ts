@@ -6,6 +6,7 @@
  */
 
 import { clearStoredTokens } from './force-logout';
+import { nativeAuthPlugin } from './native-shell';
 import { runtimeEnv } from './runtime-config';
 import { getRefreshToken, isBearerAuthMode, setTokens } from './token-store';
 
@@ -21,6 +22,26 @@ function buildRefreshUrl(tenantId?: string): string {
 }
 
 async function executeRefresh(tenantId?: string): Promise<boolean> {
+  // Shells that implement refreshTokens own the refresh entirely: the shell
+  // also refreshes for its own connections on its own schedule, and rotating
+  // refresh tokens tolerate exactly one refresher. The shell resolves with the
+  // stored tokens after the attempt (empty = session over) and rejects only on
+  // transient failures (network), where the stored tokens remain valid.
+  const plugin = nativeAuthPlugin();
+  if (plugin?.refreshTokens) {
+    try {
+      const tokens = await plugin.refreshTokens();
+      if (tokens?.accessToken) {
+        await setTokens(tokens);
+        return true;
+      }
+      clearStoredTokens();
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   const bearerMode = isBearerAuthMode();
   const url = buildRefreshUrl(tenantId);
 

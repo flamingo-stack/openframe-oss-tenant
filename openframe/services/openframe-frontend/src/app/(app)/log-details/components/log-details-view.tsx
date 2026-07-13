@@ -11,6 +11,7 @@ import { DeviceInfoSection } from '@/app/components/shared';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { formatDateTime } from '@/lib/format-date';
+import { routes } from '@/lib/routes';
 import { formatLogDetailsForCopy } from '../../logs-page/utils/format-log-details';
 import { useLogDetails } from '../hooks/use-log-details';
 import { DetailsSection } from './details-section';
@@ -53,11 +54,11 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
     if (logId && ingestDay && toolType && eventType && timestamp) {
       fetchLogDetailsById(logId, ingestDay, toolType, eventType, timestamp);
     } else {
-      router.replace('/logs-page');
+      router.replace(routes.logs.page);
     }
   }, [logId, ingestDay, toolType, eventType, timestamp, fetchLogDetailsById, router]);
 
-  const handleBackToLogs = useSafeBack('/logs-page');
+  const handleBackToLogs = useSafeBack(routes.logs.page);
 
   const handleCopyLogDetails = () => {
     if (logDetails) {

@@ -11,6 +11,7 @@ import { InfoCell } from '@/app/components/shared/info-cell';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
+import { routes } from '@/lib/routes';
 import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useUser } from '../hooks/use-user';
@@ -59,7 +60,7 @@ function EmployeeSummarySkeleton() {
 export function EmployeeDetailsView({ userId }: EmployeeDetailsViewProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const handleBack = useSafeBack('/settings/employees');
+  const handleBack = useSafeBack(routes.settings.employees);
   const currentUser = useAuthStore(state => state.user);
   const { user, isLoading, error } = useUser(userId);
   const { deleteUser } = useDeleteUser();
@@ -108,7 +109,7 @@ export function EmployeeDetailsView({ userId }: EmployeeDetailsViewProps) {
       onSuccess: () => {
         setIsDeleteOpen(false);
         toast({ title: 'Employee deleted', description: `${displayName} was deleted`, variant: 'success' });
-        router.push('/settings/employees');
+        router.push(routes.settings.employees);
       },
     });
   };

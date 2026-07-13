@@ -1,4 +1,5 @@
 'use client';
+import { routes } from '@/lib/routes';
 
 /**
  * Self-fetching mention chips for the REST / ai-agent-GraphQL entity types. One
@@ -32,7 +33,7 @@ interface Resolved {
 
 async function resolvePolicy(id: string): Promise<Resolved> {
   const res = await fleetApiClient.getPolicy(Number(id));
-  return { label: (res.ok && res.data?.policy?.name) || id, href: `/monitoring/policy?id=${id}` };
+  return { label: (res.ok && res.data?.policy?.name) || id, href: routes.monitoring.policy(id) };
 }
 
 async function resolveQuery(id: string): Promise<Resolved> {
@@ -41,7 +42,7 @@ async function resolveQuery(id: string): Promise<Resolved> {
   // under `policy`) — read the nested name, not a flat `res.data.name` (which is
   // always undefined → chip would show the bare id). See `use-query-details.ts`.
   const name = res.ok ? (res.data as unknown as { query?: { name?: string } }).query?.name : undefined;
-  return { label: name || id, href: `/monitoring/query?id=${id}` };
+  return { label: name || id, href: routes.monitoring.query(id) };
 }
 
 async function resolveUser(id: string): Promise<Resolved> {
@@ -58,7 +59,7 @@ async function resolveScript(id: string): Promise<Resolved> {
   // Numeric (legacy) script ids can no longer resolve a name, so degrade to the id + link
   // (the caller's `fallbackLabel` is preferred over the raw id in `RestInner`). New scripts
   // resolve via the Relay `GraphqlMentionChip`. See render-mention.tsx dispatch.
-  return { label: id, href: `/scripts/details?id=${id}` };
+  return { label: id, href: routes.scripts.details(id) };
 }
 
 interface TicketEnvelope {
@@ -71,7 +72,7 @@ async function resolveTicket(id: string): Promise<Resolved> {
   });
   const t = res.ok ? res.data?.data?.ticket : undefined;
   const label = t?.title || (t?.ticketNumber != null ? `#${t.ticketNumber}` : id);
-  return { label, href: `/tickets/dialog?id=${encodeURIComponent(id)}` };
+  return { label, href: routes.tickets.dialog(encodeURIComponent(id)) };
 }
 
 const RESOLVERS: Record<string, (id: string) => Promise<Resolved>> = {

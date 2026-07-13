@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { PoliciesTable, type PolicyTableRow } from '@/app/components/shared';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { routes } from '@/lib/routes';
 import type { Device, DevicePolicy } from '../../types/device.types';
 import { TabEmptyState } from './tab-empty-state';
 
@@ -52,8 +53,8 @@ export function PoliciesTab({ device }: PoliciesTabProps) {
         severityLabel: policy.critical ? 'Critical' : 'Low',
         status: toStatus(policy.response),
         platforms: parsePlatforms(policy.platform),
-        actions: [{ label: 'Policy Details', onClick: () => router.push(`/monitoring/policy?id=${policy.id}`) }],
-        href: `/monitoring/policy?id=${policy.id}`,
+        actions: [{ label: 'Policy Details', onClick: () => router.push(routes.monitoring.policy(policy.id)) }],
+        href: routes.monitoring.policy(policy.id),
       }));
   }, [policies, search, router]);
 

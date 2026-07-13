@@ -1,6 +1,7 @@
 'use client';
 
 import { DashboardInfoCard, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
+import { routes } from '@/lib/routes';
 import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
 import { useDevicesOverview } from '../hooks/use-dashboard-stats';
 import { DevicesOverviewSkeleton } from './dashboard-skeletons';
@@ -72,7 +73,7 @@ export function DevicesOverviewSection() {
             progressSize={{ base: 24, md: 56 }}
             href={
               // Archived devices live on their own page; /devices only lists the rest.
-              card.status === DEVICE_STATUS.ARCHIVED ? '/devices/archive' : `/devices?statuses=${card.status}`
+              card.status === DEVICE_STATUS.ARCHIVED ? routes.devices.archive : `/devices?statuses=${card.status}`
             }
           />
         ))}

@@ -23,6 +23,7 @@ import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { routes } from '@/lib/routes';
 import { useDeviceFilters } from '../hooks/use-device-filters';
 import { useDevices } from '../hooks/use-devices';
 import { useDevicesUrlParams } from '../hooks/use-devices-url-params';
@@ -143,7 +144,7 @@ export function DevicesView() {
         actions={[
           {
             label: 'Add Device',
-            onClick: () => router.push('/devices/new'),
+            onClick: () => router.push(routes.devices.new()),
             icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
             variant: 'outline',
           },

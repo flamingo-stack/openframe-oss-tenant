@@ -18,6 +18,7 @@ import { isValidTag, type TagEntryWithId, TagsEditor } from '@/app/components/sh
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '@/lib/platforms';
+import { routes } from '@/lib/routes';
 import { AdminPrivilegesWarning } from '../components/admin-privileges-warning';
 import { AntivirusWarning } from '../components/antivirus-warning';
 import { DoctorModeWarning } from '../components/doctor-mode-warning';
@@ -32,7 +33,7 @@ const newDeviceSchema = z.object({
 type NewDeviceFormValues = z.infer<typeof newDeviceSchema>;
 
 export function NewDeviceContent() {
-  const handleBack = useSafeBack('/devices');
+  const handleBack = useSafeBack(routes.devices.list);
   const { toast } = useToast();
 
   // Customer context passed by "Add Device" launched from a customer's section

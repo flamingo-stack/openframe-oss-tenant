@@ -1,6 +1,7 @@
 import { DeviceCardSkeleton, DeviceCardSkeletonGrid } from '@flamingo-stack/openframe-frontend-core/components';
 import { DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
+import { routes } from '@/lib/routes';
 import type { Device } from '../types/device.types';
 import { getDeviceName } from '../utils/device-name';
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../utils/device-status';
@@ -27,7 +28,7 @@ export function DevicesGrid({
   const handleDeviceClick = (device: Device) => {
     const id = device.machineId || device.id;
     if (id) {
-      router.push(`/devices/details?id=${id}`);
+      router.push(routes.devices.details(id));
     }
   };
 

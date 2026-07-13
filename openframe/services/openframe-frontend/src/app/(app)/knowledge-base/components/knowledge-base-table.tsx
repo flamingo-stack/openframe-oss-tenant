@@ -23,6 +23,7 @@ import type {
   knowledgeBaseTableRow_node$data,
   knowledgeBaseTableRow_node$key,
 } from '@/__generated__/knowledgeBaseTableRow_node.graphql';
+import { routes } from '@/lib/routes';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
 import { ArchiveArticleModal, type ArchiveArticleTarget } from './archive-article-modal';
 import { useFolderRowActions } from './folder-row-actions';
@@ -150,7 +151,7 @@ export function KnowledgeBaseItemsListView(props: ListViewProps) {
                   id: 'edit',
                   label: 'Edit',
                   icon: <PenEditIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-                  href: `/knowledge-base/edit?id=${item.id}`,
+                  href: routes.knowledgeBase.edit(item.id),
                 },
                 {
                   id: 'move',

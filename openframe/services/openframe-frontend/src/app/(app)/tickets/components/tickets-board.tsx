@@ -14,6 +14,7 @@ import { type InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import { EmptyState } from '@/app/components/shared';
 import { appendImageHash } from '@/lib/image-url';
+import { routes } from '@/lib/routes';
 import { useApprovalRequests } from '../hooks/use-approval-requests';
 import { useMoveTicket, useMovingTicketIds } from '../hooks/use-move-ticket';
 import { useTicketStatusTransitionRules } from '../hooks/use-ticket-status-transition-rules';
@@ -238,7 +239,7 @@ export function TicketsBoard({
     ],
   );
 
-  const getTicketHref = useCallback((id: string) => `/tickets/dialog?id=${id}`, []);
+  const getTicketHref = useCallback((id: string) => routes.tickets.dialog(id), []);
 
   const loadMore = useCallback((columnId: string) => {
     loadMoreRef.current[columnId]?.();

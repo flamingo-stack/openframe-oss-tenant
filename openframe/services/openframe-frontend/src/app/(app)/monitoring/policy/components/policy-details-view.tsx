@@ -15,6 +15,7 @@ import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
@@ -49,15 +50,15 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
     policyDetails ? { type: CONTEXT_ENTITY_KIND.POLICY, id: policyId, label: policyDetails.name } : null,
   );
 
-  const handleBack = useSafeBack('/monitoring?tab=policies');
+  const handleBack = useSafeBack(routes.monitoring.root({ tab: 'policies' }));
 
   const handleEditPolicy = () => {
-    router.push(`/monitoring/policy/edit?id=${policyId}`);
+    router.push(routes.monitoring.policyEdit(policyId));
   };
 
   const handleDeletePolicy = () => {
     deletePolicy(numericId, {
-      onSuccess: () => router.push('/monitoring?tab=policies'),
+      onSuccess: () => router.push(routes.monitoring.root({ tab: 'policies' })),
     });
   };
 

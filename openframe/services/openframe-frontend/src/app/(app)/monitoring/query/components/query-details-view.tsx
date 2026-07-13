@@ -21,6 +21,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
@@ -79,15 +80,15 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
   // gets the user's working context on the next message; cleared → recent views.
   useTrackOpenView(queryDetails ? { type: CONTEXT_ENTITY_KIND.QUERY, id: queryId, label: queryDetails.name } : null);
 
-  const handleBack = useSafeBack('/monitoring?tab=queries');
+  const handleBack = useSafeBack(routes.monitoring.root({ tab: 'queries' }));
 
   const handleEditQuery = () => {
-    router.push(`/monitoring/query/edit?id=${queryId}`);
+    router.push(routes.monitoring.queryEdit(queryId));
   };
 
   const handleDeleteQuery = () => {
     deleteQuery(numericId, {
-      onSuccess: () => router.push('/monitoring?tab=queries'),
+      onSuccess: () => router.push(routes.monitoring.root({ tab: 'queries' })),
     });
   };
 

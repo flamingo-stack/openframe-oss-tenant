@@ -2,6 +2,7 @@
 
 import { Button } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter } from 'next/navigation';
+import { routes } from '@/lib/routes';
 
 interface DeviceDetailsButtonProps {
   deviceId?: string;
@@ -29,7 +30,7 @@ export function DeviceDetailsButton({
   }
 
   return (
-    <Button variant={variant} href={`/devices/details?id=${id}`} openInNewTab={openInNewTab} className={className}>
+    <Button variant={variant} href={routes.devices.details(id)} openInNewTab={openInNewTab} className={className}>
       {label}
     </Button>
   );
