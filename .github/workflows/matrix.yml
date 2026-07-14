@@ -61,10 +61,6 @@ jobs:
               "name": "openframe-stream",
               "path": "./openframe/services/openframe-stream",
               "context": "."
-            },
-            {
-              "name": "openframe-frontend",
-              "path": "./openframe/services/openframe-frontend"
             }
           ]'
           clients_matrix_json='[
