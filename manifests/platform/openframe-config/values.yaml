@@ -8,6 +8,7 @@ image:
 # the apps chart injects the real deployment branch
 repository:
   branch: main
+  timeoutSeconds: 5
 
 resources:
   requests:

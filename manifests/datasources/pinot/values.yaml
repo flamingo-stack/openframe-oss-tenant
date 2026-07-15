@@ -7,9 +7,19 @@ pinot:
   cluster:
     name: pinot
 
+  # Workers wait for the controller's Helix structures before starting;
+  # without this they crash-loop for the whole controller boot window.
+  _waitForController: &waitForController
+    - name: wait-for-controller
+      image: ghcr.io/flamingo-stack/registry/busybox:1.36.0
+      command: [sh, -c]
+      args:
+        - until wget -q -O /dev/null http://pinot-controller:9000/health; do echo "waiting for pinot-controller"; sleep 3; done
+
 
   server:
     replicaCount: 2
+    initContainers: *waitForController
     automaticReload:
       enabled: true
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms512M -Xmx2G"
@@ -23,6 +33,12 @@ pinot:
   controller:
     external:
       enabled: false
+    initContainers:
+      - name: wait-for-zookeeper
+        image: ghcr.io/flamingo-stack/registry/busybox:1.36.0
+        command: [sh, -c]
+        args:
+          - until nc -z zookeeper.datasources.svc.cluster.local 2181; do echo "waiting for zookeeper"; sleep 3; done
     automaticReload:
       enabled: true
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
@@ -36,6 +52,7 @@ pinot:
   broker:
     external:
       enabled: false
+    initContainers: *waitForController
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
     podAnnotations:
       loki.grafana.com/scrape: "true"
@@ -45,6 +62,7 @@ pinot:
 
 
   minionStateless:
+    initContainers: *waitForController
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
     podAnnotations:
       loki.grafana.com/scrape: "true"
