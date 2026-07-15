@@ -25,3 +25,7 @@ pub const CONSUMER_MAX_DELIVER: i64 = 10; // Maximum delivery attempts
 pub const UNINSTALL_CONSUMER_MAX_DELIVER: i64 = 20; // Larger budget: uninstall may defer behind a long install holding the tool lock
 pub const RESTART_CONSUMER_MAX_DELIVER: i64 = 20; // Larger budget: restart may defer behind a long install holding the tool lock
 pub const RESTART_CONSUMER_QUIET_PAUSE_MS: u64 = 300_000; // Quiet retry cadence once consumer creation keeps failing (subject/grants not provisioned yet)
+
+// Client-before-tool update ordering
+pub const CLIENT_UPDATE_PENDING_TTL_SECS: u64 = 300; // > ack_wait (120s) so the flag survives redelivery gaps of a deferred client update
+pub const PROGRESS_ACK_INTERVAL_SECS: u64 = 60; // well inside ack_wait (120s)

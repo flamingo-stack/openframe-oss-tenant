@@ -414,7 +414,8 @@ impl Client {
         let tool_installation_message_listener = ToolInstallationMessageListener::new(
             nats_connection_manager.clone(),
             tool_installation_service,
-            config_service.clone()
+            config_service.clone(),
+            tool_run_manager.clone(),
         );
 
         let tool_uninstall_service = ToolUninstallService::new(
@@ -435,6 +436,7 @@ impl Client {
             nats_connection_manager.clone(),
             tool_restart_service,
             config_service.clone(),
+            tool_run_manager.clone(),
         );
 
         // Initialize OpenFrame client update listener
@@ -448,7 +450,8 @@ impl Client {
         let tool_agent_update_listener = ToolAgentUpdateListener::new(
             nats_connection_manager.clone(),
             tool_agent_update_service,
-            config_service.clone()
+            config_service.clone(),
+            tool_run_manager.clone(),
         );
 
         let execution_service = ExecutionService::new();

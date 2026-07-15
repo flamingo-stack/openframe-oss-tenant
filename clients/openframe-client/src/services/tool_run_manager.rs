@@ -343,6 +343,26 @@ pub(crate) fn launch_process_in_target_session(command_path: &str, args: &[Strin
     }
 }
 
+/// Tracks whether a client update is pending, with TTL-based expiry.
+#[derive(Clone, Default)]
+pub(crate) struct ClientUpdatePendingFlag {
+    since: Arc<RwLock<Option<std::time::Instant>>>,
+}
+
+impl ClientUpdatePendingFlag {
+    pub(crate) async fn mark(&self) {
+        *self.since.write().await = Some(std::time::Instant::now());
+    }
+
+    pub(crate) async fn is_pending(&self, ttl: Duration) -> bool {
+        matches!(*self.since.read().await, Some(since) if since.elapsed() < ttl)
+    }
+
+    pub(crate) async fn clear(&self) {
+        *self.since.write().await = None;
+    }
+}
+
 #[derive(Clone)]
 pub struct ToolRunManager {
     installed_tools_service: InstalledToolsService,
@@ -352,6 +372,7 @@ pub struct ToolRunManager {
     updating_tools: Arc<RwLock<HashMap<String, usize>>>,
     tool_locks: Arc<RwLock<HashMap<String, Arc<Mutex<()>>>>>,
     shutting_down: Arc<AtomicBool>,
+    client_update_pending: ClientUpdatePendingFlag,
 }
 
 impl ToolRunManager {
@@ -368,6 +389,7 @@ impl ToolRunManager {
             updating_tools: Arc::new(RwLock::new(HashMap::new())),
             tool_locks: Arc::new(RwLock::new(HashMap::new())),
             shutting_down: Arc::new(AtomicBool::new(false)),
+            client_update_pending: ClientUpdatePendingFlag::default(),
         }
     }
 
@@ -383,6 +405,27 @@ impl ToolRunManager {
     pub fn signal_shutdown(&self) {
         self.shutting_down.store(true, Ordering::Release);
         info!("Tool run manager: shutdown signalled, no new launches will occur");
+    }
+
+    /// Mark a client update pending: new tool operations park (see
+    /// `listener::client_update_gate`). Redeliveries re-mark the flag; TTL expiry
+    /// is the release valve for abandoned updates.
+    pub async fn mark_client_update_pending(&self) {
+        self.client_update_pending.mark().await;
+        info!("Client update pending: new tool operations will be parked");
+    }
+
+    pub async fn is_client_update_pending(&self) -> bool {
+        self.client_update_pending
+            .is_pending(Duration::from_secs(crate::config::update_config::CLIENT_UPDATE_PENDING_TTL_SECS))
+            .await
+    }
+
+    /// Release the gate early. Only for terminal-with-ACK paths where no
+    /// redelivery will refresh the flag; retryable failures must NOT clear it.
+    pub async fn clear_client_update_pending(&self) {
+        self.client_update_pending.clear().await;
+        info!("Client update no longer pending: parked tool operations released");
     }
 
     pub async fn mark_updating(&self, tool_id: &str) {
@@ -749,5 +792,63 @@ impl ToolRunManager {
         });
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ClientUpdatePendingFlag;
+    use std::time::Duration;
+
+    const LONG_TTL: Duration = Duration::from_secs(3600);
+
+    #[tokio::test]
+    async fn not_pending_before_first_mark() {
+        let flag = ClientUpdatePendingFlag::default();
+        assert!(!flag.is_pending(LONG_TTL).await);
+    }
+
+    #[tokio::test]
+    async fn pending_after_mark_within_ttl() {
+        let flag = ClientUpdatePendingFlag::default();
+        flag.mark().await;
+        assert!(flag.is_pending(LONG_TTL).await);
+    }
+
+    #[tokio::test]
+    async fn expired_when_ttl_elapsed() {
+        let flag = ClientUpdatePendingFlag::default();
+        flag.mark().await;
+        // Zero TTL: elapsed() < ttl can never hold — the mark has already aged out.
+        assert!(!flag.is_pending(Duration::ZERO).await);
+    }
+
+    #[tokio::test]
+    async fn remark_refreshes_the_ttl() {
+        let flag = ClientUpdatePendingFlag::default();
+        flag.mark().await;
+        tokio::time::sleep(Duration::from_millis(30)).await;
+        // Aged past a 10ms TTL...
+        assert!(!flag.is_pending(Duration::from_millis(10)).await);
+        // ...but a re-mark (as every client-update redelivery does) refreshes it.
+        flag.mark().await;
+        assert!(flag.is_pending(Duration::from_millis(10)).await);
+    }
+
+    #[tokio::test]
+    async fn clones_share_state() {
+        let flag = ClientUpdatePendingFlag::default();
+        let clone = flag.clone();
+        clone.mark().await;
+        assert!(flag.is_pending(LONG_TTL).await);
+    }
+
+    #[tokio::test]
+    async fn clear_releases_the_flag() {
+        let flag = ClientUpdatePendingFlag::default();
+        flag.mark().await;
+        assert!(flag.is_pending(LONG_TTL).await);
+        flag.clear().await;
+        assert!(!flag.is_pending(LONG_TTL).await);
     }
 }

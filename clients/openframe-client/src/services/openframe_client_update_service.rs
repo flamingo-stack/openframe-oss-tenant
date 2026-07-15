@@ -45,6 +45,13 @@ impl OpenFrameClientUpdateService {
         let requested_version = message.version.trim();
         info!("Received update request for version: {}", requested_version);
 
+        // Mark the client update as pending BEFORE the defer check below: while
+        // this update waits (via redelivery) for an in-flight tool op to drain,
+        // no NEW tool op can start — tool listeners park their messages instead.
+        // Every redelivery of this message re-marks the flag (refreshing its TTL);
+        // it is never cleared explicitly (see mark_client_update_pending).
+        self.tool_run_manager.mark_client_update_pending().await;
+
         if self.tool_run_manager.any_tool_op_in_progress().await {
             warn!("Tool operation in progress, deferring client update to version {} (will redeliver)", requested_version);
             return Err(anyhow!("Tool operation in progress, deferring client update"));
