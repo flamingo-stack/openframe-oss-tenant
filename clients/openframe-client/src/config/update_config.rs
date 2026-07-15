@@ -20,3 +20,4 @@ pub const RECONNECTION_DELAY_MS: u64 = 5000; // 5 seconds
 pub const CONSUMER_ACK_WAIT_SECS: u64 = 120;
 pub const CONSUMER_MAX_DELIVER: i64 = 10; // Maximum delivery attempts
 pub const UNINSTALL_CONSUMER_MAX_DELIVER: i64 = 20; // Larger budget: uninstall may defer behind a long install holding the tool lock
+pub const RESTART_CONSUMER_MAX_DELIVER: i64 = 20; // Larger budget: restart may defer behind a long install holding the tool lock

@@ -1,5 +1,4 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
-use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::tool_restart_service::ToolRestartService;
 use crate::services::tool_restart_service::RestartOutcome;
 use crate::services::AgentConfigurationService;
@@ -11,7 +10,7 @@ use crate::config::update_config::{
     CONSUMER_CYCLE_PAUSE_MS,
     RECONNECTION_DELAY_MS,
     CONSUMER_ACK_WAIT_SECS,
-    CONSUMER_MAX_DELIVER,
+    RESTART_CONSUMER_MAX_DELIVER,
 };
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
@@ -19,13 +18,12 @@ use async_nats::jetstream::Message;
 use tokio::time::Duration;
 use anyhow::Result;
 use async_nats::jetstream;
-use futures::{FutureExt, StreamExt};
+use futures::StreamExt;
 use tracing::{error, info, warn};
 
 #[derive(Clone)]
 pub struct ToolRestartMessageListener {
     nats_connection_manager: NatsConnectionManager,
-    tool_run_manager: ToolRunManager,
     tool_restart_service: ToolRestartService,
     config_service: AgentConfigurationService,
 }
@@ -36,13 +34,11 @@ impl ToolRestartMessageListener {
 
     pub fn new(
         nats_connection_manager: NatsConnectionManager,
-        tool_run_manager: ToolRunManager,
         tool_restart_service: ToolRestartService,
         config_service: AgentConfigurationService,
     ) -> Self {
         Self {
             nats_connection_manager,
-            tool_run_manager,
             tool_restart_service,
             config_service,
         }
@@ -118,36 +114,16 @@ impl ToolRestartMessageListener {
             }
         };
 
-        let tool_agent_id = restart_message.tool_agent_id.clone();
+        let tool_agent_id = restart_message.tool_agent_id;
 
-        let tool_lock = self.tool_run_manager.tool_lock(&tool_agent_id).await;
-        let _guard = match tool_lock.try_lock() {
-            Ok(guard) => guard,
-            Err(_) => {
+        let ack_message = match self.tool_restart_service.restart_guarded(&tool_agent_id).await {
+            Ok(RestartOutcome::Busy) => {
                 info!("Tool {} busy with another operation, deferring restart for redelivery", tool_agent_id);
                 return Ok(());
             }
-        };
-
-        self.tool_run_manager.mark_updating(&tool_agent_id).await;
-
-        let outcome = std::panic::AssertUnwindSafe(
-            self.tool_restart_service.restart_by_tool_agent_id(&tool_agent_id),
-        )
-        .catch_unwind()
-        .await;
-
-        self.tool_run_manager.clear_updating(&tool_agent_id).await;
-
-        let ack_message = match outcome {
-            Ok(Ok(RestartOutcome::Restarted)) => true,
-            Ok(Ok(RestartOutcome::NotInstalled)) => true,
-            Ok(Err(e)) => {
+            Ok(RestartOutcome::Restarted) | Ok(RestartOutcome::NotInstalled) => true,
+            Err(e) => {
                 error!("Failed to restart tool {}: {:#}", tool_agent_id, e);
-                false
-            }
-            Err(_) => {
-                error!("Restart panicked for tool {}", tool_agent_id);
                 false
             }
         };
@@ -230,7 +206,7 @@ impl ToolRestartMessageListener {
             deliver_subject,
             durable_name: Some(durable_name),
             ack_wait: Duration::from_secs(CONSUMER_ACK_WAIT_SECS),
-            max_deliver: CONSUMER_MAX_DELIVER,
+            max_deliver: RESTART_CONSUMER_MAX_DELIVER,
             ..Default::default()
         }
     }

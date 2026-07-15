@@ -1,6 +1,6 @@
 use anyhow::Result;
 use tracing::{info, warn, error};
-use sysinfo::{System, Signal, Pid};
+use sysinfo::{System, Signal, Pid, ProcessRefreshKind, UpdateKind};
 use tokio::time::{sleep, Duration};
 use crate::models::{InstalledTool, Installation};
 use crate::platform::system_service;
@@ -38,16 +38,26 @@ impl ToolKillService {
         self.stop_processes_by_pattern(&pattern, &format!("asset: {} (tool: {})", asset_id, tool_id)).await
     }
 
-    /// Check whether any process matching the tool's command pattern is currently running.
-    pub fn is_tool_running(&self, tool_id: &str) -> bool {
-        let pattern = Self::build_tool_cmd_pattern(tool_id);
-        let mut sys = System::new_all();
-        sys.refresh_all();
-        sys.processes().values().any(|process| {
-            let cmdline = process.cmd().join(" ").to_lowercase();
-            let exe_path = process.exe().map(|p| p.to_string_lossy().to_lowercase()).unwrap_or_default();
-            cmdline.contains(&pattern) || exe_path.contains(&pattern)
+    /// Check whether the installed tool's process is running, matching by executable path when known (mirrors stop_for_installation).
+    pub async fn is_installed_tool_running(&self, tool: &InstalledTool) -> bool {
+        let pattern = match &tool.installation {
+            Installation::GuiApp { executable_path, .. } => executable_path.to_lowercase(),
+            Installation::Standard { executable_path } | Installation::Service { executable_path, .. } => executable_path
+                .as_deref()
+                .map(str::to_lowercase)
+                .unwrap_or_else(|| Self::build_tool_cmd_pattern(&tool.tool_agent_id)),
+        };
+        tokio::task::spawn_blocking(move || {
+            let mut sys = System::new();
+            sys.refresh_processes_specifics(ProcessRefreshKind::new().with_cmd(UpdateKind::Always).with_exe(UpdateKind::Always));
+            sys.processes().values().any(|process| {
+                let cmdline = process.cmd().join(" ").to_lowercase();
+                let exe_path = process.exe().map(|p| p.to_string_lossy().to_lowercase()).unwrap_or_default();
+                cmdline.contains(&pattern) || exe_path.contains(&pattern)
+            })
         })
+        .await
+        .unwrap_or(false)
     }
 
     /// Generic method to stop processes matching a command pattern

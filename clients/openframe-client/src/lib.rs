@@ -432,7 +432,6 @@ impl Client {
         // Initialize tool restart listener (shares the restart service with mesh self-heal)
         let tool_restart_message_listener = ToolRestartMessageListener::new(
             nats_connection_manager.clone(),
-            tool_run_manager.clone(),
             tool_restart_service,
             config_service.clone(),
         );

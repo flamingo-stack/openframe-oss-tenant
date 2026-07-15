@@ -1,5 +1,7 @@
 use anyhow::{Context, Result};
-use tracing::info;
+use futures::FutureExt;
+use std::panic::AssertUnwindSafe;
+use tracing::{info, warn};
 use crate::models::{InstalledTool, Installation};
 use crate::services::InstalledToolsService;
 use crate::services::ToolKillService;
@@ -9,6 +11,7 @@ use crate::platform::system_service;
 pub enum RestartOutcome {
     Restarted,
     NotInstalled,
+    Busy,
 }
 
 #[derive(Clone)]
@@ -28,6 +31,24 @@ impl ToolRestartService {
             installed_tools_service,
             tool_kill_service,
             tool_run_manager,
+        }
+    }
+
+    /// Restart under the tool lock with the updating flag held; panic-safe so the flag is never leaked.
+    pub async fn restart_guarded(&self, tool_agent_id: &str) -> Result<RestartOutcome> {
+        let tool_lock = self.tool_run_manager.tool_lock(tool_agent_id).await;
+        let _guard = match tool_lock.try_lock() {
+            Ok(guard) => guard,
+            Err(_) => return Ok(RestartOutcome::Busy),
+        };
+        self.tool_run_manager.mark_updating(tool_agent_id).await;
+        let outcome = AssertUnwindSafe(self.restart_by_tool_agent_id(tool_agent_id))
+            .catch_unwind()
+            .await;
+        self.tool_run_manager.clear_updating(tool_agent_id).await;
+        match outcome {
+            Ok(result) => result,
+            Err(_) => Err(anyhow::anyhow!("Restart panicked for tool {}", tool_agent_id)),
         }
     }
 
@@ -57,8 +78,16 @@ impl ToolRestartService {
             Installation::Service { service_name, .. } => {
                 // Services aren't supervised by the run manager, so start them back explicitly.
                 info!(service_name = %service_name, "Starting service tool back up");
-                system_service::start_service(service_name).await
-                    .with_context(|| format!("Failed to start service {}", service_name))?;
+                if let Err(e) = system_service::start_service(service_name).await {
+                    // A start error can mean "already running" (e.g. relaunched by the OS supervisor) — verify before failing.
+                    if self.tool_kill_service.is_installed_tool_running(tool).await {
+                        info!(service_name = %service_name, "start_service failed but the tool is running — treating as restarted: {e:#}");
+                    } else {
+                        warn!(service_name = %service_name, "start_service failed, retrying once: {e:#}");
+                        system_service::start_service(service_name).await
+                            .with_context(|| format!("Failed to start service {}", service_name))?;
+                    }
+                }
             }
             _ => {
                 // Supervised process: the run-manager loop relaunches it once the update flag clears.
