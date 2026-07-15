@@ -11,6 +11,7 @@ use crate::config::update_config::{
     RECONNECTION_DELAY_MS,
     CONSUMER_ACK_WAIT_SECS,
     RESTART_CONSUMER_MAX_DELIVER,
+    RESTART_CONSUMER_QUIET_PAUSE_MS,
 };
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
@@ -19,7 +20,7 @@ use tokio::time::Duration;
 use anyhow::Result;
 use async_nats::jetstream;
 use futures::StreamExt;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 #[derive(Clone)]
 pub struct ToolRestartMessageListener {
@@ -146,12 +147,21 @@ impl ToolRestartMessageListener {
         loop {
             cycle += 1;
             let mut delay_ms = INITIAL_RETRY_DELAY_MS;
+            // First cycle logs loudly; later cycles go quiet with a long pause so a server missing the tool-restart subject/grants can't spam the fleet's logs.
+            let loud = cycle == 1;
 
             for attempt in 1..=CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
-                info!(
-                    "Creating restart consumer for stream {} (cycle {}, attempt {}/{})",
-                    Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
-                );
+                if loud {
+                    info!(
+                        "Creating restart consumer for stream {} (cycle {}, attempt {}/{})",
+                        Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
+                    );
+                } else {
+                    debug!(
+                        "Creating restart consumer for stream {} (cycle {}, attempt {}/{})",
+                        Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
+                    );
+                }
 
                 match js.create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME).await {
                     Ok(consumer) => {
@@ -169,28 +179,38 @@ impl ToolRestartMessageListener {
                             }
                         }
 
-                        if attempt < CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
-                            warn!(
-                                "Failed to create restart consumer (cycle {}, attempt {}/{}): {:#}. Retrying in {} ms...",
-                                cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e, delay_ms
-                            );
-                            tokio::time::sleep(Duration::from_millis(delay_ms)).await;
-                            delay_ms = (delay_ms * 2).min(MAX_RETRY_DELAY_MS);
-                        } else {
+                        if loud {
                             warn!(
                                 "Failed to create restart consumer (cycle {}, attempt {}/{}): {:#}",
                                 cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e
                             );
+                        } else {
+                            debug!(
+                                "Failed to create restart consumer (cycle {}, attempt {}/{}): {:#}",
+                                cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e
+                            );
+                        }
+                        if attempt < CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
+                            tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+                            delay_ms = (delay_ms * 2).min(MAX_RETRY_DELAY_MS);
                         }
                     }
                 }
             }
 
-            info!(
-                "All {} attempts in cycle {} failed. Pausing {} seconds before next cycle...",
-                CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, cycle, CONSUMER_CYCLE_PAUSE_MS / 1000
-            );
-            tokio::time::sleep(Duration::from_millis(CONSUMER_CYCLE_PAUSE_MS)).await;
+            let pause_ms = if loud { CONSUMER_CYCLE_PAUSE_MS } else { RESTART_CONSUMER_QUIET_PAUSE_MS };
+            if loud {
+                warn!(
+                    "All {} attempts in cycle {} failed (tool-restart stream subject/permissions may not be provisioned yet). Retrying quietly every {} seconds...",
+                    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, cycle, RESTART_CONSUMER_QUIET_PAUSE_MS / 1000
+                );
+            } else {
+                debug!(
+                    "All {} attempts in cycle {} failed. Pausing {} seconds before next cycle...",
+                    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, cycle, pause_ms / 1000
+                );
+            }
+            tokio::time::sleep(Duration::from_millis(pause_ms)).await;
         }
     }
 
