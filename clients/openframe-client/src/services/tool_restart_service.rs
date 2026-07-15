@@ -52,7 +52,7 @@ impl ToolRestartService {
         }
     }
 
-    pub async fn restart_by_tool_agent_id(&self, tool_agent_id: &str) -> Result<RestartOutcome> {
+    async fn restart_by_tool_agent_id(&self, tool_agent_id: &str) -> Result<RestartOutcome> {
         match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             None => {
                 info!("Tool {} not present in registry, nothing to restart", tool_agent_id);

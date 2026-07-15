@@ -94,7 +94,7 @@ impl MeshSelfHealService {
         let mut last_marker_healthy = last_marker_in_tail(&log_path).await.unwrap_or(true);
         let mut stuck_since: Option<Instant> = if last_marker_healthy { None } else { Some(Instant::now()) };
         let mut last_action: Option<Instant> = None;
-        let mut last_activity = Instant::now();
+        let mut last_activity = seed_last_activity(&log_path).await;
         let mut last_poll = Instant::now();
 
         loop {
@@ -295,6 +295,18 @@ fn parse_msh_field(msh: &str, key: &str) -> Option<String> {
     msh.lines()
         .find_map(|l| l.trim().strip_prefix(prefix.as_str()).map(|v| v.trim().to_string()))
         .filter(|v| !v.is_empty())
+}
+
+/// Seed the silence timer from the log's mtime so an already-silent agent isn't granted a fresh window on client restart; a recent boot (Instant underflow) falls back to now.
+async fn seed_last_activity(path: &Path) -> Instant {
+    let now = Instant::now();
+    tokio::fs::metadata(path)
+        .await
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|mtime| mtime.elapsed().ok())
+        .and_then(|stale_for| now.checked_sub(stale_for.min(SILENCE_DURATION)))
+        .unwrap_or(now)
 }
 
 /// Health of the last marker within the log tail: Some(true)=healthy, Some(false)=failing, None=no marker found.
