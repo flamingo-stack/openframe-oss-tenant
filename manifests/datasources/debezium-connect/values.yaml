@@ -18,6 +18,8 @@ resources:
     memory: 2Gi
 
 probes:
+  startup:
+    enabled: true
   liveness:
     enabled: true
   readiness:

@@ -33,6 +33,12 @@ pinot:
   controller:
     external:
       enabled: false
+    initContainers:
+      - name: wait-for-zookeeper
+        image: ghcr.io/flamingo-stack/registry/busybox:1.36.0
+        command: [sh, -c]
+        args:
+          - until nc -z zookeeper.datasources.svc.cluster.local 2181; do echo "waiting for zookeeper"; sleep 3; done
     automaticReload:
       enabled: true
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"

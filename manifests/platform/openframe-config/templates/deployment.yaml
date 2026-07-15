@@ -40,11 +40,20 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
+          # Gates liveness/readiness until the config server is up: readiness
+          # lands as soon as it is actually ready instead of a fixed 60s delay.
+          # tenant services (next sync wave) wait on this app being Healthy.
+          startupProbe:
+            httpGet:
+              path: /xml/shared-logback-spring.xml
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 36   # up to 3m to start (initial git clone included)
           livenessProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml
               port: http
-            initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
@@ -52,7 +61,6 @@ spec:
             httpGet:
               path: /xml/shared-logback-spring.xml
               port: http
-            initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
