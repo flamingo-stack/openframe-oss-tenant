@@ -327,11 +327,19 @@ impl Client {
             tool_kill_service.clone(),
         );
 
+        // Initialize tool restart service
+        let tool_restart_service = ToolRestartService::new(
+            installed_tools_service.clone(),
+            tool_kill_service.clone(),
+            tool_run_manager.clone(),
+        );
+
         // Initialize mesh self-heal service
         let mesh_self_heal_service = MeshSelfHealService::new(
             directory_manager.clone(),
             installed_tools_service.clone(),
             tool_kill_service.clone(),
+            tool_restart_service.clone(),
             initial_configuration_service.clone(),
             config_service.clone(),
             tool_run_manager.clone(),
@@ -421,12 +429,7 @@ impl Client {
             config_service.clone(),
         );
 
-        // Initialize tool restart service and listener
-        let tool_restart_service = ToolRestartService::new(
-            installed_tools_service.clone(),
-            tool_kill_service.clone(),
-            tool_run_manager.clone(),
-        );
+        // Initialize tool restart listener (shares the restart service with mesh self-heal)
         let tool_restart_message_listener = ToolRestartMessageListener::new(
             nats_connection_manager.clone(),
             tool_run_manager.clone(),

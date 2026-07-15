@@ -38,6 +38,18 @@ impl ToolKillService {
         self.stop_processes_by_pattern(&pattern, &format!("asset: {} (tool: {})", asset_id, tool_id)).await
     }
 
+    /// Check whether any process matching the tool's command pattern is currently running.
+    pub fn is_tool_running(&self, tool_id: &str) -> bool {
+        let pattern = Self::build_tool_cmd_pattern(tool_id);
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        sys.processes().values().any(|process| {
+            let cmdline = process.cmd().join(" ").to_lowercase();
+            let exe_path = process.exe().map(|p| p.to_string_lossy().to_lowercase()).unwrap_or_default();
+            cmdline.contains(&pattern) || exe_path.contains(&pattern)
+        })
+    }
+
     /// Generic method to stop processes matching a command pattern
     ///
     /// This method will search for any running processes that match the given

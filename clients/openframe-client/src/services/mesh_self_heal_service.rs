@@ -5,25 +5,27 @@ use anyhow::{anyhow, Result};
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
-use crate::models::Installation;
-use crate::platform::{system_service, DirectoryManager};
+use crate::platform::DirectoryManager;
 use crate::services::tool_kill_service::ToolKillService;
+use crate::services::tool_restart_service::{RestartOutcome, ToolRestartService};
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::{AgentConfigurationService, InitialConfigurationService, InstalledToolsService};
 
 const MESH_TOOL_ID: &str = "meshcentral-agent";
 
-/// Agent log line for a control channel that can't connect.
-const FAILURE_MARKER: &str = "Connection FAILED: No HTTP response";
-/// Printed only after a successful server connect.
+/// Stable prefix of every control-channel failure line, in 0.0.22 ("Connection FAILED: ...") and ≥0.0.23 ("Connection FAILED (latest attempt): ...") formats alike.
+const FAILURE_MARKER: &str = "Connection FAILED";
+/// Printed only after a successful server connect (verbatim in 0.0.22 through 0.0.24).
 const HEALTHY_MARKER: &str = "Received CoreOk from server";
 
 /// How often we scan the agent log.
 const POLL_INTERVAL: Duration = Duration::from_secs(30);
 /// How long continuously stuck before we act.
 const STUCK_DURATION: Duration = Duration::from_secs(10 * 60);
-/// Minimum wait between heal attempts (success or no-op), so a server-side outage can't spin.
-const NOOP_HEAL_COOLDOWN: Duration = Duration::from_secs(60 * 60);
+/// A healthy agent logs roughly hourly, so this much total silence means it is wedged or dead.
+const SILENCE_DURATION: Duration = Duration::from_secs(90 * 60);
+/// Minimum wait between heal actions (refresh or restart), so a server-side outage can't spin.
+const ACTION_COOLDOWN: Duration = Duration::from_secs(60 * 60);
 /// Timeout for the /generate-msh fetch so an unresponsive server can't block the heal loop.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -32,6 +34,7 @@ pub struct MeshSelfHealService {
     directory_manager: DirectoryManager,
     installed_tools: InstalledToolsService,
     tool_kill: ToolKillService,
+    tool_restart: ToolRestartService,
     initial_config: InitialConfigurationService,
     agent_config: AgentConfigurationService,
     tool_run_manager: ToolRunManager,
@@ -43,6 +46,7 @@ impl MeshSelfHealService {
         directory_manager: DirectoryManager,
         installed_tools: InstalledToolsService,
         tool_kill: ToolKillService,
+        tool_restart: ToolRestartService,
         initial_config: InitialConfigurationService,
         agent_config: AgentConfigurationService,
         tool_run_manager: ToolRunManager,
@@ -51,6 +55,7 @@ impl MeshSelfHealService {
             directory_manager,
             installed_tools,
             tool_kill,
+            tool_restart,
             initial_config,
             agent_config,
             tool_run_manager,
@@ -82,9 +87,12 @@ impl MeshSelfHealService {
             log_path.display()
         );
 
-        let mut offset: u64 = 0;
+        // Start at EOF so stale pre-restart history can't arm detection at boot.
+        let mut offset: u64 = tokio::fs::metadata(&log_path).await.map(|m| m.len()).unwrap_or(0);
         let mut stuck_since: Option<Instant> = None;
-        let mut last_heal_attempt: Option<Instant> = None;
+        let mut last_action: Option<Instant> = None;
+        let mut last_activity = Instant::now();
+        let mut last_marker_healthy = true;
 
         loop {
             sleep(POLL_INTERVAL).await;
@@ -93,12 +101,17 @@ impl MeshSelfHealService {
 
             match read_new_lines(&log_path, &mut offset).await {
                 Ok(lines) => {
+                    if !lines.is_empty() {
+                        last_activity = Instant::now();
+                    }
                     for line in &lines {
                         if line.contains(HEALTHY_MARKER) {
                             stuck_since = None;
-                            last_heal_attempt = None;
+                            last_action = None;
+                            last_marker_healthy = true;
                         } else if line.contains(FAILURE_MARKER) {
                             stuck_since.get_or_insert_with(Instant::now);
+                            last_marker_healthy = false;
                         }
                     }
                 }
@@ -107,42 +120,88 @@ impl MeshSelfHealService {
                 }
             }
 
-            let stuck = stuck_since.map_or(false, |t| t.elapsed() >= STUCK_DURATION);
-            if !msh_missing_serverid && !stuck {
+            // Agent is being replaced by an update — drop stale history so we don't restart it post-update.
+            if self.tool_run_manager.is_updating(MESH_TOOL_ID).await {
+                stuck_since = None;
+                last_activity = Instant::now();
                 continue;
             }
 
-            if let Some(t) = last_heal_attempt {
-                if t.elapsed() < NOOP_HEAL_COOLDOWN {
+            if let Some(t) = last_action {
+                if t.elapsed() < ACTION_COOLDOWN {
                     continue;
                 }
             }
 
-            if self.tool_run_manager.is_updating(MESH_TOOL_ID).await {
-                info!("meshcentral-agent is updating — skipping .msh self-heal this cycle");
-                stuck_since = None;
-                continue;
+            let stuck = stuck_since.is_some_and(|t| t.elapsed() >= STUCK_DURATION);
+            let silent = last_activity.elapsed() >= SILENCE_DURATION;
+
+            if msh_missing_serverid || stuck {
+                let reason = if msh_missing_serverid {
+                    "current .msh has no ServerID (agent cannot authenticate the server)".to_string()
+                } else {
+                    format!("no successful connect within {}s", STUCK_DURATION.as_secs())
+                };
+                warn!("meshcentral-agent unhealthy: {reason} — refreshing .msh and restarting the agent");
+
+                match self.try_refresh_msh().await {
+                    Ok(true) => info!("mesh self-heal: refreshed .msh (NodeID preserved)"),
+                    Ok(false) => debug!("mesh self-heal: .msh already current"),
+                    Err(e) => error!("mesh self-heal: .msh refresh failed (restarting anyway): {e:#}"),
+                }
+
+                if self.restart_agent().await {
+                    stuck_since = None;
+                    last_activity = Instant::now();
+                    last_action = Some(Instant::now());
+                }
+            } else if silent {
+                let running = self.tool_kill.is_tool_running(MESH_TOOL_ID);
+                if last_marker_healthy && running {
+                    info!(
+                        "mesh self-heal: log silent for {}s but last state was healthy and the agent is running — no action",
+                        last_activity.elapsed().as_secs()
+                    );
+                    last_activity = Instant::now();
+                    continue;
+                }
+                warn!(
+                    "meshcentral-agent silent for {}s (last_marker_healthy={last_marker_healthy}, process_running={running}) — restarting the agent",
+                    last_activity.elapsed().as_secs()
+                );
+
+                if self.restart_agent().await {
+                    stuck_since = None;
+                    last_activity = Instant::now();
+                    last_action = Some(Instant::now());
+                }
             }
-
-            let reason = if msh_missing_serverid {
-                "current .msh has no ServerID (agent cannot authenticate the server)".to_string()
-            } else {
-                format!("no successful connect within {}s", STUCK_DURATION.as_secs())
-            };
-            warn!("meshcentral-agent unhealthy: {reason} — attempting .msh self-heal");
-
-            match self.try_heal().await {
-                Ok(true) => info!("mesh self-heal: refreshed .msh and restarted the agent (NodeID preserved)"),
-                Ok(false) => debug!("mesh self-heal: .msh already current — likely a server-side issue, no action taken"),
-                Err(e) => error!("mesh self-heal failed: {e:#}"),
-            }
-
-            stuck_since = None;
-            last_heal_attempt = Some(Instant::now());
         }
     }
 
-    async fn try_heal(&self) -> Result<bool> {
+    /// Restart the agent through the shared tool-restart flow; returns false when skipped because the tool is busy.
+    async fn restart_agent(&self) -> bool {
+        let lock = self.tool_run_manager.tool_lock(MESH_TOOL_ID).await;
+        let _guard = match lock.try_lock() {
+            Ok(g) => g,
+            Err(_) => {
+                info!("mesh self-heal: meshcentral-agent busy with another operation — retrying next cycle");
+                return false;
+            }
+        };
+        self.tool_run_manager.mark_updating(MESH_TOOL_ID).await;
+        let result = self.tool_restart.restart_by_tool_agent_id(MESH_TOOL_ID).await;
+        self.tool_run_manager.clear_updating(MESH_TOOL_ID).await;
+        match result {
+            Ok(RestartOutcome::Restarted) => info!("mesh self-heal: agent restarted"),
+            Ok(RestartOutcome::NotInstalled) => warn!("mesh self-heal: meshcentral-agent not in registry — nothing to restart"),
+            Err(e) => error!("mesh self-heal: agent restart failed: {e:#}"),
+        }
+        true
+    }
+
+    /// Refresh the .msh from /generate-msh; returns true when it was rewritten.
+    async fn try_refresh_msh(&self) -> Result<bool> {
         let host = self.initial_config.get_server_url()?;
         let url = format!("https://{host}/tools/agent/meshcentral-server/generate-msh?host={host}");
 
@@ -175,7 +234,7 @@ impl MeshSelfHealService {
                 .as_deref()
                 .and_then(|s| parse_msh_field(s, "MeshServer"))
                 .unwrap_or_else(|| "<none>".to_string());
-            info!("mesh self-heal: .msh already current (MeshServer={server}) — no action");
+            info!("mesh self-heal: .msh already current (MeshServer={server})");
             return Ok(false);
         }
 
@@ -190,13 +249,6 @@ impl MeshSelfHealService {
         let tmp_path = msh_path.with_extension("msh.tmp");
         tokio::fs::write(&tmp_path, body.as_bytes()).await?;
         tokio::fs::rename(&tmp_path, &msh_path).await?;
-
-        self.tool_kill.stop_tool(MESH_TOOL_ID).await?;
-        if let Some(service_name) = self.mesh_service_name().await? {
-            if let Err(e) = system_service::start_service(&service_name).await {
-                debug!("mesh self-heal: start_service({service_name}) — likely already running: {e}");
-            }
-        }
         Ok(true)
     }
 
@@ -225,18 +277,6 @@ impl MeshSelfHealService {
             }
         }
         Err(anyhow!("no .msh found in {}", dir.display()))
-    }
-
-    async fn mesh_service_name(&self) -> Result<Option<String>> {
-        let tool = self
-            .installed_tools
-            .get_by_tool_agent_id(MESH_TOOL_ID)
-            .await?
-            .ok_or_else(|| anyhow!("{MESH_TOOL_ID} is not installed"))?;
-        Ok(match tool.installation {
-            Installation::Service { service_name, .. } => Some(service_name),
-            _ => None,
-        })
     }
 }
 
@@ -273,4 +313,40 @@ async fn read_new_lines(path: &Path, offset: &mut u64) -> Result<Vec<String>> {
         .lines()
         .map(|s| s.to_string())
         .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn failure_marker_matches_0_0_22_formats() {
+        let no_http = "Connection FAILED: No HTTP response (fd=0, status=Complete/Disconnected, authState=0, connState=0, tls=down, elapsedMs=20016, attempt=ABCD1234-2100)";
+        let net_timeout = "Connection FAILED: Network timeout - server unreachable or gateway blocking (tls=down, elapsedMs=21016, attempt=ABCD1234-2101)";
+        assert!(no_http.contains(FAILURE_MARKER));
+        assert!(net_timeout.contains(FAILURE_MARKER));
+    }
+
+    #[test]
+    fn failure_marker_matches_0_0_23_plus_format() {
+        let latest = "Connection FAILED (latest attempt): No HTTP response (fd=0, status=Complete/Disconnected, authState=0, connState=0, tls=down, elapsedMs=20016, attempt=ABCD1234-2102)";
+        assert!(latest.contains(FAILURE_MARKER));
+    }
+
+    #[test]
+    fn markers_ignore_unrelated_lines() {
+        for line in [
+            "Connection: dialing uri=wss://x.openframe.ai/ws/tools/agent/meshcentral-server/agent.ashx host=x.openframe.ai port=443 family=IPv4 ip=1.2.3.4 useproxy=0 proxy=DIRECT attempt=ABCD1234-2103 suppressed=2",
+            "AutoRetry Connect in 299066 milliseconds",
+        ] {
+            assert!(!line.contains(FAILURE_MARKER));
+            assert!(!line.contains(HEALTHY_MARKER));
+        }
+    }
+
+    #[test]
+    fn healthy_marker_matches_core_ok() {
+        let core_ok = "Received CoreOk from server (coreTimeout=0x0)";
+        assert!(core_ok.contains(HEALTHY_MARKER));
+    }
 }
