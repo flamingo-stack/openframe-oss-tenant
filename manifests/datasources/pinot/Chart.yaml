@@ -5,7 +5,7 @@ type: application
 version: 0.0.1
 appVersion: "0.0.1"
 
-# Upstream apache/pinot chart 0.3.5 is vendored under charts/pinot (the remote
-# repo was a mutable, rate-limited branch). To upgrade: `helm pull pinot --repo
-# https://raw.githubusercontent.com/apache/pinot/master/helm --version <v>`,
-# re-extract into charts/pinot; local customization lives in values.yaml only.
+dependencies:
+  - name: pinot
+    version: "~0.3.5"
+    repository: https://raw.githubusercontent.com/apache/pinot/master/helm

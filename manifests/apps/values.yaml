@@ -19,11 +19,6 @@ repository:
 # One Application per platform.apps entry, sourced from manifests/platform/<name>.
 # ngrok-operator and ingress-nginx additionally follow deployment.ingress:
 # localhost.enabled skips ngrok-operator, ngrok.enabled skips ingress-nginx.
-#
-# syncWave is used sparingly: -2 namespaces → -1 ingress (light, gates all
-# user-facing access — first, not starved behind heavy statefulsets) → 0
-# everything else → 1 tenant. In-wave dependencies (debezium→kafka,
-# pinot→controller→zookeeper) are handled by initContainers in those charts.
 platform:
   enabled: true
   namespace: platform
@@ -31,14 +26,12 @@ platform:
   apps:
     namespace-platform:
       enabled: true
-      syncWave: "-2"
+      syncWave: "-1"
       namespace: default        # only creates the (cluster-scoped) platform ns → target default
     ngrok-operator:
       enabled: false
-      syncWave: "-1"
     ingress-nginx:
       enabled: true
-      syncWave: "-1"
     dev-tools:
       enabled: true
     openframe-config:
@@ -53,7 +46,7 @@ datasources:
   apps:
     namespace-datasources:
       enabled: true
-      syncWave: "-2"
+      syncWave: "-1"
       namespace: default        # only creates the (cluster-scoped) datasources ns → target default
     cassandra:
       enabled: true
@@ -86,7 +79,7 @@ tenant:
   uuid: ""
   namespace: tenant
   project: tenant
-  syncWave: "1"   # after all datasources + openframe-config are healthy
+  syncWave: "1"
   # Extra values for the tenant umbrella (e.g. openframe-saas.image.tag);
   # deep-merged over the deployment block (tenant.values wins per key).
   values: {}

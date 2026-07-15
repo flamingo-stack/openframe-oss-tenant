@@ -6,6 +6,7 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 2
+  minReadySeconds: 10
   selector:
     matchLabels:
       app: openframe-config
@@ -40,9 +41,6 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
-          # Gates liveness/readiness until the config server is up: readiness
-          # lands as soon as it is actually ready instead of a fixed 60s delay.
-          # tenant services (next sync wave) wait on this app being Healthy.
           startupProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml
