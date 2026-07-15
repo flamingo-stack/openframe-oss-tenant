@@ -188,6 +188,7 @@ openframe-saas:
   frontend:
     enabled: true
     image:
+      registry: ghcr.io/flamingo-stack/openframe-frontend
       repository: openframe-frontend
       tag: ""
     # frontend has no /metrics endpoint; only ship logs

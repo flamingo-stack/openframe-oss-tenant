@@ -117,14 +117,6 @@ jobs:
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
- 
-      - name: Format build arguments
-        id: format_args
-        uses: ./.github/steps/docker-format-build-args
-        if: steps.should_run.outputs.run == 'true'
-        with:
-          build_args: ${{ toJSON(matrix.build_args) }}
-
 
       - name: Build and push image
         id: docker_build
@@ -134,7 +126,6 @@ jobs:
           LIB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           META_TAGS: ${{ steps.meta.outputs.tags }}
           META_LABELS: ${{ steps.meta.outputs.labels }}
-          EXTRA_BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
         with:
           max_attempts: 3
           retry_wait_seconds: 5
@@ -147,7 +138,6 @@ jobs:
                   -f "${{ matrix.path }}/Dockerfile")
             while IFS= read -r t; do [ -n "$t" ] && args+=(--tag "$t"); done <<< "$META_TAGS"
             while IFS= read -r l; do [ -n "$l" ] && args+=(--label "$l"); done <<< "$META_LABELS"
-            while IFS= read -r b; do [ -n "$b" ] && args+=(--build-arg "$b"); done <<< "$EXTRA_BUILD_ARGS"
             docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
 
 
