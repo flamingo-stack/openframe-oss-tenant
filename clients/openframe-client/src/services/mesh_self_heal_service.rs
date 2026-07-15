@@ -165,17 +165,8 @@ impl MeshSelfHealService {
                 stuck_since = None;
                 last_activity = Instant::now();
             } else if silent {
-                let running = self.mesh_agent_running().await;
-                if last_marker_healthy && running {
-                    info!(
-                        "mesh self-heal: log silent for {}s but last state was healthy and the agent is running — no action",
-                        last_activity.elapsed().as_secs()
-                    );
-                    last_activity = Instant::now();
-                    continue;
-                }
                 warn!(
-                    "meshcentral-agent silent for {}s (last_marker_healthy={last_marker_healthy}, process_running={running}) — restarting the agent",
+                    "meshcentral-agent silent for {}s (last_marker_healthy={last_marker_healthy}) — restarting the agent",
                     last_activity.elapsed().as_secs()
                 );
 
@@ -200,13 +191,6 @@ impl MeshSelfHealService {
                 }
             }
             Err(e) => error!("mesh self-heal: agent restart failed: {e:#}"),
-        }
-    }
-
-    async fn mesh_agent_running(&self) -> bool {
-        match self.installed_tools.get_by_tool_agent_id(MESH_TOOL_ID).await {
-            Ok(Some(tool)) => self.tool_kill.is_installed_tool_running(&tool).await,
-            _ => false,
         }
     }
 
