@@ -13,9 +13,9 @@ use crate::services::{AgentConfigurationService, InitialConfigurationService, In
 
 const MESH_TOOL_ID: &str = "meshcentral-agent";
 
-/// Stable prefix of every control-channel failure line, in 0.0.22 ("Connection FAILED: ...") and ≥0.0.23 ("Connection FAILED (latest attempt): ...") formats alike.
+/// Stable prefix shared by every control-channel failure line the agent emits ("Connection FAILED: ..." and "Connection FAILED (latest attempt): ...").
 const FAILURE_MARKER: &str = "Connection FAILED";
-/// Printed only after a successful server connect (verbatim in 0.0.22 through 0.0.24).
+/// Printed only after a successful server connect, identically across agent versions.
 const HEALTHY_MARKER: &str = "Received CoreOk from server";
 
 /// How often we scan the agent log.
