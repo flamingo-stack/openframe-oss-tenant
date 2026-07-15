@@ -5,7 +5,11 @@ type: application
 version: 0.0.1
 appVersion: "0.0.1"
 
-dependencies:
-  - name: pinot
-    version: "~0.3.5"
-    repository: https://raw.githubusercontent.com/apache/pinot/master/helm
+# The upstream chart (apache/pinot helm, version 0.3.5) is VENDORED under
+# charts/pinot instead of being declared as a remote dependency: the previous
+# source (raw.githubusercontent.com/apache/pinot/master/helm) is a mutable
+# branch behind a rate-limited endpoint — installs broke on 429s and could
+# silently pick up upstream changes. To upgrade: `helm pull pinot --repo
+# https://raw.githubusercontent.com/apache/pinot/master/helm --version <v>`
+# and re-extract into charts/pinot, re-applying no local template edits
+# (local customization lives in values.yaml only).

@@ -19,6 +19,12 @@ repository:
 # One Application per platform.apps entry, sourced from manifests/platform/<name>.
 # ngrok-operator and ingress-nginx additionally follow deployment.ingress:
 # localhost.enabled skips ngrok-operator, ngrok.enabled skips ingress-nginx.
+#
+# syncWave deploys apps in dependency order (ArgoCD waits for each wave to be
+# healthy before starting the next — Application health is propagated via the
+# resource.customizations health check the CLI installs):
+#   -1 namespaces · 0 ingress · 1 stores/coordinators · 2 kafka
+#    3 consumers (debezium, pinot, dev-tools) · 4 tenant + openframe-config
 platform:
   enabled: true
   namespace: platform
@@ -30,12 +36,16 @@ platform:
       namespace: default        # only creates the (cluster-scoped) platform ns → target default
     ngrok-operator:
       enabled: false
+      syncWave: "0"             # ingress gates all user-facing access — first, not last
     ingress-nginx:
       enabled: true
+      syncWave: "0"
     dev-tools:
       enabled: true
+      syncWave: "3"
     openframe-config:
       enabled: true
+      syncWave: "4"             # serves Spring config to the tenant services
 
 # ── Datasources tier ───────────────────────────────────────────────────────
 # One Application per datasources.apps entry, sourced from manifests/datasources/<name>.
@@ -50,24 +60,34 @@ datasources:
       namespace: default        # only creates the (cluster-scoped) datasources ns → target default
     cassandra:
       enabled: true
+      syncWave: "1"
     debezium-connect:
       enabled: true
+      syncWave: "3"             # needs kafka (wave 2)
     kafka:
       enabled: true
+      syncWave: "2"             # needs zookeeper (wave 1)
     mongodb:
       enabled: true
+      syncWave: "1"
     mongodb-meshcentral:
       enabled: true
+      syncWave: "3"
     mysql-fleetmdm:
       enabled: true
+      syncWave: "1"
     nats:
       enabled: true
+      syncWave: "1"
     pinot:
       enabled: true
+      syncWave: "3"             # needs zookeeper (wave 1)
     redis-cluster:
       enabled: true
+      syncWave: "1"
     zookeeper:
       enabled: true
+      syncWave: "1"
 
 # ── Tenant tier ────────────────────────────────────────────────────────────
 # ONE Application sourcing the manifests/tenant umbrella (fleet, meshcentral
@@ -79,7 +99,7 @@ tenant:
   uuid: ""
   namespace: tenant
   project: tenant
-  syncWave: "1"
+  syncWave: "4"   # after all datasources + openframe-config
   # Extra values for the tenant umbrella (e.g. openframe-saas.image.tag);
   # deep-merged over the deployment block (tenant.values wins per key).
   values: {}

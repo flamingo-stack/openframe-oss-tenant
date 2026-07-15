@@ -8,6 +8,9 @@ image:
 # the apps chart injects the real deployment branch
 repository:
   branch: main
+  # Git clone/fetch timeout in seconds. Spring's 5s default aborts the initial
+  # clone on cold installs where the node is saturated, crash-looping the pod.
+  timeoutSeconds: 30
 
 resources:
   requests:
