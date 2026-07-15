@@ -20,7 +20,7 @@ const HEALTHY_MARKER: &str = "Received CoreOk from server";
 
 /// How often we scan the agent log.
 const POLL_INTERVAL: Duration = Duration::from_secs(30);
-/// How long continuously stuck before we act.
+/// How long an unresolved failure (no healthy connect logged since) may stand before we act.
 const STUCK_DURATION: Duration = Duration::from_secs(10 * 60);
 /// A healthy agent logs roughly hourly, so this much total silence means it is wedged or dead.
 const SILENCE_DURATION: Duration = Duration::from_secs(90 * 60);
@@ -95,17 +95,16 @@ impl MeshSelfHealService {
         let mut stuck_since: Option<Instant> = if last_marker_healthy { None } else { Some(Instant::now()) };
         let mut last_action: Option<Instant> = None;
         let mut last_activity = seed_last_activity(&log_path).await;
-        let mut last_poll = Instant::now();
 
         loop {
+            let sleep_started = Instant::now();
             sleep(POLL_INTERVAL).await;
 
-            // A large poll gap means the host slept — discard timers measured across suspend.
-            if last_poll.elapsed() > POLL_INTERVAL * 5 {
+            // The sleep alone overran by far ⇒ the host was suspended (Instant counts suspend on Windows) — discard timers measured across it.
+            if sleep_started.elapsed() > POLL_INTERVAL * 5 {
                 stuck_since = None;
                 last_activity = Instant::now();
             }
-            last_poll = Instant::now();
 
             match read_new_lines(&log_path, &mut offset).await {
                 Ok(lines) => {
@@ -282,14 +281,16 @@ fn parse_msh_field(msh: &str, key: &str) -> Option<String> {
 }
 
 /// Seed the silence timer from the log's mtime so an already-silent agent isn't granted a fresh window on client restart; a recent boot (Instant underflow) falls back to now.
+/// Staleness credit is capped below SILENCE_DURATION so at least STUCK_DURATION of live, monotonically-measured silence is observed before the branch can fire (also bounds wall-clock/NTP skew in mtime).
 async fn seed_last_activity(path: &Path) -> Instant {
     let now = Instant::now();
+    let max_credit = SILENCE_DURATION.saturating_sub(STUCK_DURATION);
     tokio::fs::metadata(path)
         .await
         .ok()
         .and_then(|m| m.modified().ok())
         .and_then(|mtime| mtime.elapsed().ok())
-        .and_then(|stale_for| now.checked_sub(stale_for.min(SILENCE_DURATION)))
+        .and_then(|stale_for| now.checked_sub(stale_for.min(max_credit)))
         .unwrap_or(now)
 }
 

@@ -14,6 +14,22 @@ pub enum RestartOutcome {
     Busy,
 }
 
+/// Clears the updating flag on drop so cancellation or panic can't leave the tool wedged as "updating".
+struct UpdatingGuard {
+    tool_run_manager: ToolRunManager,
+    tool_agent_id: String,
+}
+
+impl Drop for UpdatingGuard {
+    fn drop(&mut self) {
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            let manager = self.tool_run_manager.clone();
+            let tool_agent_id = self.tool_agent_id.clone();
+            handle.spawn(async move { manager.clear_updating(&tool_agent_id).await });
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct ToolRestartService {
     installed_tools_service: InstalledToolsService,
@@ -34,7 +50,7 @@ impl ToolRestartService {
         }
     }
 
-    /// Restart under the tool lock with the updating flag held; panic-safe so the flag is never leaked.
+    /// Restart under the tool lock with the updating flag held; the flag is cleared exactly once on return, panic, or cancellation.
     pub async fn restart_guarded(&self, tool_agent_id: &str) -> Result<RestartOutcome> {
         let tool_lock = self.tool_run_manager.tool_lock(tool_agent_id).await;
         let _guard = match tool_lock.try_lock() {
@@ -42,10 +58,13 @@ impl ToolRestartService {
             Err(_) => return Ok(RestartOutcome::Busy),
         };
         self.tool_run_manager.mark_updating(tool_agent_id).await;
+        let _updating = UpdatingGuard {
+            tool_run_manager: self.tool_run_manager.clone(),
+            tool_agent_id: tool_agent_id.to_string(),
+        };
         let outcome = AssertUnwindSafe(self.restart_by_tool_agent_id(tool_agent_id))
             .catch_unwind()
             .await;
-        self.tool_run_manager.clear_updating(tool_agent_id).await;
         match outcome {
             Ok(result) => result,
             Err(_) => Err(anyhow::anyhow!("Restart panicked for tool {}", tool_agent_id)),
