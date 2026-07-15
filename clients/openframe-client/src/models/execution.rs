@@ -47,6 +47,8 @@ pub struct ScriptMessage {
     pub execution_id: String,
     #[serde(default)]
     pub machine_id: Option<String>,
+    #[serde(default)]
+    pub schedule_id: Option<String>,
     pub code: String,
     pub shell: ScriptShell,
     #[serde(default)]
@@ -104,6 +106,10 @@ pub trait ExecutionMessage: Sized + Send {
     fn from_payload(payload: &str) -> Result<Self>;
     fn execution_id(&self) -> &str;
     fn to_request(&self) -> ExecutionRequest<'_>;
+
+    fn schedule_id(&self) -> Option<&str> {
+        None
+    }
 }
 
 impl ExecutionMessage for CommandMessage {
@@ -139,6 +145,10 @@ impl ExecutionMessage for ScriptMessage {
 
     fn execution_id(&self) -> &str {
         &self.execution_id
+    }
+
+    fn schedule_id(&self) -> Option<&str> {
+        self.schedule_id.as_deref()
     }
 
     fn to_request(&self) -> ExecutionRequest<'_> {
