@@ -23,6 +23,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: {{ $name }}
+  labels:
+    # Deploy-ordering group (1=foundation … 5=platform); consumed by the CLI's
+    # group-gated sync and by a future ApplicationSet RollingSync strategy.
+    openframe.io/sync-group: "{{ $app.syncGroup | default "3" }}"
   annotations:
     argocd.argoproj.io/sync-wave: "{{ $app.syncWave | default "0" }}"
     {{- if get ($app.syncOptions | default dict) "ServerSideDiff" | default false }}
