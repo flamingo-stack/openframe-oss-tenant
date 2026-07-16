@@ -1,0 +1,76 @@
+name: Cleanup
+
+# 1) Cleans PRs with no activity for 1 day:
+#   a. convert it to draft
+#   b. drop its `deployed` label, if set
+# 2) Deletes Branches with no activity for 3 month
+
+# =============================================================================
+# WORKFLOW CONFIGURATION
+# =============================================================================
+
+on:
+  schedule:
+    - cron: '17 * * * *'   # hourly -> stale-pr
+    - cron: '41 4 * * *'   # daily  -> stale-branches
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# =============================================================================
+# JOBS
+# =============================================================================
+
+jobs:
+  stale-pr:
+    name: Draft Stale PRs
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Draft stale PRs and drop deployed label
+        env:
+          GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
+          REPO: ${{ github.repository }}
+          IDLE_DAYS: "1"
+        run: |
+          set -o pipefail
+          gh pr list --repo "$REPO" --state open --limit 100 \
+            --search "updated:<$(date -u -d "$IDLE_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ) sort:updated-asc" \
+            --json number,labels \
+            --jq '.[] | "\(.number) \([.labels[].name] | index("deployed") != null)"' |
+          while read -r pr deployed; do
+            echo "Cleaning idle PR #$pr"
+            gh pr ready "$pr" --repo "$REPO" --undo || echo "::warning::could not draft #$pr"
+            if [ "$deployed" = true ]; then
+              gh api --silent -X DELETE "repos/$REPO/issues/$pr/labels/deployed"
+              sleep 20   # so that cleanup don't collide on the fleet push
+            fi
+          done
+
+
+  stale-branches:
+    name: Delete Stale Branches
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '41 4 * * *'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete branches with no commits for MAX_AGE_DAYS
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          MAX_AGE_DAYS: "60"
+        run: |
+          set -o pipefail
+          CUTOFF=$(date -u -d "$MAX_AGE_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)
+          echo "Deleting branches with no commit since $CUTOFF"
+
+          gh api --paginate "repos/$REPO/branches?protected=false&per_page=100" \
+            --jq '.[].name' |
+          while read -r br; do
+            last=$(gh api "repos/$REPO/commits/$br" --jq '.commit.committer.date')
+            [[ "$last" < "$CUTOFF" ]] || continue
+            echo "Deleting $br (last commit $last)"
+            gh api --silent -X DELETE "repos/$REPO/git/refs/heads/$br"
+          done
