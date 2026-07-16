@@ -278,6 +278,52 @@ pub async fn check_websocket_upgrade(server_url: &str) -> CheckResult {
     }
 }
 
+// Detect the Edge WebView2 Runtime (required by the Tauri chat window) via its EdgeUpdate registry version.
+#[cfg(windows)]
+pub fn check_webview2_runtime() -> Option<CheckResult> {
+    use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ};
+    use winreg::RegKey;
+
+    const CLIENT: &str =
+        r"SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
+    const CLIENT_WOW: &str =
+        r"SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
+
+    let candidates = [
+        (HKEY_LOCAL_MACHINE, CLIENT_WOW),
+        (HKEY_LOCAL_MACHINE, CLIENT),
+        (HKEY_CURRENT_USER, CLIENT),
+        (HKEY_CURRENT_USER, CLIENT_WOW),
+    ];
+
+    let version = candidates.iter().find_map(|(hive, path)| {
+        RegKey::predef(*hive)
+            .open_subkey_with_flags(path, KEY_READ)
+            .ok()
+            .and_then(|k| k.get_value::<String, _>("pv").ok())
+            .filter(|v| !v.trim().is_empty() && v.trim() != "0.0.0.0")
+    });
+
+    Some(match version {
+        Some(v) => CheckResult::pass(
+            CheckCategory::Runtime,
+            &format!("Runtime: WebView2 Runtime {} installed", v.trim()),
+        ),
+        None => CheckResult::fail(
+            CheckCategory::Runtime,
+            "Runtime: WebView2 Runtime not installed",
+            "Microsoft Edge WebView2 Runtime is required to run the OpenFrame chat window. \
+             Install the Evergreen WebView2 Runtime from \
+             https://developer.microsoft.com/microsoft-edge/webview2/ and try again.",
+        ),
+    })
+}
+
+#[cfg(not(windows))]
+pub fn check_webview2_runtime() -> Option<CheckResult> {
+    None
+}
+
 pub fn check_proxy_env() -> Option<CheckResult> {
     let mut detected = Vec::new();
     for var in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"] {
