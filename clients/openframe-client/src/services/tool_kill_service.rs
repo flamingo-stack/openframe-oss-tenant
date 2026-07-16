@@ -85,8 +85,13 @@ impl ToolKillService {
         info!("Attempting to stop {}", description);
         info!("Using pattern to stop: {}", pattern);
 
+        let pattern_string = pattern.to_string();
+        let matches = tokio::task::spawn_blocking(move || Self::collect_matching_processes(&[pattern_string]))
+            .await
+            .unwrap_or_default();
+
         let mut pids_to_stop = Vec::new();
-        for (pid, exe_path) in Self::collect_matching_processes(&[pattern.to_string()]) {
+        for (pid, exe_path) in matches {
             info!("Found process for {} with pid {} (exe: {})", description, pid, exe_path);
             pids_to_stop.push(pid);
         }
