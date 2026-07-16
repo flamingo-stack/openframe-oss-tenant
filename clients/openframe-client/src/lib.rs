@@ -75,6 +75,7 @@ use crate::logging::nats_streaming::LogStreamingRunManager;
 use crate::config::update_config::{
     HTTP_CLIENT_TIMEOUT_SECS,
     DOWNLOAD_CLIENT_TIMEOUT_SECS,
+    EXECUTION_MIN_CONCURRENCY,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -433,17 +434,24 @@ impl Client {
         );
 
         let execution_service = ExecutionService::new();
+        let execution_concurrency = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(EXECUTION_MIN_CONCURRENCY)
+            .max(EXECUTION_MIN_CONCURRENCY);
+        let execution_semaphore = Arc::new(tokio::sync::Semaphore::new(execution_concurrency));
         let command_execution_listener = ExecutionListener::<CommandMessage>::new(
             nats_connection_manager.clone(),
             nats_message_publisher.clone(),
             execution_service.clone(),
             config_service.clone(),
+            execution_semaphore.clone(),
         );
         let script_execution_listener = ExecutionListener::<ScriptMessage>::new(
             nats_connection_manager.clone(),
             nats_message_publisher.clone(),
             execution_service,
             config_service.clone(),
+            execution_semaphore,
         );
 
         // Initialize machine heartbeat publisher and run manager

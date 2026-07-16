@@ -4,3 +4,4 @@ metadata:
   name: openframe-config
 data:
   CONFIG_GIT_BRANCH: "{{ .Values.repository.branch }}"
+  SPRING_CLOUD_CONFIG_SERVER_GIT_TIMEOUT: "{{ .Values.repository.timeoutSeconds }}"

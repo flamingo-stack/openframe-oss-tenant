@@ -2,7 +2,8 @@ mod job;
 mod process;
 mod run_as_user;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use anyhow::{anyhow, Result};
 
@@ -36,11 +37,42 @@ pub async fn execute_script(params: ScriptParams<'_>) -> ExecResult {
         path: tmp_file.clone(),
     };
 
+    if wait_until_readable(&tmp_file).await {
+        return spawn_error("Script file locked by another process".to_string());
+    }
+
     if wants_run_as {
         run_as_user::run_as_interactive(&interpreter, &tmp_file, &params).await
     } else {
         process::run_normal(&interpreter, &tmp_file, &params).await
     }
+}
+
+const SCRIPT_READY_RETRIES: u32 = 3;
+const SCRIPT_READY_DELAY_MS: u64 = 200;
+
+async fn wait_until_readable(path: &Path) -> bool {
+    for attempt in 0..SCRIPT_READY_RETRIES {
+        match std::fs::File::open(path) {
+            Ok(_) => return false,
+            Err(e) => {
+                let locked = matches!(e.raw_os_error(), Some(32) | Some(33));
+                let transient = locked || e.raw_os_error() == Some(5);
+                if transient && attempt + 1 < SCRIPT_READY_RETRIES {
+                    tracing::warn!(
+                        attempt = attempt + 1,
+                        error = %e,
+                        path = %path.display(),
+                        "script file not yet readable (antivirus scan lock?), waiting before launch"
+                    );
+                    tokio::time::sleep(Duration::from_millis(SCRIPT_READY_DELAY_MS)).await;
+                    continue;
+                }
+                return locked;
+            }
+        }
+    }
+    false
 }
 
 fn spawn_error(msg: String) -> ExecResult {

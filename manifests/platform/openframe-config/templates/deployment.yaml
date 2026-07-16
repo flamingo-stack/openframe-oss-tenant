@@ -6,6 +6,7 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 2
+  minReadySeconds: 10
   selector:
     matchLabels:
       app: openframe-config
@@ -40,11 +41,17 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
+          startupProbe:
+            httpGet:
+              path: /xml/shared-logback-spring.xml
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 36   # up to 3m to start (initial git clone included)
           livenessProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml
               port: http
-            initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
@@ -52,7 +59,6 @@ spec:
             httpGet:
               path: /xml/shared-logback-spring.xml
               port: http
-            initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
