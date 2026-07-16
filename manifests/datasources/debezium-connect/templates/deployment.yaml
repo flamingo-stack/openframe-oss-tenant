@@ -20,8 +20,15 @@ spec:
       {{- end }}
     spec:
 
-      {{- if .Values.metrics.enabled }}
       initContainers:
+        # Kafka must be reachable before Connect starts, or the pod crash-loops
+        # through its probe window while the broker is still booting.
+        - name: wait-for-kafka
+          image: "{{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
+          command: [sh, -c]
+          args:
+            - until nc -z kafka-broker-headless.datasources.svc.cluster.local 9092; do echo "waiting for kafka"; sleep 3; done
+      {{- if .Values.metrics.enabled }}
         - name: jmx-exporter
           image: "{{ .Values.metrics.jmx.image.registry }}/{{ .Values.metrics.jmx.image.repository }}:{{ .Values.metrics.jmx.image.tag }}"
           command: [sh, -c]
@@ -59,12 +66,22 @@ spec:
             - name: jmx-exporter
               mountPath: /opt/jmx-exporter
             {{- end }}
+          {{- if .Values.probes.startup.enabled }}
+          # Gates liveness/readiness until Connect is up: readiness lands as soon
+          # as it is actually ready instead of a fixed 90s initialDelaySeconds.
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8083
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 36   # up to 3m to start
+          {{- end }}
           {{- if .Values.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
               path: /
               port: 8083
-            initialDelaySeconds: 90
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 3
@@ -74,7 +91,6 @@ spec:
             httpGet:
               path: /connectors
               port: 8083
-            initialDelaySeconds: 90
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
