@@ -23,3 +23,5 @@ pub const EXECUTION_MIN_CONCURRENCY: usize = 4;
 pub const CONSUMER_ACK_WAIT_SECS: u64 = 120;
 pub const CONSUMER_MAX_DELIVER: i64 = 10; // Maximum delivery attempts
 pub const UNINSTALL_CONSUMER_MAX_DELIVER: i64 = 20; // Larger budget: uninstall may defer behind a long install holding the tool lock
+pub const RESTART_CONSUMER_MAX_DELIVER: i64 = 20; // Larger budget: restart may defer behind a long install holding the tool lock
+pub const RESTART_CONSUMER_QUIET_PAUSE_MS: u64 = 300_000; // Quiet retry cadence once consumer creation keeps failing (subject/grants not provisioned yet)

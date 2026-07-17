@@ -19,14 +19,11 @@ function readConnectionState(): ConnectionState {
 }
 
 /**
- * Loads the client assistant's appearance (clientView) and quick actions
- * (clientAiConfig) from /chat/graphql. `data` is `null` when no record exists yet.
- * The query waits for the token/API URL to be available; readiness is
- * recomputed on every token/API update (and can flip back to false when
- * credentials drop), and the cache is keyed by the API base URL so a connection
- * change refetches instead of serving stale settings.
+ * Live token/API-URL readiness, recomputed on every tokenService update.
+ * Shared by the server-backed queries so their `enabled` and cache keys track
+ * connection changes identically.
  */
-export function useAiSettingsQuery({ enabled }: { enabled: boolean }) {
+export function useApiConnectionState(): ConnectionState {
   const [connection, setConnection] = useState<ConnectionState>(readConnectionState);
 
   useEffect(() => {
@@ -42,6 +39,20 @@ export function useAiSettingsQuery({ enabled }: { enabled: boolean }) {
       unsubUrl();
     };
   }, []);
+
+  return connection;
+}
+
+/**
+ * Loads the client assistant's appearance (clientView) and quick actions
+ * (clientAiConfig) from /chat/graphql. `data` is `null` when no record exists yet.
+ * The query waits for the token/API URL to be available; readiness is
+ * recomputed on every token/API update (and can flip back to false when
+ * credentials drop), and the cache is keyed by the API base URL so a connection
+ * change refetches instead of serving stale settings.
+ */
+export function useAiSettingsQuery({ enabled }: { enabled: boolean }) {
+  const connection = useApiConnectionState();
 
   return useQuery<AiSettingsResponse | null>({
     queryKey: aiSettingsQueryKey(connection.apiBaseUrl),
