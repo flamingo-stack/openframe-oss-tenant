@@ -6,6 +6,7 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use std::sync::Arc;
 use log::error;
+use crate::services::deactivation_controller::DeactivationController;
 use crate::services::{AgentAuthService, InitialConfigurationService};
 
 #[derive(Clone)]
@@ -15,20 +16,22 @@ pub struct NatsConnectionManager {
     config_service: AgentConfigurationService,
     tls_config_provider: LocalTlsConfigProvider,
     initial_configuration_service: InitialConfigurationService,
-    auth_service: AgentAuthService
+    auth_service: AgentAuthService,
+    deactivation: Arc<DeactivationController>,
 }
 
 impl NatsConnectionManager {
 
     const NATS_DEVICE_USER: &'static str = "machine";
     const NATS_DEVICE_PASSWORD: &'static str = "";
-    
+
     pub fn new(
         nats_server_url: String,
         config_service: AgentConfigurationService,
         initial_configuration_service: InitialConfigurationService,
         auth_service: AgentAuthService,
         tls_config_provider: LocalTlsConfigProvider,
+        deactivation: Arc<DeactivationController>,
     ) -> Self {
         Self {
             client: Arc::new(RwLock::new(None)),
@@ -36,7 +39,8 @@ impl NatsConnectionManager {
             config_service,
             tls_config_provider,
             initial_configuration_service,
-            auth_service
+            auth_service,
+            deactivation,
         }
     }
 
@@ -53,6 +57,7 @@ impl NatsConnectionManager {
         // Cloned dependencies for auth callback
         let auth_service = self.auth_service.clone();
         let config_service = self.config_service.clone();
+        let deactivation = self.deactivation.clone();
         let nats_server_url = self.nats_server_url.clone();
         let nats_server_url_for_reconnect = self.nats_server_url.clone();
 
@@ -79,10 +84,11 @@ impl NatsConnectionManager {
                     info!("Starting reauthentication");
                     let auth_service = auth_service.clone();
                     let config_service = config_service.clone();
+                    let deactivation = deactivation.clone();
                     let nats_server_url = nats_server_url.clone();
 
                     async move {
-                        Self::perform_reauthentication_and_build_url(auth_service, config_service, nats_server_url).await
+                        Self::perform_reauthentication_and_build_url(auth_service, config_service, deactivation, nats_server_url).await
                     }
                 }
             )
@@ -108,8 +114,16 @@ impl NatsConnectionManager {
     async fn perform_reauthentication_and_build_url(
         auth_service: AgentAuthService,
         config_service: AgentConfigurationService,
+        deactivation: Arc<DeactivationController>,
         nats_server_url: String,
     ) -> std::result::Result<String, async_nats::AuthError> {
+        // Tenant gone: skip reauth so NATS reconnects fail locally instead of hammering the gateway.
+        if deactivation.is_suspended() {
+            return Err(async_nats::AuthError::new(
+                "client suspended (tenant gone); skipping NATS reauthentication".to_string(),
+            ));
+        }
+
         info!(
             hostname = %nats_server_url,
             "Auth URL callback triggered - performing reauthentication"

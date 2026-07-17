@@ -69,6 +69,7 @@ use crate::services::mesh_self_heal_service::MeshSelfHealService;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
 use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
 use crate::services::execution_service::ExecutionService;
+use crate::services::deactivation_controller::{DeactivationController, DeactivationCommand};
 use crate::listener::execution_listener::ExecutionListener;
 use crate::models::{CommandMessage, ScriptMessage};
 use crate::logging::nats_streaming::LogStreamingRunManager;
@@ -160,6 +161,7 @@ pub struct Client {
     agent_configuration_service: AgentConfigurationService,
     installed_tools_service: InstalledToolsService,
     initial_key_service: Arc<InitialKeyService>,
+    deactivation_controller: Arc<DeactivationController>,
 }
 
 impl Client {
@@ -177,6 +179,9 @@ impl Client {
 
         // Perform initial health check
         directory_manager.perform_health_check()?;
+
+        // Detects the gateway's 410 Gone (tenant deleted) and drives backoff / stop / self-uninstall.
+        let deactivation_controller = DeactivationController::new(&directory_manager);
 
         // Initialize initial configuration service
         let initial_configuration_service = InitialConfigurationService::new(directory_manager.clone())
@@ -233,7 +238,8 @@ impl Client {
         // Initialize authentication client
         let auth_client = AuthClient::new(
             http_url.clone(),
-            http_client.clone()
+            http_client.clone(),
+            deactivation_controller.clone()
         );
         
         // Initialize encryption service
@@ -262,7 +268,8 @@ impl Client {
         // independent of NATS reconnects)
         let token_refresh_run_manager = TokenRefreshRunManager::new(
             auth_service.clone(),
-            config_service.clone()
+            config_service.clone(),
+            deactivation_controller.clone()
         );
 
         // Initialize NATS connection manager
@@ -274,6 +281,7 @@ impl Client {
             initial_configuration_service.clone(),
             auth_service.clone(),
             tls_config_provider,
+            deactivation_controller.clone(),
         );
         
         // Initialize tool agent file client
@@ -294,6 +302,7 @@ impl Client {
             http_url.clone(),
             initial_configuration_service.clone(),
             config_service.clone(),
+            deactivation_controller.clone(),
         ));
 
         // Initialize installed tools service
@@ -333,6 +342,7 @@ impl Client {
             initial_configuration_service.clone(),
             config_service.clone(),
             tool_run_manager.clone(),
+            deactivation_controller.clone(),
         );
 
         // Initialize tool connection service
@@ -492,11 +502,56 @@ impl Client {
             agent_configuration_service: config_service,
             installed_tools_service,
             initial_key_service,
+            deactivation_controller,
         })
     }
 
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
+
+        // Tenant-gone supervisor: runs tool stop/restart and self-uninstall off the detection
+        // path. Started first so its commands are consumed even if the startup auth loop (which
+        // itself feeds the 410s) blocks below.
+        if let Some(mut commands) = self.deactivation_controller.take_commands() {
+            let tool_run_manager = self.tool_run_manager.clone();
+            tokio::spawn(async move {
+                while let Some(cmd) = commands.recv().await {
+                    match cmd {
+                        DeactivationCommand::StopTools => {
+                            if let Err(e) = tool_run_manager.stop_all().await {
+                                error!("Deactivation: failed to stop tools: {:#}", e);
+                            }
+                        }
+                        DeactivationCommand::RestartTools => {
+                            if let Err(e) = tool_run_manager.restart_all().await {
+                                error!("Deactivation: failed to restart tools: {:#}", e);
+                            }
+                        }
+                        DeactivationCommand::Uninstall => {
+                            let install_path = crate::service::Service::get_install_location();
+                            info!("Deactivation: launching client self-uninstall");
+                            // Retry: this is terminal, so don't let a transient spawn failure strand it.
+                            let mut launched = false;
+                            for attempt in 1..=3u32 {
+                                match crate::platform::uninstall::spawn_detached_uninstall(&install_path) {
+                                    Ok(()) => {
+                                        launched = true;
+                                        break;
+                                    }
+                                    Err(e) => {
+                                        error!("Deactivation: self-uninstall launch attempt {attempt}/3 failed: {e:#}");
+                                        tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+                                    }
+                                }
+                            }
+                            if !launched {
+                                error!("Deactivation: self-uninstall could not be launched after 3 attempts");
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         self.initial_key_service.clone().ensure_initial_key().await;
 
