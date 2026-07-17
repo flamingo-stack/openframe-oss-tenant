@@ -12,11 +12,12 @@ import {
   useJetStreamDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebugMode } from '../contexts/DebugModeContext';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { ChatApiService } from '../services/chatApiService';
-import { useTauriDialogSubscription } from '../services/natsTauri';
+import { useTauriBridgeLiveness, useTauriDialogSubscription } from '../services/natsTauri';
 import { tokenService } from '../services/tokenService';
 import { overrideToolTitle } from '../utils/applyToolTitle';
 import { log } from '../utils/log';
@@ -82,6 +83,13 @@ export function useChat({
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isResumedDialog, setIsResumedDialog] = useState(false);
+  // Flipped on the first NATS reconnect. History normally loads only for
+  // RESUMED dialogs (`enabled: isResumedDialog`), so for a dialog created
+  // this session the reconnect back-fill had no enabled query to refetch —
+  // an outage longer than the JetStream retention (~10 min) left a permanent
+  // hole. Enabling the query after a reconnect routes recovery through the
+  // standard history+merge path.
+  const [hasReconnected, setHasReconnected] = useState(false);
   const [isTicketPreview, setIsTicketPreview] = useState(false);
   const { getWsUrl, onBeforeReconnect } = useChatNatsConfig();
 
@@ -132,7 +140,7 @@ export function useChat({
     escalatedApprovals,
     reset: resetDialogMessages,
   } = useDialogMessages(natsDialogId, {
-    enabled: isResumedDialog,
+    enabled: isResumedDialog || hasReconnected,
     onApprove: approvals.handleApproveRequest,
     onReject: approvals.handleRejectRequest,
     approvalStatuses: approvals.approvalStatuses,
@@ -246,8 +254,11 @@ export function useChat({
         }
       },
       onToolExecuted: (segment: ToolExecutionSegment) => {
-        const execId = segment.data.toolExecutionRequestId;
-        if (execId) messagesRef.current.updateToolExecutionById(execId, segment.data);
+        // No early return on a missing execId: the store falls back to
+        // (toolType, toolFunction) pairing and, when nothing matches at all,
+        // APPENDS the segment — dropping the chunk here made post-approval
+        // single-command tool runs invisible.
+        messagesRef.current.updateToolExecutionById(segment.data.toolExecutionRequestId, segment.data);
       },
       onEscalatedApproval: (
         requestId: string,
@@ -430,7 +441,7 @@ export function useChat({
   });
 
   // Vite-only fallback: legacy WS-based JetStream hook from the core lib.
-  const { isSubscribed: wsIsSubscribed } = useJetStreamDialogSubscription({
+  const { isSubscribed: wsIsSubscribed, reconnectionCount: wsReconnectionCount } = useJetStreamDialogSubscription({
     enabled: !isTauri && useNats && !!natsDialogId && isInitialOptStartSeqReady,
     dialogId: !isTauri ? natsDialogId : null,
     streamName: CHAT_CHUNKS_STREAM,
@@ -444,6 +455,28 @@ export function useChat({
   });
 
   const isSubscribed = isTauri ? tauriIsSubscribed : wsIsSubscribed;
+
+  // NATS reconnect: the JetStream CHAT_CHUNKS stream retains only ~10 minutes,
+  // so an outage longer than that leaves a gap resume-by-seq cannot fill.
+  // Refetch persisted history — mergeHistoryWithRealtime dedupes what replay
+  // covers. Tauri reports reconnects via the Rust bridge; Vite via the lib hook.
+  const queryClient = useQueryClient();
+  const { reconnectionCount: bridgeReconnectionCount } = useTauriBridgeLiveness();
+  const reconnectionCount = isTauri ? bridgeReconnectionCount : wsReconnectionCount;
+  // Lazy-init to the CURRENT count: the Tauri bridge counter lives in a
+  // module-level singleton and survives remounts, so starting from 0 would
+  // fire a spurious history refetch on every remount after any past reconnect.
+  const lastHandledReconnectRef = useRef(reconnectionCount);
+  useEffect(() => {
+    if (reconnectionCount <= lastHandledReconnectRef.current) return;
+    lastHandledReconnectRef.current = reconnectionCount;
+    // Enable the history query for session-created dialogs (see
+    // `hasReconnected`) — invalidating a disabled query is a no-op.
+    setHasReconnected(true);
+    if (natsDialogId) {
+      void queryClient.invalidateQueries({ queryKey: ['dialog-messages', natsDialogId] });
+    }
+  }, [reconnectionCount, natsDialogId, queryClient]);
 
   // Stall watchdog: while streaming and visible, surface `isStalled` if no
   // chunks have arrived for 30s. Hidden tabs suppress the timer because the
