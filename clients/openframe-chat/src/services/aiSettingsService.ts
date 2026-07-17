@@ -18,6 +18,8 @@ export interface AiSettingsResponse {
   assistantAvatar: { imageUrl: string; hash: string | null } | null;
   applicationTheme: string;
   accentColor: string;
+  /** True → show the OpenFrame defaults from the Product Hub; false → `quickActions` customs. */
+  quickActionsIsDefault: boolean;
   quickActions: AiQuickAction[] | null;
 }
 
@@ -30,6 +32,7 @@ interface ClientViewGql {
 }
 
 interface ClientAiConfigGql {
+  quickActionsIsDefault: boolean | null;
   quickActions: AiQuickAction[] | null;
 }
 
@@ -49,6 +52,7 @@ const AI_SETTINGS_QUERY = gql`
       accentColor
     }
     clientAiConfig {
+      quickActionsIsDefault
       quickActions {
         id
         name
@@ -125,6 +129,8 @@ class AiSettingsService {
       assistantAvatar: view?.assistantAvatar ?? null,
       applicationTheme: view?.applicationTheme ?? '',
       accentColor: view?.accentColor ?? '',
+      // BE default is true: hub defaults apply until the tenant customizes.
+      quickActionsIsDefault: aiConfig?.quickActionsIsDefault ?? true,
       quickActions: aiConfig?.quickActions ?? null,
     };
   }
