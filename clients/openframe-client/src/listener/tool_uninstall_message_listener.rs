@@ -74,33 +74,46 @@ impl ToolUninstallMessageListener {
 
     async fn listen(&self) -> Result<()> {
         info!("Run tool uninstall message listener");
-        let client = self.nats_connection_manager
-            .get_client()
-            .await?;
-        let js = jetstream::new((*client).clone());
-
         let machine_id = self.config_service.get_machine_id()?;
 
-        let consumer = self.create_consumer(&js, &machine_id).await;
+        loop {
+            let client = self.nats_connection_manager
+                .get_client()
+                .await?;
+            let mut reconnect_rx = self.nats_connection_manager.subscribe_reconnect();
+            let js = jetstream::new((*client).clone());
 
-        info!("Start listening for tool uninstall messages");
-        let mut messages = consumer.messages().await?;
+            let consumer = self.create_consumer(&js, &machine_id).await;
 
-        while let Some(msg_result) = messages.next().await {
-            let message = match msg_result {
-                Ok(msg) => msg,
-                Err(e) => {
-                    error!("Failed to receive message: {:#}", e);
-                    continue;
+            info!("Start listening for tool uninstall messages");
+            let mut messages = consumer.messages().await?;
+
+            loop {
+                tokio::select! {
+                    msg_result = messages.next() => {
+                        match msg_result {
+                            Some(Ok(message)) => {
+                                if let Err(e) = self.handle_message(message).await {
+                                    error!("Failed to handle message: {:#}", e);
+                                }
+                            }
+                            Some(Err(e)) => {
+                                error!("Message stream error, recreating consumer: {:#}", e);
+                                return Err(anyhow::anyhow!("Message stream error: {}", e));
+                            }
+                            None => {
+                                warn!("Message stream ended, rebinding consumer");
+                                break;
+                            }
+                        }
+                    }
+                    _ = reconnect_rx.recv() => {
+                        info!("NATS reconnected, rebinding tool uninstall consumer");
+                        break;
+                    }
                 }
-            };
-
-            if let Err(e) = self.handle_message(message).await {
-                error!("Failed to handle message: {:#}", e);
             }
         }
-
-        Ok(())
     }
 
     async fn handle_message(&self, message: Message) -> Result<()> {
