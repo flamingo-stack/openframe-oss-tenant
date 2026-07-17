@@ -121,6 +121,7 @@ export function useChat({
 
   const {
     historicalMessages,
+    latestAssistantModel: historyAssistantModel,
     hasNextPage,
     isFetchingNextPage,
     isLoading: isLoadingHistoricalMessages,
@@ -720,6 +721,7 @@ export function useChat({
 
   return {
     messages: allMessages,
+    historyAssistantModel,
     isTyping,
     isStreaming: natsStreaming,
     isStalled,

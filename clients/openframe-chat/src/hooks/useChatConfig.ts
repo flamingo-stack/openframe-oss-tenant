@@ -20,10 +20,20 @@ const FALLBACK_QUICK_ACTIONS: QuickAction[] = quickActionsData.actions.map(actio
   instructions: action.text,
 }));
 
+export interface DefaultChatModel {
+  modelName: string;
+  provider: string;
+  contextWindow: number;
+}
+
 export function useChatConfig() {
   const { flags } = useFeatureFlags();
   const customizationEnabled = flags['customer-ai-assistant-settings'];
-  const query = useAiSettingsQuery({ enabled: customizationEnabled });
+  // Always fetch: the effective provider/model (org override -> tenant
+  // default, resolved server-side from the machine token) seeds the footer
+  // model display regardless of the customization flag. Appearance and quick
+  // actions stay flag-gated below, preserving the flag's semantics.
+  const query = useAiSettingsQuery({ enabled: true });
 
   // Source switch: `clientAiConfig.quickActionsIsDefault` (true until the org
   // customizes, and while the settings are still loading) selects the OpenFrame
@@ -57,9 +67,23 @@ export function useChatConfig() {
     return FALLBACK_QUICK_ACTIONS;
   }, [customizationEnabled, useHubDefaults, hubQuery.data, query.data]);
 
+  // Effective model for the NEXT reply (org override -> tenant default).
+  // Null when the tenant never configured CLIENT AI at all - the footer then
+  // stays empty until the first reply's stream metadata arrives.
+  const defaultModel = useMemo<DefaultChatModel | null>(() => {
+    const settings = query.data;
+    return settings?.providerModel
+      ? { modelName: settings.providerModel, provider: settings.llmProvider ?? '', contextWindow: 0 }
+      : null;
+  }, [query.data]);
+
   return {
     quickActions,
-    aiSettings: query.data ?? null,
+    // Customization consumers (appearance, branding, welcome screen) only see
+    // settings when the flag is on - same behavior as when the query itself
+    // was flag-disabled.
+    aiSettings: customizationEnabled ? (query.data ?? null) : null,
+    defaultModel,
     // True while we still expect a server-resolved action set (flag on and
     // either query hasn't settled - including the brief wait for the token).
     // Lets callers hold off on bundled fallbacks until the server answers.
