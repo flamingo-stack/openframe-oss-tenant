@@ -42,6 +42,9 @@ export async function fetchHubDefaultQuickActions(): Promise<HubQuickAction[]> {
   });
 
   if (!response.ok) {
+    // Surfaced in the console on purpose: a failing hub proxy silently degrades
+    // the chips to the bundled fallback, which is easy to misread as "works".
+    console.warn(`[hubQuickActions] hub proxy request failed with ${response.status}`);
     throw new Error(`Failed to load hub default quick actions (${response.status})`);
   }
 
