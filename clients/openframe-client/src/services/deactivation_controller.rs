@@ -236,9 +236,14 @@ fn marker_path(secured_dir: &Path) -> PathBuf {
 
 fn load_marker(secured_dir: &Path) -> Option<DateTime<Utc>> {
     let raw = std::fs::read_to_string(marker_path(secured_dir)).ok()?;
-    DateTime::parse_from_rfc3339(raw.trim())
-        .ok()
-        .map(|dt| dt.with_timezone(&Utc))
+    match DateTime::parse_from_rfc3339(raw.trim()) {
+        Ok(dt) => Some(dt.with_timezone(&Utc)),
+        Err(e) => {
+            // A corrupt marker silently resets the 24h clock — leave a trail.
+            warn!(target: "deactivation", "Failed to parse tenant-gone marker '{}': {e:#}", raw.trim());
+            None
+        }
+    }
 }
 
 fn save_marker(secured_dir: &Path, ts: DateTime<Utc>) {

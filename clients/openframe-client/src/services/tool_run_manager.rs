@@ -390,6 +390,9 @@ impl ToolRunManager {
     /// Used when the tenant is gone, to stop tools hammering their now-unreachable endpoints.
     pub async fn stop_all(&self) -> Result<()> {
         self.signal_shutdown();
+        // Clear supervision so a later restart_all()/run() can relaunch these tools (symmetry
+        // with restart_all): the shutdown-triggered loop break leaves ids in running_tools.
+        self.running_tools.write().await.clear();
         let tools = self
             .installed_tools_service
             .get_all()
@@ -411,14 +414,17 @@ impl ToolRunManager {
         self.shutting_down.store(false, Ordering::Release);
         self.running_tools.write().await.clear();
 
-        if let Ok(tools) = self.installed_tools_service.get_all().await {
-            for tool in &tools {
-                if let Installation::Service { service_name, .. } = &tool.installation {
-                    if let Err(e) = system_service::start_service(service_name).await {
-                        warn!(service = %service_name, "restart_all: failed to start service tool: {:#}", e);
+        match self.installed_tools_service.get_all().await {
+            Ok(tools) => {
+                for tool in &tools {
+                    if let Installation::Service { service_name, .. } = &tool.installation {
+                        if let Err(e) = system_service::start_service(service_name).await {
+                            warn!(service = %service_name, "restart_all: failed to start service tool: {:#}", e);
+                        }
                     }
                 }
             }
+            Err(e) => warn!("restart_all: failed to list installed tools for service restart: {:#}", e),
         }
 
         self.run().await
