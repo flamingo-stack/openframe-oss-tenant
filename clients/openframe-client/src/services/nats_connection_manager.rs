@@ -9,6 +9,10 @@ use log::error;
 use crate::services::deactivation_controller::DeactivationController;
 use crate::services::{AgentAuthService, InitialConfigurationService};
 
+/// Reconnect delay while the tenant is gone (suspended): backs the 5s storm off ~60x so a
+/// deleted-tenant client barely touches the gateway. Auto-reverts to 5s on recovery.
+const SUSPENDED_RECONNECT_DELAY: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+
 #[derive(Clone)]
 pub struct NatsConnectionManager {
     client: Arc<RwLock<Option<Arc<Client>>>>,
@@ -58,6 +62,7 @@ impl NatsConnectionManager {
         let auth_service = self.auth_service.clone();
         let config_service = self.config_service.clone();
         let deactivation = self.deactivation.clone();
+        let deactivation_for_delay = self.deactivation.clone();
         let nats_server_url = self.nats_server_url.clone();
         let nats_server_url_for_reconnect = self.nats_server_url.clone();
 
@@ -68,6 +73,12 @@ impl NatsConnectionManager {
             .retry_on_initial_connect()
             .max_reconnects(None)
             .reconnect_delay_callback(move |attempt| {
+                // Tenant gone: async-nats can't be stopped from here (its reconnect loop never
+                // polls Drain), but this callback IS called per attempt — so back off hard to
+                // turn the 5s WS-upgrade storm into a rare probe against the gone gateway.
+                if deactivation_for_delay.is_suspended() {
+                    return SUSPENDED_RECONNECT_DELAY;
+                }
                 warn!(
                     attempt = attempt,
                     hostname = %nats_server_url_for_reconnect,
