@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
-use async_nats::Client;
+use async_nats::{Client, Event};
+use tokio::sync::broadcast;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 use crate::services::agent_configuration_service::AgentConfigurationService;
@@ -11,6 +12,7 @@ use crate::services::{AgentAuthService, InitialConfigurationService};
 #[derive(Clone)]
 pub struct NatsConnectionManager {
     client: Arc<RwLock<Option<Arc<Client>>>>,
+    reconnect_tx: broadcast::Sender<()>,
     nats_server_url: String,
     config_service: AgentConfigurationService,
     tls_config_provider: LocalTlsConfigProvider,
@@ -30,14 +32,20 @@ impl NatsConnectionManager {
         auth_service: AgentAuthService,
         tls_config_provider: LocalTlsConfigProvider,
     ) -> Self {
+        let (reconnect_tx, _) = broadcast::channel(16);
         Self {
             client: Arc::new(RwLock::new(None)),
+            reconnect_tx,
             nats_server_url: nats_server_url.to_string(),
             config_service,
             tls_config_provider,
             initial_configuration_service,
             auth_service
         }
+    }
+
+    pub fn subscribe_reconnect(&self) -> broadcast::Receiver<()> {
+        self.reconnect_tx.subscribe()
     }
 
     pub async fn connect(&self) -> Result<()> {
@@ -55,6 +63,7 @@ impl NatsConnectionManager {
         let config_service = self.config_service.clone();
         let nats_server_url = self.nats_server_url.clone();
         let nats_server_url_for_reconnect = self.nats_server_url.clone();
+        let reconnect_tx = self.reconnect_tx.clone();
 
         // TODO: token fallback and connection retry
         let mut connect_options = async_nats::ConnectOptions::new()
@@ -71,8 +80,14 @@ impl NatsConnectionManager {
                 std::time::Duration::from_secs(5)
             })
             .ping_interval(std::time::Duration::from_secs(10))
-            .event_callback(|event| async move {
-                info!("Nats event: {:?}", event);
+            .event_callback(move |event| {
+                let reconnect_tx = reconnect_tx.clone();
+                async move {
+                    info!("Nats event: {:?}", event);
+                    if matches!(event, Event::Connected) {
+                        let _ = reconnect_tx.send(());
+                    }
+                }
             })
             .auth_url_callback(
                 move |()| {

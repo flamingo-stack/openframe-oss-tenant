@@ -7,8 +7,6 @@ import {
   ChatHeader,
   type ChatHeaderTicketInfo,
   ChatInput,
-  ChatQuickActionRow,
-  ChatQuickActionRowSkeleton,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
@@ -16,6 +14,7 @@ import {
   type MessageSegment,
   ModelDisplay,
   ModelDisplaySkeleton,
+  QuickActionWall,
   type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
 import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
@@ -542,14 +541,13 @@ export function ChatView() {
         ) : (
           <>
             {/* Quick-action chips above the composer — initial screen only.
-                Skeleton while settings load (so we don't flash bundled defaults
-                before the configured actions resolve), then the real row. */}
-            {!isDialogActive && !isDisconnected && isSettingsLoading && (
-              <ChatQuickActionRowSkeleton className="mb-[var(--spacing-system-s)]" />
-            )}
-            {!isDialogActive && !isDisconnected && !isSettingsLoading && quickActions.length > 0 && (
-              <ChatQuickActionRow
-                className="mb-[var(--spacing-system-s)]"
+                `loading` draws the wall's own skeleton chips while settings
+                load, so we don't flash bundled defaults before the configured
+                actions resolve. Same wall the lib's welcome screens use. */}
+            {!isDialogActive && !isDisconnected && (isSettingsLoading || quickActions.length > 0) && (
+              <QuickActionWall
+                className="mb-[var(--spacing-system-s)] max-h-44 shrink-0"
+                loading={isSettingsLoading}
                 chips={quickActions.map(action => ({
                   id: action.id,
                   label: action.name,
@@ -560,6 +558,13 @@ export function ChatView() {
                   onHoverStart: () => setQuickActionPreview(action.instructions),
                   onHoverEnd: () => setQuickActionPreview(null),
                 }))}
+                rows={4}
+                pauseOnHover
+                dragScroll
+                fade={['left', 'right']}
+                fadeSize={{ left: 32 }}
+                fadeColor="var(--color-bg)"
+                copyGap="var(--spacing-system-xxs)"
               />
             )}
             <ChatInput
