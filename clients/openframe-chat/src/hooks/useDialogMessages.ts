@@ -60,6 +60,25 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     return max;
   }, [data?.pages]);
 
+  // Model provenance of the newest assistant message across fetched pages
+  // (pages and rows are newest-first). Seeds the footer model display on
+  // dialog resume — per-chat truth, replacing the removed tenant-wide
+  // /chat/api/v1/ai-configuration read.
+  const latestAssistantModel = useMemo(() => {
+    if (!data?.pages) return null;
+    for (const page of data.pages) {
+      for (const edge of page.edges) {
+        const owner = edge.node.owner as
+          | { type?: string; model?: string; providerName?: string | null; contextWindow?: number | null }
+          | undefined;
+        if (owner?.type === 'ASSISTANT' && owner.model && owner.providerName) {
+          return { modelName: owner.model, provider: owner.providerName, contextWindow: owner.contextWindow ?? 0 };
+        }
+      }
+    }
+    return null;
+  }, [data?.pages]);
+
   // Raw persisted (Mongo) ids across all fetched pages — passed to
   // mergeHistoryWithRealtime so synthetics that have been adopted under a
   // persisted id are deduped too.
@@ -141,6 +160,7 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
 
   return {
     historicalMessages,
+    latestAssistantModel,
     hasNextPage: hasNextPage ?? false,
     isFetchingNextPage,
     isLoading,

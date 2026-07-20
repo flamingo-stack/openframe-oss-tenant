@@ -49,8 +49,10 @@ use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::services::tool_uninstall_service::ToolUninstallService;
+use crate::services::tool_restart_service::ToolRestartService;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
 use crate::listener::tool_uninstall_message_listener::ToolUninstallMessageListener;
+use crate::listener::tool_restart_message_listener::ToolRestartMessageListener;
 use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
 use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
 use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
@@ -145,6 +147,7 @@ pub struct Client {
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
     tool_uninstall_message_listener: ToolUninstallMessageListener,
+    tool_restart_message_listener: ToolRestartMessageListener,
     openframe_client_update_listener: OpenFrameClientUpdateListener,
     tool_agent_update_listener: ToolAgentUpdateListener,
     command_execution_listener: ExecutionListener<CommandMessage>,
@@ -325,11 +328,19 @@ impl Client {
             tool_kill_service.clone(),
         );
 
+        // Initialize tool restart service
+        let tool_restart_service = ToolRestartService::new(
+            installed_tools_service.clone(),
+            tool_kill_service.clone(),
+            tool_run_manager.clone(),
+        );
+
         // Initialize mesh self-heal service
         let mesh_self_heal_service = MeshSelfHealService::new(
             directory_manager.clone(),
             installed_tools_service.clone(),
             tool_kill_service.clone(),
+            tool_restart_service.clone(),
             initial_configuration_service.clone(),
             config_service.clone(),
             tool_run_manager.clone(),
@@ -419,6 +430,13 @@ impl Client {
             config_service.clone(),
         );
 
+        // Initialize tool restart listener (shares the restart service with mesh self-heal)
+        let tool_restart_message_listener = ToolRestartMessageListener::new(
+            nats_connection_manager.clone(),
+            tool_restart_service,
+            config_service.clone(),
+        );
+
         // Initialize OpenFrame client update listener
         let openframe_client_update_listener = OpenFrameClientUpdateListener::new(
             nats_connection_manager.clone(),
@@ -478,6 +496,7 @@ impl Client {
             nats_connection_manager,
             tool_installation_message_listener,
             tool_uninstall_message_listener,
+            tool_restart_message_listener,
             openframe_client_update_listener,
             tool_agent_update_listener,
             command_execution_listener,
@@ -529,6 +548,8 @@ impl Client {
         self.tool_installation_message_listener.start().await?;
 
         self.tool_uninstall_message_listener.start().await?;
+
+        self.tool_restart_message_listener.start().await?;
 
         // Start OpenFrame client update listener in background
         self.openframe_client_update_listener.start().await?;

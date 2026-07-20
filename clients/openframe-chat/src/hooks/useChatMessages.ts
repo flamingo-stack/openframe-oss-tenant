@@ -121,16 +121,25 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
             let nextContent: MessageSegment[];
 
             if (incomingCompaction) {
-              const startedIdx = existing.findIndex(s => s.type === 'context_compaction' && s.status === 'started');
-              const hasAnyCompaction = existing.some(s => s.type === 'context_compaction');
+              // Mirror the lib's upsertTrailingCompaction: replace the LAST
+              // 'started' (earlier compactions in the bubble are already
+              // completed-in-place), else append. The previous first-match +
+              // any-compaction blanket silently dropped a second compaction
+              // landing in the same bubble.
+              let startedIdx = -1;
+              for (let k = existing.length - 1; k >= 0; k--) {
+                const s = existing[k];
+                if (s.type === 'context_compaction' && s.status === 'started') {
+                  startedIdx = k;
+                  break;
+                }
+              }
 
-              if (incomingCompaction.status === 'completed' && startedIdx !== -1) {
+              if (startedIdx !== -1) {
                 nextContent = [...existing];
                 nextContent[startedIdx] = incomingCompaction;
-              } else if (!hasAnyCompaction) {
-                nextContent = [...existing, incomingCompaction];
               } else {
-                nextContent = existing;
+                nextContent = [...existing, incomingCompaction];
               }
             } else {
               nextContent = segmentAccumulator.replaySegments([...existing, ...segments]);
@@ -145,10 +154,25 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
             return newMessages;
           }
         }
-        return prev;
+        // No assistant message in live state (resumed dialog — history is
+        // owned by React Query, the live array starts empty): open a fresh
+        // bubble instead of dropping the segments — mirrors the lib's
+        // appendToTrailingAssistant.
+        return [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            name: assistantName,
+            content: incomingCompaction ? [incomingCompaction] : [...segments],
+            timestamp: new Date(),
+            avatar: assistantAvatar,
+            ...(streamSeq != null ? { streamSeq } : {}),
+          } satisfies Message,
+        ];
       });
     },
-    [segmentAccumulator],
+    [segmentAccumulator, assistantName, assistantAvatar],
   );
 
   const updateSegments = useCallback(
@@ -194,65 +218,135 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
   // Cross-message tool execution updater: merges EXECUTING_TOOL/EXECUTED_TOOL
   // results into the originating standalone segment OR the matching batch's
   // `executions[execId]` slot in an earlier message. First-match wins.
+  //
+  // `executionRequestId` is optional: legacy backends omit it, in which case
+  // an EXECUTED chunk pairs with the newest EXECUTING segment of the same
+  // (integratedToolType, toolFunction). When NOTHING matches — the common
+  // case for the FIRST post-MESSAGE_END EXECUTING chunk of an approved
+  // single command, which has no prior segment to merge into — the segment
+  // is APPENDED to the last assistant bubble instead of being dropped, so
+  // the tool run is visible at all.
   const updateToolExecutionById = useCallback(
-    (executionRequestId: string, executedData: ToolExecutionSegment['data']) => {
+    (executionRequestId: string | undefined, executedData: ToolExecutionSegment['data']) => {
       setMessages(prev => {
-        let matched = false;
-        const next = prev.map(message => {
-          if (matched) return message;
-          if (message.role !== 'assistant' || !Array.isArray(message.content)) return message;
-
-          let changed = false;
-          const updatedContent = (message.content as MessageSegment[]).map(segment => {
-            if (matched) return segment;
-
-            if (
-              segment.type === 'tool_execution' &&
-              segment.data.type === 'EXECUTING_TOOL' &&
-              segment.data.toolExecutionRequestId === executionRequestId
-            ) {
-              matched = true;
-              changed = true;
-              const merged: ToolExecutionSegment = {
-                type: 'tool_execution',
-                data: {
-                  ...executedData,
-                  toolTitle: executedData.toolTitle ?? segment.data.toolTitle,
-                  parameters: executedData.parameters ?? segment.data.parameters,
-                },
-              };
-              return merged;
-            }
-
-            if (
+        // Scan NEWEST-first: an id-less EXECUTED must pair with the newest
+        // in-flight EXECUTING of the same tool (a stale interrupted card from
+        // an earlier turn must not swallow the current run); execId matches
+        // are unique so direction doesn't change them.
+        let msgIdx = -1;
+        let segIdx = -1;
+        for (let i = prev.length - 1; i >= 0 && msgIdx === -1; i--) {
+          const message = prev[i];
+          if (message.role !== 'assistant' || !Array.isArray(message.content)) continue;
+          const content = message.content as MessageSegment[];
+          for (let j = content.length - 1; j >= 0; j--) {
+            const segment = content[j];
+            if (segment.type === 'tool_execution') {
+              const idMatches = executionRequestId
+                ? segment.data.toolExecutionRequestId === executionRequestId
+                : segment.data.type === 'EXECUTING_TOOL' &&
+                  segment.data.integratedToolType === executedData.integratedToolType &&
+                  segment.data.toolFunction === executedData.toolFunction;
+              if (idMatches) {
+                msgIdx = i;
+                segIdx = j;
+                break;
+              }
+            } else if (
+              executionRequestId &&
               segment.type === 'approval_batch' &&
               segment.data.toolCalls.some(c => c.toolExecutionRequestId === executionRequestId)
             ) {
-              matched = true;
-              changed = true;
-              const prevExec: ApprovalBatchExecutionState | undefined = segment.data.executions?.[executionRequestId];
-              const nextExec: ApprovalBatchExecutionState =
-                executedData.type === 'EXECUTED_TOOL'
-                  ? { status: 'done', result: executedData.result, success: executedData.success }
-                  : { status: 'executing', result: prevExec?.result, success: prevExec?.success };
-              return {
-                ...segment,
-                data: {
-                  ...segment.data,
-                  executions: { ...(segment.data.executions ?? {}), [executionRequestId]: nextExec },
-                },
-              } as ApprovalBatchSegment;
+              msgIdx = i;
+              segIdx = j;
+              break;
             }
+          }
+        }
 
-            return segment;
-          });
+        if (msgIdx !== -1) {
+          const message = prev[msgIdx];
+          const content = message.content as MessageSegment[];
+          const segment = content[segIdx];
+          let nextSegment: MessageSegment;
 
-          return changed ? { ...message, content: updatedContent } : message;
-        });
-        return matched ? next : prev;
+          if (segment.type === 'tool_execution') {
+            // Never downgrade a completed run back to EXECUTING (JetStream
+            // redelivery of the EXECUTING chunk after EXECUTED landed).
+            // Returning here (a match, no change) also skips the append
+            // fallback below — the run is already represented on screen, so
+            // appending would duplicate the card.
+            if (executedData.type === 'EXECUTING_TOOL' && segment.data.type === 'EXECUTED_TOOL') {
+              return prev;
+            }
+            nextSegment = {
+              type: 'tool_execution',
+              data: {
+                ...executedData,
+                toolTitle: executedData.toolTitle ?? segment.data.toolTitle,
+                parameters: executedData.parameters ?? segment.data.parameters,
+              },
+            } satisfies ToolExecutionSegment;
+          } else {
+            const batch = segment as ApprovalBatchSegment;
+            const prevExec: ApprovalBatchExecutionState | undefined =
+              batch.data.executions?.[executionRequestId as string];
+            // Same no-downgrade rule for a batch slot: a redelivered EXECUTING
+            // must not flip a 'done' entry back (match found → no append below).
+            if (executedData.type === 'EXECUTING_TOOL' && prevExec?.status === 'done') {
+              return prev;
+            }
+            const nextExec: ApprovalBatchExecutionState =
+              executedData.type === 'EXECUTED_TOOL'
+                ? { status: 'done', result: executedData.result, success: executedData.success }
+                : { status: 'executing', result: prevExec?.result, success: prevExec?.success };
+            nextSegment = {
+              ...batch,
+              data: {
+                ...batch.data,
+                executions: { ...(batch.data.executions ?? {}), [executionRequestId as string]: nextExec },
+              },
+            } as ApprovalBatchSegment;
+          }
+
+          const nextContent = [...content];
+          nextContent[segIdx] = nextSegment;
+          const next = [...prev];
+          next[msgIdx] = { ...message, content: nextContent };
+          return next;
+        }
+
+        // No match anywhere — append the segment to the last assistant bubble.
+        for (let i = prev.length - 1; i >= 0; i--) {
+          const message = prev[i];
+          if (message.role !== 'assistant') continue;
+          const existing = Array.isArray(message.content) ? (message.content as MessageSegment[]) : [];
+          const appended = [...prev];
+          appended[i] = {
+            ...message,
+            content: [...existing, { type: 'tool_execution', data: executedData } satisfies ToolExecutionSegment],
+          };
+          return appended;
+        }
+        // No assistant message in live state at all (resumed dialog: history
+        // is owned by React Query, the live array starts empty — approving a
+        // command from a historical bubble lands its EXECUTING chunk here).
+        // Open a fresh bubble instead of dropping it, or the tool run is
+        // invisible — the exact bug this updater's fallback exists to fix.
+        return [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            name: assistantName,
+            content: [{ type: 'tool_execution', data: executedData } satisfies ToolExecutionSegment],
+            timestamp: new Date(),
+            avatar: assistantAvatar,
+          } satisfies Message,
+        ];
       });
     },
-    [],
+    [assistantName, assistantAvatar],
   );
 
   return {
