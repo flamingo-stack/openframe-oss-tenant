@@ -95,6 +95,12 @@ function getDialogMessagesQuery() {
                 lastName
               }
             }
+            ... on AssistantOwner {
+              model
+              modelName
+              providerName
+              contextWindow
+            }
           }
           messageData {
             type

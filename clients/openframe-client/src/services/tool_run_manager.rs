@@ -601,6 +601,7 @@ impl ToolRunManager {
 
                             if is_process_running(&command_path).await {
                                 info!(tool_id = %tool.tool_agent_id, "Already running, skipping launch");
+                                running_tools.write().await.remove(&tool.tool_agent_id);
                                 return;
                             }
 
@@ -652,6 +653,7 @@ impl ToolRunManager {
                                     sleep(Duration::from_secs(3)).await;
                                     if is_process_running(&command_path).await {
                                         info!(tool_id = %tool.tool_agent_id, "GuiApp verified running");
+                                        running_tools.write().await.remove(&tool.tool_agent_id);
                                         return;
                                     }
 
