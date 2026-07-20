@@ -309,12 +309,12 @@ pub fn check_webview2_runtime() -> Option<CheckResult> {
             CheckCategory::Runtime,
             &format!("Runtime: WebView2 Runtime {} installed", v.trim()),
         ),
-        None => CheckResult::fail(
+        None => CheckResult::warn(
             CheckCategory::Runtime,
             "Runtime: WebView2 Runtime not installed",
-            "Microsoft Edge WebView2 Runtime is required to run the OpenFrame chat window. \
+            "The OpenFrame chat window requires the Microsoft Edge WebView2 Runtime and will not launch without it. \
              Install the Evergreen WebView2 Runtime from \
-             https://developer.microsoft.com/microsoft-edge/webview2/ and try again.",
+             https://developer.microsoft.com/microsoft-edge/webview2/.",
         ),
     })
 }
