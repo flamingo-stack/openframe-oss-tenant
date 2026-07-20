@@ -9,6 +9,7 @@ use checks::*;
 pub enum CheckCategory {
     Command,
     Admin,
+    Runtime,
     Disk,
     Network,
 }
