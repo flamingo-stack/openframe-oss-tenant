@@ -9,27 +9,15 @@ import { CHAT_NATS_CLIENT_CONFIG, CHAT_NATS_RECONNECTION_BACKOFF, useChatNatsCon
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting';
 
-export interface AiConfiguration {
-  id: string;
-  provider: string;
-  modelName: string;
-  isActive: boolean;
-  hasApiKey: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 interface UseConnectionStatusReturn {
   status: ConnectionStatus;
   serverUrl: string | null;
-  aiConfiguration: AiConfiguration | null;
   isFullyLoaded: boolean;
 }
 
 export function useConnectionStatus(): UseConnectionStatusReturn {
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [serverUrl, setServerUrl] = useState<string | null>(null);
-  const [aiConfiguration, setAiConfiguration] = useState<AiConfiguration | null>(null);
   const [isFullyLoaded, setIsFullyLoaded] = useState(false);
 
   const { getWsUrl, onBeforeReconnect, apiBaseUrl, token } = useChatNatsConfig();
@@ -58,35 +46,28 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
     }
   }, [apiBaseUrl]);
 
+  // The model shown in the footer comes from per-chat sources (stream
+  // metadata / message provenance) — only the model display-name catalog is
+  // needed up front. The deprecated tenant-wide /chat/api/v1/ai-configuration
+  // read is gone: it could disagree with the customer's effective model.
   useEffect(() => {
-    const loadAiConfiguration = async () => {
+    const loadModelCatalog = async () => {
+      if (!apiBaseUrl || !token) {
+        return;
+      }
       try {
-        if (!apiBaseUrl || !token) {
-          return;
-        }
-
-        const response = await fetch(`${apiBaseUrl}/chat/api/v1/ai-configuration`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (response && response.ok) {
-          const config = await response.json();
-          setAiConfiguration(config);
-
-          await supportedModelsService.loadSupportedModels();
-          setIsFullyLoaded(true);
-        }
+        await supportedModelsService.loadSupportedModels();
       } catch (error) {
-        log.error('ai-config', 'failed to load AI configuration', String(error));
-        console.error('Failed to load AI configuration:', error);
+        log.error('ai-config', 'failed to load supported models', String(error));
+        console.error('Failed to load supported models:', error);
+      } finally {
+        // Raw model names still render if the catalog failed — never hold the
+        // footer on a skeleton forever.
+        setIsFullyLoaded(true);
       }
     };
 
-    loadAiConfiguration();
+    loadModelCatalog();
   }, [apiBaseUrl, token]);
 
   // Tauri path: Rust owns the connection — read state from the bridge.
@@ -121,5 +102,5 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
 
   const displayUrl = serverUrl?.replace(/^https?:\/\//, '') || null;
 
-  return { status, serverUrl: displayUrl, aiConfiguration, isFullyLoaded };
+  return { status, serverUrl: displayUrl, isFullyLoaded };
 }
