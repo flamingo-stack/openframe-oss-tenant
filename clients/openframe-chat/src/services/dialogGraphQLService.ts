@@ -95,6 +95,12 @@ function getDialogMessagesQuery() {
                 lastName
               }
             }
+            ... on AssistantOwner {
+              model
+              modelName
+              providerName
+              contextWindow
+            }
           }
           messageData {
             type
@@ -155,6 +161,7 @@ function getDialogMessagesQuery() {
               approvalRequestId
               approved
               approvalType
+              resolvedByName
             }
 
             ... on ContextCompactionStartData {

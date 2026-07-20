@@ -10,6 +10,9 @@ interface ApprovalData {
 
 export function useChatApprovals() {
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({});
+  // Resolver display names per requestId (from APPROVAL_RESULT) — overlays
+  // "Approved by {name}" onto approval cards in historical bubbles.
+  const [resolvedByNames, setResolvedByNames] = useState<Record<string, string>>({});
   const [pendingApprovalRequests, setPendingApprovalRequests] = useState<Record<string, ApprovalData>>({});
   const [awaitingTechnicianResponse, setAwaitingTechnicianResponse] = useState(false);
 
@@ -120,6 +123,7 @@ export function useChatApprovals() {
 
   const clearApprovals = useCallback(() => {
     setApprovalStatuses({});
+    setResolvedByNames({});
     setPendingApprovalRequests({});
     setAwaitingTechnicianResponse(false);
   }, []);
@@ -129,12 +133,21 @@ export function useChatApprovals() {
   // status overlaid via `processHistoricalMessages` — the live
   // `useChatMessages` updater alone can't reach approvals that live in
   // historical (resumed-dialog) bubbles.
-  const applyResolvedStatus = useCallback((requestId: string, status: 'approved' | 'rejected') => {
-    setApprovalStatuses(prev => (prev[requestId] === status ? prev : { ...prev, [requestId]: status }));
-  }, []);
+  const applyResolvedStatus = useCallback(
+    (requestId: string, status: 'approved' | 'rejected', resolvedByName?: string | null) => {
+      setApprovalStatuses(prev => (prev[requestId] === status ? prev : { ...prev, [requestId]: status }));
+      if (resolvedByName) {
+        setResolvedByNames(prev =>
+          prev[requestId] === resolvedByName ? prev : { ...prev, [requestId]: resolvedByName },
+        );
+      }
+    },
+    [],
+  );
 
   return {
     approvalStatuses,
+    resolvedByNames,
     pendingApprovalRequests,
     awaitingTechnicianResponse,
     handleApproveRequest,

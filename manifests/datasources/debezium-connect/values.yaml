@@ -17,7 +17,15 @@ resources:
     cpu: 700m
     memory: 2Gi
 
+# Utility image for init containers (must provide sh and nc)
+initImage:
+  registry: ghcr.io/flamingo-stack/registry
+  repository: busybox
+  tag: "1.36.0"
+
 probes:
+  startup:
+    enabled: true
   liveness:
     enabled: true
   readiness:

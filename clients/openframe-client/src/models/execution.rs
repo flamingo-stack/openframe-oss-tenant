@@ -47,6 +47,10 @@ pub struct ScriptMessage {
     pub execution_id: String,
     #[serde(default)]
     pub machine_id: Option<String>,
+    #[serde(default)]
+    pub schedule_id: Option<String>,
+    #[serde(default)]
+    pub script_id: Option<String>,
     pub code: String,
     pub shell: ScriptShell,
     #[serde(default)]
@@ -86,6 +90,10 @@ pub struct RmmResult {
     pub timed_out: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub script_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schedule_id: Option<String>,
 }
 
 pub struct ExecutionRequest<'a> {
@@ -96,6 +104,8 @@ pub struct ExecutionRequest<'a> {
     pub args: &'a [String],
     pub timeout_secs: u64,
     pub env_vars: Vec<String>,
+    pub script_id: Option<&'a str>,
+    pub schedule_id: Option<&'a str>,
 }
 
 pub trait ExecutionMessage: Sized + Send {
@@ -104,6 +114,10 @@ pub trait ExecutionMessage: Sized + Send {
     fn from_payload(payload: &str) -> Result<Self>;
     fn execution_id(&self) -> &str;
     fn to_request(&self) -> ExecutionRequest<'_>;
+
+    fn schedule_id(&self) -> Option<&str> {
+        None
+    }
 }
 
 impl ExecutionMessage for CommandMessage {
@@ -126,6 +140,8 @@ impl ExecutionMessage for CommandMessage {
             args: &[],
             timeout_secs: self.timeout,
             env_vars: Vec::new(),
+            script_id: None,
+            schedule_id: None,
         }
     }
 }
@@ -141,6 +157,10 @@ impl ExecutionMessage for ScriptMessage {
         &self.execution_id
     }
 
+    fn schedule_id(&self) -> Option<&str> {
+        self.schedule_id.as_deref()
+    }
+
     fn to_request(&self) -> ExecutionRequest<'_> {
         ExecutionRequest {
             execution_id: &self.execution_id,
@@ -154,6 +174,8 @@ impl ExecutionMessage for ScriptMessage {
                 .iter()
                 .map(|e| format!("{}={}", e.name, e.value))
                 .collect(),
+            script_id: self.script_id.as_deref(),
+            schedule_id: self.schedule_id.as_deref(),
         }
     }
 }
@@ -176,7 +198,7 @@ mod tests {
     #[test]
     fn parses_script_message_with_env_and_args() {
         let m = ScriptMessage::from_payload(
-            r#"{"executionId":"e","machineId":"mac","code":"x","shell":"POWERSHELL","privilegeLevel":"USER","args":["-v"],"timeoutSeconds":60,"envVars":[{"name":"FOO","value":"bar"}]}"#,
+            r#"{"executionId":"e","machineId":"mac","scheduleId":"sch-1","scriptId":"scr-1","code":"x","shell":"POWERSHELL","privilegeLevel":"USER","args":["-v"],"timeoutSeconds":60,"envVars":[{"name":"FOO","value":"bar"}]}"#,
         )
         .unwrap();
         let req = m.to_request();
@@ -184,6 +206,16 @@ mod tests {
         assert_eq!(req.args, &["-v".to_string()]);
         assert_eq!(req.env_vars, vec!["FOO=bar".to_string()]);
         assert!(matches!(req.privilege, PrivilegeLevel::User));
+        assert_eq!(req.script_id, Some("scr-1"));
+        assert_eq!(req.schedule_id, Some("sch-1"));
+    }
+
+    #[test]
+    fn script_message_without_script_id_still_parses() {
+        let m = ScriptMessage::from_payload(r#"{"executionId":"e","code":"x","shell":"BASH"}"#)
+            .unwrap();
+        assert!(m.script_id.is_none());
+        assert!(m.to_request().script_id.is_none());
     }
 
     #[test]
@@ -205,6 +237,8 @@ mod tests {
             execution_time_ms: 1,
             timed_out: false,
             error: None,
+            script_id: Some("scr-1".into()),
+            schedule_id: None,
         };
         let v = serde_json::to_value(&r).unwrap();
         assert!(v.get("execution_id").is_some());
@@ -212,6 +246,8 @@ mod tests {
         assert!(v.get("execution_time_ms").is_some());
         assert!(v.get("timed_out").is_some());
         assert!(v.get("error").is_none(), "None error must be omitted");
+        assert_eq!(v.get("script_id").and_then(|s| s.as_str()), Some("scr-1"));
+        assert!(v.get("schedule_id").is_none(), "None schedule_id must be omitted");
     }
 
     #[test]

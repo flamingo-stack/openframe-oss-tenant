@@ -16,32 +16,37 @@ interface UseDialogMessagesOptions {
   onApprove?: (requestId?: string) => Promise<void> | void;
   onReject?: (requestId?: string) => Promise<void> | void;
   approvalStatuses?: Record<string, ChatApprovalStatus>;
+  /** Resolver display names per requestId (live APPROVAL_RESULT) — overlaid
+   *  onto approval segments in historical bubbles so the status pill reads
+   *  "Approved by {name}" without waiting for a refetch. */
+  resolvedByNames?: Record<string, string>;
 }
 
 export function useDialogMessages(dialogId: string | null, options: UseDialogMessagesOptions = {}) {
   const queryClient = useQueryClient();
   const { flags } = useFeatureFlags();
   const { assistantName, assistantAvatar } = useAssistantBranding();
-  const { onApprove, onReject, approvalStatuses } = options;
+  const { onApprove, onReject, approvalStatuses, resolvedByNames } = options;
 
-  const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage, dataUpdatedAt } = useInfiniteQuery({
-    queryKey: ['dialog-messages', dialogId],
-    queryFn: async ({ pageParam }) => {
-      const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50);
-      if (!connection || !connection.edges) {
-        return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
-      }
-      return connection;
-    },
-    initialPageParam: null as string | null,
-    getNextPageParam: lastPage => {
-      if (lastPage.pageInfo.hasNextPage && lastPage.pageInfo.endCursor) {
-        return lastPage.pageInfo.endCursor;
-      }
-      return undefined;
-    },
-    enabled: !!dialogId && (options.enabled ?? false),
-  });
+  const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage, dataUpdatedAt } =
+    useInfiniteQuery({
+      queryKey: ['dialog-messages', dialogId],
+      queryFn: async ({ pageParam }) => {
+        const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50);
+        if (!connection || !connection.edges) {
+          return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
+        }
+        return connection;
+      },
+      initialPageParam: null as string | null,
+      getNextPageParam: lastPage => {
+        if (lastPage.pageInfo.hasNextPage && lastPage.pageInfo.endCursor) {
+          return lastPage.pageInfo.endCursor;
+        }
+        return undefined;
+      },
+      enabled: !!dialogId && (options.enabled ?? false),
+    });
 
   const initialOptStartSeq = useMemo(() => {
     let max = 0;
@@ -53,6 +58,25 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
       }
     }
     return max;
+  }, [data?.pages]);
+
+  // Model provenance of the newest assistant message across fetched pages
+  // (pages and rows are newest-first). Seeds the footer model display on
+  // dialog resume — per-chat truth, replacing the removed tenant-wide
+  // /chat/api/v1/ai-configuration read.
+  const latestAssistantModel = useMemo(() => {
+    if (!data?.pages) return null;
+    for (const page of data.pages) {
+      for (const edge of page.edges) {
+        const owner = edge.node.owner as
+          | { type?: string; model?: string; providerName?: string | null; contextWindow?: number | null }
+          | undefined;
+        if (owner?.type === 'ASSISTANT' && owner.model && owner.providerName) {
+          return { modelName: owner.model, provider: owner.providerName, contextWindow: owner.contextWindow ?? 0 };
+        }
+      }
+    }
+    return null;
   }, [data?.pages]);
 
   // Raw persisted (Mongo) ids across all fetched pages — passed to
@@ -97,8 +121,38 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
       batchApprovalsEnabled: flags['batch-approval'],
     });
 
-    return { historicalMessages: result.messages, escalatedApprovals: result.escalatedApprovals };
-  }, [data?.pages, onApprove, onReject, approvalStatuses, flags, assistantName, assistantAvatar]);
+    // Overlay resolver names from live APPROVAL_RESULT chunks: the
+    // approvalStatuses overlay above only carries the status, so a card
+    // resolved mid-session in a historical bubble would render a nameless
+    // pill until the next refetch.
+    const names = resolvedByNames ?? {};
+    const messagesWithNames =
+      Object.keys(names).length === 0
+        ? result.messages
+        : result.messages.map(msg => {
+            if (msg.role !== 'assistant' || !Array.isArray(msg.content)) return msg;
+            let changed = false;
+            const content = msg.content.map(segment => {
+              if (segment.type === 'approval_request') {
+                const name = segment.data?.requestId ? names[segment.data.requestId] : undefined;
+                if (name && !segment.resolvedByName) {
+                  changed = true;
+                  return { ...segment, resolvedByName: name };
+                }
+              } else if (segment.type === 'approval_batch') {
+                const name = names[segment.data.approvalRequestId];
+                if (name && !segment.resolvedByName) {
+                  changed = true;
+                  return { ...segment, resolvedByName: name };
+                }
+              }
+              return segment;
+            });
+            return changed ? { ...msg, content } : msg;
+          });
+
+    return { historicalMessages: messagesWithNames, escalatedApprovals: result.escalatedApprovals };
+  }, [data?.pages, onApprove, onReject, approvalStatuses, resolvedByNames, flags, assistantName, assistantAvatar]);
 
   const reset = useCallback(() => {
     queryClient.removeQueries({ queryKey: ['dialog-messages'] });
@@ -106,6 +160,7 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
 
   return {
     historicalMessages,
+    latestAssistantModel,
     hasNextPage: hasNextPage ?? false,
     isFetchingNextPage,
     isLoading,

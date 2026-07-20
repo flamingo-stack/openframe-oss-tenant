@@ -12,9 +12,9 @@ inputs:
     description: 'Changes output'
     required: true
   helm-values-file:
-    description: 'Path to helm-values.yaml file'
+    description: 'Path to the openframe helm values file'
     required: false
-    default: 'cli/helm-values.yaml'
+    default: 'cli/openframe-helm-values.yaml'
   github-token:
     description: 'GitHub token for repository access'
     required: true
