@@ -1,4 +1,7 @@
 //! macOS bash update script for self-update functionality
+//!
+//! TODO: bring to parity with the Windows script (boot-marker wait, .lkg rollback,
+//! transcript logging, no premature "completed" stamp).
 
 pub const UPDATER_PLIST_TEMPLATE: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

@@ -4,7 +4,7 @@ use tracing::info;
 use super::UpdaterParams;
 
 /// Launch updater on Linux
-/// TODO: Implement using systemd
+/// TODO: implement using systemd, with boot-marker wait + .lkg rollback parity.
 pub async fn launch_updater(_params: UpdaterParams) -> Result<()> {
     info!("Launching Linux shell updater");
 

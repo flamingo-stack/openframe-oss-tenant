@@ -9,6 +9,8 @@ use crate::platform::update_scripts::{UPDATE_SCRIPT_MACOS, UPDATER_PLIST_TEMPLAT
 
 /// Launch bash updater script on macOS
 /// Creates a temporary launchd job to ensure the script survives service stop
+///
+/// TODO: pass the ratchet UpdaterParams fields once the macOS script gains parity.
 pub async fn launch_updater(params: UpdaterParams) -> Result<()> {
     info!("Launching macOS bash updater");
 
