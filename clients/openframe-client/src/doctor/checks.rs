@@ -306,11 +306,11 @@ pub fn check_webview2_runtime() -> Option<CheckResult> {
 
     Some(match version {
         Some(v) => CheckResult::pass(
-            CheckCategory::Runtime,
+            CheckCategory::Command,
             &format!("Runtime: WebView2 Runtime {} installed", v.trim()),
         ),
         None => CheckResult::warn(
-            CheckCategory::Runtime,
+            CheckCategory::Command,
             "Runtime: WebView2 Runtime not installed",
             "The OpenFrame chat window requires the Microsoft Edge WebView2 Runtime and will not launch without it. \
              Install the Evergreen WebView2 Runtime from \
