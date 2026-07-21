@@ -27,7 +27,6 @@ default = []
 openframe-chat-version     = []
 meshcentral-agent-version  = []
 fleetmdm-agent-version     = []
-tacticalrmm-agent-version  = []
 
 # Asset-level version overrides. Keyed by Asset.id inside a ToolInstallationMessage.
 # These binaries ship as assets under another tool and can be pinned independently.
@@ -38,7 +37,6 @@ all-tool-versions = [
     "openframe-chat-version",
     "meshcentral-agent-version",
     "fleetmdm-agent-version",
-    "tacticalrmm-agent-version",
     "osquery-version",
 ]
 
