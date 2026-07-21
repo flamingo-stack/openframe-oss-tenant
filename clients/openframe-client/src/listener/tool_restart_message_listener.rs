@@ -1,8 +1,6 @@
-use crate::listener::client_update_gate::park_or_dispatch;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_restart_service::ToolRestartService;
 use crate::services::tool_restart_service::RestartOutcome;
-use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::AgentConfigurationService;
 use crate::models::ToolRestartMessage;
 use crate::config::update_config::{
@@ -29,7 +27,6 @@ pub struct ToolRestartMessageListener {
     nats_connection_manager: NatsConnectionManager,
     tool_restart_service: ToolRestartService,
     config_service: AgentConfigurationService,
-    tool_run_manager: ToolRunManager,
 }
 
 impl ToolRestartMessageListener {
@@ -40,13 +37,11 @@ impl ToolRestartMessageListener {
         nats_connection_manager: NatsConnectionManager,
         tool_restart_service: ToolRestartService,
         config_service: AgentConfigurationService,
-        tool_run_manager: ToolRunManager,
     ) -> Self {
         Self {
             nats_connection_manager,
             tool_restart_service,
             config_service,
-            tool_run_manager,
         }
     }
 
@@ -122,25 +117,10 @@ impl ToolRestartMessageListener {
 
         let tool_agent_id = restart_message.tool_agent_id;
 
-        // Park behind a pending client update: a restart takes the tool lock /
-        // mark_updating and would otherwise defer the update.
-        let listener = self.clone();
-        let label = format!("tool-restart:{}", tool_agent_id);
-        park_or_dispatch(
-            self.tool_run_manager.clone(),
-            message,
-            label,
-            move |msg| async move { listener.dispatch(msg, tool_agent_id).await; },
-        ).await;
-
-        Ok(())
-    }
-
-    async fn dispatch(&self, message: Message, tool_agent_id: String) {
         let ack_message = match self.tool_restart_service.restart_guarded(&tool_agent_id).await {
             Ok(RestartOutcome::Busy) => {
                 info!("Tool {} busy with another operation, deferring restart for redelivery", tool_agent_id);
-                return;
+                return Ok(());
             }
             Ok(RestartOutcome::Restarted) | Ok(RestartOutcome::NotInstalled) => true,
             Err(e) => {
@@ -150,13 +130,14 @@ impl ToolRestartMessageListener {
         };
 
         if ack_message {
-            match message.ack().await {
-                Ok(_) => info!("Restart message acknowledged for tool: {}", tool_agent_id),
-                Err(e) => error!("Failed to ack restart message for tool {}: {}", tool_agent_id, e),
-            }
+            message.ack().await
+                .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+            info!("Restart message acknowledged for tool: {}", tool_agent_id);
         } else {
             info!("Leaving restart message unacked for potential redelivery: tool {}", tool_agent_id);
         }
+
+        Ok(())
     }
 
     async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> PushConsumer {

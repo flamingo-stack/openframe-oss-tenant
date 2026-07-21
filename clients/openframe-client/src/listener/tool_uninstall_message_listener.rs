@@ -1,4 +1,3 @@
-use crate::listener::client_update_gate::park_or_dispatch;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::tool_uninstall_service::ToolUninstallService;
@@ -134,28 +133,12 @@ impl ToolUninstallMessageListener {
 
         let tool_agent_id = uninstall_message.tool_agent_id.clone();
 
-        // Park behind a pending client update. The tool lock / mark_updating
-        // happen only at dispatch, so a parked message can't re-defer the update.
-        let listener = self.clone();
-        park_or_dispatch(
-            self.tool_run_manager.clone(),
-            message,
-            format!("tool-uninstall:{}", tool_agent_id),
-            move |msg| async move { listener.dispatch(msg, uninstall_message).await; },
-        ).await;
-
-        Ok(())
-    }
-
-    async fn dispatch(&self, message: Message, uninstall_message: ToolUninstallMessage) {
-        let tool_agent_id = uninstall_message.tool_agent_id.clone();
-
         let tool_lock = self.tool_run_manager.tool_lock(&tool_agent_id).await;
         let _guard = match tool_lock.try_lock() {
             Ok(guard) => guard,
             Err(_) => {
                 info!("Tool {} busy with another operation, deferring uninstall for redelivery", tool_agent_id);
-                return;
+                return Ok(());
             }
         };
 
@@ -186,13 +169,14 @@ impl ToolUninstallMessageListener {
         self.tool_run_manager.clear_updating(&tool_agent_id).await;
 
         if ack_message {
-            match message.ack().await {
-                Ok(_) => info!("Uninstall message acknowledged for tool: {}", tool_agent_id),
-                Err(e) => error!("Failed to ack uninstall message for tool {}: {}", tool_agent_id, e),
-            }
+            message.ack().await
+                .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+            info!("Uninstall message acknowledged for tool: {}", tool_agent_id);
         } else {
             info!("Leaving uninstall message unacked for potential redelivery: tool {}", tool_agent_id);
         }
+
+        Ok(())
     }
 
     async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> PushConsumer {

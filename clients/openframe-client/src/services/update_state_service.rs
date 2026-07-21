@@ -46,13 +46,8 @@ impl UpdateStateService {
         let json_content = serde_json::to_string_pretty(state)
             .context("Failed to serialize update state to JSON")?;
 
-        // Temp + rename: the file has two writers (agent and updater script), and a
-        // torn write would make every subsequent load fail.
-        let temp_path = self.state_file_path.with_extension("json.tmp");
-        fs::write(&temp_path, json_content)
-            .with_context(|| format!("Failed to write temp update state file: {:?}", temp_path))?;
-        fs::rename(&temp_path, &self.state_file_path)
-            .with_context(|| format!("Failed to move update state file into place: {:?}", self.state_file_path))?;
+        fs::write(&self.state_file_path, json_content)
+            .with_context(|| format!("Failed to write update state file: {:?}", self.state_file_path))?;
 
         debug!("Saved update state for version: {}, phase: {:?}", state.target_version, state.phase);
         Ok(())
