@@ -147,6 +147,7 @@ pub struct Client {
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
     tool_uninstall_message_listener: ToolUninstallMessageListener,
+    #[allow(dead_code)] // TODO: remove when tool-restart is implemented on backend
     tool_restart_message_listener: ToolRestartMessageListener,
     openframe_client_update_listener: OpenFrameClientUpdateListener,
     tool_agent_update_listener: ToolAgentUpdateListener,
@@ -549,7 +550,8 @@ impl Client {
 
         self.tool_uninstall_message_listener.start().await?;
 
-        self.tool_restart_message_listener.start().await?;
+        // TODO: uncomment when implemented on backend
+        // self.tool_restart_message_listener.start().await?;
 
         // Start OpenFrame client update listener in background
         self.openframe_client_update_listener.start().await?;
