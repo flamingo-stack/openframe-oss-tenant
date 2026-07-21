@@ -1,5 +1,6 @@
 use anyhow::{Context, Result, anyhow};
 use tracing::{info, warn, error};
+use crate::config::update_config::ALLOW_DOWNGRADE;
 use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 use crate::models::openframe_client_info::ClientUpdateStatus;
 use crate::models::update_state::{UpdateState, UpdatePhase};
@@ -7,6 +8,7 @@ use crate::service::FULL_SERVICE_NAME;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::github_download_service::GithubDownloadService;
 use crate::services::update_state_service::UpdateStateService;
+use crate::services::last_known_good_service::LastKnownGoodService;
 use crate::platform::updater_launcher::{self, UpdaterParams};
 use crate::services::tool_run_manager::ToolRunManager;
 use std::path::PathBuf;
@@ -20,6 +22,7 @@ pub struct OpenFrameClientUpdateService {
     client_info_service: OpenFrameClientInfoService,
     github_download_service: GithubDownloadService,
     update_state_service: UpdateStateService,
+    last_known_good_service: LastKnownGoodService,
     tool_run_manager: ToolRunManager,
     /// Mutex to prevent concurrent updates (race condition protection)
     update_in_progress: Arc<Mutex<bool>>,
@@ -30,12 +33,14 @@ impl OpenFrameClientUpdateService {
         client_info_service: OpenFrameClientInfoService,
         github_download_service: GithubDownloadService,
         update_state_service: UpdateStateService,
+        last_known_good_service: LastKnownGoodService,
         tool_run_manager: ToolRunManager,
     ) -> Self {
         Self {
             client_info_service,
             github_download_service,
             update_state_service,
+            last_known_good_service,
             tool_run_manager,
             update_in_progress: Arc::new(Mutex::new(false)),
         }
@@ -44,6 +49,8 @@ impl OpenFrameClientUpdateService {
     pub async fn process_update(&self, message: OpenFrameClientUpdateMessage) -> Result<()> {
         let requested_version = message.version.trim();
         info!("Received update request for version: {}", requested_version);
+
+        self.tool_run_manager.mark_client_update_pending().await;
 
         if self.tool_run_manager.any_tool_op_in_progress().await {
             warn!("Tool operation in progress, deferring client update to version {} (will redeliver)", requested_version);
@@ -85,9 +92,36 @@ impl OpenFrameClientUpdateService {
             return Err(anyhow!("Invalid version format: {}", requested_version));
         }
 
-        // 3. Parse requested version with semver to ensure valid format
-        Self::parse_version(requested_version)
+        let requested_semver = Self::parse_version(requested_version)
             .with_context(|| format!("Failed to parse requested version: {}", requested_version))?;
+        let canonical_version = requested_semver.to_string();
+
+        if canonical_version == env!("OPENFRAME_VERSION") {
+            info!("Already running version {}, ignoring update request", canonical_version);
+            self.tool_run_manager.clear_client_update_pending().await;
+            return Ok(());
+        }
+
+        if !ALLOW_DOWNGRADE {
+            let anchor = match self.last_known_good_service.load().await {
+                Ok(anchor) => anchor,
+                Err(e) => {
+                    warn!("Failed to load last-known-good anchor, skipping downgrade guard: {:#}", e);
+                    None
+                }
+            };
+            if let Some(anchor) = anchor {
+                match Self::parse_version(&anchor) {
+                    Ok(anchor_semver) if requested_semver < anchor_semver => {
+                        warn!("refusing downgrade to {} — anchored at {}", requested_version, anchor);
+                        self.tool_run_manager.clear_client_update_pending().await;
+                        return Ok(());
+                    }
+                    Ok(_) => {}
+                    Err(e) => warn!("Failed to parse last-known-good anchor '{}': {:#}", anchor, e),
+                }
+            }
+        }
 
         // 4. Log current version for informational purposes
         let client_info = self.client_info_service.get().await
@@ -103,13 +137,13 @@ impl OpenFrameClientUpdateService {
         }
 
         // 5. Create update state for tracking
-        let mut update_state = UpdateState::new(requested_version.to_string());
+        let mut update_state = UpdateState::new(canonical_version.clone());
         self.update_state_service.save(&update_state).await
             .context("Failed to save initial update state")?;
 
         // 6. Set update status to updating
         self.client_info_service
-            .set_update_status(ClientUpdateStatus::Updating, Some(requested_version.to_string()))
+            .set_update_status(ClientUpdateStatus::Updating, Some(canonical_version.clone()))
             .await
             .context("Failed to set update status")?;
 
@@ -124,7 +158,7 @@ impl OpenFrameClientUpdateService {
 
             // Set status to Failed
             if let Err(status_err) = self.client_info_service
-                .set_update_status(ClientUpdateStatus::Failed, Some(requested_version.to_string()))
+                .set_update_status(ClientUpdateStatus::Failed, Some(canonical_version.clone()))
                 .await
             {
                 error!("Failed to set update status to Failed: {:#}", status_err);
@@ -163,6 +197,8 @@ impl OpenFrameClientUpdateService {
 
         info!("Binary downloaded and extracted ({} bytes)", binary_bytes.len());
 
+        self.tool_run_manager.mark_client_update_pending().await;
+
         // 3. Extract binary
         update_state.set_phase(UpdatePhase::Extracting);
         self.update_state_service.save(update_state).await?;
@@ -196,6 +232,11 @@ impl OpenFrameClientUpdateService {
             target_exe: current_exe,
             service_name: FULL_SERVICE_NAME.to_string(),
             update_state_path: self.update_state_service.get_state_file_path(),
+            target_version: update_state.target_version.clone(),
+            boot_marker_path: self.last_known_good_service.boot_marker_path().to_path_buf(),
+            lkg_path: self.last_known_good_service.reserve_path().to_path_buf(),
+            transcript_path: self.last_known_good_service.new_transcript_path(&update_state.target_version),
+            rollback_only: false,
         };
 
         if self.tool_run_manager.any_tool_op_in_progress().await {

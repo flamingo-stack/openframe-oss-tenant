@@ -43,26 +43,18 @@ fn detect_service(
 
     #[cfg(windows)]
     {
-        use std::process::Command;
+        if crate::platform::system_service::service_exists(service_name) {
+            info!(tool_id = %tool_id, "Detected existing Windows service: {}", service_name);
 
-        let output = Command::new("sc")
-            .args(&["query", service_name])
-            .output();
+            let exec_path = directory_manager
+                .get_tool_executable_path(tool_id, Some(&config.target_file_name))
+                .to_string_lossy()
+                .to_string();
 
-        if let Ok(out) = output {
-            if out.status.success() {
-                info!(tool_id = %tool_id, "Detected existing Windows service: {}", service_name);
-
-                let exec_path = directory_manager
-                    .get_tool_executable_path(tool_id, Some(&config.target_file_name))
-                    .to_string_lossy()
-                    .to_string();
-
-                return Some(Installation::Service {
-                    service_name: service_name.clone(),
-                    executable_path: Some(exec_path),
-                });
-            }
+            return Some(Installation::Service {
+                service_name: service_name.clone(),
+                executable_path: Some(exec_path),
+            });
         }
     }
 

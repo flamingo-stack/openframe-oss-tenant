@@ -1,6 +1,8 @@
+use crate::listener::client_update_gate::park_or_dispatch;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_restart_service::ToolRestartService;
 use crate::services::tool_restart_service::RestartOutcome;
+use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::AgentConfigurationService;
 use crate::models::ToolRestartMessage;
 use crate::config::update_config::{
@@ -11,7 +13,6 @@ use crate::config::update_config::{
     RECONNECTION_DELAY_MS,
     CONSUMER_ACK_WAIT_SECS,
     RESTART_CONSUMER_MAX_DELIVER,
-    RESTART_CONSUMER_QUIET_PAUSE_MS,
 };
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
@@ -20,13 +21,14 @@ use tokio::time::Duration;
 use anyhow::Result;
 use async_nats::jetstream;
 use futures::StreamExt;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 #[derive(Clone)]
 pub struct ToolRestartMessageListener {
     nats_connection_manager: NatsConnectionManager,
     tool_restart_service: ToolRestartService,
     config_service: AgentConfigurationService,
+    tool_run_manager: ToolRunManager,
 }
 
 impl ToolRestartMessageListener {
@@ -37,11 +39,13 @@ impl ToolRestartMessageListener {
         nats_connection_manager: NatsConnectionManager,
         tool_restart_service: ToolRestartService,
         config_service: AgentConfigurationService,
+        tool_run_manager: ToolRunManager,
     ) -> Self {
         Self {
             nats_connection_manager,
             tool_restart_service,
             config_service,
+            tool_run_manager,
         }
     }
 
@@ -71,33 +75,46 @@ impl ToolRestartMessageListener {
 
     async fn listen(&self) -> Result<()> {
         info!("Run tool restart message listener");
-        let client = self.nats_connection_manager
-            .get_client()
-            .await?;
-        let js = jetstream::new((*client).clone());
-
         let machine_id = self.config_service.get_machine_id()?;
 
-        let consumer = self.create_consumer(&js, &machine_id).await;
+        loop {
+            let client = self.nats_connection_manager
+                .get_client()
+                .await?;
+            let mut reconnect_rx = self.nats_connection_manager.subscribe_reconnect();
+            let js = jetstream::new((*client).clone());
 
-        info!("Start listening for tool restart messages");
-        let mut messages = consumer.messages().await?;
+            let consumer = self.create_consumer(&js, &machine_id).await;
 
-        while let Some(msg_result) = messages.next().await {
-            let message = match msg_result {
-                Ok(msg) => msg,
-                Err(e) => {
-                    error!("Failed to receive message: {:#}", e);
-                    continue;
+            info!("Start listening for tool restart messages");
+            let mut messages = consumer.messages().await?;
+
+            loop {
+                tokio::select! {
+                    msg_result = messages.next() => {
+                        match msg_result {
+                            Some(Ok(message)) => {
+                                if let Err(e) = self.handle_message(message).await {
+                                    error!("Failed to handle message: {:#}", e);
+                                }
+                            }
+                            Some(Err(e)) => {
+                                error!("Message stream error, recreating consumer: {:#}", e);
+                                return Err(anyhow::anyhow!("Message stream error: {}", e));
+                            }
+                            None => {
+                                warn!("Message stream ended, rebinding consumer");
+                                break;
+                            }
+                        }
+                    }
+                    _ = reconnect_rx.recv() => {
+                        info!("NATS reconnected, re-provisioning tool restart consumer");
+                        self.create_consumer(&js, &machine_id).await;
+                    }
                 }
-            };
-
-            if let Err(e) = self.handle_message(message).await {
-                error!("Failed to handle message: {:#}", e);
             }
         }
-
-        Ok(())
     }
 
     async fn handle_message(&self, message: Message) -> Result<()> {
@@ -117,10 +134,23 @@ impl ToolRestartMessageListener {
 
         let tool_agent_id = restart_message.tool_agent_id;
 
+        let listener = self.clone();
+        let label = format!("tool-restart:{}", tool_agent_id);
+        park_or_dispatch(
+            self.tool_run_manager.clone(),
+            message,
+            label,
+            move |msg| async move { listener.dispatch(msg, tool_agent_id).await; },
+        ).await;
+
+        Ok(())
+    }
+
+    async fn dispatch(&self, message: Message, tool_agent_id: String) {
         let ack_message = match self.tool_restart_service.restart_guarded(&tool_agent_id).await {
             Ok(RestartOutcome::Busy) => {
                 info!("Tool {} busy with another operation, deferring restart for redelivery", tool_agent_id);
-                return Ok(());
+                return;
             }
             Ok(RestartOutcome::Restarted) | Ok(RestartOutcome::NotInstalled) => true,
             Err(e) => {
@@ -130,14 +160,13 @@ impl ToolRestartMessageListener {
         };
 
         if ack_message {
-            message.ack().await
-                .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-            info!("Restart message acknowledged for tool: {}", tool_agent_id);
+            match message.ack().await {
+                Ok(_) => info!("Restart message acknowledged for tool: {}", tool_agent_id),
+                Err(e) => error!("Failed to ack restart message for tool {}: {}", tool_agent_id, e),
+            }
         } else {
             info!("Leaving restart message unacked for potential redelivery: tool {}", tool_agent_id);
         }
-
-        Ok(())
     }
 
     async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> PushConsumer {
@@ -147,21 +176,12 @@ impl ToolRestartMessageListener {
         loop {
             cycle += 1;
             let mut delay_ms = INITIAL_RETRY_DELAY_MS;
-            // First cycle logs loudly; later cycles go quiet with a long pause so a server missing the tool-restart subject/grants can't spam the fleet's logs.
-            let loud = cycle == 1;
 
             for attempt in 1..=CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
-                if loud {
-                    info!(
-                        "Creating restart consumer for stream {} (cycle {}, attempt {}/{})",
-                        Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
-                    );
-                } else {
-                    debug!(
-                        "Creating restart consumer for stream {} (cycle {}, attempt {}/{})",
-                        Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
-                    );
-                }
+                info!(
+                    "Creating restart consumer for stream {} (cycle {}, attempt {}/{})",
+                    Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
+                );
 
                 match js.create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME).await {
                     Ok(consumer) => {
@@ -179,38 +199,28 @@ impl ToolRestartMessageListener {
                             }
                         }
 
-                        if loud {
+                        if attempt < CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
+                            warn!(
+                                "Failed to create restart consumer (cycle {}, attempt {}/{}): {:#}. Retrying in {} ms...",
+                                cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e, delay_ms
+                            );
+                            tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+                            delay_ms = (delay_ms * 2).min(MAX_RETRY_DELAY_MS);
+                        } else {
                             warn!(
                                 "Failed to create restart consumer (cycle {}, attempt {}/{}): {:#}",
                                 cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e
                             );
-                        } else {
-                            debug!(
-                                "Failed to create restart consumer (cycle {}, attempt {}/{}): {:#}",
-                                cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e
-                            );
-                        }
-                        if attempt < CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
-                            tokio::time::sleep(Duration::from_millis(delay_ms)).await;
-                            delay_ms = (delay_ms * 2).min(MAX_RETRY_DELAY_MS);
                         }
                     }
                 }
             }
 
-            let pause_ms = if loud { CONSUMER_CYCLE_PAUSE_MS } else { RESTART_CONSUMER_QUIET_PAUSE_MS };
-            if loud {
-                warn!(
-                    "All {} attempts in cycle {} failed (tool-restart stream subject/permissions may not be provisioned yet). Retrying quietly every {} seconds...",
-                    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, cycle, RESTART_CONSUMER_QUIET_PAUSE_MS / 1000
-                );
-            } else {
-                debug!(
-                    "All {} attempts in cycle {} failed. Pausing {} seconds before next cycle...",
-                    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, cycle, pause_ms / 1000
-                );
-            }
-            tokio::time::sleep(Duration::from_millis(pause_ms)).await;
+            info!(
+                "All {} attempts in cycle {} failed. Pausing {} seconds before next cycle...",
+                CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, cycle, CONSUMER_CYCLE_PAUSE_MS / 1000
+            );
+            tokio::time::sleep(Duration::from_millis(CONSUMER_CYCLE_PAUSE_MS)).await;
         }
     }
 
