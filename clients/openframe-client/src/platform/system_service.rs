@@ -463,6 +463,20 @@ fn service_stopped_or_missing(
     }
 }
 
+#[cfg(target_os = "windows")]
+pub fn service_exists(service_name: &str) -> bool {
+    query_service_status_windows(service_name).is_ok()
+}
+
+#[cfg(target_os = "windows")]
+pub fn service_not_stopped(service_name: &str) -> bool {
+    use windows_service::service::ServiceState;
+    match query_service_status_windows(service_name) {
+        Ok(status) => status.current_state != ServiceState::Stopped,
+        Err(_) => false,
+    }
+}
+
 /// True only if SCM reports the service does not exist.
 #[cfg(target_os = "windows")]
 fn service_missing_windows(service_name: &str) -> bool {

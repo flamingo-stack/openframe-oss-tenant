@@ -10,6 +10,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  getAgentAccent,
   type Message,
   type MessageSegment,
   ModelDisplay,
@@ -540,24 +541,17 @@ export function ChatView() {
           </p>
         ) : (
           <>
-            {/* Quick-action chips above the composer — initial screen only.
-                `loading` draws the wall's own skeleton chips while settings
-                load, so we don't flash bundled defaults before the configured
-                actions resolve. Same wall the lib's welcome screens use. */}
+            {/* Quick-action chips above the composer — initial screen only. The
+                wall draws its own skeleton while settings load (so we don't
+                flash bundled defaults before the configured actions resolve).
+                `agentSlug="fae"` caps the brick stack at 2 rows. Product Hub
+                defaults carry a glyph (iconName/iconUrl/iconProps) → rendered on
+                the chip; tenant customs have none. */}
             {!isDialogActive && !isDisconnected && (isSettingsLoading || quickActions.length > 0) && (
               <QuickActionWall
                 className="mb-[var(--spacing-system-s)] max-h-44 shrink-0"
                 loading={isSettingsLoading}
-                chips={quickActions.map(action => ({
-                  id: action.id,
-                  label: action.name,
-                  onSelect: () => {
-                    setQuickActionPreview(null);
-                    handleQuickAction(action.instructions);
-                  },
-                  onHoverStart: () => setQuickActionPreview(action.instructions),
-                  onHoverEnd: () => setQuickActionPreview(null),
-                }))}
+                agentSlug="fae"
                 rows={4}
                 pauseOnHover
                 dragScroll
@@ -565,6 +559,22 @@ export function ChatView() {
                 fadeSize={{ left: 32 }}
                 fadeColor="var(--color-bg)"
                 copyGap="var(--spacing-system-xxs)"
+                chips={quickActions.map(action => ({
+                  id: action.id,
+                  label: action.name,
+                  icon: {
+                    name: action.iconName ?? undefined,
+                    url: action.iconUrl ?? undefined,
+                    props: action.iconProps ?? undefined,
+                    accent: getAgentAccent('fae'),
+                  },
+                  onSelect: () => {
+                    setQuickActionPreview(null);
+                    handleQuickAction(action.instructions);
+                  },
+                  onHoverStart: () => setQuickActionPreview(action.instructions),
+                  onHoverEnd: () => setQuickActionPreview(null),
+                }))}
               />
             )}
             <ChatInput
