@@ -24,9 +24,9 @@ impl UpdateCleanupService {
             Err(e) => warn!("Failed to cleanup old backups: {:#}", e),
         }
 
-        match self.cleanup_all_old_logs().await {
+        match self.cleanup_temp_update_leftovers().await {
             Ok(count) => cleaned += count,
-            Err(e) => warn!("Failed to cleanup old logs: {:#}", e),
+            Err(e) => warn!("Failed to cleanup temp update leftovers: {:#}", e),
         }
 
         if cleaned > 0 {
@@ -65,22 +65,44 @@ impl UpdateCleanupService {
         Ok(cleaned)
     }
 
-    async fn cleanup_all_old_logs(&self) -> Result<usize> {
+    async fn cleanup_temp_update_leftovers(&self) -> Result<usize> {
         let temp_dir = std::env::temp_dir();
 
         let mut cleaned = 0;
         if let Ok(entries) = fs::read_dir(&temp_dir) {
             for entry in entries.filter_map(|e| e.ok()) {
                 let name = entry.file_name().to_string_lossy().to_string();
-                if name.starts_with("openframe-update-") && name.ends_with(".log") {
-                    match fs::remove_file(entry.path()) {
-                        Ok(_) => {
-                            info!("Removed old log: {}", entry.path().display());
-                            cleaned += 1;
-                        }
-                        Err(e) => {
-                            warn!("Failed to remove log {}: {}", entry.path().display(), e);
-                        }
+                let is_update_artifact = name.starts_with("openframe-update-")
+                    || (name.starts_with("openframe-updater-")
+                        && (name.ends_with(".ps1") || name.ends_with(".sh")));
+                if !is_update_artifact {
+                    continue;
+                }
+
+                let too_fresh = entry
+                    .metadata()
+                    .ok()
+                    .and_then(|m| m.modified().ok())
+                    .and_then(|t| t.elapsed().ok())
+                    .map(|age| age.as_secs() < crate::config::update_config::TEMP_LEFTOVER_MIN_AGE_SECS)
+                    .unwrap_or(true);
+                if too_fresh {
+                    continue;
+                }
+
+                let path = entry.path();
+                let result = if path.is_dir() {
+                    fs::remove_dir_all(&path)
+                } else {
+                    fs::remove_file(&path)
+                };
+                match result {
+                    Ok(_) => {
+                        info!("Removed update leftover: {}", path.display());
+                        cleaned += 1;
+                    }
+                    Err(e) => {
+                        warn!("Failed to remove update leftover {}: {}", path.display(), e);
                     }
                 }
             }

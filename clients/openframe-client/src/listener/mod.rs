@@ -1,3 +1,4 @@
+pub mod client_update_gate;
 pub mod tool_installation_message_listener;
 pub mod tool_uninstall_message_listener;
 pub mod tool_restart_message_listener;
