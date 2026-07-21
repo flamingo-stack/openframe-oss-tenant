@@ -7,7 +7,7 @@ use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
 use crate::platform::DirectoryManager;
-use crate::services::deactivation_controller::DeactivationController;
+use crate::services::deactivation_service::DeactivationService;
 use crate::services::tool_kill_service::ToolKillService;
 use crate::services::tool_restart_service::{RestartOutcome, ToolRestartService};
 use crate::services::tool_run_manager::ToolRunManager;
@@ -42,7 +42,7 @@ pub struct MeshSelfHealService {
     initial_config: InitialConfigurationService,
     agent_config: AgentConfigurationService,
     tool_run_manager: ToolRunManager,
-    deactivation: Arc<DeactivationController>,
+    deactivation: Arc<DeactivationService>,
     http: reqwest::Client,
 }
 
@@ -55,7 +55,7 @@ impl MeshSelfHealService {
         initial_config: InitialConfigurationService,
         agent_config: AgentConfigurationService,
         tool_run_manager: ToolRunManager,
-        deactivation: Arc<DeactivationController>,
+        deactivation: Arc<DeactivationService>,
     ) -> Self {
         Self {
             directory_manager,

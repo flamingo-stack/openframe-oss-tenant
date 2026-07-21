@@ -13,6 +13,9 @@ const SERVICE_NAME: &str = "client";
 const DISPLAY_NAME: &str = "OpenFrame Client Service";
 const DESCRIPTION: &str = "OpenFrame client service for remote management and monitoring";
 
+/// CLI subcommand the detached process runs to remove the client.
+const UNINSTALL_SUBCOMMAND: &str = "uninstall";
+
 /// Spawn a detached `openframe-client uninstall` that survives this service being stopped.
 /// Self-uninstall stops the `com.openframe.client` service (our own process), so it must run
 /// out-of-process. macOS + Windows only — Linux client self-uninstall is unsupported.
@@ -32,51 +35,32 @@ pub fn spawn_detached_uninstall(install_path: &Path) -> Result<()> {
     }
 }
 
-/// One-shot launchd job so the uninstaller outlives the `com.openframe.client` service stop.
+/// Detached child in its own session (setsid) so it outlives launchd stopping our own
+/// `com.openframe.client` service — no launchd job/plist needed.
 #[cfg(target_os = "macos")]
 fn spawn_detached_uninstall_macos(install_path: &Path) -> Result<()> {
-    use std::process::Command;
+    use std::os::unix::process::CommandExt;
+    use std::process::{Command, Stdio};
 
-    const LABEL: &str = "com.openframe.selfuninstall";
-    let plist_path = std::env::temp_dir().join(format!("{LABEL}.plist"));
-
-    // Drop any leftover job from a previous attempt.
-    let _ = Command::new("launchctl").arg("remove").arg(LABEL).output();
-
-    let plist = format!(
-        r#"<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key><string>{LABEL}</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>{bin}</string>
-        <string>uninstall</string>
-    </array>
-    <key>RunAtLoad</key><true/>
-    <key>AbandonProcessGroup</key><true/>
-</dict>
-</plist>
-"#,
-        bin = install_path.to_string_lossy()
-    );
-
-    std::fs::write(&plist_path, plist).context("Failed to write self-uninstall plist")?;
-
-    let output = Command::new("launchctl")
-        .arg("load")
-        .arg(&plist_path)
-        .output()
-        .context("Failed to load self-uninstall plist")?;
-    if !output.status.success() {
-        anyhow::bail!(
-            "launchctl load failed for self-uninstall: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
+    let child = unsafe {
+        Command::new(install_path)
+            .arg(UNINSTALL_SUBCOMMAND)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            // SAFETY: setsid() is async-signal-safe; it moves the child into a new session so
+            // launchd stopping our service can't signal it away mid-uninstall.
+            .pre_exec(|| {
+                if libc::setsid() == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            })
+            .spawn()
     }
+    .context("Failed to spawn detached self-uninstall process")?;
 
-    info!("Self-uninstall launched via launchd job {}", LABEL);
+    info!("Self-uninstall process launched (PID: {})", child.id());
     Ok(())
 }
 
@@ -90,7 +74,7 @@ fn spawn_detached_uninstall_windows(install_path: &Path) -> Result<()> {
     const DETACHED_PROCESS: u32 = 0x0000_0008;
 
     let child = Command::new(install_path)
-        .arg("uninstall")
+        .arg(UNINSTALL_SUBCOMMAND)
         .creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS)
         .spawn()
         .context("Failed to spawn detached self-uninstall process")?;

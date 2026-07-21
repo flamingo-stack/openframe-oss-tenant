@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 use tracing::{info, error};
 
-use crate::services::deactivation_controller::DeactivationController;
+use crate::services::deactivation_service::DeactivationService;
 use crate::services::{InitialConfigurationService, AgentConfigurationService};
 
 const RETRY_INTERVAL_SECS: u64 = 60;
@@ -20,7 +20,7 @@ pub struct InitialKeyService {
     base_url: String,
     initial_config_service: InitialConfigurationService,
     agent_config_service: AgentConfigurationService,
-    deactivation: Arc<DeactivationController>,
+    deactivation: Arc<DeactivationService>,
 }
 
 impl InitialKeyService {
@@ -29,7 +29,7 @@ impl InitialKeyService {
         base_url: String,
         initial_config_service: InitialConfigurationService,
         agent_config_service: AgentConfigurationService,
-        deactivation: Arc<DeactivationController>,
+        deactivation: Arc<DeactivationService>,
     ) -> Self {
         Self {
             http_client,

@@ -4,17 +4,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::models::AgentTokenResponse;
-use crate::services::deactivation_controller::DeactivationController;
+use crate::services::deactivation_service::DeactivationService;
 
 #[derive(Clone)]
 pub struct AuthClient {
     http_client: Client,
     base_url: String,
-    deactivation: Arc<DeactivationController>,
+    deactivation: Arc<DeactivationService>,
 }
 
 impl AuthClient {
-    pub fn new(base_url: String, http_client: Client, deactivation: Arc<DeactivationController>) -> Self {
+    pub fn new(base_url: String, http_client: Client, deactivation: Arc<DeactivationService>) -> Self {
         Self {
             http_client,
             base_url,

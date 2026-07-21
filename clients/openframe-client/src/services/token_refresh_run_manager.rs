@@ -5,7 +5,7 @@ use tokio::time::{sleep, timeout, Duration};
 use tracing::{error, info, debug, warn};
 
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::services::deactivation_controller::DeactivationController;
+use crate::services::deactivation_service::DeactivationService;
 use crate::services::AgentAuthService;
 use crate::utils::jwt;
 
@@ -25,14 +25,14 @@ const REAUTH_TIMEOUT: Duration = Duration::from_secs(30);
 pub struct TokenRefreshRunManager {
     auth_service: AgentAuthService,
     config_service: AgentConfigurationService,
-    deactivation: Arc<DeactivationController>,
+    deactivation: Arc<DeactivationService>,
 }
 
 impl TokenRefreshRunManager {
     pub fn new(
         auth_service: AgentAuthService,
         config_service: AgentConfigurationService,
-        deactivation: Arc<DeactivationController>,
+        deactivation: Arc<DeactivationService>,
     ) -> Self {
         Self {
             auth_service,

@@ -8,7 +8,7 @@ use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use log::error;
-use crate::services::deactivation_controller::DeactivationController;
+use crate::services::deactivation_service::DeactivationService;
 use crate::services::{AgentAuthService, InitialConfigurationService};
 
 /// Reconnect delay while the tenant is gone (suspended): backs the 5s storm off ~60x so a
@@ -24,7 +24,7 @@ pub struct NatsConnectionManager {
     tls_config_provider: LocalTlsConfigProvider,
     initial_configuration_service: InitialConfigurationService,
     auth_service: AgentAuthService,
-    deactivation: Arc<DeactivationController>,
+    deactivation: Arc<DeactivationService>,
 }
 
 impl NatsConnectionManager {
@@ -38,7 +38,7 @@ impl NatsConnectionManager {
         initial_configuration_service: InitialConfigurationService,
         auth_service: AgentAuthService,
         tls_config_provider: LocalTlsConfigProvider,
-        deactivation: Arc<DeactivationController>,
+        deactivation: Arc<DeactivationService>,
     ) -> Self {
         let (reconnect_tx, _) = broadcast::channel(16);
         Self {
@@ -145,7 +145,7 @@ impl NatsConnectionManager {
     async fn perform_reauthentication_and_build_url(
         auth_service: AgentAuthService,
         config_service: AgentConfigurationService,
-        deactivation: Arc<DeactivationController>,
+        deactivation: Arc<DeactivationService>,
         nats_server_url: String,
     ) -> std::result::Result<String, async_nats::AuthError> {
         // Tenant gone: skip reauth so NATS reconnects fail locally instead of hammering the gateway.

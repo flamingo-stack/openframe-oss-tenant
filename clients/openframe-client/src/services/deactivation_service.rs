@@ -10,6 +10,7 @@ use tokio::sync::Mutex as AsyncMutex;
 use tracing::{error, info, warn};
 
 use crate::platform::DirectoryManager;
+use crate::services::tool_run_manager::ToolRunManager;
 
 /// Consecutive `410 Gone` responses before we stop tools and gate outbound calls.
 const STOP_TOOLS_AFTER_CONSECUTIVE_GONE: u32 = 5;
@@ -28,9 +29,13 @@ const GONE_MARKER_FILE: &str = "tenant_gone_since";
 /// Feature is macOS + Windows only (Linux client self-uninstall is unsupported).
 const ENABLED: bool = cfg!(any(target_os = "macos", target_os = "windows"));
 
-/// Action for the supervisor task (wired in `Client::start`), kept off the detection path.
+/// Self-uninstall is terminal — retry the detached spawn before giving up.
+const UNINSTALL_SPAWN_ATTEMPTS: u32 = 3;
+const UNINSTALL_SPAWN_RETRY_DELAY: Duration = Duration::from_secs(30);
+
+/// Action the internal supervisor executes, kept off the detection path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DeactivationCommand {
+enum DeactivationCommand {
     StopTools,
     RestartTools,
     Uninstall,
@@ -49,13 +54,16 @@ struct State {
     gone_since: Option<DateTime<Utc>>,
     probe_backoff: Duration,
     uninstall_triggered: bool,
-    /// Monotonic start of this process run, for the post-restart grace.
+    /// Monotonic start of this run. The 24h deadline itself is wall-clock ([`State::gone_since`])
+    /// because it must track real time across restarts; this monotonic grace floor bounds it so a
+    /// wrong or fast-forwarded system clock can't shortcut the uninstall. `Instant` pauses during
+    /// OS suspend on macOS/Linux (not Windows), which here can only ever delay uninstall.
     process_started: Instant,
 }
 
 /// Detects the gateway's `410 Gone` (tenant deleted), backs off, stops tools, and — after
 /// the tenant has stayed gone for [`UNINSTALL_AFTER`] — triggers client self-uninstall.
-pub struct DeactivationController {
+pub struct DeactivationService {
     suspended: AtomicBool,
     state: AsyncMutex<State>,
     commands_tx: mpsc::UnboundedSender<DeactivationCommand>,
@@ -63,7 +71,7 @@ pub struct DeactivationController {
     secured_dir: PathBuf,
 }
 
-impl DeactivationController {
+impl DeactivationService {
     pub fn new(directory_manager: &DirectoryManager) -> Arc<Self> {
         let (commands_tx, commands_rx) = mpsc::unbounded_channel();
         let secured_dir = directory_manager.secured_dir().to_path_buf();
@@ -120,9 +128,46 @@ impl DeactivationController {
         delay
     }
 
-    /// Take the command receiver (once) for the supervisor task.
-    pub fn take_commands(&self) -> Option<mpsc::UnboundedReceiver<DeactivationCommand>> {
-        self.commands_rx.lock().ok().and_then(|mut g| g.take())
+    /// Spawn the supervisor that executes deactivation decisions off the detection path: stop /
+    /// restart the managed tools and launch the detached self-uninstall. Call once, after the
+    /// tool run manager exists. No-op if already started.
+    pub fn start(&self, tool_run_manager: ToolRunManager) {
+        let Some(mut commands) = self.commands_rx.lock().ok().and_then(|mut g| g.take()) else {
+            return;
+        };
+        tokio::spawn(async move {
+            while let Some(cmd) = commands.recv().await {
+                match cmd {
+                    DeactivationCommand::StopTools => {
+                        if let Err(e) = tool_run_manager.stop_all().await {
+                            error!(target: "deactivation", "failed to stop tools: {e:#}");
+                        }
+                    }
+                    DeactivationCommand::RestartTools => {
+                        if let Err(e) = tool_run_manager.restart_all().await {
+                            error!(target: "deactivation", "failed to restart tools: {e:#}");
+                        }
+                    }
+                    DeactivationCommand::Uninstall => Self::launch_self_uninstall().await,
+                }
+            }
+        });
+    }
+
+    /// Spawn the detached `openframe-client uninstall`, retrying since this is terminal.
+    async fn launch_self_uninstall() {
+        let install_path = crate::service::Service::get_install_location();
+        info!(target: "deactivation", "launching client self-uninstall");
+        for attempt in 1..=UNINSTALL_SPAWN_ATTEMPTS {
+            match crate::platform::uninstall::spawn_detached_uninstall(&install_path) {
+                Ok(()) => return,
+                Err(e) => {
+                    error!(target: "deactivation", "self-uninstall launch attempt {attempt}/{UNINSTALL_SPAWN_ATTEMPTS} failed: {e:#}");
+                    tokio::time::sleep(UNINSTALL_SPAWN_RETRY_DELAY).await;
+                }
+            }
+        }
+        error!(target: "deactivation", "self-uninstall could not be launched after {UNINSTALL_SPAWN_ATTEMPTS} attempts");
     }
 
     async fn record_gone(&self) {
@@ -213,7 +258,7 @@ impl DeactivationController {
             info!(
                 target: "deactivation",
                 reason = "grace_deferred",
-                "Tenant gone for 24h but within post-restart grace; deferring self-uninstall"
+                "Uninstall deadline reached but within post-restart grace; deferring self-uninstall"
             );
             return;
         }
