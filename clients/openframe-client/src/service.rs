@@ -7,8 +7,10 @@ use tracing::{error, info, warn};
 use crate::installation_initial_config_service::{
     InstallConfigParams, InstallationInitialConfigService,
 };
+use crate::platform::machine_info_persistence::{self, PersistedMachineInfo};
 use crate::platform::permissions::{Capability, PermissionUtils};
 use crate::service_adapter::{CrossPlatformServiceManager, RecoveryConfig, ServiceConfig};
+use crate::services::{AgentConfigurationService, AgentRegistrationService};
 use crate::{platform::DirectoryManager, Client};
 
 #[cfg(windows)]
@@ -191,6 +193,41 @@ impl Service {
         if Self::is_installed() {
             info!("Existing Installation Detected\n");
             info!("An existing OpenFrame installation was found\n");
+
+            // Pre-1.0.0 clients never wrote the machine-info store; backfill it before uninstall wipes their agent config.
+            info!("Checking if persisted machine info exists...");
+            let persisted_machine_info = AgentRegistrationService::read_persisted_credentials()
+                .await
+                .unwrap_or_else(|e| {
+                    warn!("Failed to read persisted machine info: {}", e);
+                    None
+                });
+            if persisted_machine_info.is_none() {
+                info!("No persisted machine info found, trying to read from agent config...");
+                match AgentConfigurationService::new(DirectoryManager::new())
+                    .and_then(|config_service| config_service.get_registration_credentials())
+                {
+                    Ok((machine_id, client_secret))
+                        if !machine_id.trim().is_empty() && !client_secret.trim().is_empty() =>
+                    {
+                        let machine_info = PersistedMachineInfo {
+                            machine_id,
+                            client_secret,
+                        };
+                        match machine_info_persistence::write(&machine_info) {
+                            Ok(()) => info!("Machine info persisted successfully"),
+                            Err(e) => error!("Failed to persist machine info: {}", e),
+                        }
+                    }
+                    Ok(_) => {
+                        info!("Agent config has no registration credentials, skipping backfill")
+                    }
+                    Err(e) => warn!("Failed to read machine info from agent config: {}", e),
+                }
+            } else {
+                info!("Persisted machine info was found");
+            }
+
             info!("To proceed with the new installation, the old version must be removed\n");
             info!("Uninstalling existing installation...");
 
