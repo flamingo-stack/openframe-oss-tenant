@@ -614,24 +614,7 @@ impl CrossPlatformServiceManager {
     /// Check if a Windows service process is still running
     #[cfg(target_os = "windows")]
     fn is_service_process_running(service_name: &str) -> bool {
-        use std::process::Command;
-        
-        // Use sc query to check service status
-        let output = Command::new("sc")
-            .args(&["query", service_name])
-            .output();
-        
-        match output {
-            Ok(output) => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                // If service is STOPPED or doesn't exist, it's not running
-                !stdout.contains("STOPPED") && output.status.success()
-            }
-            Err(_) => {
-                // If we can't check, assume it's not running
-                false
-            }
-        }
+        crate::platform::system_service::service_not_stopped(service_name)
     }
 }
 

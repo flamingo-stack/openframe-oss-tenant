@@ -6,6 +6,11 @@ pub struct UpdaterParams {
     pub target_exe: PathBuf,
     pub service_name: String,
     pub update_state_path: String,
+    pub target_version: String,
+    pub boot_marker_path: PathBuf,
+    pub lkg_path: PathBuf,
+    pub transcript_path: PathBuf,
+    pub rollback_only: bool,
 }
 
 #[cfg(windows)]
