@@ -10,6 +10,11 @@ export interface QuickAction {
   name: string;
   /** Prompt text sent into the dialog when the action is clicked. */
   instructions: string;
+  /** Optional glyph, present only on Product Hub defaults. Tenant customs and
+   *  bundled fallbacks have none. Rendered on the chat chip. */
+  iconName?: string | null;
+  iconUrl?: string | null;
+  iconProps?: Record<string, unknown> | null;
 }
 
 // Bundled defaults - used while the customer-ai-assistant-settings flag is off,

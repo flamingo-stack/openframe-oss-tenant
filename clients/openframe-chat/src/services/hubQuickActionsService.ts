@@ -8,6 +8,11 @@ interface HubQuickActionDto {
   id: string;
   label: string;
   prompt: string;
+  /** Optional glyph the hub curates for the action (library name, uploaded URL,
+   *  or icon props). Rendered on the chat chip. */
+  iconName?: string | null;
+  iconUrl?: string | null;
+  iconProps?: Record<string, unknown> | null;
 }
 
 /** Chat-facing shape (matches the tenant `AiQuickAction`: name = chip label, instructions = prompt). */
@@ -15,6 +20,9 @@ export interface HubQuickAction {
   id: string;
   name: string;
   instructions: string;
+  iconName?: string | null;
+  iconUrl?: string | null;
+  iconProps?: Record<string, unknown> | null;
 }
 
 /**
@@ -53,5 +61,8 @@ export async function fetchHubDefaultQuickActions(): Promise<HubQuickAction[]> {
     id: action.id,
     name: action.label,
     instructions: action.prompt,
+    iconName: action.iconName,
+    iconUrl: action.iconUrl,
+    iconProps: action.iconProps,
   }));
 }
