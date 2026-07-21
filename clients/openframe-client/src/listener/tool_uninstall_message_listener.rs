@@ -109,8 +109,8 @@ impl ToolUninstallMessageListener {
                         }
                     }
                     _ = reconnect_rx.recv() => {
-                        info!("NATS reconnected, rebinding tool uninstall consumer");
-                        break;
+                        info!("NATS reconnected, re-provisioning tool uninstall consumer");
+                        self.create_consumer(&js, &machine_id).await;
                     }
                 }
             }

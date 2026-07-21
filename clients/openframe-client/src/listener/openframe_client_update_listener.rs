@@ -105,8 +105,8 @@ impl OpenFrameClientUpdateListener {
                         }
                     }
                     _ = reconnect_rx.recv() => {
-                        info!("NATS reconnected, rebinding OpenFrame client update consumer");
-                        break;
+                        info!("NATS reconnected, re-provisioning OpenFrame client update consumer");
+                        self.create_consumer(&js, &machine_id).await;
                     }
                 }
             }

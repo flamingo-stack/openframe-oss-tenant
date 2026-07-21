@@ -110,8 +110,8 @@ impl ToolAgentUpdateListener {
                         }
                     }
                     _ = reconnect_rx.recv() => {
-                        info!("NATS reconnected, rebinding tool agent update consumer");
-                        break;
+                        info!("NATS reconnected, re-provisioning tool agent update consumer");
+                        self.create_consumer(&js, &machine_id).await;
                     }
                 }
             }

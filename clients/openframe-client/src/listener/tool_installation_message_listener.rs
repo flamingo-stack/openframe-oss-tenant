@@ -109,8 +109,8 @@ impl ToolInstallationMessageListener {
                         }
                     }
                     _ = reconnect_rx.recv() => {
-                        info!("NATS reconnected, rebinding tool installation consumer");
-                        break;
+                        info!("NATS reconnected, re-provisioning tool installation consumer");
+                        self.create_consumer(&js, &machine_id).await;
                     }
                 }
             }
