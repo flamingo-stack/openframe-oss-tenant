@@ -42,20 +42,21 @@ function Set-UpdatePhase {
 }
 
 function Restore-Reserve {
-    if (Test-Path $TargetExe) {
-        try { Move-Item -Path $TargetExe -Destination "$TargetExe.bad" -Force -ErrorAction Stop } catch { }
-    }
     if ($LkgPath -and (Test-Path $LkgPath)) {
+        $restoreSource = $LkgPath
         Write-Output "Restoring from last-known-good reserve: $LkgPath"
-        Copy-Item -Path $LkgPath -Destination $TargetExe -Force -ErrorAction Stop
     }
     elseif (Test-Path $PrevPath) {
+        $restoreSource = $PrevPath
         Write-Output "Restoring from pre-swap copy: $PrevPath"
-        Copy-Item -Path $PrevPath -Destination $TargetExe -Force -ErrorAction Stop
     }
     else {
         throw "No reserve available for rollback (checked '$LkgPath' and '$PrevPath')"
     }
+    if (Test-Path $TargetExe) {
+        try { Move-Item -Path $TargetExe -Destination "$TargetExe.bad" -Force -ErrorAction Stop } catch { }
+    }
+    Copy-Item -Path $restoreSource -Destination $TargetExe -Force -ErrorAction Stop
     Remove-Item -Path "$TargetExe.bad" -Force -ErrorAction SilentlyContinue
 }
 

@@ -67,17 +67,18 @@ agent_uninstalled() {
 }
 
 restore_reserve() {
-    rm -f "$TARGET_EXE" 2>/dev/null
     if [ -n "$LKG_PATH" ] && [ -f "$LKG_PATH" ]; then
+        RESTORE_SOURCE="$LKG_PATH"
         log "Restoring from last-known-good reserve: $LKG_PATH"
-        cp "$LKG_PATH" "$TARGET_EXE" || return 1
     elif [ -f "$PREV_PATH" ]; then
+        RESTORE_SOURCE="$PREV_PATH"
         log "Restoring from pre-swap copy: $PREV_PATH"
-        cp "$PREV_PATH" "$TARGET_EXE" || return 1
     else
         log "No reserve available for rollback (checked '$LKG_PATH' and '$PREV_PATH')"
         return 1
     fi
+    rm -f "$TARGET_EXE" 2>/dev/null
+    cp "$RESTORE_SOURCE" "$TARGET_EXE" || return 1
     chmod 755 "$TARGET_EXE" 2>/dev/null
     return 0
 }

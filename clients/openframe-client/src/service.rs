@@ -267,9 +267,21 @@ impl Service {
                         "Target binary still in use ({}); moved it aside to {} and retrying copy",
                         retry_err, aside_path.display()
                     );
-                    std::fs::copy(&current_exe_path, &install_path)
-                        .with_context(|| format!("Failed to copy binary to {}", install_path.display()))?;
-                    let _ = std::fs::remove_file(&aside_path);
+                    match std::fs::copy(&current_exe_path, &install_path) {
+                        Ok(_) => {
+                            let _ = std::fs::remove_file(&aside_path);
+                        }
+                        Err(final_err) => {
+                            if let Err(restore_err) = std::fs::rename(&aside_path, &install_path) {
+                                warn!(
+                                    "Could not restore original binary from {}: {}",
+                                    aside_path.display(), restore_err
+                                );
+                            }
+                            return Err(final_err)
+                                .with_context(|| format!("Failed to copy binary to {}", install_path.display()));
+                        }
+                    }
                 }
             }
             
