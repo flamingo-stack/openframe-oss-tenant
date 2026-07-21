@@ -171,38 +171,45 @@ impl DeactivationService {
     }
 
     async fn record_gone(&self) {
-        let mut st = self.state.lock().await;
-        if st.uninstall_triggered {
-            return;
-        }
-
         let now = Utc::now();
-        if st.gone_since.is_none() {
-            st.gone_since = Some(now);
-            save_marker(&self.secured_dir, now);
-            warn!(
-                target: "deactivation",
-                reason = "backoff_started",
-                "First 410 Gone from gateway (tenant may be deleted); will stop tools after {} consecutive",
-                STOP_TOOLS_AFTER_CONSECUTIVE_GONE
-            );
-        }
-        st.consecutive_gone = st.consecutive_gone.saturating_add(1);
+        let due = {
+            let mut st = self.state.lock().await;
+            if st.uninstall_triggered {
+                return;
+            }
 
-        if st.phase == Phase::Healthy && st.consecutive_gone >= STOP_TOOLS_AFTER_CONSECUTIVE_GONE {
-            st.phase = Phase::Suspended;
-            st.probe_backoff = PROBE_BACKOFF_INITIAL;
-            self.suspended.store(true, Ordering::Release);
-            warn!(
-                target: "deactivation",
-                reason = "calls_stopped",
-                consecutive = st.consecutive_gone,
-                "Tenant gone confirmed; stopping all tools and gating outbound calls to a single backoff probe"
-            );
-            let _ = self.commands_tx.send(DeactivationCommand::StopTools);
-        }
+            if st.gone_since.is_none() {
+                st.gone_since = Some(now);
+                save_marker(&self.secured_dir, now);
+                warn!(
+                    target: "deactivation",
+                    reason = "backoff_started",
+                    "First 410 Gone from gateway (tenant may be deleted); will stop tools after {} consecutive",
+                    STOP_TOOLS_AFTER_CONSECUTIVE_GONE
+                );
+            }
+            st.consecutive_gone = st.consecutive_gone.saturating_add(1);
 
-        self.maybe_trigger_uninstall(&mut st, now);
+            if st.phase == Phase::Healthy && st.consecutive_gone >= STOP_TOOLS_AFTER_CONSECUTIVE_GONE {
+                st.phase = Phase::Suspended;
+                st.probe_backoff = PROBE_BACKOFF_INITIAL;
+                self.suspended.store(true, Ordering::Release);
+                warn!(
+                    target: "deactivation",
+                    reason = "calls_stopped",
+                    consecutive = st.consecutive_gone,
+                    "Tenant gone confirmed; stopping all tools and gating outbound calls to a single backoff probe"
+                );
+                let _ = self.commands_tx.send(DeactivationCommand::StopTools);
+            }
+
+            Self::uninstall_due(&st, now)
+        };
+
+        // Deadline reached — funnel through the shared entry point (after dropping the lock).
+        if due {
+            self.request_uninstall().await;
+        }
     }
 
     async fn record_healthy(&self) {
@@ -239,20 +246,20 @@ impl DeactivationService {
         }
     }
 
-    /// Fire self-uninstall only on a fresh 410 (this is called from `record_gone`) once the
-    /// tenant has been gone [`UNINSTALL_AFTER`] AND this run has confirmed it for the grace
-    /// window. A network outage produces no 410, so it can never trigger uninstall.
-    fn maybe_trigger_uninstall(&self, st: &mut State, now: DateTime<Utc>) {
-        if st.uninstall_triggered || st.phase != Phase::Suspended {
-            return;
+    /// Whether the tenant has been gone past [`UNINSTALL_AFTER`] and the post-restart grace.
+    /// Only ever evaluated on a fresh 410 (a network outage produces none), so a stale marker
+    /// alone can't trigger uninstall.
+    fn uninstall_due(st: &State, now: DateTime<Utc>) -> bool {
+        if st.phase != Phase::Suspended {
+            return false;
         }
         let Some(gone_since) = st.gone_since else {
-            return;
+            return false;
         };
-
-        let gone_for = now.signed_duration_since(gone_since);
-        if gone_for < chrono::Duration::seconds(UNINSTALL_AFTER.as_secs() as i64) {
-            return;
+        if now.signed_duration_since(gone_since)
+            < chrono::Duration::seconds(UNINSTALL_AFTER.as_secs() as i64)
+        {
+            return false;
         }
         if st.process_started.elapsed() < POST_RESTART_GRACE {
             info!(
@@ -260,16 +267,25 @@ impl DeactivationService {
                 reason = "grace_deferred",
                 "Uninstall deadline reached but within post-restart grace; deferring self-uninstall"
             );
-            return;
+            return false;
         }
+        true
+    }
 
-        st.uninstall_triggered = true;
+    /// Trigger the detached self-uninstall (idempotent). Public so every path funnels through the
+    /// same supervisor: the 410 deadline above, or a future backend "decommission" message.
+    pub async fn request_uninstall(&self) {
+        {
+            let mut st = self.state.lock().await;
+            if st.uninstall_triggered {
+                return;
+            }
+            st.uninstall_triggered = true;
+        }
         error!(
             target: "deactivation",
             reason = "self_destroy_triggered",
-            gone_since = %gone_since,
-            "Tenant permanently gone for >= {}h; triggering client self-uninstall",
-            UNINSTALL_AFTER.as_secs() / 3600
+            "Triggering client self-uninstall"
         );
         let _ = self.commands_tx.send(DeactivationCommand::Uninstall);
     }
