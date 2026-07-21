@@ -8,12 +8,7 @@ pub enum UpdatePhase {
     Extracting,
     PreparingUpdater,
     UpdaterLaunched,
-    /// Legacy phase (old scripts stamp it pre-restart); not treated as proof of success.
     Completed,
-    /// Boot marker matched; final verification is done by the agent after restart.
-    Verifying,
-    /// The updater restored the reserve binary.
-    RolledBack,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,13 +17,6 @@ pub struct UpdateState {
 
     /// Current phase
     pub phase: UpdatePhase,
-
-    /// Boots survived while this update was still unverified (crash-loop guard).
-    #[serde(default)]
-    pub boot_attempts: u32,
-
-    #[serde(default)]
-    pub started_at: Option<String>,
 }
 
 impl UpdateState {
@@ -36,8 +24,6 @@ impl UpdateState {
         Self {
             target_version,
             phase: UpdatePhase::Validating,
-            boot_attempts: 0,
-            started_at: Some(chrono::Utc::now().to_rfc3339()),
         }
     }
 

@@ -59,21 +59,6 @@ impl OpenFrameClientInfoService {
         Ok(())
     }
 
-    /// Startup reconcile: the running binary's baked version is the only truth.
-    pub async fn reconcile_version(&self, running_version: &str) -> Result<()> {
-        let mut info = self.get().await?;
-        if info.current_version != running_version {
-            info!(
-                "Reconciling current_version '{}' -> running binary version '{}'",
-                info.current_version, running_version
-            );
-            info.current_version = running_version.to_string();
-            info.last_updated = Some(chrono::Utc::now().to_rfc3339());
-            self.save(&info).await?;
-        }
-        Ok(())
-    }
-
     pub async fn set_update_status(&self, status: crate::models::openframe_client_info::ClientUpdateStatus, target_version: Option<String>) -> Result<()> {
         let mut info = self.get().await?;
         info.status = status;
