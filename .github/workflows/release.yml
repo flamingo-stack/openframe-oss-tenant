@@ -336,7 +336,7 @@ jobs:
           - **macOS** (Universal): \`openframe-client_macos.tar.gz\`
           - **Windows** (x64): \`openframe-client_windows.zip\`
 
-          ## OpenFrame
+          ## OpenFrame Chatgc
           - **macOS** (Universal): \`openframe-chat_universal.dmg\`
           - **Windows** (x64): \`openframe-chat_windows.zip\`
 

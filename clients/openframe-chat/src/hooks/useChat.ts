@@ -229,6 +229,18 @@ export function useChat({
           messagesRef.current.updateSegments(segments, metadata?.streamSeq);
         }
       },
+      // EXECUTING_TOOL / approved APPROVAL_RESULT chunks land OUTSIDE the
+      // message_start/end window (approved commands run between the approval
+      // bubble and the continuation stream) — without this the composer
+      // unlocks and the typing indicator drops while commands execute.
+      // Cleared by the continuation's onStreamEnd / onError / Stop. A
+      // replayed dead tail (tool started, then a crash — no continuation
+      // ever emitted) can re-assert the lock on a resumed dialog, but
+      // natsStreaming keeps the Stop button available as the escape hatch.
+      onAgentBusy: () => {
+        setNatsStreaming(true);
+        setIsTyping(true);
+      },
       onError: (_errorText: string) => {
         setNatsStreaming(false);
         setIsTyping(false);
