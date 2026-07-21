@@ -69,7 +69,7 @@ use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
 use crate::services::token_refresh_run_manager::TokenRefreshRunManager;
 use crate::services::mesh_self_heal_service::MeshSelfHealService;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
-use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
+use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, LastKnownGoodService, InitialKeyService};
 use crate::services::execution_service::ExecutionService;
 use crate::services::deactivation_service::DeactivationService;
 use crate::listener::execution_listener::ExecutionListener;
@@ -160,6 +160,8 @@ pub struct Client {
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
     update_handler_service: UpdateHandlerService,
+    openframe_client_info_service: OpenFrameClientInfoService,
+    last_known_good_service: LastKnownGoodService,
     // Services needed for log streaming initialization
     initial_configuration_service: InitialConfigurationService,
     agent_configuration_service: AgentConfigurationService,
@@ -384,6 +386,9 @@ impl Client {
         let update_cleanup_service = UpdateCleanupService::new()
             .context("Failed to initialize update cleanup service")?;
 
+        let last_known_good_service = LastKnownGoodService::new(directory_manager.clone())
+            .context("Failed to initialize last-known-good service")?;
+
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
             github_download_service.clone(),
@@ -405,6 +410,7 @@ impl Client {
             openframe_client_info_service.clone(),
             github_download_service.clone(),
             update_state_service.clone(),
+            last_known_good_service.clone(),
             tool_run_manager.clone(),
         );
 
@@ -425,7 +431,8 @@ impl Client {
         let tool_installation_message_listener = ToolInstallationMessageListener::new(
             nats_connection_manager.clone(),
             tool_installation_service,
-            config_service.clone()
+            config_service.clone(),
+            tool_run_manager.clone(),
         );
 
         let tool_uninstall_service = ToolUninstallService::new(
@@ -446,6 +453,7 @@ impl Client {
             nats_connection_manager.clone(),
             tool_restart_service,
             config_service.clone(),
+            tool_run_manager.clone(),
         );
 
         // Initialize OpenFrame client update listener
@@ -459,7 +467,8 @@ impl Client {
         let tool_agent_update_listener = ToolAgentUpdateListener::new(
             nats_connection_manager.clone(),
             tool_agent_update_service,
-            config_service.clone()
+            config_service.clone(),
+            tool_run_manager.clone(),
         );
 
         let execution_service = ExecutionService::new();
@@ -495,6 +504,7 @@ impl Client {
             update_state_service.clone(),
             openframe_client_info_service.clone(),
             update_cleanup_service.clone(),
+            last_known_good_service.clone(),
             installed_agent_message_publisher.clone(),
             config_service.clone(),
         );
@@ -518,6 +528,8 @@ impl Client {
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
             update_handler_service,
+            openframe_client_info_service,
+            last_known_good_service,
             initial_configuration_service,
             agent_configuration_service: config_service,
             installed_tools_service,
@@ -533,6 +545,25 @@ impl Client {
         // Started first so its commands are consumed even if the startup auth loop (which itself
         // feeds the 410s) blocks below.
         self.deactivation_service.start(self.tool_run_manager.clone());
+
+        if let Err(e) = self.openframe_client_info_service
+            .reconcile_version(env!("OPENFRAME_VERSION"))
+            .await
+        {
+            error!("Failed to reconcile client version at startup: {:#}", e);
+        }
+
+        if let Err(e) = self.last_known_good_service.write_boot_marker().await {
+            error!("Failed to write boot marker: {:#}", e);
+        }
+
+        if let Err(e) = self.last_known_good_service.seed_if_missing().await {
+            error!("Failed to seed last-known-good anchor: {:#}", e);
+        }
+
+        if let Err(e) = self.update_handler_service.record_boot_attempt().await {
+            error!("Failed to record boot attempt: {:#}", e);
+        }
 
         self.initial_key_service.clone().ensure_initial_key().await;
 
