@@ -21,6 +21,10 @@ export interface AiSettingsResponse {
   /** True → show the OpenFrame defaults from the Product Hub; false → `quickActions` customs. */
   quickActionsIsDefault: boolean;
   quickActions: AiQuickAction[] | null;
+  /** Effective LLM provider/model for this device's org (tenant default when
+   *  no per-customer override; null when nothing is configured anywhere). */
+  llmProvider: string | null;
+  providerModel: string | null;
 }
 
 interface ClientViewGql {
@@ -34,11 +38,16 @@ interface ClientViewGql {
 interface ClientAiConfigGql {
   quickActionsIsDefault: boolean | null;
   quickActions: AiQuickAction[] | null;
+  llmProvider: string | null;
+  providerModel: string | null;
 }
 
-// The chat reads the client assistant's appearance (clientView) and its quick
-// actions (clientAiConfig) in a single request via two root fields. AI logic
-// (provider/model/etc.) is admin-only and not needed here.
+// The chat reads the client assistant's appearance (clientView), its quick
+// actions and the effective LLM provider/model (clientAiConfig) in a single
+// request. For a machine (agent) caller the backend resolves BOTH root fields
+// to the device's organization automatically (ClientViewResolver /
+// ClientAiConfigResolver derive the org from the token's machineId), falling
+// back to the tenant default when the org has no override.
 const AI_SETTINGS_QUERY = gql`
   query ChatAiSettings($organizationId: ID) {
     clientView(organizationId: $organizationId) {
@@ -53,6 +62,8 @@ const AI_SETTINGS_QUERY = gql`
     }
     clientAiConfig {
       quickActionsIsDefault
+      llmProvider
+      providerModel
       quickActions {
         id
         name
@@ -104,9 +115,10 @@ class AiSettingsService {
   }
 
   /**
-   * Loads the client assistant's appearance + quick actions. Returns `null`
-   * when neither collection has a record yet. Throws on transport/GraphQL errors.
-   * `organizationId` is null (tenant default); per-org overrides are not yet used.
+   * Loads the client assistant's appearance, quick actions and effective
+   * provider/model. Returns `null` when neither collection has a record yet.
+   * Throws on transport/GraphQL errors. `organizationId` stays null: the
+   * backend resolves the device's organization from the machine token.
    */
   async fetchAiSettings(organizationId: string | null = null): Promise<AiSettingsResponse | null> {
     await tokenService.ensureTokenReady();
@@ -132,6 +144,8 @@ class AiSettingsService {
       // BE default is true: hub defaults apply until the tenant customizes.
       quickActionsIsDefault: aiConfig?.quickActionsIsDefault ?? true,
       quickActions: aiConfig?.quickActions ?? null,
+      llmProvider: aiConfig?.llmProvider ?? null,
+      providerModel: aiConfig?.providerModel ?? null,
     };
   }
 }

@@ -31,6 +31,7 @@ import { WelcomeScreen } from '../components/WelcomeScreen';
 import { useApplyAiAppearance } from '../hooks/useApplyAiAppearance';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useChat } from '../hooks/useChat';
+import { useChatConfig } from '../hooks/useChatConfig';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { useMspOrganization } from '../hooks/useMspOrganization';
 import { type TicketDetails, useTickets } from '../hooks/useTickets';
@@ -131,6 +132,7 @@ export function ChatView() {
 
   const {
     messages,
+    historyAssistantModel,
     isTyping,
     isStreaming,
     isCompacting,
@@ -161,7 +163,8 @@ export function ChatView() {
 
   const { toast } = useToast();
 
-  const { status, aiConfiguration, isFullyLoaded } = useConnectionStatus();
+  const { status, isFullyLoaded } = useConnectionStatus();
+  const { defaultModel } = useChatConfig();
   const isDisconnected = status !== 'connected';
 
   // MSP branding (from tenant info): the company name replaces the tenant
@@ -341,15 +344,11 @@ export function ChatView() {
     };
   }, [activeTicket, hasMessages]);
 
-  const displayModel =
-    currentModel ||
-    (aiConfiguration
-      ? {
-          modelName: aiConfiguration.modelName,
-          provider: aiConfiguration.provider,
-          contextWindow: 0,
-        }
-      : null);
+  // Live stream metadata first, then the newest assistant message's
+  // provenance from history, then the effective config for the NEXT reply
+  // (org override -> tenant default, resolved server-side from the machine
+  // token). Empty only when the tenant never configured CLIENT AI.
+  const displayModel = currentModel || historyAssistantModel || defaultModel;
 
   const displayMessages = useMemo(() => {
     if (!faeFormTicket || hasNextPage) return processedMessages;

@@ -1,6 +1,8 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
-use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
+use crate::services::tool_restart_service::ToolRestartService;
+use crate::services::tool_restart_service::RestartOutcome;
 use crate::services::AgentConfigurationService;
+use crate::models::ToolRestartMessage;
 use crate::config::update_config::{
     CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
     INITIAL_RETRY_DELAY_MS,
@@ -8,59 +10,56 @@ use crate::config::update_config::{
     CONSUMER_CYCLE_PAUSE_MS,
     RECONNECTION_DELAY_MS,
     CONSUMER_ACK_WAIT_SECS,
-    CONSUMER_MAX_DELIVER,
+    RESTART_CONSUMER_MAX_DELIVER,
 };
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
-use async_nats::jetstream::consumer::DeliverPolicy;
 use async_nats::jetstream::Message;
 use tokio::time::Duration;
 use anyhow::Result;
 use async_nats::jetstream;
 use futures::StreamExt;
 use tracing::{error, info, warn};
-use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 
 #[derive(Clone)]
-pub struct OpenFrameClientUpdateListener {
-    pub nats_connection_manager: NatsConnectionManager,
-    pub openframe_client_update_service: OpenFrameClientUpdateService,
-    pub config_service: AgentConfigurationService,
+pub struct ToolRestartMessageListener {
+    nats_connection_manager: NatsConnectionManager,
+    tool_restart_service: ToolRestartService,
+    config_service: AgentConfigurationService,
 }
 
-impl OpenFrameClientUpdateListener {
+impl ToolRestartMessageListener {
 
-    const STREAM_NAME: &'static str = "CLIENT_UPDATE";
+    const STREAM_NAME: &'static str = "TOOL_INSTALLATION";
 
     pub fn new(
         nats_connection_manager: NatsConnectionManager,
-        openframe_client_update_service: OpenFrameClientUpdateService,
+        tool_restart_service: ToolRestartService,
         config_service: AgentConfigurationService,
     ) -> Self {
         Self {
             nats_connection_manager,
-            openframe_client_update_service,
+            tool_restart_service,
             config_service,
         }
     }
 
-    /// Start listening for messages in a background task
     pub async fn start(&self) -> Result<tokio::task::JoinHandle<()>> {
         let listener = self.clone();
         let handle = tokio::spawn(async move {
             loop {
-                info!("Starting OpenFrame client update listener...");
+                info!("Starting tool restart message listener...");
                 match listener.listen().await {
                     Ok(_) => {
-                        warn!("OpenFrame client update listener exited normally (unexpected)");
+                        warn!("Tool restart message listener exited normally (unexpected)");
                     }
                     Err(e) => {
-                        error!("OpenFrame client update listener error: {:#}", e);
+                        error!("Tool restart message listener error: {:#}", e);
                     }
                 }
 
                 info!(
-                    "Reconnecting OpenFrame client update listener in {} seconds...",
+                    "Reconnecting tool restart message listener in {} seconds...",
                     RECONNECTION_DELAY_MS / 1000
                 );
                 tokio::time::sleep(Duration::from_millis(RECONNECTION_DELAY_MS)).await;
@@ -70,7 +69,7 @@ impl OpenFrameClientUpdateListener {
     }
 
     async fn listen(&self) -> Result<()> {
-        info!("Run OpenFrame client update message listener");
+        info!("Run tool restart message listener");
         let machine_id = self.config_service.get_machine_id()?;
 
         loop {
@@ -82,7 +81,7 @@ impl OpenFrameClientUpdateListener {
 
             let consumer = self.create_consumer(&js, &machine_id).await;
 
-            info!("Start listening for OpenFrame client update messages");
+            info!("Start listening for tool restart messages");
             let mut messages = consumer.messages().await?;
 
             loop {
@@ -105,7 +104,7 @@ impl OpenFrameClientUpdateListener {
                         }
                     }
                     _ = reconnect_rx.recv() => {
-                        info!("NATS reconnected, re-provisioning OpenFrame client update consumer");
+                        info!("NATS reconnected, re-provisioning tool restart consumer");
                         self.create_consumer(&js, &machine_id).await;
                     }
                 }
@@ -115,12 +114,12 @@ impl OpenFrameClientUpdateListener {
 
     async fn handle_message(&self, message: Message) -> Result<()> {
         let payload = String::from_utf8_lossy(&message.payload);
-        info!("Received OpenFrame client update message: {:?}", payload);
+        info!("Received tool restart message: {:?}", payload);
 
-        let client_update_message: OpenFrameClientUpdateMessage = match serde_json::from_str(&payload) {
+        let restart_message: ToolRestartMessage = match serde_json::from_str(&payload) {
             Ok(msg) => msg,
             Err(e) => {
-                error!("Failed to parse client update message: {:#}", e);
+                error!("Failed to parse tool restart message: {:#}", e);
                 if let Err(ack_err) = message.ack().await {
                     warn!("Failed to ack malformed message: {}", ack_err);
                 }
@@ -128,19 +127,26 @@ impl OpenFrameClientUpdateListener {
             }
         };
 
-        let version = client_update_message.version.clone();
+        let tool_agent_id = restart_message.tool_agent_id;
 
-        match self.openframe_client_update_service.process_update(client_update_message).await {
-            Ok(_) => {
-                info!("Acknowledging client update message for version: {}", version);
-                message.ack().await
-                    .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-                info!("Client update message acknowledged for version: {}", version);
+        let ack_message = match self.tool_restart_service.restart_guarded(&tool_agent_id).await {
+            Ok(RestartOutcome::Busy) => {
+                info!("Tool {} busy with another operation, deferring restart for redelivery", tool_agent_id);
+                return Ok(());
             }
+            Ok(RestartOutcome::Restarted) | Ok(RestartOutcome::NotInstalled) => true,
             Err(e) => {
-                error!("Failed to process client update message for version {}: {:#}", version, e);
-                info!("Leaving message unacked for potential redelivery: version {}", version);
+                error!("Failed to restart tool {}: {:#}", tool_agent_id, e);
+                false
             }
+        };
+
+        if ack_message {
+            message.ack().await
+                .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+            info!("Restart message acknowledged for tool: {}", tool_agent_id);
+        } else {
+            info!("Leaving restart message unacked for potential redelivery: tool {}", tool_agent_id);
         }
 
         Ok(())
@@ -156,36 +162,36 @@ impl OpenFrameClientUpdateListener {
 
             for attempt in 1..=CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
                 info!(
-                    "Creating consumer for stream {} (cycle {}, attempt {}/{})",
+                    "Creating restart consumer for stream {} (cycle {}, attempt {}/{})",
                     Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
                 );
 
                 match js.create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME).await {
                     Ok(consumer) => {
-                        info!("Consumer ready for stream: {}", Self::STREAM_NAME);
+                        info!("Restart consumer created for stream: {}", Self::STREAM_NAME);
                         return consumer;
                     }
                     Err(e) => {
                         let error_msg = format!("{:?}", e);
                         if error_msg.contains("consumer name already in use") || error_msg.contains("10013") {
-                            warn!("Consumer already exists, attempting to get existing consumer");
+                            warn!("Restart consumer already exists, attempting to get existing consumer");
                             let durable_name = Self::build_durable_name(machine_id);
                             if let Ok(existing_consumer) = js.get_consumer_from_stream(Self::STREAM_NAME, &durable_name).await {
-                                info!("Retrieved existing consumer for stream: {}", Self::STREAM_NAME);
+                                info!("Retrieved existing restart consumer for stream: {}", Self::STREAM_NAME);
                                 return existing_consumer;
                             }
                         }
 
                         if attempt < CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
                             warn!(
-                                "Failed to create consumer (cycle {}, attempt {}/{}): {:#}. Retrying in {} ms...",
+                                "Failed to create restart consumer (cycle {}, attempt {}/{}): {:#}. Retrying in {} ms...",
                                 cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e, delay_ms
                             );
                             tokio::time::sleep(Duration::from_millis(delay_ms)).await;
                             delay_ms = (delay_ms * 2).min(MAX_RETRY_DELAY_MS);
                         } else {
                             warn!(
-                                "Failed to create consumer (cycle {}, attempt {}/{}): {:#}",
+                                "Failed to create restart consumer (cycle {}, attempt {}/{}): {:#}",
                                 cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e
                             );
                         }
@@ -206,28 +212,27 @@ impl OpenFrameClientUpdateListener {
         let deliver_subject = Self::build_deliver_subject(machine_id);
         let durable_name = Self::build_durable_name(machine_id);
 
-        info!("Consumer configuration - filter subject: {}, deliver subject: {}, durable name: {}", filter_subject, deliver_subject, durable_name);
+        info!("Restart consumer configuration - filter subject: {}, deliver subject: {}, durable name: {}", filter_subject, deliver_subject, durable_name);
 
         push::Config {
             filter_subject,
             deliver_subject,
             durable_name: Some(durable_name),
             ack_wait: Duration::from_secs(CONSUMER_ACK_WAIT_SECS),
-            deliver_policy: DeliverPolicy::New,
-            max_deliver: CONSUMER_MAX_DELIVER,
+            max_deliver: RESTART_CONSUMER_MAX_DELIVER,
             ..Default::default()
         }
     }
 
-    fn build_filter_subject(_machine_id: &str) -> String {
-        "machine.all.client-update".to_string()
+    fn build_filter_subject(machine_id: &str) -> String {
+        format!("machine.{}.tool-restart", machine_id)
     }
 
     fn build_deliver_subject(machine_id: &str) -> String {
-        format!("machine.{}.client-update.inbox", machine_id)
+        format!("machine.{}.tool-restart.inbox", machine_id)
     }
 
     fn build_durable_name(machine_id: &str) -> String {
-        format!("machine_{}_client-update_consumer_v2", machine_id)
+        format!("machine_{}_tool-restart_consumer", machine_id)
     }
 }
