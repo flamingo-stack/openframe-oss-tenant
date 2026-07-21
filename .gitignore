@@ -48,13 +48,6 @@ node_modules/
 **/.LCKpom.xml~
 **IS_UNDEFINED**
 *.java~
-/tacticalrmm
-**/rmmagent_build/**
-**/rmmagent_build
-**/tactical-rmm/rmmagent_build**
-**/tactical-rmm/rmmagent_build
-**/tactical-rmm/rmmagent
-/rmmagent
 client/Cargo.lock
 /.vscode/chrome-debug-profile
 **/.claude/
