@@ -52,6 +52,8 @@ impl ExecutionService {
                 execution_time_ms: start.elapsed().as_millis() as u64,
                 timed_out: result.timed_out,
                 error,
+                script_id: req.script_id.map(str::to_string),
+                schedule_id: req.schedule_id.map(str::to_string),
             }
         }
 
@@ -66,6 +68,8 @@ impl ExecutionService {
                 execution_time_ms: start.elapsed().as_millis() as u64,
                 timed_out: false,
                 error: Some("unsupported platform".to_string()),
+                script_id: req.script_id.map(str::to_string),
+                schedule_id: req.schedule_id.map(str::to_string),
             }
         }
     }
@@ -85,6 +89,8 @@ mod tests {
             args: &[],
             timeout_secs: 30,
             env_vars: Vec::new(),
+            script_id: None,
+            schedule_id: None,
         }
     }
 
@@ -135,6 +141,8 @@ mod windows_tests {
             args: &[],
             timeout_secs: 30,
             env_vars: Vec::new(),
+            script_id: None,
+            schedule_id: None,
         }
     }
 

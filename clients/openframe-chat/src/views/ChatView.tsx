@@ -7,8 +7,6 @@ import {
   ChatHeader,
   type ChatHeaderTicketInfo,
   ChatInput,
-  ChatQuickActionRow,
-  ChatQuickActionRowSkeleton,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
@@ -16,6 +14,7 @@ import {
   type MessageSegment,
   ModelDisplay,
   ModelDisplaySkeleton,
+  QuickActionWall,
   type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
 import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
@@ -31,6 +30,7 @@ import { WelcomeScreen } from '../components/WelcomeScreen';
 import { useApplyAiAppearance } from '../hooks/useApplyAiAppearance';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useChat } from '../hooks/useChat';
+import { useChatConfig } from '../hooks/useChatConfig';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { useMspOrganization } from '../hooks/useMspOrganization';
 import { type TicketDetails, useTickets } from '../hooks/useTickets';
@@ -131,6 +131,7 @@ export function ChatView() {
 
   const {
     messages,
+    historyAssistantModel,
     isTyping,
     isStreaming,
     isCompacting,
@@ -161,7 +162,8 @@ export function ChatView() {
 
   const { toast } = useToast();
 
-  const { status, aiConfiguration, isFullyLoaded } = useConnectionStatus();
+  const { status, isFullyLoaded } = useConnectionStatus();
+  const { defaultModel } = useChatConfig();
   const isDisconnected = status !== 'connected';
 
   // MSP branding (from tenant info): the company name replaces the tenant
@@ -341,15 +343,11 @@ export function ChatView() {
     };
   }, [activeTicket, hasMessages]);
 
-  const displayModel =
-    currentModel ||
-    (aiConfiguration
-      ? {
-          modelName: aiConfiguration.modelName,
-          provider: aiConfiguration.provider,
-          contextWindow: 0,
-        }
-      : null);
+  // Live stream metadata first, then the newest assistant message's
+  // provenance from history, then the effective config for the NEXT reply
+  // (org override -> tenant default, resolved server-side from the machine
+  // token). Empty only when the tenant never configured CLIENT AI.
+  const displayModel = currentModel || historyAssistantModel || defaultModel;
 
   const displayMessages = useMemo(() => {
     if (!faeFormTicket || hasNextPage) return processedMessages;
@@ -543,14 +541,13 @@ export function ChatView() {
         ) : (
           <>
             {/* Quick-action chips above the composer — initial screen only.
-                Skeleton while settings load (so we don't flash bundled defaults
-                before the configured actions resolve), then the real row. */}
-            {!isDialogActive && !isDisconnected && isSettingsLoading && (
-              <ChatQuickActionRowSkeleton className="mb-[var(--spacing-system-s)]" />
-            )}
-            {!isDialogActive && !isDisconnected && !isSettingsLoading && quickActions.length > 0 && (
-              <ChatQuickActionRow
-                className="mb-[var(--spacing-system-s)]"
+                `loading` draws the wall's own skeleton chips while settings
+                load, so we don't flash bundled defaults before the configured
+                actions resolve. Same wall the lib's welcome screens use. */}
+            {!isDialogActive && !isDisconnected && (isSettingsLoading || quickActions.length > 0) && (
+              <QuickActionWall
+                className="mb-[var(--spacing-system-s)] max-h-44 shrink-0"
+                loading={isSettingsLoading}
                 chips={quickActions.map(action => ({
                   id: action.id,
                   label: action.name,
@@ -561,6 +558,13 @@ export function ChatView() {
                   onHoverStart: () => setQuickActionPreview(action.instructions),
                   onHoverEnd: () => setQuickActionPreview(null),
                 }))}
+                rows={4}
+                pauseOnHover
+                dragScroll
+                fade={['left', 'right']}
+                fadeSize={{ left: 32 }}
+                fadeColor="var(--color-bg)"
+                copyGap="var(--spacing-system-xxs)"
               />
             )}
             <ChatInput
