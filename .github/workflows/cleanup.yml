@@ -1,9 +1,6 @@
 name: Cleanup
 
-# 1) Cleans PRs with no activity for 1 day:
-#   a. convert it to draft
-#   b. drop its `deployed` label, if set
-# 2) Deletes Branches with no activity for 3 month
+# 1) Deletes Branches with no activity for 3 month
 
 # =============================================================================
 # WORKFLOW CONFIGURATION
@@ -23,32 +20,6 @@ permissions:
 # =============================================================================
 
 jobs:
-  stale-pr:
-    name: Draft Stale PRs
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 * * * *'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Draft stale PRs and drop deployed label
-        env:
-          GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
-          REPO: ${{ github.repository }}
-          IDLE_DAYS: "1"
-        run: |
-          set -o pipefail
-          gh pr list --repo "$REPO" --state open --limit 100 \
-            --search "updated:<$(date -u -d "$IDLE_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ) sort:updated-asc" \
-            --json number,labels \
-            --jq '.[] | "\(.number) \([.labels[].name] | index("deployed") != null)"' |
-          while read -r pr deployed; do
-            echo "Cleaning idle PR #$pr"
-            gh pr ready "$pr" --repo "$REPO" --undo || echo "::warning::could not draft #$pr"
-            if [ "$deployed" = true ]; then
-              gh api --silent -X DELETE "repos/$REPO/issues/$pr/labels/deployed"
-              sleep 20   # so that cleanup don't collide on the fleet push
-            fi
-          done
-
-
   stale-branches:
     name: Delete Stale Branches
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '41 4 * * *'

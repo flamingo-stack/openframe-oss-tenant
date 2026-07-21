@@ -8,6 +8,11 @@ interface HubQuickActionDto {
   id: string;
   label: string;
   prompt: string;
+  /** Optional glyph the hub curates for the action (library name, uploaded URL,
+   *  or icon props). Rendered on the chat chip. */
+  iconName?: string | null;
+  iconUrl?: string | null;
+  iconProps?: Record<string, unknown> | null;
 }
 
 /** Chat-facing shape (matches the tenant `AiQuickAction`: name = chip label, instructions = prompt). */
@@ -15,6 +20,9 @@ export interface HubQuickAction {
   id: string;
   name: string;
   instructions: string;
+  iconName?: string | null;
+  iconUrl?: string | null;
+  iconProps?: Record<string, unknown> | null;
 }
 
 /**
@@ -42,6 +50,9 @@ export async function fetchHubDefaultQuickActions(): Promise<HubQuickAction[]> {
   });
 
   if (!response.ok) {
+    // Surfaced in the console on purpose: a failing hub proxy silently degrades
+    // the chips to the bundled fallback, which is easy to misread as "works".
+    console.warn(`[hubQuickActions] hub proxy request failed with ${response.status}`);
     throw new Error(`Failed to load hub default quick actions (${response.status})`);
   }
 
@@ -50,5 +61,8 @@ export async function fetchHubDefaultQuickActions(): Promise<HubQuickAction[]> {
     id: action.id,
     name: action.label,
     instructions: action.prompt,
+    iconName: action.iconName,
+    iconUrl: action.iconUrl,
+    iconProps: action.iconProps,
   }));
 }
