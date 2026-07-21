@@ -20,7 +20,9 @@ pub async fn launch_updater(params: UpdaterParams) -> Result<()> {
         Uuid::new_v4()
     ));
 
-    tokio::fs::write(&script_path, UPDATE_SCRIPT_WINDOWS).await
+    // UTF-8 BOM: without it Windows PowerShell 5.1 reads the file as ANSI, and
+    // any multi-byte character can decode into a smart quote that breaks parsing.
+    tokio::fs::write(&script_path, format!("\u{FEFF}{}", UPDATE_SCRIPT_WINDOWS)).await
         .context("Failed to write PowerShell script")?;
 
     info!("PowerShell script saved to: {}", script_path.display());
