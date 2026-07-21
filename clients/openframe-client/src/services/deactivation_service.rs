@@ -14,15 +14,14 @@ use crate::services::tool_run_manager::ToolRunManager;
 
 /// Consecutive `410 Gone` responses before we stop tools and gate outbound calls.
 const STOP_TOOLS_AFTER_CONSECUTIVE_GONE: u32 = 5;
-/// First delay between probes once suspended.
-const PROBE_BACKOFF_INITIAL: Duration = Duration::from_secs(60);
-/// Cap on the exponential probe backoff.
-const PROBE_BACKOFF_MAX: Duration = Duration::from_secs(30 * 60);
+// ⚠️ TEST TUNING (temporary — revert before merge). Production: probe 60s→30min, uninstall 24h,
+// grace 1h. Compressed here for a live-tenant test.
+/// Probe backoff schedule once suspended, holding at the final value: 30s, 1m, 2m, 5m.
+const PROBE_BACKOFF_SCHEDULE_SECS: [u64; 4] = [30, 60, 120, 300];
 /// Total time the tenant must stay gone (since the first 410) before self-uninstall.
-const UNINSTALL_AFTER: Duration = Duration::from_secs(24 * 60 * 60);
-/// After any (re)start, require this much fresh confirmation before uninstalling, so a
-/// reboot near the deadline can't let a single 410 wipe the device.
-const POST_RESTART_GRACE: Duration = Duration::from_secs(60 * 60);
+const UNINSTALL_AFTER: Duration = Duration::from_secs(60 * 60);
+/// After any (re)start, require this much fresh confirmation before uninstalling.
+const POST_RESTART_GRACE: Duration = Duration::from_secs(0);
 /// Persisted marker (in the secured dir) holding the first-410 timestamp across restarts.
 const GONE_MARKER_FILE: &str = "tenant_gone_since";
 
@@ -52,7 +51,8 @@ struct State {
     consecutive_gone: u32,
     /// First 410 of the current gone episode (persisted, reset on recovery).
     gone_since: Option<DateTime<Utc>>,
-    probe_backoff: Duration,
+    /// Index into [`PROBE_BACKOFF_SCHEDULE_SECS`].
+    probe_step: usize,
     uninstall_triggered: bool,
     /// Monotonic start of this run. The 24h deadline itself is wall-clock ([`State::gone_since`])
     /// because it must track real time across restarts; this monotonic grace floor bounds it so a
@@ -92,7 +92,7 @@ impl DeactivationService {
                 phase: Phase::Healthy,
                 consecutive_gone: 0,
                 gone_since,
-                probe_backoff: PROBE_BACKOFF_INITIAL,
+                probe_step: 0,
                 uninstall_triggered: false,
                 process_started: Instant::now(),
             }),
@@ -120,12 +120,14 @@ impl DeactivationService {
         }
     }
 
-    /// Delay before the next suspension probe, doubling up to [`PROBE_BACKOFF_MAX`].
+    /// Delay before the next suspension probe, following [`PROBE_BACKOFF_SCHEDULE_SECS`] and
+    /// holding at the final value.
     pub async fn next_probe_delay(&self) -> Duration {
         let mut st = self.state.lock().await;
-        let delay = st.probe_backoff;
-        st.probe_backoff = (st.probe_backoff * 2).min(PROBE_BACKOFF_MAX);
-        delay
+        let last = PROBE_BACKOFF_SCHEDULE_SECS.len() - 1;
+        let idx = st.probe_step.min(last);
+        st.probe_step = (st.probe_step + 1).min(last);
+        Duration::from_secs(PROBE_BACKOFF_SCHEDULE_SECS[idx])
     }
 
     /// Spawn the supervisor that executes deactivation decisions off the detection path: stop /
@@ -192,7 +194,7 @@ impl DeactivationService {
 
             if st.phase == Phase::Healthy && st.consecutive_gone >= STOP_TOOLS_AFTER_CONSECUTIVE_GONE {
                 st.phase = Phase::Suspended;
-                st.probe_backoff = PROBE_BACKOFF_INITIAL;
+                st.probe_step = 0;
                 self.suspended.store(true, Ordering::Release);
                 warn!(
                     target: "deactivation",
@@ -223,7 +225,7 @@ impl DeactivationService {
 
         st.consecutive_gone = 0;
         st.gone_since = None;
-        st.probe_backoff = PROBE_BACKOFF_INITIAL;
+        st.probe_step = 0;
         if had_marker {
             remove_marker(&self.secured_dir);
         }
