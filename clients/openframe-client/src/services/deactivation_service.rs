@@ -19,7 +19,7 @@ const PROBE_BACKOFF_INITIAL: Duration = Duration::from_secs(60);
 /// Cap on the exponential probe backoff.
 const PROBE_BACKOFF_MAX: Duration = Duration::from_secs(30 * 60);
 /// Total time the tenant must stay gone (since the first 410) before self-uninstall.
-const UNINSTALL_AFTER: Duration = Duration::from_secs(24 * 60 * 60);
+const UNINSTALL_AFTER: Duration = Duration::from_secs(2 * 60 * 60);
 /// After any (re)start, require this much fresh confirmation before uninstalling, so a
 /// reboot near the deadline can't let a single 410 wipe the device.
 const POST_RESTART_GRACE: Duration = Duration::from_secs(60 * 60);
