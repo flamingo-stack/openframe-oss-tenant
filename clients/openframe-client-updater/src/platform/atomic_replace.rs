@@ -44,6 +44,34 @@ pub fn restore(backup: &Path, target: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Restores `source` to `target` by copy, leaving `source` in place.
+/// Used for the last-known-good reserve, which must survive the rollback.
+pub fn restore_copy(source: &Path, target: &Path) -> Result<()> {
+    if target.exists() {
+        std::fs::remove_file(target)
+            .with_context(|| format!("Failed to remove failed binary at {}", target.display()))?;
+    }
+
+    std::fs::copy(source, target).with_context(|| {
+        format!(
+            "Failed to copy {} to {}",
+            source.display(),
+            target.display()
+        )
+    })?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let perms = std::fs::Permissions::from_mode(0o755);
+        std::fs::set_permissions(target, perms)
+            .with_context(|| format!("Failed to set permissions on {}", target.display()))?;
+    }
+
+    info!("Restored reserve copy to: {}", target.display());
+    Ok(())
+}
+
 /// Writes bytes to a temp file in the same directory as `target` (same filesystem → atomic rename).
 pub fn write_temp(bytes: &[u8], target: &Path) -> Result<PathBuf> {
     let dir = target

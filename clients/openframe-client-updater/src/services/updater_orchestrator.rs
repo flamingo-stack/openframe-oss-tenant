@@ -4,10 +4,13 @@ use std::time::Duration;
 use tracing::{error, info, warn};
 
 use crate::clients::AuthClient;
-use crate::config::updater_config::{CLIENT_SERVICE_FULL_NAME, SERVICE_START_VERIFY_WAIT_SECS};
+use crate::config::updater_config::{
+    BOOT_MARKER_POLL_INTERVAL_SECS, BOOT_MARKER_WAIT_SECS, CLIENT_SERVICE_FULL_NAME,
+};
 use crate::listener::ClientUpdateListener;
 use crate::models::UpdaterPhase;
 use crate::platform::{atomic_replace, DirectoryManager};
+use crate::services::last_known_good_service::LastKnownGoodService;
 use crate::services::token_provider::TokenProvider;
 use crate::services::{
     AgentConfigurationService, ClientUpdateService, GithubDownloadService,
@@ -101,16 +104,25 @@ impl UpdaterOrchestrator {
 
         let progress_publisher = UpdateProgressPublisher::new(nats_publisher, machine_id.clone());
 
+        let lkg_service = LastKnownGoodService::new(
+            &self.dir_manager,
+            ServiceManagerService::client_binary_path(),
+        );
+
         state_service.cleanup_legacy_state();
-        self.recover_from_crash(&state_service, &progress_publisher)
+        self.recover_from_crash(&state_service, &progress_publisher, &lkg_service)
             .await?;
 
         progress_publisher.publish_updater_version().await;
 
         let download_service = GithubDownloadService::new(http_client);
 
-        let update_service =
-            ClientUpdateService::new(download_service, state_service, progress_publisher);
+        let update_service = ClientUpdateService::new(
+            download_service,
+            state_service,
+            progress_publisher,
+            lkg_service,
+        );
 
         let listener =
             ClientUpdateListener::new(nats_manager, update_service, agent_config_service);
@@ -126,6 +138,7 @@ impl UpdaterOrchestrator {
         &self,
         state_service: &UpdaterStateService,
         publisher: &UpdateProgressPublisher,
+        lkg_service: &LastKnownGoodService,
     ) -> Result<()> {
         let state = match state_service.load()? {
             None => return Ok(()),
@@ -163,55 +176,80 @@ impl UpdaterOrchestrator {
             }
 
             UpdaterPhase::StoppingService | UpdaterPhase::ReplacingBinary => {
-                self.restore_and_start(&state.backup_path, &target, version, publisher)
-                    .await;
+                self.restore_and_start(
+                    &state.backup_path,
+                    &target,
+                    version,
+                    publisher,
+                    lkg_service,
+                    false,
+                )
+                .await;
                 state_service.clear()?;
             }
 
-            UpdaterPhase::StartingService => {
-                match ServiceManagerService::is_running(CLIENT_SERVICE_FULL_NAME) {
-                    Ok(true) => {
-                        info!("Crash recovery: service is already running — marking success");
-                        publisher.publish_success(version).await;
+            // The boot marker was cleared before StartingService, so in these
+            // phases the marker is the source of truth: only a marker carrying
+            // the target version proves the new binary booted. An updater
+            // restart during Observing skips the rest of the window — a
+            // matching marker plus a running service is the health snapshot.
+            UpdaterPhase::StartingService
+            | UpdaterPhase::VerifyingBoot
+            | UpdaterPhase::Observing => {
+                if lkg_service.boot_marker_version().as_deref() == Some(version.as_str()) {
+                    info!("Crash recovery: boot marker matches target — marking success");
+                    if let Err(e) = lkg_service.promote(version) {
+                        warn!(
+                            "Crash recovery: failed to raise last-known-good anchor to {}: {:#}",
+                            version, e
+                        );
                     }
-                    _ => {
+                    publisher.publish_success(version).await;
+                } else {
+                    if !matches!(
+                        ServiceManagerService::is_running(CLIENT_SERVICE_FULL_NAME),
+                        Ok(true)
+                    ) {
                         info!("Crash recovery: service not running — attempting start");
-                        match ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
-                            Ok(()) => {
-                                tokio::time::sleep(Duration::from_secs(
-                                    SERVICE_START_VERIFY_WAIT_SECS,
-                                ))
-                                .await;
-                                match ServiceManagerService::is_running(CLIENT_SERVICE_FULL_NAME) {
-                                    Ok(true) => {
-                                        info!("Crash recovery: service started successfully");
-                                        publisher.publish_success(version).await;
-                                    }
-                                    _ => {
-                                        warn!(
-                                            "Crash recovery: service start failed — rolling back"
-                                        );
-                                        self.restore_and_start(
-                                            &state.backup_path,
-                                            &target,
-                                            version,
-                                            publisher,
-                                        )
-                                        .await;
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!("Crash recovery: start failed ({}), rolling back", e);
-                                self.restore_and_start(
-                                    &state.backup_path,
-                                    &target,
-                                    version,
-                                    publisher,
-                                )
-                                .await;
-                            }
+                        if let Err(e) = ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
+                            warn!("Crash recovery: start failed: {:#}", e);
                         }
+                    }
+                    // Give the (possibly just-started) binary one marker window
+                    // before rolling back.
+                    let deadline = BOOT_MARKER_WAIT_SECS;
+                    let mut elapsed = 0u64;
+                    let mut verified = false;
+                    while elapsed < deadline {
+                        if lkg_service.boot_marker_version().as_deref() == Some(version.as_str()) {
+                            verified = true;
+                            break;
+                        }
+                        tokio::time::sleep(Duration::from_secs(BOOT_MARKER_POLL_INTERVAL_SECS))
+                            .await;
+                        elapsed += BOOT_MARKER_POLL_INTERVAL_SECS;
+                    }
+
+                    if verified {
+                        info!("Crash recovery: boot marker matched after restart — success");
+                        if let Err(e) = lkg_service.promote(version) {
+                            warn!(
+                                "Crash recovery: failed to raise last-known-good anchor to {}: {:#}",
+                                version, e
+                            );
+                        }
+                        publisher.publish_success(version).await;
+                    } else {
+                        warn!("Crash recovery: boot not verified — rolling back");
+                        self.restore_and_start(
+                            &state.backup_path,
+                            &target,
+                            version,
+                            publisher,
+                            lkg_service,
+                            true,
+                        )
+                        .await;
                     }
                 }
                 state_service.clear()?;
@@ -235,37 +273,112 @@ impl UpdaterOrchestrator {
         target: &Path,
         version: &str,
         publisher: &UpdateProgressPublisher,
+        lkg_service: &LastKnownGoodService,
+        prefer_reserve: bool,
     ) {
-        if let Some(path_str) = backup_path {
-            let backup = PathBuf::from(path_str);
-            if backup.exists() {
-                match atomic_replace::restore(&backup, target) {
-                    Ok(()) => {
-                        info!("Crash recovery: backup restored");
-                        if let Err(e) = ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
-                            error!("Crash recovery: failed to start restored service: {}", e);
-                        }
-                        publisher
-                            .publish_failure(
-                                &UpdaterPhase::RolledBack,
-                                version,
-                                "Updater crashed mid-update, old binary restored",
-                                true,
-                            )
-                            .await;
-                        return;
-                    }
-                    Err(e) => error!("Crash recovery: restore failed: {}", e),
+        let backup = backup_path
+            .as_ref()
+            .map(PathBuf::from)
+            .filter(|p| p.exists());
+        let reserve = lkg_service.reserve_path().to_path_buf();
+        let reserve = reserve.exists().then_some(reserve);
+
+        // Restore sources in preference order. The reserve is copied (it must
+        // survive), the backup is renamed (consumed). After a failed boot the
+        // reserve is the stronger choice — it verified; the backup merely ran.
+        // Before the swap the backup is authoritative, and the reserve is only
+        // a last resort when the client binary itself is gone.
+        let mut candidates: Vec<(PathBuf, bool)> = Vec::new();
+        if prefer_reserve {
+            if let Some(r) = &reserve {
+                candidates.push((r.clone(), true));
+            }
+            if let Some(b) = &backup {
+                candidates.push((b.clone(), false));
+            }
+        } else {
+            if let Some(b) = &backup {
+                candidates.push((b.clone(), false));
+            }
+            if !target.exists() {
+                if let Some(r) = &reserve {
+                    candidates.push((r.clone(), true));
                 }
             }
         }
 
+        if candidates.is_empty() {
+            if target.exists() {
+                info!("Crash recovery: client binary intact — ensuring service is running");
+                if let Err(e) = ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
+                    error!("Crash recovery: failed to start service: {}", e);
+                }
+                publisher
+                    .publish_failure(
+                        &UpdaterPhase::Failed,
+                        version,
+                        "Updater crashed mid-update; client binary untouched",
+                        false,
+                    )
+                    .await;
+            } else {
+                publisher
+                    .publish_failure(
+                        &UpdaterPhase::Failed,
+                        version,
+                        "Updater crashed mid-update, no backup or reserve available",
+                        false,
+                    )
+                    .await;
+            }
+            return;
+        }
+
+        let mut restored = false;
+        for (source, is_reserve) in &candidates {
+            let result = if *is_reserve {
+                atomic_replace::restore_copy(source, target)
+            } else {
+                atomic_replace::restore(source, target)
+            };
+            match result {
+                Ok(()) => {
+                    info!(
+                        "Crash recovery: restored client binary from {}",
+                        source.display()
+                    );
+                    restored = true;
+                    break;
+                }
+                Err(e) => error!(
+                    "Crash recovery: restore from {} failed: {:#}",
+                    source.display(),
+                    e
+                ),
+            }
+        }
+
+        if !restored {
+            publisher
+                .publish_failure(
+                    &UpdaterPhase::Failed,
+                    version,
+                    "Updater crashed mid-update and all restore attempts failed",
+                    false,
+                )
+                .await;
+            return;
+        }
+
+        if let Err(e) = ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
+            error!("Crash recovery: failed to start restored service: {}", e);
+        }
         publisher
             .publish_failure(
-                &UpdaterPhase::Failed,
+                &UpdaterPhase::RolledBack,
                 version,
-                "Updater crashed mid-update, no backup available",
-                false,
+                "Updater crashed mid-update, previous binary restored",
+                true,
             )
             .await;
     }
