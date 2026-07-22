@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tracing::{error, info, warn};
 
@@ -8,12 +8,12 @@ use crate::config::updater_config::{CLIENT_SERVICE_FULL_NAME, SERVICE_START_VERI
 use crate::listener::ClientUpdateListener;
 use crate::models::UpdaterPhase;
 use crate::platform::{atomic_replace, DirectoryManager};
+use crate::services::token_provider::TokenProvider;
 use crate::services::{
     AgentConfigurationService, ClientUpdateService, GithubDownloadService,
     InitialConfigurationService, LocalTlsConfigProvider, NatsConnectionManager,
     NatsMessagePublisher, ServiceManagerService, UpdateProgressPublisher, UpdaterStateService,
 };
-use crate::services::token_provider::TokenProvider;
 
 pub struct UpdaterOrchestrator {
     dir_manager: DirectoryManager,
@@ -49,16 +49,13 @@ impl UpdaterOrchestrator {
         // if the client stops refreshing it, the provider authenticates on its own
         // via client_credentials from agent_config.json (held in memory only).
         let token_file_path = self.dir_manager.secured_dir().join("shared_token.enc");
-        info!("Starting token provider (file: {})", token_file_path.display());
-        let auth_client = AuthClient::new(
-            format!("https://{}", server_host),
-            http_client.clone(),
+        info!(
+            "Starting token provider (file: {})",
+            token_file_path.display()
         );
-        let token = TokenProvider::start(
-            token_file_path,
-            auth_client,
-            agent_config_service.clone(),
-        );
+        let auth_client = AuthClient::new(format!("https://{}", server_host), http_client.clone());
+        let token =
+            TokenProvider::start(token_file_path, auth_client, agent_config_service.clone());
 
         // Wait for the initial token before connecting to NATS. The provider
         // self-authenticates when the shared file is missing or stale, so this
@@ -85,7 +82,10 @@ impl UpdaterOrchestrator {
 
         let state_service = UpdaterStateService::new(&self.dir_manager);
 
-        nats_manager.connect().await.context("Failed to connect to NATS")?;
+        nats_manager
+            .connect()
+            .await
+            .context("Failed to connect to NATS")?;
         info!("NATS connected");
 
         // The updater only writes its own .log file; openframe-client tails it and ships
@@ -99,27 +99,21 @@ impl UpdaterOrchestrator {
             .await
             .context("Failed to read machine_id")?;
 
-        let progress_publisher =
-            UpdateProgressPublisher::new(nats_publisher, machine_id.clone());
+        let progress_publisher = UpdateProgressPublisher::new(nats_publisher, machine_id.clone());
 
         state_service.cleanup_legacy_state();
-        self.recover_from_crash(&state_service, &progress_publisher).await?;
+        self.recover_from_crash(&state_service, &progress_publisher)
+            .await?;
 
         progress_publisher.publish_updater_version().await;
 
         let download_service = GithubDownloadService::new(http_client);
 
-        let update_service = ClientUpdateService::new(
-            download_service,
-            state_service,
-            progress_publisher,
-        );
+        let update_service =
+            ClientUpdateService::new(download_service, state_service, progress_publisher);
 
-        let listener = ClientUpdateListener::new(
-            nats_manager,
-            update_service,
-            agent_config_service,
-        );
+        let listener =
+            ClientUpdateListener::new(nats_manager, update_service, agent_config_service);
 
         info!("Updater ready — listening for update commands");
         let handle = listener.start().await;
@@ -169,7 +163,8 @@ impl UpdaterOrchestrator {
             }
 
             UpdaterPhase::StoppingService | UpdaterPhase::ReplacingBinary => {
-                self.restore_and_start(&state.backup_path, &target, version, publisher).await;
+                self.restore_and_start(&state.backup_path, &target, version, publisher)
+                    .await;
                 state_service.clear()?;
             }
 
@@ -193,7 +188,9 @@ impl UpdaterOrchestrator {
                                         publisher.publish_success(version).await;
                                     }
                                     _ => {
-                                        warn!("Crash recovery: service start failed — rolling back");
+                                        warn!(
+                                            "Crash recovery: service start failed — rolling back"
+                                        );
                                         self.restore_and_start(
                                             &state.backup_path,
                                             &target,
@@ -235,7 +232,7 @@ impl UpdaterOrchestrator {
     async fn restore_and_start(
         &self,
         backup_path: &Option<String>,
-        target: &PathBuf,
+        target: &Path,
         version: &str,
         publisher: &UpdateProgressPublisher,
     ) {

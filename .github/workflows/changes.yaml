@@ -81,6 +81,20 @@ jobs:
               "target_path": "./clients/openframe-client/target"
             },
             {
+              "name": "openframe-client-updater",
+              "path": "./clients/openframe-client-updater",
+              "os": "macos",
+              "target": "aarch64-apple-darwin,x86_64-apple-darwin",
+              "target_path": "./clients/openframe-client-updater/target"
+            },
+            {
+              "name": "openframe-client-updater",
+              "path": "./clients/openframe-client-updater",
+              "os": "windows",
+              "target": "x86_64-pc-windows-msvc",
+              "target_path": "./clients/openframe-client-updater/target"
+            },
+            {
               "name": "openframe-chat",
               "path": "./clients/openframe-chat",
               "os": "macos",

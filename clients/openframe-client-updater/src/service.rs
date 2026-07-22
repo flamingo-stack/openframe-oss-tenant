@@ -124,7 +124,11 @@ impl UpdaterService {
 
         #[cfg(target_os = "macos")]
         {
-            PathBuf::from(format!("/Library/LaunchDaemons/{}.plist", FULL_SERVICE_NAME)).exists()
+            PathBuf::from(format!(
+                "/Library/LaunchDaemons/{}.plist",
+                FULL_SERVICE_NAME
+            ))
+            .exists()
         }
 
         #[cfg(target_os = "linux")]
@@ -137,7 +141,9 @@ impl UpdaterService {
     /// Requires agent_config.json to already exist (populated by main client install).
     pub async fn install() -> Result<()> {
         if !PermissionUtils::is_admin() {
-            return Err(anyhow::anyhow!("Admin privileges required for service installation"));
+            return Err(anyhow::anyhow!(
+                "Admin privileges required for service installation"
+            ));
         }
 
         let dir_manager = DirectoryManager::new();
@@ -169,7 +175,10 @@ impl UpdaterService {
             ));
         }
 
-        info!("Installing OpenFrame Client Updater service (machine_id: {})", machine_id);
+        info!(
+            "Installing OpenFrame Client Updater service (machine_id: {})",
+            machine_id
+        );
 
         let current_exe = std::env::current_exe().context("Failed to get current exe path")?;
         let install_path = Self::get_install_location();
@@ -197,8 +206,8 @@ impl UpdaterService {
 
         let (user_name, group_name) = match std::env::consts::OS {
             "windows" => (Some("LocalSystem".to_string()), None),
-            "macos"   => (Some("root".to_string()), Some("wheel".to_string())),
-            _         => (Some("root".to_string()), Some("root".to_string())),
+            "macos" => (Some("root".to_string()), Some("wheel".to_string())),
+            _ => (Some("root".to_string()), Some("root".to_string())),
         };
 
         let config = ServiceConfig {
@@ -238,7 +247,9 @@ impl UpdaterService {
 
     pub async fn uninstall() -> Result<()> {
         if !PermissionUtils::is_admin() {
-            return Err(anyhow::anyhow!("Admin privileges required for uninstallation"));
+            return Err(anyhow::anyhow!(
+                "Admin privileges required for uninstallation"
+            ));
         }
 
         info!("Uninstalling OpenFrame Client Updater service");
@@ -257,11 +268,18 @@ impl UpdaterService {
             .context("Failed to unregister OS service")?;
 
         if install_path.exists() {
-            std::fs::remove_file(&install_path)
-                .with_context(|| format!("Failed to remove updater binary at {}", install_path.display()))?;
+            std::fs::remove_file(&install_path).with_context(|| {
+                format!(
+                    "Failed to remove updater binary at {}",
+                    install_path.display()
+                )
+            })?;
             info!("Removed updater binary at {}", install_path.display());
         } else {
-            warn!("Updater binary not found at {}, skipping removal", install_path.display());
+            warn!(
+                "Updater binary not found at {}, skipping removal",
+                install_path.display()
+            );
         }
 
         info!("OpenFrame Client Updater service uninstalled");
@@ -291,7 +309,7 @@ impl UpdaterService {
         {
             service_dispatcher::start(FULL_SERVICE_NAME, ffi_service_main)
                 .context("Failed to start service dispatcher")?;
-            return Ok(());
+            Ok(())
         }
 
         #[cfg(not(windows))]

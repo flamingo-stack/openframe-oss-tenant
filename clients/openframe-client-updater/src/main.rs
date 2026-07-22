@@ -130,10 +130,7 @@ fn main() -> Result<()> {
         "OpenFrame Client Updater v{}",
         openframe_updater::config::updater_config::UPDATER_VERSION
     );
-    info!(
-        "Log file: {}",
-        log_file_path(&dir_manager).display()
-    );
+    info!("Log file: {}", log_file_path(&dir_manager).display());
 
     let cli = Cli::parse();
     let rt = Runtime::new()?;

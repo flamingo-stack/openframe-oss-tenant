@@ -21,7 +21,12 @@ impl UpdateProgressMessage {
         }
     }
 
-    pub fn with_failure(phase: impl Into<String>, version: impl Into<String>, reason: impl Into<String>, rolled_back: bool) -> Self {
+    pub fn with_failure(
+        phase: impl Into<String>,
+        version: impl Into<String>,
+        reason: impl Into<String>,
+        rolled_back: bool,
+    ) -> Self {
         Self {
             phase: phase.into(),
             version: version.into(),

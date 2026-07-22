@@ -1,14 +1,12 @@
 use anyhow::{Context, Result};
-use plist::Dictionary;
 use service_manager::{
     ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
     ServiceUninstallCtx,
 };
-use std::collections::HashMap;
 use std::ffi::OsString;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::str::FromStr;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 #[derive(Debug, Clone)]
 pub struct RecoveryConfig {
@@ -77,8 +75,8 @@ impl CrossPlatformServiceManager {
 
     pub fn install(&self) -> Result<()> {
         let label = self.label()?;
-        let manager = <dyn ServiceManager>::native()
-            .context("Failed to detect native service manager")?;
+        let manager =
+            <dyn ServiceManager>::native().context("Failed to detect native service manager")?;
 
         let working_dir = self
             .config
@@ -117,8 +115,8 @@ impl CrossPlatformServiceManager {
 
     pub fn uninstall(&self) -> Result<()> {
         let label = self.label()?;
-        let manager = <dyn ServiceManager>::native()
-            .context("Failed to detect native service manager")?;
+        let manager =
+            <dyn ServiceManager>::native().context("Failed to detect native service manager")?;
 
         if let Err(e) = self.stop() {
             warn!("Could not stop service before uninstall: {}", e);
@@ -149,28 +147,37 @@ impl CrossPlatformServiceManager {
         }
 
         #[cfg(not(target_os = "windows"))]
-        manager.uninstall(ctx).context("Failed to uninstall service")?;
+        manager
+            .uninstall(ctx)
+            .context("Failed to uninstall service")?;
 
         Ok(())
     }
 
     pub fn start(&self) -> Result<()> {
         let label = self.label()?;
-        let manager = <dyn ServiceManager>::native()
-            .context("Failed to detect native service manager")?;
-        manager.start(ServiceStartCtx { label }).context("Failed to start service")
+        let manager =
+            <dyn ServiceManager>::native().context("Failed to detect native service manager")?;
+        manager
+            .start(ServiceStartCtx { label })
+            .context("Failed to start service")
     }
 
     pub fn stop(&self) -> Result<()> {
         let label = self.label()?;
-        let manager = <dyn ServiceManager>::native()
-            .context("Failed to detect native service manager")?;
-        manager.stop(ServiceStopCtx { label }).context("Failed to stop service")
+        let manager =
+            <dyn ServiceManager>::native().context("Failed to detect native service manager")?;
+        manager
+            .stop(ServiceStopCtx { label })
+            .context("Failed to stop service")
     }
 
     fn label(&self) -> Result<ServiceLabel> {
-        ServiceLabel::from_str(&format!("com.openframe.{}", self.config.name.to_lowercase()))
-            .context("Failed to create service label")
+        ServiceLabel::from_str(&format!(
+            "com.openframe.{}",
+            self.config.name.to_lowercase()
+        ))
+        .context("Failed to create service label")
     }
 
     fn app_support_dir(&self) -> PathBuf {
@@ -202,17 +209,18 @@ impl CrossPlatformServiceManager {
     }
 
     fn create_log_dirs(&self) -> Result<()> {
-        for opt in [&self.config.stdout_path, &self.config.stderr_path] {
-            if let Some(path) = opt {
-                if let Some(parent) = path.parent() {
-                    std::fs::create_dir_all(parent).ok();
-                }
+        for path in [&self.config.stdout_path, &self.config.stderr_path]
+            .into_iter()
+            .flatten()
+        {
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).ok();
             }
         }
         Ok(())
     }
 
-    fn apply_platform_config(&self, ctx: &mut ServiceInstallCtx) {
+    fn apply_platform_config(&self, _ctx: &mut ServiceInstallCtx) {
         #[cfg(target_os = "macos")]
         self.apply_macos_config(ctx);
 
@@ -234,7 +242,10 @@ impl CrossPlatformServiceManager {
             plist::Value::String("run-as-service".to_string()),
         ];
         dict.insert("ProgramArguments".into(), plist::Value::Array(args));
-        dict.insert("RunAtLoad".into(), plist::Value::Boolean(self.config.run_at_load));
+        dict.insert(
+            "RunAtLoad".into(),
+            plist::Value::Boolean(self.config.run_at_load),
+        );
 
         let mut keep_alive = Dictionary::new();
         keep_alive.insert("SuccessfulExit".into(), plist::Value::Boolean(false));
@@ -242,25 +253,41 @@ impl CrossPlatformServiceManager {
         dict.insert("KeepAlive".into(), plist::Value::Dictionary(keep_alive));
 
         if let Some(p) = &self.config.stdout_path {
-            dict.insert("StandardOutPath".into(), plist::Value::String(p.to_string_lossy().to_string()));
+            dict.insert(
+                "StandardOutPath".into(),
+                plist::Value::String(p.to_string_lossy().to_string()),
+            );
         }
         if let Some(p) = &self.config.stderr_path {
-            dict.insert("StandardErrorPath".into(), plist::Value::String(p.to_string_lossy().to_string()));
+            dict.insert(
+                "StandardErrorPath".into(),
+                plist::Value::String(p.to_string_lossy().to_string()),
+            );
         }
         if let Some(limit) = self.config.file_limit {
             let mut limits = Dictionary::new();
             limits.insert("NumberOfFiles".into(), plist::Value::Integer(limit.into()));
-            dict.insert("SoftResourceLimits".into(), plist::Value::Dictionary(limits));
+            dict.insert(
+                "SoftResourceLimits".into(),
+                plist::Value::Dictionary(limits),
+            );
         }
         if self.config.is_interactive {
-            dict.insert("ProcessType".into(), plist::Value::String("Interactive".to_string()));
+            dict.insert(
+                "ProcessType".into(),
+                plist::Value::String("Interactive".to_string()),
+            );
         }
         if self.config.restart_on_crash {
-            dict.insert("ThrottleInterval".into(), plist::Value::Integer(self.config.restart_throttle_seconds.into()));
+            dict.insert(
+                "ThrottleInterval".into(),
+                plist::Value::Integer(self.config.restart_throttle_seconds.into()),
+            );
         }
-        dict.insert("ExitTimeOut".into(), plist::Value::Integer(
-            self.config.exit_timeout_seconds.unwrap_or(10).into()
-        ));
+        dict.insert(
+            "ExitTimeOut".into(),
+            plist::Value::Integer(self.config.exit_timeout_seconds.unwrap_or(10).into()),
+        );
         dict.insert("AbandonProcessGroup".into(), plist::Value::Boolean(false));
         if let Some(u) = &self.config.user_name {
             dict.insert("UserName".into(), plist::Value::String(u.clone()));
@@ -269,14 +296,20 @@ impl CrossPlatformServiceManager {
             dict.insert("GroupName".into(), plist::Value::String(g.clone()));
         }
         if let Some(wd) = &self.config.working_directory {
-            dict.insert("WorkingDirectory".into(), plist::Value::String(wd.to_string_lossy().to_string()));
+            dict.insert(
+                "WorkingDirectory".into(),
+                plist::Value::String(wd.to_string_lossy().to_string()),
+            );
         }
 
         let value = plist::Value::Dictionary(dict);
         let mut xml = Vec::new();
         match plist::to_writer_xml(&mut xml, &value) {
             Ok(_) => match String::from_utf8(xml) {
-                Ok(s) => { debug!("macOS plist: {}", s); ctx.contents = Some(s); }
+                Ok(s) => {
+                    debug!("macOS plist: {}", s);
+                    ctx.contents = Some(s);
+                }
                 Err(e) => warn!("Failed to encode plist as UTF-8: {}", e),
             },
             Err(e) => warn!("Failed to serialize plist: {}", e),
@@ -300,12 +333,18 @@ impl CrossPlatformServiceManager {
         }
         if self.config.restart_on_crash {
             opts.insert("Restart", "on-failure".to_string());
-            opts.insert("RestartSec", self.config.restart_throttle_seconds.to_string());
+            opts.insert(
+                "RestartSec",
+                self.config.restart_throttle_seconds.to_string(),
+            );
         }
 
         if !opts.is_empty() {
             match serde_json::to_string(&opts) {
-                Ok(s) => { debug!("Linux service options: {}", s); ctx.contents = Some(s); }
+                Ok(s) => {
+                    debug!("Linux service options: {}", s);
+                    ctx.contents = Some(s);
+                }
                 Err(e) => warn!("Failed to serialize Linux service options: {}", e),
             }
         }
@@ -322,7 +361,10 @@ impl CrossPlatformServiceManager {
             }
             std::thread::sleep(Duration::from_millis(500));
         }
-        Err(anyhow::anyhow!("Service did not stop within {}s", timeout_secs))
+        Err(anyhow::anyhow!(
+            "Service did not stop within {}s",
+            timeout_secs
+        ))
     }
 
     #[cfg(target_os = "windows")]
@@ -342,7 +384,10 @@ impl CrossPlatformServiceManager {
 fn apply_windows_recovery(service_name: &str, cfg: &RecoveryConfig) -> Result<()> {
     use std::time::Duration;
     use windows_service::{
-        service::{ServiceAccess, ServiceAction, ServiceActionType, ServiceFailureActions, ServiceFailureResetPeriod},
+        service::{
+            ServiceAccess, ServiceAction, ServiceActionType, ServiceFailureActions,
+            ServiceFailureResetPeriod,
+        },
         service_manager::{ServiceManager, ServiceManagerAccess},
     };
 
@@ -350,24 +395,41 @@ fn apply_windows_recovery(service_name: &str, cfg: &RecoveryConfig) -> Result<()
         .context("Failed to connect to SCM")?;
 
     let service = scm
-        .open_service(service_name, ServiceAccess::CHANGE_CONFIG | ServiceAccess::START)
+        .open_service(
+            service_name,
+            ServiceAccess::CHANGE_CONFIG | ServiceAccess::START,
+        )
         .context("Failed to open service")?;
 
     let actions = vec![
-        ServiceAction { action_type: ServiceActionType::Restart, delay: Duration::from_secs(cfg.first_restart_secs) },
-        ServiceAction { action_type: ServiceActionType::Restart, delay: Duration::from_secs(cfg.second_restart_secs) },
-        ServiceAction { action_type: ServiceActionType::Restart, delay: Duration::from_secs(cfg.subsequent_restart_secs) },
+        ServiceAction {
+            action_type: ServiceActionType::Restart,
+            delay: Duration::from_secs(cfg.first_restart_secs),
+        },
+        ServiceAction {
+            action_type: ServiceActionType::Restart,
+            delay: Duration::from_secs(cfg.second_restart_secs),
+        },
+        ServiceAction {
+            action_type: ServiceActionType::Restart,
+            delay: Duration::from_secs(cfg.subsequent_restart_secs),
+        },
     ];
 
-    service.update_failure_actions(ServiceFailureActions {
-        reset_period: ServiceFailureResetPeriod::After(Duration::from_secs(cfg.reset_period_days as u64 * 86_400)),
-        reboot_msg: None,
-        command: None,
-        actions: Some(actions),
-    }).context("Failed to update failure actions")?;
+    service
+        .update_failure_actions(ServiceFailureActions {
+            reset_period: ServiceFailureResetPeriod::After(Duration::from_secs(
+                cfg.reset_period_days as u64 * 86_400,
+            )),
+            reboot_msg: None,
+            command: None,
+            actions: Some(actions),
+        })
+        .context("Failed to update failure actions")?;
 
     if cfg.enable_on_non_crash_failures {
-        service.set_failure_actions_on_non_crash_failures(true)
+        service
+            .set_failure_actions_on_non_crash_failures(true)
             .context("Failed to enable failure actions on non-crash failures")?;
     }
 

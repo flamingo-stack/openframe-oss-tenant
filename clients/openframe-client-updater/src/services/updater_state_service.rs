@@ -44,8 +44,8 @@ impl UpdaterStateService {
                 .with_context(|| format!("Failed to create dir {}", parent.display()))?;
         }
 
-        let json = serde_json::to_string_pretty(state)
-            .context("Failed to serialize updater state")?;
+        let json =
+            serde_json::to_string_pretty(state).context("Failed to serialize updater state")?;
 
         fs::write(&self.state_file_path, json)
             .with_context(|| format!("Failed to write {}", self.state_file_path.display()))?;
@@ -65,7 +65,8 @@ impl UpdaterStateService {
 
     // Removes update_state.json left by the old client update flow after Phase 7 migration.
     pub fn cleanup_legacy_state(&self) {
-        let legacy_path = self.state_file_path
+        let legacy_path = self
+            .state_file_path
             .parent()
             .map(|p| p.join("update_state.json"));
 

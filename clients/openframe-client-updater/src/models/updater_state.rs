@@ -56,6 +56,9 @@ impl UpdaterState {
     }
 
     pub fn is_terminal(&self) -> bool {
-        matches!(self.phase, UpdaterPhase::Completed | UpdaterPhase::Failed | UpdaterPhase::RolledBack)
+        matches!(
+            self.phase,
+            UpdaterPhase::Completed | UpdaterPhase::Failed | UpdaterPhase::RolledBack
+        )
     }
 }

@@ -25,7 +25,11 @@ impl ClientUpdateListener {
         update_service: ClientUpdateService,
         config_service: AgentConfigurationService,
     ) -> Self {
-        Self { nats, update_service, config_service }
+        Self {
+            nats,
+            update_service,
+            config_service,
+        }
     }
 
     pub async fn start(&self) -> tokio::task::JoinHandle<()> {
@@ -37,10 +41,7 @@ impl ClientUpdateListener {
                     Ok(_) => warn!("CLIENT_UPDATE listener exited unexpectedly"),
                     Err(e) => error!("CLIENT_UPDATE listener error: {:#}", e),
                 }
-                info!(
-                    "Reconnecting in {}ms",
-                    RECONNECTION_DELAY_MS
-                );
+                info!("Reconnecting in {}ms", RECONNECTION_DELAY_MS);
                 tokio::time::sleep(Duration::from_millis(RECONNECTION_DELAY_MS)).await;
             }
         })
@@ -56,7 +57,10 @@ impl ClientUpdateListener {
 
             let consumer = self.acquire_consumer(&js, &machine_id).await;
 
-            info!("Listening for CLIENT_UPDATE messages (machine_id={})", machine_id);
+            info!(
+                "Listening for CLIENT_UPDATE messages (machine_id={})",
+                machine_id
+            );
 
             let mut messages = consumer.messages().await?;
             loop {
@@ -108,11 +112,16 @@ impl ClientUpdateListener {
         match self.update_service.process_update(update_msg).await {
             Ok(_) => {
                 info!("ACKing successful update message for v{}", version);
-                message.ack().await
+                message
+                    .ack()
+                    .await
                     .map_err(|e| anyhow::anyhow!("Failed to ACK message: {}", e))?;
             }
             Err(e) => {
-                error!("Update failed for v{}: {:#} — leaving unacked for redelivery", version, e);
+                error!(
+                    "Update failed for v{}: {:#} — leaving unacked for redelivery",
+                    version, e
+                );
             }
         }
 
@@ -160,7 +169,10 @@ impl ClientUpdateListener {
                         }
 
                         if attempt < CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
-                            warn!("Attempt {}/{} failed: {:#}. Retrying in {}ms", attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e, delay_ms);
+                            warn!(
+                                "Attempt {}/{} failed: {:#}. Retrying in {}ms",
+                                attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e, delay_ms
+                            );
                             tokio::time::sleep(Duration::from_millis(delay_ms)).await;
                             delay_ms = (delay_ms * 2).min(CONSUMER_MAX_RETRY_DELAY_MS);
                         } else {

@@ -32,8 +32,13 @@ pub fn restore(backup: &Path, target: &Path) -> Result<()> {
             .with_context(|| format!("Failed to remove failed binary at {}", target.display()))?;
     }
 
-    std::fs::rename(backup, target)
-        .with_context(|| format!("Failed to restore {} to {}", backup.display(), target.display()))?;
+    std::fs::rename(backup, target).with_context(|| {
+        format!(
+            "Failed to restore {} to {}",
+            backup.display(),
+            target.display()
+        )
+    })?;
 
     info!("Restored backup to: {}", target.display());
     Ok(())
@@ -61,7 +66,11 @@ pub fn write_temp(bytes: &[u8], target: &Path) -> Result<PathBuf> {
             .with_context(|| format!("Failed to set permissions on {}", temp_path.display()))?;
     }
 
-    info!("Temp binary written: {} ({} bytes)", temp_path.display(), bytes.len());
+    info!(
+        "Temp binary written: {} ({} bytes)",
+        temp_path.display(),
+        bytes.len()
+    );
     Ok(temp_path)
 }
 

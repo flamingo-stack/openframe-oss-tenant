@@ -66,6 +66,7 @@ impl Permissions {
                 let metadata = fs::metadata(path)?;
                 let mut perms = metadata.permissions();
                 if perms.readonly() {
+                    #[allow(clippy::permissions_set_readonly_false)]
                     perms.set_readonly(false);
                     fs::set_permissions(path, perms)?;
                 }

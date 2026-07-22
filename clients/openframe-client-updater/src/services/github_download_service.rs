@@ -85,7 +85,10 @@ impl GithubDownloadService {
         let mut last_error = None;
 
         for attempt in 1..=MAX_DOWNLOAD_RETRIES {
-            info!("Download attempt {}/{}: {}", attempt, MAX_DOWNLOAD_RETRIES, url);
+            info!(
+                "Download attempt {}/{}: {}",
+                attempt, MAX_DOWNLOAD_RETRIES, url
+            );
 
             match tokio::time::timeout(
                 Duration::from_secs(DOWNLOAD_TIMEOUT_SECS),
@@ -128,7 +131,10 @@ impl GithubDownloadService {
                     last_error = Some(e);
                 }
                 Err(_) => {
-                    warn!("Attempt {} timed out after {}s", attempt, DOWNLOAD_TIMEOUT_SECS);
+                    warn!(
+                        "Attempt {} timed out after {}s",
+                        attempt, DOWNLOAD_TIMEOUT_SECS
+                    );
                     last_error = Some(anyhow!("Timeout after {}s", DOWNLOAD_TIMEOUT_SECS));
                 }
             }
@@ -140,7 +146,8 @@ impl GithubDownloadService {
             }
         }
 
-        Err(last_error.unwrap_or_else(|| anyhow!("Download failed after {} attempts", MAX_DOWNLOAD_RETRIES)))
+        Err(last_error
+            .unwrap_or_else(|| anyhow!("Download failed after {} attempts", MAX_DOWNLOAD_RETRIES)))
     }
 
     async fn download(&self, url: &str) -> Result<Bytes> {
@@ -155,7 +162,10 @@ impl GithubDownloadService {
             return Err(anyhow!("HTTP {} — {}", response.status(), url));
         }
 
-        response.bytes().await.context("Failed to read response bytes")
+        response
+            .bytes()
+            .await
+            .context("Failed to read response bytes")
     }
 
     fn github_to_cdn_url(github_url: &str) -> String {
@@ -175,7 +185,10 @@ impl GithubDownloadService {
             let mut entry = archive.by_index(i).context("Failed to read ZIP entry")?;
             let name = entry.name().to_string();
 
-            if name.to_lowercase().ends_with(&target_filename.to_lowercase()) {
+            if name
+                .to_lowercase()
+                .ends_with(&target_filename.to_lowercase())
+            {
                 info!("Found in ZIP: {}", name);
                 let mut buf = Vec::new();
                 std::io::copy(&mut entry, &mut buf).context("Failed to read ZIP entry bytes")?;
@@ -188,7 +201,10 @@ impl GithubDownloadService {
 
     #[cfg(not(target_os = "windows"))]
     fn extract_from_zip(&self, _bytes: Bytes, target: &str) -> Result<Bytes> {
-        Err(anyhow!("ZIP extraction not supported on this platform for '{}'", target))
+        Err(anyhow!(
+            "ZIP extraction not supported on this platform for '{}'",
+            target
+        ))
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -211,8 +227,7 @@ impl GithubDownloadService {
             if basename.eq_ignore_ascii_case(target_filename) && !basename.starts_with("._") {
                 info!("Found in tar.gz: {}", path.display());
                 let mut buf = Vec::new();
-                std::io::copy(&mut entry, &mut buf)
-                    .context("Failed to read tar entry bytes")?;
+                std::io::copy(&mut entry, &mut buf).context("Failed to read tar entry bytes")?;
                 return Ok(Bytes::from(buf));
             }
         }
@@ -222,6 +237,9 @@ impl GithubDownloadService {
 
     #[cfg(target_os = "windows")]
     fn extract_from_tar_gz(&self, _bytes: Bytes, target: &str) -> Result<Bytes> {
-        Err(anyhow!("tar.gz extraction not supported on Windows for '{}'", target))
+        Err(anyhow!(
+            "tar.gz extraction not supported on Windows for '{}'",
+            target
+        ))
     }
 }

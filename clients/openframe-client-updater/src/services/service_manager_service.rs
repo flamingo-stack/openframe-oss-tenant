@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use std::path::PathBuf;
 use tracing::info;
 
-use crate::config::updater_config::{SERVICE_STOP_TIMEOUT_SECS, SERVICE_START_VERIFY_WAIT_SECS};
+use crate::config::updater_config::SERVICE_STOP_TIMEOUT_SECS;
 
 /// Stops and starts `com.openframe.client` using native OS APIs.
 /// No PowerShell, no subprocesses on Windows.
@@ -34,8 +34,8 @@ impl ServiceManagerService {
     pub fn client_binary_path() -> PathBuf {
         #[cfg(target_os = "windows")]
         {
-            let program_files = std::env::var("ProgramFiles")
-                .unwrap_or_else(|_| "C:\\Program Files".to_string());
+            let program_files =
+                std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string());
             PathBuf::from(program_files)
                 .join("OpenFrame")
                 .join("bin")
@@ -59,10 +59,14 @@ impl ServiceManagerService {
             .context("Failed to open Service Control Manager")?;
 
         let service = manager
-            .open_service(service_name, ServiceAccess::STOP | ServiceAccess::QUERY_STATUS)
+            .open_service(
+                service_name,
+                ServiceAccess::STOP | ServiceAccess::QUERY_STATUS,
+            )
             .with_context(|| format!("Failed to open service '{}'", service_name))?;
 
-        let status = service.query_status()
+        let status = service
+            .query_status()
             .context("Failed to query service status")?;
 
         if status.current_state == windows_service::service::ServiceState::Stopped {
@@ -73,13 +77,14 @@ impl ServiceManagerService {
         service.stop().context("Failed to send stop control")?;
 
         // Poll until stopped or timeout
-        let deadline = std::time::Instant::now()
-            + std::time::Duration::from_secs(SERVICE_STOP_TIMEOUT_SECS);
+        let deadline =
+            std::time::Instant::now() + std::time::Duration::from_secs(SERVICE_STOP_TIMEOUT_SECS);
 
         loop {
             std::thread::sleep(std::time::Duration::from_millis(500));
 
-            let status = service.query_status()
+            let status = service
+                .query_status()
                 .context("Failed to query service status while waiting for stop")?;
 
             if status.current_state == windows_service::service::ServiceState::Stopped {
@@ -89,7 +94,8 @@ impl ServiceManagerService {
             if std::time::Instant::now() >= deadline {
                 return Err(anyhow!(
                     "Service '{}' did not stop within {}s",
-                    service_name, SERVICE_STOP_TIMEOUT_SECS
+                    service_name,
+                    SERVICE_STOP_TIMEOUT_SECS
                 ));
             }
         }
@@ -107,7 +113,9 @@ impl ServiceManagerService {
             .open_service(service_name, ServiceAccess::START)
             .with_context(|| format!("Failed to open service '{}'", service_name))?;
 
-        service.start(&[] as &[&str]).context("Failed to start service")?;
+        service
+            .start(&[] as &[&str])
+            .context("Failed to start service")?;
         Ok(())
     }
 
@@ -123,7 +131,8 @@ impl ServiceManagerService {
             .open_service(service_name, ServiceAccess::QUERY_STATUS)
             .with_context(|| format!("Failed to open service '{}'", service_name))?;
 
-        let status = service.query_status()
+        let status = service
+            .query_status()
             .context("Failed to query service status")?;
 
         Ok(status.current_state == windows_service::service::ServiceState::Running)
@@ -167,8 +176,7 @@ impl ServiceManagerService {
             .context("Failed to run launchctl list")?;
 
         // launchctl list returns 0 and prints a PID if the service is running
-        Ok(output.status.success()
-            && String::from_utf8_lossy(&output.stdout).contains("\"PID\""))
+        Ok(output.status.success() && String::from_utf8_lossy(&output.stdout).contains("\"PID\""))
     }
 
     // ── Linux ─────────────────────────────────────────────────────────────

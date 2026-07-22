@@ -27,7 +27,12 @@ impl std::fmt::Display for DirectoryError {
                 write!(f, "Validation failed for {}: {}", path.display(), reason)
             }
             DirectoryError::FixFailed(path, reason) => {
-                write!(f, "Failed to fix permissions for {}: {}", path.display(), reason)
+                write!(
+                    f,
+                    "Failed to fix permissions for {}: {}",
+                    path.display(),
+                    reason
+                )
             }
         }
     }
@@ -44,8 +49,8 @@ impl From<PermissionError> for DirectoryError {
 pub fn get_app_support_directory() -> PathBuf {
     #[cfg(target_os = "windows")]
     {
-        let program_data = std::env::var_os("ProgramData")
-            .expect("ProgramData environment variable not found");
+        let program_data =
+            std::env::var_os("ProgramData").expect("ProgramData environment variable not found");
         PathBuf::from(program_data).join("OpenFrame")
     }
 
@@ -67,8 +72,8 @@ pub fn get_logs_directory() -> PathBuf {
 
     #[cfg(target_os = "windows")]
     {
-        let program_data = std::env::var_os("ProgramData")
-            .expect("ProgramData environment variable not found");
+        let program_data =
+            std::env::var_os("ProgramData").expect("ProgramData environment variable not found");
         PathBuf::from(program_data).join("OpenFrame").join("logs")
     }
 
@@ -86,9 +91,11 @@ pub fn get_logs_directory() -> PathBuf {
 pub fn get_secured_directory() -> PathBuf {
     #[cfg(target_os = "windows")]
     {
-        let program_data = std::env::var_os("ProgramData")
-            .expect("ProgramData environment variable not found");
-        PathBuf::from(program_data).join("OpenFrame").join("secured")
+        let program_data =
+            std::env::var_os("ProgramData").expect("ProgramData environment variable not found");
+        PathBuf::from(program_data)
+            .join("OpenFrame")
+            .join("secured")
     }
 
     #[cfg(target_os = "macos")]
@@ -109,6 +116,12 @@ pub struct DirectoryManager {
     secured_dir: PathBuf,
 }
 
+impl Default for DirectoryManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DirectoryManager {
     pub fn new() -> Self {
         Self {
@@ -127,8 +140,16 @@ impl DirectoryManager {
         }
     }
 
-    pub fn with_custom_dirs(logs_dir: PathBuf, app_support_dir: PathBuf, secured_dir: PathBuf) -> Self {
-        Self { logs_dir, app_support_dir, secured_dir }
+    pub fn with_custom_dirs(
+        logs_dir: PathBuf,
+        app_support_dir: PathBuf,
+        secured_dir: PathBuf,
+    ) -> Self {
+        Self {
+            logs_dir,
+            app_support_dir,
+            secured_dir,
+        }
     }
 
     pub fn logs_dir(&self) -> &Path {
@@ -165,7 +186,8 @@ impl DirectoryManager {
                 .map_err(|e| DirectoryError::CreateFailed(path.to_path_buf(), e))?;
         }
 
-        perms.apply(path)
+        perms
+            .apply(path)
             .map_err(|e| DirectoryError::FixFailed(path.to_path_buf(), e.to_string()))?;
 
         if !self.can_write_to(path) {
@@ -177,7 +199,11 @@ impl DirectoryManager {
 
     fn can_write_to(&self, path: &Path) -> bool {
         let probe = path.join(".write_test");
-        let result = std::fs::OpenOptions::new().write(true).create(true).open(&probe);
+        let result = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&probe);
         if probe.exists() {
             let _ = fs::remove_file(&probe);
         }

@@ -1,4 +1,3 @@
-use anyhow::Result;
 use tracing::{info, warn};
 
 use crate::models::{InstalledAgentMessage, UpdateProgressMessage, UpdaterPhase};
@@ -12,7 +11,10 @@ pub struct UpdateProgressPublisher {
 
 impl UpdateProgressPublisher {
     pub fn new(nats_publisher: NatsMessagePublisher, machine_id: String) -> Self {
-        Self { nats_publisher, machine_id }
+        Self {
+            nats_publisher,
+            machine_id,
+        }
     }
 
     // Errors are swallowed — a NATS hiccup must never abort the binary swap.
@@ -34,7 +36,8 @@ impl UpdateProgressPublisher {
         rolled_back: bool,
     ) {
         let subject = self.progress_subject();
-        let msg = UpdateProgressMessage::with_failure(phase.to_string(), version, reason, rolled_back);
+        let msg =
+            UpdateProgressMessage::with_failure(phase.to_string(), version, reason, rolled_back);
         warn!(
             phase = %phase,
             version = %version,

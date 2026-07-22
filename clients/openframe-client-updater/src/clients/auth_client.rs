@@ -1,5 +1,8 @@
 use anyhow::{Context, Result};
-use reqwest::{Client, header::{HeaderMap, HeaderValue}};
+use reqwest::{
+    header::{HeaderMap, HeaderValue},
+    Client,
+};
 use std::collections::HashMap;
 
 use crate::models::AgentTokenResponse;
@@ -12,7 +15,10 @@ pub struct AuthClient {
 
 impl AuthClient {
     pub fn new(base_url: String, http_client: Client) -> Self {
-        Self { http_client, base_url }
+        Self {
+            http_client,
+            base_url,
+        }
     }
 
     pub async fn authenticate_with_secret(
@@ -23,14 +29,18 @@ impl AuthClient {
         let url = format!("{}/clients/oauth/token", self.base_url);
 
         let mut headers = HeaderMap::new();
-        headers.insert("Content-Type", HeaderValue::from_static("application/x-www-form-urlencoded"));
+        headers.insert(
+            "Content-Type",
+            HeaderValue::from_static("application/x-www-form-urlencoded"),
+        );
 
         let mut form_data = HashMap::new();
         form_data.insert("grant_type", "client_credentials".to_string());
         form_data.insert("client_id", client_id);
         form_data.insert("client_secret", client_secret);
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(&url)
             .headers(headers)
             .form(&form_data)
@@ -47,7 +57,9 @@ impl AuthClient {
             ));
         }
 
-        response.json::<AgentTokenResponse>().await
+        response
+            .json::<AgentTokenResponse>()
+            .await
             .context("Failed to parse token response")
     }
 }

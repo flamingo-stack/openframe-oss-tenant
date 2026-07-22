@@ -10,12 +10,13 @@ pub struct NatsMessagePublisher {
 
 impl NatsMessagePublisher {
     pub fn new(nats_connection_manager: NatsConnectionManager) -> Self {
-        Self { nats_connection_manager }
+        Self {
+            nats_connection_manager,
+        }
     }
 
     pub async fn publish<T: Serialize>(&self, subject: &str, payload: T) -> Result<()> {
-        let json = serde_json::to_string(&payload)
-            .context("Failed to serialize NATS payload")?;
+        let json = serde_json::to_string(&payload).context("Failed to serialize NATS payload")?;
 
         let client = self.nats_connection_manager.get_client().await?;
 

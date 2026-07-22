@@ -172,7 +172,7 @@ jobs:
         env:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
-          if [[ "${{ matrix.name }}" == "openframe-client" && "${{ matrix.os }}" == "macos" ]]; then
+          if [[ "${{ matrix.name }}" == openframe-client* && "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
@@ -209,7 +209,7 @@ jobs:
           compression-level: 9
 
       - name: Create macOS universal package
-        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.name == 'openframe-client'
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && startsWith(matrix.name, 'openframe-client')
         shell: bash
         run: |
           mkdir -p artifacts
@@ -328,6 +328,10 @@ jobs:
           ## OpenFrame Client
           - **macOS** (Universal): \`openframe-client_macos.tar.gz\`
           - **Windows** (x64): \`openframe-client_windows.zip\`
+
+          ## OpenFrame Client Updater
+          - **macOS** (Universal): \`openframe-client-updater_macos.tar.gz\`
+          - **Windows** (x64): \`openframe-client-updater_windows.zip\`
 
           ## OpenFrame Chat
           - **macOS** (Universal): \`openframe-chat_universal.dmg\`

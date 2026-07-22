@@ -15,7 +15,9 @@ pub struct LocalTlsConfigProvider {
 
 impl LocalTlsConfigProvider {
     pub fn new(initial_configuration_service: InitialConfigurationService) -> Self {
-        Self { initial_configuration_service }
+        Self {
+            initial_configuration_service,
+        }
     }
 
     pub fn create_tls_config(&self) -> Result<ClientConfig> {
@@ -28,12 +30,12 @@ impl LocalTlsConfigProvider {
             .with_context(|| format!("Failed to read CA certificate from {}", cert_path))?;
 
         let mut cursor = Cursor::new(cert_data);
-        let certs = rustls_pemfile::certs(&mut cursor)
-            .context("Failed to parse certificate")?;
+        let certs = rustls_pemfile::certs(&mut cursor).context("Failed to parse certificate")?;
 
         let mut root_store = RootCertStore::empty();
         for cert in certs {
-            root_store.add(cert.into())
+            root_store
+                .add(cert.into())
                 .context("Failed to add CA certificate to root store")?;
         }
 
@@ -45,12 +47,15 @@ impl LocalTlsConfigProvider {
     }
 
     fn get_certificate_path(&self) -> Result<String> {
-        let saved_path = self.initial_configuration_service
+        let saved_path = self
+            .initial_configuration_service
             .get_local_ca_cert_path()
             .context("Failed to read local_ca_cert_path from initial configuration")?;
 
         if saved_path.is_empty() {
-            return Err(anyhow!("local_ca_cert_path is not set in initial_config.json"));
+            return Err(anyhow!(
+                "local_ca_cert_path is not set in initial_config.json"
+            ));
         }
 
         let path = PathBuf::from(&saved_path);

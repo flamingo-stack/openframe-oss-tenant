@@ -109,7 +109,8 @@ impl NatsConnectionManager {
             });
 
         if self.initial_configuration_service.is_local_mode()? {
-            let tls_config = self.tls_config_provider
+            let tls_config = self
+                .tls_config_provider
                 .create_tls_config()
                 .context("Failed to create local-mode TLS configuration")?;
             connect_options = connect_options.tls_client_config(tls_config);
@@ -127,9 +128,14 @@ impl NatsConnectionManager {
     }
 
     async fn build_nats_connection_url(&self) -> Result<String> {
-        let token = self.token.read().await.clone()
-            .context("Shared token not available — token watcher has not received a token yet")?;
-        Ok(format!("{}/ws/nats?authorization={}", self.nats_server_url, token))
+        let token =
+            self.token.read().await.clone().context(
+                "Shared token not available — token watcher has not received a token yet",
+            )?;
+        Ok(format!(
+            "{}/ws/nats?authorization={}",
+            self.nats_server_url, token
+        ))
     }
 
     pub async fn get_client(&self) -> Result<Arc<Client>> {
