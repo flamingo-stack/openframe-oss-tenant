@@ -11,13 +11,55 @@ impl DeviceDataFetcher {
     }
 
     pub fn get_hostname(&self) -> Option<String> {
+        // gethostname() on macOS is dynamic: with no static HostName set it follows
+        // the DHCP/reverse-DNS name of the current lease, so a machine can register
+        // under a foreign DNS record or an IP-derived name. LocalHostName is the
+        // stable source of the same "<name>.local" value gethostname yields when
+        // the network does not interfere.
+        #[cfg(target_os = "macos")]
+        {
+            if let Some(name) = Self::scutil_get("LocalHostName") {
+                return Some(format!("{}.local", name));
+            }
+            if let Some(name) = Self::scutil_get("ComputerName") {
+                return Some(name);
+            }
+        }
+
         match hostname::get() {
             Ok(hostname) => {
-                let hostname_str = hostname.to_string_lossy().to_string();
-                Some(hostname_str)
+                let hostname_str = hostname.to_string_lossy().trim().to_string();
+                if hostname_str.is_empty() {
+                    warn!("OS returned an empty hostname");
+                    None
+                } else {
+                    Some(hostname_str)
+                }
             }
             Err(e) => {
                 warn!("Failed to get hostname: {:#}", e);
+                None
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    fn scutil_get(key: &str) -> Option<String> {
+        match std::process::Command::new("scutil").arg("--get").arg(key).output() {
+            Ok(output) if output.status.success() => {
+                let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if value.is_empty() { None } else { Some(value) }
+            }
+            Ok(output) => {
+                warn!(
+                    "scutil --get {} failed: {}",
+                    key,
+                    String::from_utf8_lossy(&output.stderr).trim()
+                );
+                None
+            }
+            Err(e) => {
+                warn!("Failed to run scutil --get {}: {:#}", key, e);
                 None
             }
         }
