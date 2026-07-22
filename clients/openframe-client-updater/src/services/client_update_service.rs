@@ -94,7 +94,8 @@ impl ClientUpdateService {
             return Ok(());
         }
 
-        if !ALLOW_DOWNGRADE {
+        // An explicit rollback is allowed below the anchor — that's its point.
+        if !ALLOW_DOWNGRADE && !msg.rollback {
             match self.lkg_service.load_anchor() {
                 Ok(Some(anchor)) => match semver::Version::parse(anchor.trim_start_matches('v')) {
                     Ok(anchor_semver) if requested_semver < anchor_semver => {
@@ -123,26 +124,54 @@ impl ClientUpdateService {
             }
         }
 
-        let config = self
-            .download_service
-            .find_for_current_os(&msg.download_configurations)
-            .with_context(|| format!("No download config for current OS (v{})", version))?;
-
         let mut state = UpdaterState::new(version.clone());
 
-        self.state_service
-            .transition(&mut state, UpdaterPhase::Downloading)?;
-        self.progress_publisher
-            .publish(&UpdaterPhase::Downloading, version)
-            .await;
+        // A rollback whose target matches the local reserve restores from disk
+        // — no download, so it works even when the machine can't reach GitHub.
+        let anchor_matches_target = matches!(
+            self.lkg_service.load_anchor(),
+            Ok(Some(ref anchor))
+                if semver::Version::parse(anchor.trim_start_matches('v'))
+                    .map(|a| a == requested_semver)
+                    .unwrap_or(false)
+        );
+        let restore_from_reserve =
+            msg.rollback && anchor_matches_target && self.lkg_service.reserve_path().exists();
 
-        let binary_bytes = match self.download_service.download_and_extract(config).await {
-            Ok(bytes) => bytes,
-            Err(e) => {
-                let reason = format!("Download failed: {:#}", e);
-                error!("{}", reason);
-                self.fail(&mut state, version, &reason, false).await;
-                return Err(anyhow!(reason));
+        let binary_bytes = if restore_from_reserve {
+            info!(
+                "Rollback to v{}: restoring from local last-known-good reserve (no download)",
+                version
+            );
+            match std::fs::read(self.lkg_service.reserve_path()) {
+                Ok(bytes) => bytes::Bytes::from(bytes),
+                Err(e) => {
+                    let reason = format!("Failed to read last-known-good reserve: {:#}", e);
+                    error!("{}", reason);
+                    self.fail(&mut state, version, &reason, false).await;
+                    return Err(anyhow!(reason));
+                }
+            }
+        } else {
+            let config = self
+                .download_service
+                .find_for_current_os(&msg.download_configurations)
+                .with_context(|| format!("No download config for current OS (v{})", version))?;
+
+            self.state_service
+                .transition(&mut state, UpdaterPhase::Downloading)?;
+            self.progress_publisher
+                .publish(&UpdaterPhase::Downloading, version)
+                .await;
+
+            match self.download_service.download_and_extract(config).await {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    let reason = format!("Download failed: {:#}", e);
+                    error!("{}", reason);
+                    self.fail(&mut state, version, &reason, false).await;
+                    return Err(anyhow!(reason));
+                }
             }
         };
 
