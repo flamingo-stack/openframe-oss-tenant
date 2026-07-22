@@ -34,7 +34,7 @@ OpenFrame provides the unified platform that integrates multiple MSP tools into 
 - **Reactive Edge** - Spring WebFlux Gateway for high-performance request routing
 
 ### 🔌 Comprehensive Integration
-- **MSP Tool Integration** - Fleet MDM, Tactical RMM, MeshCentral for device management and remote access
+- **MSP Tool Integration** - Fleet MDM and MeshCentral for device management and remote access
 - **Data Pipeline** - Apache NiFi, MongoDB, Cassandra, Apache Pinot for analytics and storage
 - **Real-Time Messaging** - NATS/JetStream for agent communication and event handling
 - **Standardized APIs** - REST + GraphQL APIs with OpenAPI documentation

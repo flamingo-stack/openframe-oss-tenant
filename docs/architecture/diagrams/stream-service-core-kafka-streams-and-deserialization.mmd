@@ -1,5 +1,5 @@
 flowchart TD
-    ExternalTools["External Tools<br/>Fleet · MeshCentral · Tactical RMM"] --> KafkaBroker["Kafka Topics"]
+    ExternalTools["External Tools<br/>Fleet · MeshCentral"] --> KafkaBroker["Kafka Topics"]
     KafkaBroker --> StreamCore["Stream Service Core<br/>Kafka Streams And Deserialization"]
     StreamCore --> MessageHandling["Message Handling And Enrichment"]
     MessageHandling --> Downstream["Persistence · Analytics · External APIs"]

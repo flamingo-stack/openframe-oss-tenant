@@ -43,7 +43,6 @@ cargo run                                   # Run the client locally
 ```bash
 # Note: Docker Compose files are located in integrated-tools/ directory
 # Individual service stacks can be found in their respective subdirectories:
-# - integrated-tools/tactical-rmm/
 # - integrated-tools/fleetmdm/
 # - integrated-tools/meshcentral/
 # - integrated-tools/authentik/
@@ -317,7 +316,6 @@ curl -b cookies.txt http://localhost:8080/api/user/profile
 ## Integrated Tools
 
 Current integrations include:
-- **Tactical RMM**: IT management suite
 - **MeshCentral**: Remote management platform  
 - **Fleet MDM**: Mobile device management
 - **Authentik**: Identity provider

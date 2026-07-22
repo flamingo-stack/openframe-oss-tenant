@@ -1,5 +1,5 @@
 flowchart LR
-    Tools["Fleet / Tactical / Mesh"] --> Kafka
+    Tools["Fleet / Mesh"] --> Kafka
     MongoCDC["Debezium CDC"] --> Kafka
     Kafka --> Stream["Stream Service"]
     Stream --> Cassandra

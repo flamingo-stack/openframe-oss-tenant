@@ -182,7 +182,7 @@ Depending on your MSP needs:
 - **Google Workspace** (for SSO)
 - **Microsoft Azure AD** (for SSO)
 - **Slack** (for notifications)
-- **Various RMM/PSA tools** (TacticalRMM, ConnectWise, etc.)
+- **Various RMM/PSA tools** (ConnectWise, etc.)
 
 ## Network Requirements
 

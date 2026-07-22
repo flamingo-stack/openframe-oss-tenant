@@ -1,7 +1,6 @@
 flowchart TD
-    HistoryEvent["Agent History Event"] --> TypeSwitch{{"cmd_run or script_run?"}}
-    TypeSwitch --> Cmd["Command Processing"]
-    TypeSwitch --> Script["Script Processing"]
-    Script --> ExtractStdout["Extract stdout"]
-    Script --> ExtractStderr["Extract stderr"]
-    Script --> ExecutionTime["Extract execution_time"]
+    Deserializer --> MessageTypeEnum["MessageType Enum"]
+    MessageTypeEnum --> Router["Stream Router"]
+    Router --> Enrichment["Enrichment Service"]
+    Router --> Persistence["Persistence Layer"]
+    Router --> ExternalPublish["External Publishing"]

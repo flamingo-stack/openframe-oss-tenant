@@ -178,14 +178,13 @@ The Stream Service normalizes and enriches events from:
 
 - Fleet MDM
 - MeshCentral
-- Tactical RMM
 - Debezium CDC
 
 ## Streaming Architecture
 
 ```mermaid
 flowchart LR
-    Tools["Fleet / Tactical / Mesh"] --> Kafka
+    Tools["Fleet / Mesh"] --> Kafka
     MongoCDC["Debezium CDC"] --> Kafka
     Kafka --> Stream["Stream Service"]
     Stream --> Cassandra
