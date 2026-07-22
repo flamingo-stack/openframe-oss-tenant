@@ -46,6 +46,12 @@ impl ClientUpdateService {
         }
     }
 
+    /// Shared with `RemoteHealingService` so healing actions that touch the
+    /// client service are mutually exclusive with updates.
+    pub fn update_flag(&self) -> Arc<Mutex<bool>> {
+        self.in_progress.clone()
+    }
+
     pub async fn process_update(&self, msg: ClientUpdateMessage) -> Result<()> {
         let mut guard = self.in_progress.lock().await;
         if *guard {

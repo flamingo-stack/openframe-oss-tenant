@@ -55,6 +55,8 @@ pub const REPLACE_RETRY_DELAY_MS: u64 = 500;
 // Subject patterns — format with machine_id at runtime
 pub const SUBJECT_UPDATE_PROGRESS: &str = "machine.{machine_id}.client-update-progress";
 pub const SUBJECT_INSTALLED_AGENT: &str = "machine.{machine_id}.installed-agent";
+pub const SUBJECT_REMOTE_HEALING: &str = "machine.{machine_id}.remote-healing";
+pub const SUBJECT_REMOTE_HEALING_RESULT: &str = "machine.{machine_id}.remote-healing.result";
 
 // The service name of the main client — used by ServiceManagerService to stop/start it
 pub const CLIENT_SERVICE_FULL_NAME: &str = "com.openframe.client";

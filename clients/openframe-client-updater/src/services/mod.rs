@@ -7,6 +7,7 @@ pub mod last_known_good_service;
 pub mod local_tls_config_provider;
 pub mod nats_connection_manager;
 pub mod nats_message_publisher;
+pub mod remote_healing_service;
 pub mod service_manager_service;
 pub mod token_provider;
 pub mod update_progress_publisher;

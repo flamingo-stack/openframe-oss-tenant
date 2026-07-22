@@ -7,10 +7,11 @@ use crate::clients::AuthClient;
 use crate::config::updater_config::{
     BOOT_MARKER_POLL_INTERVAL_SECS, BOOT_MARKER_WAIT_SECS, CLIENT_SERVICE_FULL_NAME,
 };
-use crate::listener::ClientUpdateListener;
+use crate::listener::{ClientUpdateListener, RemoteHealingListener};
 use crate::models::UpdaterPhase;
 use crate::platform::{atomic_replace, DirectoryManager};
 use crate::services::last_known_good_service::LastKnownGoodService;
+use crate::services::remote_healing_service::RemoteHealingService;
 use crate::services::token_provider::TokenProvider;
 use crate::services::{
     AgentConfigurationService, ClientUpdateService, GithubDownloadService,
@@ -102,7 +103,8 @@ impl UpdaterOrchestrator {
             .await
             .context("Failed to read machine_id")?;
 
-        let progress_publisher = UpdateProgressPublisher::new(nats_publisher, machine_id.clone());
+        let progress_publisher =
+            UpdateProgressPublisher::new(nats_publisher.clone(), machine_id.clone());
 
         let lkg_service = LastKnownGoodService::new(
             &self.dir_manager,
@@ -119,15 +121,25 @@ impl UpdaterOrchestrator {
 
         let update_service = ClientUpdateService::new(
             download_service,
-            state_service,
+            state_service.clone(),
             progress_publisher,
-            lkg_service,
+            lkg_service.clone(),
         );
+
+        let healing_service =
+            RemoteHealingService::new(lkg_service, state_service, update_service.update_flag());
+        let healing_listener = RemoteHealingListener::new(
+            nats_manager.clone(),
+            nats_publisher.clone(),
+            healing_service,
+            agent_config_service.clone(),
+        );
+        healing_listener.start().await;
 
         let listener =
             ClientUpdateListener::new(nats_manager, update_service, agent_config_service);
 
-        info!("Updater ready — listening for update commands");
+        info!("Updater ready — listening for update and healing commands");
         let handle = listener.start().await;
         handle.await.ok();
 
