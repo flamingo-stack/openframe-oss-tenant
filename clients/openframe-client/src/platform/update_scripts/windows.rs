@@ -157,7 +157,7 @@ try {
                     break
                 }
                 if ($markerVersion) {
-                    Write-Output "Boot marker reports '$markerVersion', expected '$TargetVersion' — wrong binary booted"
+                    Write-Output "Boot marker reports '$markerVersion', expected '$TargetVersion' - wrong binary booted"
                     break
                 }
             }
@@ -188,7 +188,7 @@ catch {
     Write-Output "Updater failed: $_"
 
     if (Test-AgentUninstalled) {
-        Write-Output "Update state file is gone (agent uninstalled mid-update) — standing down without touching the service"
+        Write-Output "Update state file is gone (agent uninstalled mid-update) - standing down without touching the service"
         if ($TempExtract -and (Test-Path $TempExtract)) {
             Remove-Item -Path $TempExtract -Recurse -Force -ErrorAction SilentlyContinue
         }
