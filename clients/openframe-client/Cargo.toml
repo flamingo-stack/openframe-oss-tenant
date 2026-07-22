@@ -63,7 +63,6 @@ zip = "0.6"
 tempfile = "3.10"
 semver = "1.0"
 sys-info = "0.9"
-velopack = "0.0.1213-g57cf68d"
 aes-gcm = "0.10"
 base64 = "0.21"
 log = "0.4.27"
@@ -113,20 +112,3 @@ OpenFrame is a powerful system management and monitoring solution that provides:
 - Integration with various management platforms
 """
 
-[package.metadata.velopack]
-version = "0.1.0"
-product-name = "OpenFrame"
-executable = "openframe-client"
-authors = ["Flamingo Team"]
-first-run = true
-license = "MIT"
-support-url = "https://github.com/flamingo-stack/openframe-oss-tenant"
-icon = "icons/icon.ico"
-splash-image = "icons/splash.png"
-release-notes = "Initial release of OpenFrame"
-setup-icon = "icons/setup.ico"
-company-name = "Flamingo"
-copyright = "Copyright © 2024 Flamingo Team"
-suggest-reboot = false
-compression-level = "normal"
-delta = true 

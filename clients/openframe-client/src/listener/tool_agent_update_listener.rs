@@ -1,4 +1,3 @@
-use crate::listener::client_update_gate::park_or_dispatch;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_agent_update_service::ToolAgentUpdateService;
 use crate::services::tool_run_manager::ToolRunManager;
@@ -133,15 +132,7 @@ impl ToolAgentUpdateListener {
             }
         };
 
-        let tool_agent_id = tool_agent_update_message.tool_agent_id.clone();
-
-        let listener = self.clone();
-        park_or_dispatch(
-            self.tool_run_manager.clone(),
-            message,
-            format!("tool-update:{}", tool_agent_id),
-            move |msg| async move { listener.dispatch(msg, tool_agent_update_message).await; },
-        ).await;
+        self.dispatch(message, tool_agent_update_message).await;
 
         Ok(())
     }
