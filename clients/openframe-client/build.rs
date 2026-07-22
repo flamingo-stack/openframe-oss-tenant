@@ -9,6 +9,8 @@ fn main() {
     forward_required("FLEETMDM_AGENT_VERSION");
     #[cfg(feature = "osquery-version")]
     forward_required("OSQUERY_VERSION");
+    #[cfg(feature = "openframe-client-updater-version")]
+    forward_required("OPENFRAME_CLIENT_UPDATER_VERSION");
 }
 
 #[allow(dead_code)]
