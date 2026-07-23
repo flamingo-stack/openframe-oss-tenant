@@ -701,7 +701,9 @@ impl ToolRunManager {
                         {
                             use crate::platform::user_session::{get_console_user, is_gui_session_ready, launch_as_user, is_process_running};
 
-                            info!(tool_id = %tool.tool_agent_id, "Launching as GuiApp on macOS");
+                            if log_attempt {
+                                info!(tool_id = %tool.tool_agent_id, "Launching as GuiApp on macOS");
+                            }
 
                             if is_process_running(&command_path).await {
                                 info!(tool_id = %tool.tool_agent_id, "Already running, skipping launch");
@@ -739,7 +741,9 @@ impl ToolRunManager {
 
                             match launch_as_user(&command_path, &launch_args, &user).await {
                                 Ok(mut child) => {
-                                    info!(tool_id = %tool.tool_agent_id, "Launched as user {}, PID: {:?}", user.username, child.id());
+                                    if log_attempt {
+                                        info!(tool_id = %tool.tool_agent_id, "Launched as user {}, PID: {:?}", user.username, child.id());
+                                    }
 
                                     if let Some(stdout) = child.stdout.take() {
                                         tokio::spawn(async move {
@@ -756,17 +760,30 @@ impl ToolRunManager {
 
                                     sleep(Duration::from_secs(3)).await;
                                     if is_process_running(&command_path).await {
+                                        if let Some((failures, failing_for)) = launch_backoff.record_success() {
+                                            info!(tool_id = %tool.tool_agent_id, failed_attempts = failures,
+                                                  failing_for_secs = failing_for.as_secs(),
+                                                  "Tool process started after repeated launch failures");
+                                        }
                                         info!(tool_id = %tool.tool_agent_id, "GuiApp verified running");
                                         running_tools.write().await.remove(&tool.tool_agent_id);
                                         return;
                                     }
 
-                                    warn!(tool_id = %tool.tool_agent_id, "GuiApp not running after launch, retrying");
+                                    let failures = launch_backoff.record_failure(log_attempt);
+                                    if log_attempt {
+                                        warn!(tool_id = %tool.tool_agent_id, failed_attempts = failures,
+                                              "GuiApp not running after launch, retrying");
+                                    }
                                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                                     continue;
                                 }
                                 Err(e) => {
-                                    error!(tool_id = %tool.tool_agent_id, "Failed to launch as user: {:#}", e);
+                                    let failures = launch_backoff.record_failure(log_attempt);
+                                    if log_attempt {
+                                        error!(tool_id = %tool.tool_agent_id, failed_attempts = failures,
+                                               "Failed to launch as user: {:#}", e);
+                                    }
                                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                                     continue;
                                 }
