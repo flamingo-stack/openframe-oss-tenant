@@ -74,7 +74,7 @@ tar = "0.4"
 service-manager = "0.8"
 plist = "1.7.1"
 # System information collection dependencies
-hostname = "0.3"
+hostname = "0.4"
 bytes = "1.10.1"
 async-nats = { git = "https://github.com/flamingo-stack/nats.rs.git", branch = "main", features = ["websockets"] }
 rustls-pemfile = "1.0"
