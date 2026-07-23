@@ -32,12 +32,18 @@ impl DeviceDataFetcher {
         {
             if let Some(name) = Self::scutil_get("LocalHostName") {
                 let name = format!("{}.local", name);
-                info!("Resolved hostname '{}' from LocalHostName", name);
-                return Some(name);
+                if Self::is_valid_hostname(&name) {
+                    info!("Resolved hostname '{}' from LocalHostName", name);
+                    return Some(name);
+                }
+                warn!("LocalHostName '{}' is invalid — falling back", name);
             }
             if let Some(name) = Self::scutil_get("ComputerName") {
-                info!("Resolved hostname '{}' from ComputerName", name);
-                return Some(name);
+                if Self::is_valid_hostname(&name) {
+                    info!("Resolved hostname '{}' from ComputerName", name);
+                    return Some(name);
+                }
+                warn!("ComputerName '{}' is invalid — falling back", name);
             }
         }
 
