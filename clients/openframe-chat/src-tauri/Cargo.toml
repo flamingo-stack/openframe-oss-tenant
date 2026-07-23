@@ -38,7 +38,7 @@ percent-encoding = "2"
 rand = "0.8"
 
 [target.'cfg(windows)'.dependencies]
-dirs = "5"
+dirs = "6"
 winreg = "0.52"
 mslnk = "0.1.8"
 windows = { version = "0.61", features = ["Data_Xml_Dom", "UI_Notifications"] }
