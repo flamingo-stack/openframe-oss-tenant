@@ -1,0 +1,161 @@
+name: Detect Changes
+
+on:
+  workflow_call:
+    outputs:
+      images_matrix:
+        description: "Images matrix configuration for all components"
+        value: ${{ jobs.collect.outputs.images_matrix }}
+      clients_matrix:
+        description: "Clients matrix configuration for all components"
+        value: ${{ jobs.collect.outputs.clients_matrix }}
+      changes:
+        description: "JSON object mapping each component key to true/false"
+        value: ${{ jobs.collect.outputs.changes }}
+      timestamp:
+        value: ${{ jobs.collect.outputs.timestamp }}
+      timestamp_tag:
+        value: ${{ jobs.collect.outputs.timestamp_tag }}
+      commit_sha:
+        value: ${{ jobs.collect.outputs.commit_sha }}
+      test_commit_sha:
+        value: ${{ jobs.collect.outputs.test_commit_sha }}
+
+jobs:
+  collect:
+    name: Changes and Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      images_matrix: ${{ steps.define.outputs.images_matrix }}
+      clients_matrix: ${{ steps.define.outputs.clients_matrix }}
+      changes: ${{ steps.changes.outputs.changes }}
+      timestamp: ${{ steps.setup_env.outputs.timestamp }}
+      timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
+      commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
+      test_commit_sha: ${{ steps.setup_env.outputs.test_commit_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up environment
+        id: setup_env
+        run: |
+          set -euo pipefail
+          echo "timestamp=$(date +%s)" >> "$GITHUB_OUTPUT"
+          echo "timestamp_tag=$(date +%d%m%Y%H%M)" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+          echo "test_commit_sha=test-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+
+      - name: Define components
+        id: define
+        run: |
+          set -euo pipefail
+
+          IMAGES='[
+            { "name": "openframe-api" },
+            { "name": "openframe-authorization-server" },
+            { "name": "openframe-external-api" },
+            { "name": "openframe-client" },
+            { "name": "openframe-config" },
+            { "name": "openframe-gateway" },
+            { "name": "openframe-management" },
+            { "name": "openframe-stream" }
+          ]'
+
+          CLIENTS='[
+            {
+              "id": "client",
+              "name": "openframe-client",
+              "path": "./clients/openframe-client",
+              "os": "macos",
+              "target": "aarch64-apple-darwin,x86_64-apple-darwin",
+              "target_path": "./clients/openframe-client/target"
+            },
+            {
+              "id": "client",
+              "name": "openframe-client",
+              "path": "./clients/openframe-client",
+              "os": "windows",
+              "target": "x86_64-pc-windows-msvc",
+              "target_path": "./clients/openframe-client/target"
+            },
+            {
+              "name": "openframe-chat",
+              "path": "./clients/openframe-chat",
+              "os": "macos",
+              "target": "universal-apple-darwin",
+              "archs": "aarch64-apple-darwin,x86_64-apple-darwin",
+              "target_path": "./clients/openframe-chat/src-tauri/target"
+            },
+            {
+              "name": "openframe-chat",
+              "path": "./clients/openframe-chat",
+              "os": "windows",
+              "target": "x86_64-pc-windows-msvc",
+              "target_path": "./clients/openframe-chat/src-tauri/target"
+            }
+          ]'
+
+          ADDONS='{
+            "openframe-test": ["./pom.xml", "./openframe/services/openframe-test/**"],
+            "helm": ["./manifests/app-of-apps/**"]
+          }'
+
+          images_matrix=$(jq -c '[ .[] | {
+            name,
+            path:    (.path    // "./openframe/services/\(.name)"),
+            context: (.context // ".")
+          } ]' <<< "$IMAGES")
+          clients_matrix=$(jq -c '.' <<< "$CLIENTS")
+
+          filters=$(jq -nc \
+            --argjson images "$IMAGES" \
+            --argjson clients "$CLIENTS" \
+            --argjson addons "$ADDONS" '
+            ( [ $images[]  | { key: .name,          value: (.paths // ["./pom.xml", "./openframe/services/\(.name)/**"]) } ]
+            + [ $clients[] | { key: (.id // .name), value: ["\(.path)/**"] } ]
+              | from_entries )
+            + $addons
+          ')
+
+          keys=$(jq -nc --argjson f "$filters" '$f | keys')
+
+          # fail fast if the matrix or filters came out empty
+          [ "$(jq 'length' <<< "$images_matrix")"  -gt 0 ] || { echo "images_matrix is empty"  >&2; exit 1; }
+          [ "$(jq 'length' <<< "$clients_matrix")" -gt 0 ] || { echo "clients_matrix is empty" >&2; exit 1; }
+          [ "$(jq 'length' <<< "$keys")"           -gt 0 ] || { echo "no change filters"        >&2; exit 1; }
+
+          {
+            echo "images_matrix=$images_matrix"
+            echo "clients_matrix=$clients_matrix"
+            echo "filters=$filters"
+            echo "keys=$keys"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: dorny/paths-filter@v4.0.2
+        id: filter
+        with:
+          filters: ${{ steps.define.outputs.filters }}
+
+      - name: Build changes map
+        id: changes
+        env:
+          CHANGED: ${{ steps.filter.outputs.changes || '[]' }}
+          KEYS: ${{ steps.define.outputs.keys }}
+          TIMESTAMP: ${{ steps.setup_env.outputs.timestamp }}
+          TIMESTAMP_TAG: ${{ steps.setup_env.outputs.timestamp_tag }}
+          COMMIT_SHA: ${{ steps.setup_env.outputs.commit_sha }}
+          TEST_COMMIT_SHA: ${{ steps.setup_env.outputs.test_commit_sha }}
+        run: |
+          set -euo pipefail
+          # fill in true/false for all keys, then carry the same meta fields the
+          # old changes.yml exposed, so consumers see the shape they saw before
+          changes=$(jq -nc --argjson changed "$CHANGED" --argjson keys "$KEYS" \
+            --arg timestamp "$TIMESTAMP" --arg timestamp_tag "$TIMESTAMP_TAG" \
+            --arg commit_sha "$COMMIT_SHA" --arg test_commit_sha "$TEST_COMMIT_SHA" '
+            reduce $keys[] as $k ({}; .[$k] = ((($changed | index($k)) != null) | tostring))
+            + { timestamp: $timestamp, timestamp_tag: $timestamp_tag,
+                commit_sha: $commit_sha, test_commit_sha: $test_commit_sha }
+          ')
+          echo "changes=$changes" >> "$GITHUB_OUTPUT"
