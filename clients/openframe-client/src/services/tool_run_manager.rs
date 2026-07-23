@@ -28,6 +28,66 @@ use crate::utils::windows_helpers::{build_command_line, to_wide, wcslen};
 
 const RETRY_DELAY_SECONDS: u64 = 5;
 
+/// Consecutive launch failures that are all logged before throttling kicks in.
+const LAUNCH_LOG_EVERY_ATTEMPTS: u64 = 5;
+/// Failure-log interval once throttled.
+const LAUNCH_LOG_THROTTLED_INTERVAL: Duration = Duration::from_secs(2 * 60);
+/// After failing this long, failure logs slow down to LAUNCH_LOG_SLOW_INTERVAL.
+const LAUNCH_LOG_SLOW_AFTER: Duration = Duration::from_secs(60 * 60);
+/// Failure-log interval for a long-standing failure.
+const LAUNCH_LOG_SLOW_INTERVAL: Duration = Duration::from_secs(60 * 60);
+
+/// Backs off repeated launch-failure logging (every attempt → every 2 min → hourly) without changing the retry cadence; success always logs immediately.
+struct LaunchLogBackoff {
+    failures: u64,
+    first_failure: Option<std::time::Instant>,
+    last_logged: Option<std::time::Instant>,
+}
+
+impl LaunchLogBackoff {
+    fn new() -> Self {
+        Self { failures: 0, first_failure: None, last_logged: None }
+    }
+
+    /// None = log every attempt; Some(interval) = log only this often.
+    fn log_interval(failures: u64, failing_for: Duration) -> Option<Duration> {
+        if failures < LAUNCH_LOG_EVERY_ATTEMPTS {
+            None
+        } else if failing_for < LAUNCH_LOG_SLOW_AFTER {
+            Some(LAUNCH_LOG_THROTTLED_INTERVAL)
+        } else {
+            Some(LAUNCH_LOG_SLOW_INTERVAL)
+        }
+    }
+
+    /// Whether this attempt's launch logs should be emitted; decide before attempting.
+    fn should_log(&self) -> bool {
+        let (Some(first), Some(last)) = (self.first_failure, self.last_logged) else {
+            return true;
+        };
+        match Self::log_interval(self.failures, first.elapsed()) {
+            None => true,
+            Some(interval) => last.elapsed() >= interval,
+        }
+    }
+
+    fn record_failure(&mut self, logged: bool) -> u64 {
+        self.failures += 1;
+        self.first_failure.get_or_insert_with(std::time::Instant::now);
+        if logged {
+            self.last_logged = Some(std::time::Instant::now());
+        }
+        self.failures
+    }
+
+    /// Some((failures, total failing time)) when a success ends a failure streak; resets state.
+    fn record_success(&mut self) -> Option<(u64, Duration)> {
+        let streak = self.first_failure.map(|first| (self.failures, first.elapsed()));
+        *self = Self::new();
+        streak
+    }
+}
+
 #[cfg(windows)]
 fn get_active_user_session() -> Option<u32> {
     unsafe {
@@ -550,6 +610,7 @@ impl ToolRunManager {
         let mut installation = tool.installation.clone();
 
         tokio::spawn(async move {
+            let mut launch_backoff = LaunchLogBackoff::new();
             loop {
                 // Self-update in progress — stop the loop entirely
                 if shutting_down.load(Ordering::Acquire) {
@@ -575,10 +636,16 @@ impl ToolRunManager {
                     break;
                 }
 
+                let log_attempt = launch_backoff.should_log();
+
                 let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
                     Ok(args) => args,
                     Err(e) => {
-                        error!("Failed to resolve tool {} run command args: {:#}", tool.tool_agent_id, e);
+                        let failures = launch_backoff.record_failure(log_attempt);
+                        if log_attempt {
+                            error!(failed_attempts = failures,
+                                   "Failed to resolve tool {} run command args: {:#}", tool.tool_agent_id, e);
+                        }
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
                     }
@@ -591,7 +658,7 @@ impl ToolRunManager {
                     .to_string_lossy()
                     .to_string();
 
-                if !std::path::Path::new(&command_path).exists() {
+                if log_attempt && !std::path::Path::new(&command_path).exists() {
                     warn!("Executable not found at: {}", command_path);
                 }
 
@@ -717,7 +784,9 @@ impl ToolRunManager {
                         return;
                     }
                     Installation::Standard { .. } => {
-                        info!(tool_id = %tool.tool_agent_id, "Launching as Standard (managed process)");
+                        if log_attempt {
+                            info!(tool_id = %tool.tool_agent_id, "Launching as Standard (managed process)");
+                        }
                     }
                 }
 
@@ -732,10 +801,20 @@ impl ToolRunManager {
                     .stderr(Stdio::piped())
                     .spawn()
                 {
-                    Ok(child) => child,
+                    Ok(child) => {
+                        if let Some((failures, failing_for)) = launch_backoff.record_success() {
+                            info!(tool_id = %tool.tool_agent_id, failed_attempts = failures,
+                                  failing_for_secs = failing_for.as_secs(),
+                                  "Tool process started after repeated launch failures");
+                        }
+                        child
+                    }
                     Err(e) => {
-                        error!(tool_id = %tool.tool_agent_id, error = %e,
-                               "Failed to start tool process - retrying in {} seconds", RETRY_DELAY_SECONDS);
+                        let failures = launch_backoff.record_failure(log_attempt);
+                        if log_attempt {
+                            error!(tool_id = %tool.tool_agent_id, error = %e, failed_attempts = failures,
+                                   "Failed to start tool process - retrying in {} seconds", RETRY_DELAY_SECONDS);
+                        }
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
                     }
@@ -791,10 +870,85 @@ impl ToolRunManager {
 
 #[cfg(test)]
 mod tests {
-    use super::ClientUpdatePendingFlag;
+    use super::{
+        ClientUpdatePendingFlag, LaunchLogBackoff, LAUNCH_LOG_EVERY_ATTEMPTS,
+        LAUNCH_LOG_SLOW_AFTER, LAUNCH_LOG_SLOW_INTERVAL, LAUNCH_LOG_THROTTLED_INTERVAL,
+    };
     use std::time::Duration;
 
     const LONG_TTL: Duration = Duration::from_secs(3600);
+
+    #[test]
+    fn backoff_logs_first_attempts_every_time() {
+        let mut b = LaunchLogBackoff::new();
+        for _ in 0..LAUNCH_LOG_EVERY_ATTEMPTS {
+            assert!(b.should_log());
+            b.record_failure(true);
+        }
+    }
+
+    #[test]
+    fn backoff_throttles_after_initial_attempts() {
+        let mut b = LaunchLogBackoff::new();
+        for _ in 0..LAUNCH_LOG_EVERY_ATTEMPTS {
+            b.record_failure(true);
+        }
+        assert!(!b.should_log());
+        b.record_failure(false);
+        assert!(!b.should_log());
+    }
+
+    #[test]
+    fn backoff_interval_widens_with_failure_age() {
+        assert_eq!(LaunchLogBackoff::log_interval(0, Duration::ZERO), None);
+        assert_eq!(
+            LaunchLogBackoff::log_interval(LAUNCH_LOG_EVERY_ATTEMPTS - 1, LAUNCH_LOG_SLOW_AFTER * 2),
+            None
+        );
+        assert_eq!(
+            LaunchLogBackoff::log_interval(LAUNCH_LOG_EVERY_ATTEMPTS, Duration::from_secs(600)),
+            Some(LAUNCH_LOG_THROTTLED_INTERVAL)
+        );
+        assert_eq!(
+            LaunchLogBackoff::log_interval(LAUNCH_LOG_EVERY_ATTEMPTS, LAUNCH_LOG_SLOW_AFTER),
+            Some(LAUNCH_LOG_SLOW_INTERVAL)
+        );
+    }
+
+    #[test]
+    fn backoff_suppressed_failure_does_not_defer_next_log() {
+        use std::time::Instant;
+        // Backdated state: mid-streak, last log older than the throttle interval.
+        let (Some(first), Some(last)) = (
+            Instant::now().checked_sub(Duration::from_secs(600)),
+            Instant::now().checked_sub(LAUNCH_LOG_THROTTLED_INTERVAL + Duration::from_secs(60)),
+        ) else {
+            return;
+        };
+        let mut b = LaunchLogBackoff {
+            failures: LAUNCH_LOG_EVERY_ATTEMPTS,
+            first_failure: Some(first),
+            last_logged: Some(last),
+        };
+        assert!(b.should_log());
+        b.record_failure(false);
+        assert!(b.should_log(), "suppressed failure must not re-arm the throttle");
+        b.record_failure(true);
+        assert!(!b.should_log(), "emitted log must re-arm the throttle");
+    }
+
+    #[test]
+    fn backoff_success_reports_streak_and_resets() {
+        let mut b = LaunchLogBackoff::new();
+        assert_eq!(b.record_success(), None);
+        for _ in 0..3 {
+            b.record_failure(true);
+        }
+        let (failures, _failing_for) = b.record_success().expect("streak expected");
+        assert_eq!(failures, 3);
+        assert!(b.should_log());
+        assert_eq!(b.record_success(), None);
+    }
 
     #[tokio::test]
     async fn not_pending_before_first_mark() {
