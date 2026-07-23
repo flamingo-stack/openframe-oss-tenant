@@ -149,8 +149,6 @@ jobs:
           TEST_COMMIT_SHA: ${{ steps.setup_env.outputs.test_commit_sha }}
         run: |
           set -euo pipefail
-          # fill in true/false for all keys, then carry the same meta fields the
-          # old changes.yml exposed, so consumers see the shape they saw before
           changes=$(jq -nc --argjson changed "$CHANGED" --argjson keys "$KEYS" \
             --arg timestamp "$TIMESTAMP" --arg timestamp_tag "$TIMESTAMP_TAG" \
             --arg commit_sha "$COMMIT_SHA" --arg test_commit_sha "$TEST_COMMIT_SHA" '
