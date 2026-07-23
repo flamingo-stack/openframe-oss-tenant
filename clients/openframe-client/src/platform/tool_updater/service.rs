@@ -5,12 +5,13 @@ use tracing::{info, warn};
 
 use super::{
     ToolUpdater, ToolUpdaterDeps, UpdateContext,
-    backup_binary, download_and_write_binary, cleanup_backup, restore_from_backup,
+    backup_binary, clear_aside_binary, cleanup_backup, download_and_write_binary,
+    log_update_survivors, restore_from_backup,
 };
 use crate::models::{InstalledTool, Installation, DownloadConfiguration};
-use crate::platform::{binary_writer, DirectoryManager, system_service};
+use crate::platform::{DirectoryManager, system_service};
 #[cfg(target_os = "macos")]
-use crate::platform::remove_app_bundle_path;
+use crate::platform::{binary_writer, remove_app_bundle_path};
 
 pub struct ServiceToolUpdater {
     deps: ToolUpdaterDeps,
@@ -36,8 +37,43 @@ impl ServiceToolUpdater {
     }
 
     /// Check if download config targets an .app bundle
+    #[cfg(target_os = "macos")]
     fn is_app_bundle_download(config: &DownloadConfiguration) -> bool {
         config.target_file_name.contains(".app/")
+    }
+
+    /// Best-effort bounce of a service still executing the pre-update image; never fails the update.
+    #[cfg(target_os = "windows")]
+    async fn remediate_orphaned_service(
+        &self,
+        tool: &InstalledTool,
+        service_name: &str,
+        exec_path: &std::path::Path,
+    ) {
+        let tool_agent_id = &tool.tool_agent_id;
+
+        if let Err(e) = self.deps.tool_kill_service.stop_installed_tool(tool, false).await {
+            warn!(tool_id = %tool_agent_id, "Orphan remediation: service stop failed: {:#}", e);
+        }
+        if let Err(e) = self.deps.tool_kill_service.stop_tool(tool_agent_id).await {
+            warn!(tool_id = %tool_agent_id, "Orphan remediation: process kill failed: {:#}", e);
+        }
+
+        // Only abstain when a tool process truly survives; a non-process lock holder (e.g. AV scan) must not block the start.
+        if !clear_aside_binary(exec_path, tool_agent_id).await {
+            if self.deps.tool_kill_service.is_installed_tool_running(tool).await {
+                tracing::error!(tool_id = %tool_agent_id,
+                       "Orphan remediation: pre-update process would not die — leaving service stopped until it exits");
+                return;
+            }
+            warn!(tool_id = %tool_agent_id,
+                  "Orphan remediation: .old still locked but no tool process is running — starting the service anyway");
+        }
+
+        match system_service::start_service(service_name).await {
+            Ok(()) => info!(tool_id = %tool_agent_id, "Service {service_name} restarted on the updated binary"),
+            Err(e) => tracing::error!(tool_id = %tool_agent_id, "Orphan remediation: failed to start service: {:#}", e),
+        }
     }
 }
 
@@ -62,6 +98,8 @@ impl ToolUpdater for ServiceToolUpdater {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
         let exec_path = self.resolve_executable_path(tool);
+        clear_aside_binary(&exec_path, tool_agent_id).await;
+        log_update_survivors(&self.deps, tool).await;
 
         // Skip backup for .app bundles on macOS - they're protected and too large
         let backup_path = if DirectoryManager::is_app_bundle_path(&exec_path) {
@@ -128,9 +166,28 @@ impl ToolUpdater for ServiceToolUpdater {
         info!(tool_id = %tool_agent_id, "Finalizing Service tool update");
 
         if let Installation::Service { service_name, .. } = &tool.installation {
+            // A service alive after prepare's stop either restarted on the new binary (benign) or is the surviving pre-update process; a locked .old tells them apart.
+            #[cfg(target_os = "windows")]
+            if system_service::service_not_stopped(service_name) {
+                let exec_path = self.resolve_executable_path(tool);
+                if clear_aside_binary(&exec_path, tool_agent_id).await {
+                    // Benign: fall through to start_service — it no-ops on RUNNING and recovers a dying StopPending.
+                    info!(tool_id = %tool_agent_id,
+                          "Service {service_name} already active with the updated binary");
+                } else {
+                    tracing::error!(tool_id = %tool_agent_id,
+                           "Service {service_name} is still executing the pre-update binary — restarting it on the new one");
+                    self.remediate_orphaned_service(tool, service_name, &exec_path).await;
+                    cleanup_backup(ctx.backup_path.as_ref(), tool_agent_id).await;
+                    return Ok(());
+                }
+            }
+
             info!(tool_id = %tool_agent_id, "Starting service: {}", service_name);
             system_service::start_service(service_name).await
                 .with_context(|| format!("Failed to start service: {}", service_name))?;
+
+            clear_aside_binary(&self.resolve_executable_path(tool), tool_agent_id).await;
         }
 
         cleanup_backup(ctx.backup_path.as_ref(), tool_agent_id).await;
