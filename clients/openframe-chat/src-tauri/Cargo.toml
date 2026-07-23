@@ -27,21 +27,21 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-opener = "2"
-aes-gcm = "0.10"
-base64 = "0.21"
+aes-gcm = "0.11"
+base64 = "0.23"
 async-nats = { git = "https://github.com/flamingo-stack/nats.rs.git", branch = "main", features = ["websockets"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
 futures = "0.3"
 uuid = { version = "1", features = ["v4"] }
 tracing = { version = "0.1", features = ["log"] }
 percent-encoding = "2"
-rand = "0.8"
+rand = "0.10"
 
 [target.'cfg(windows)'.dependencies]
 dirs = "5"
-winreg = "0.52"
+winreg = "0.56"
 mslnk = "0.1.8"
-windows = { version = "0.61", features = ["Data_Xml_Dom", "UI_Notifications"] }
+windows = { version = "0.62", features = ["Data_Xml_Dom", "UI_Notifications"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 block2 = "0.6"
