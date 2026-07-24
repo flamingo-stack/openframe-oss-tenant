@@ -706,7 +706,8 @@ impl ToolRunManager {
                                                   failing_for_secs = failing_for.as_secs(),
                                                   "Tool process started after repeated launch failures");
                                         }
-                                        info!(tool_id = %tool.tool_agent_id, "GuiApp verified running");
+                                        info!(tool_id = %tool.tool_agent_id, pid = child.id().unwrap_or(0),
+                                              user = %user.username, "GuiApp verified running");
                                         running_tools.write().await.remove(&tool.tool_agent_id);
                                         return;
                                     }
