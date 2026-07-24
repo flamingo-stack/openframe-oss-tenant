@@ -399,7 +399,7 @@ OpenFrame is designed to integrate with existing MSP tools and workflows:
 ```mermaid
 flowchart LR
     subgraph "MSP Tools"
-        RMM[RMM Tools<br/>TacticalRMM, etc.]
+        RMM[RMM Tools]
         PSA[PSA Tools<br/>ConnectWise, etc.]
         Monitor[Monitoring<br/>Nagios, etc.]
         Backup[Backup Tools<br/>Veeam, etc.]

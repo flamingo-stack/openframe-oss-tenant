@@ -4,7 +4,7 @@ The **Frontend Tenant Api Clients And Mingo** module provides the client-side in
 
 - Authenticated HTTP communication
 - Multi-tenant and SaaS-aware authentication flows
-- Tool-specific API integrations (Fleet MDM, Tactical RMM)
+- Tool-specific API integrations (Fleet MDM)
 - Mingo AI chat orchestration
 - Real-time dialog and message state management
 
@@ -16,7 +16,7 @@ This module acts as the frontend gateway to the broader OpenFrame platform, incl
 
 1. **Centralized API communication** via `ApiClient`
 2. **Authentication lifecycle handling** via `AuthApiClient`
-3. **Tool integrations** via `FleetApiClient` and `TacticalApiClient`
+3. **Tool integrations** via `FleetApiClient`
 4. **Mingo AI chat operations** via `MingoApiService` and hooks
 5. **Dialog and message state orchestration** via Zustand stores
 
@@ -29,13 +29,11 @@ flowchart LR
     UI["Frontend UI"] --> ApiClient["ApiClient"]
     UI --> AuthApiClient["AuthApiClient"]
     UI --> FleetClient["FleetApiClient"]
-    UI --> TacticalClient["TacticalApiClient"]
     UI --> MingoService["MingoApiService"]
 
     ApiClient --> ApiBackend["API Service"]
     AuthApiClient --> AuthServer["Authorization Server"]
     FleetClient --> FleetTool["Fleet MDM Tool"]
-    TacticalClient --> TacticalTool["Tactical RMM Tool"]
     MingoService --> ChatBackend["Chat and AI Services"]
 
     MingoService --> MingoStore["MingoMessagesStore"]
@@ -146,31 +144,6 @@ All methods delegate actual HTTP execution to `ApiClient`, ensuring consistent a
 
 ---
 
-## 4. TacticalApiClient
-
-**Component:** `TacticalApiClient`
-
-Specialized client for Tactical RMM tool integration.
-
-### Base URL Strategy
-
-```text
-{tenantHost}/tools/tactical-rmm
-```
-
-### Supported Capabilities
-
-- Agent management
-- Script execution
-- Script scheduling
-- Task scheduling
-- Logs, services, processes
-- System diagnostics
-
-Like Fleet, it reuses `ApiClient` for transport and authentication handling.
-
----
-
 # Mingo AI Chat Layer
 
 The Mingo subsystem provides AI-powered chat interactions within the tenant frontend.
@@ -185,7 +158,7 @@ It includes:
 
 ---
 
-## 5. MingoApiService
+## 4. MingoApiService
 
 Provides React Query mutations for:
 
@@ -216,7 +189,7 @@ All mutations:
 
 ---
 
-## 6. useMingoDialog Hook
+## 5. useMingoDialog Hook
 
 Encapsulates:
 
@@ -233,7 +206,7 @@ It ensures:
 
 ---
 
-## 7. MingoMessagesStore
+## 6. MingoMessagesStore
 
 **State management engine for chat dialogs.**
 
@@ -269,7 +242,7 @@ This enables rich AI responses with structured segments.
 
 ---
 
-## 8. DialogDetailsStore
+## 7. DialogDetailsStore
 
 Handles GraphQL-based dialog retrieval for ticket views.
 
@@ -353,7 +326,6 @@ The **Frontend Tenant Api Clients And Mingo** module serves as the frontend inte
 - Authorization Server (OAuth2 + tenant resolution)
 - Gateway (proxy and security enforcement)
 - Fleet MDM
-- Tactical RMM
 - Chat and AI services
 
 It ensures:

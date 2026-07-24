@@ -10,9 +10,6 @@ pub fn lookup(tool_key: &str) -> Option<&'static str> {
         #[cfg(feature = "fleetmdm-agent-version")]
         "fleetmdm-server" => Some(env!("FLEETMDM_AGENT_VERSION")),
 
-        #[cfg(feature = "tacticalrmm-agent-version")]
-        "tactical-rmm" => Some(env!("TACTICALRMM_AGENT_VERSION")),
-
         #[cfg(feature = "osquery-version")]
         "osqueryd" => Some(env!("OSQUERY_VERSION")),
 

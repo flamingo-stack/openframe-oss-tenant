@@ -113,19 +113,6 @@ nats-ws-url: ws://nats.datasources.svc.cluster.local:8080
 
 # Rate limiting configuration
 openframe:
-  tools:
-    tactical-rmm:
-      backend:
-        url: http://tactical-backend.tenant.svc.cluster.local
-        port: "8080"
-      websocket:
-        url: ws://tactical-backend.tenant.svc.cluster.local
-        port: "8383"
-        path-prefix: /ws/
-      nats:
-        url: ws://tactical-nats.tenant.svc.cluster.local
-        port: "9235"
-        path-prefix: /natsws
   device:
     aspect:
       enabled: false

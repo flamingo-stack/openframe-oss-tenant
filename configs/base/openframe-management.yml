@@ -73,7 +73,6 @@ openframe:
 
     agent-configurations:
       - agent-configurations/fleetmdm-agent.json
-      - agent-configurations/tacticalrmm-agent.json
       - agent-configurations/meshcentral-agent.json
 
 security:

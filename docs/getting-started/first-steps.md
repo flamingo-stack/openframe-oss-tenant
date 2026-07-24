@@ -256,7 +256,7 @@ docker compose logs -f openframe-api
 
 ### "How do I connect my existing RMM tool?"
 
-OpenFrame supports integration with major RMM platforms. Check the external integrations documentation or ask Mingo: "How can I connect TacticalRMM to OpenFrame?"
+OpenFrame supports integration with major RMM platforms. Check the [External API Service documentation](../architecture/external-api-service-core-rest-and-dto/external-api-service-core-rest-and-dto.md) or ask Mingo: "How can I connect my RMM tool to OpenFrame?"
 
 ### "Can I customize the AI behavior?"
 

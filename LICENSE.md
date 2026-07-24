@@ -73,7 +73,7 @@ Subject to this License:
 ## 6. Product-Specific Terms
 
 ### 6.1 OpenFrame  
-- OpenFrame integrates upstream software (Fleet, MeshCentral, Osquery, Tactical RMM) and Flamingo contributions.  
+- OpenFrame integrates upstream software (Fleet, MeshCentral, Osquery, and Flamingo contributions.  
 - Upstream components remain under their original licenses (see Appendix).  
 - SaaS restriction applies fully to Flamingo contributions.  
 
@@ -126,8 +126,7 @@ This License is governed by the laws of the State of Delaware, USA.
 ## Appendix: Upstream Licenses
 
 The following upstream components are incorporated into Flamingo Software and remain under their original licenses. This License does not alter their terms:  
-
-- **Tactical RMM** — Tactical RMM License v1.0 (proprietary, AmidaWare LLC).  
+ 
 - **Fleet** — MIT License (with documentation under CC BY-SA 4.0).  
 - **Osquery** — Dual-licensed under Apache-2.0 OR GPL-2.0-only.  
 - **MeshCentral Agent** — Apache-2.0.  

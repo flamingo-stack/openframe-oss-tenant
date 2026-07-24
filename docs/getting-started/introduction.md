@@ -27,7 +27,7 @@ OpenFrame is a **multi-tenant, microservice-based platform** that serves as the 
 - **Scalable infrastructure** designed for enterprise workloads
 
 ### 🔌 Comprehensive Integration
-- **Fleet MDM, Tactical RMM, MeshCentral** - Device management and remote access
+- **Fleet MDM, MeshCentral** - Device management and remote access
 - **Apache NiFi, MongoDB, Cassandra, Apache Pinot** - Data pipeline and analytics
 - **NATS/JetStream** - Real-time messaging and agent communication
 - **Standardized APIs** for third-party tool integration

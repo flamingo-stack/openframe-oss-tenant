@@ -9,7 +9,7 @@ The **Stream Service Core Kafka Streams And Deserialization** module is the foun
 - Transforming raw integration events into normalized internal message models
 - Assigning consistent `MessageType` values for downstream processing
 
-This module acts as the **ingestion and normalization boundary** between external tool event sources (Fleet MDM, MeshCentral, Tactical RMM, Debezium-based CDC streams) and the internal stream processing pipeline.
+This module acts as the **ingestion and normalization boundary** between external tool event sources (Fleet MDM, MeshCentral, Debezium-based CDC streams) and the internal stream processing pipeline.
 
 It is consumed by higher-level streaming logic (message handling, enrichment, persistence, and publishing) but remains focused strictly on:
 
@@ -25,7 +25,7 @@ Within the overall OpenFrame platform, the Stream Service sits between data prod
 
 ```mermaid
 flowchart TD
-    ExternalTools["External Tools<br/>Fleet · MeshCentral · Tactical RMM"] --> KafkaBroker["Kafka Topics"]
+    ExternalTools["External Tools<br/>Fleet · MeshCentral"] --> KafkaBroker["Kafka Topics"]
     KafkaBroker --> StreamCore["Stream Service Core<br/>Kafka Streams And Deserialization"]
     StreamCore --> MessageHandling["Message Handling And Enrichment"]
     MessageHandling --> Downstream["Persistence · Analytics · External APIs"]
@@ -238,68 +238,7 @@ This provides a consistent event taxonomy across systems.
 
 ---
 
-# 5. Tactical RMM Deserializers
-
-## 5.1 TrmmAgentHistoryEventDeserializer
-
-**MessageType:** `TACTICAL_RMM_AGENT_HISTORY_EVENT`
-
-### Responsibilities
-
-- Resolves internal agent ID via `TacticalRmmCacheService`
-- Distinguishes between:
-  - `cmd_run`
-  - `script_run`
-- Detects start vs completion state
-
-### Result Extraction
-
-- Extracts `stdout`
-- Extracts `stderr`
-- Captures execution time
-- Wraps output in structured JSON
-
-```mermaid
-flowchart TD
-    HistoryEvent["Agent History Event"] --> TypeSwitch{{"cmd_run or script_run?"}}
-    TypeSwitch --> Cmd["Command Processing"]
-    TypeSwitch --> Script["Script Processing"]
-    Script --> ExtractStdout["Extract stdout"]
-    Script --> ExtractStderr["Extract stderr"]
-    Script --> ExecutionTime["Extract execution_time"]
-```
-
----
-
-## 5.2 TrmmAuditEventDeserializer
-
-**MessageType:** `TACTICAL_RMM_AUDIT_EVENT`
-
-### Responsibilities
-
-- Extracts:
-  - `agentid`
-  - `object_type`
-  - `action`
-  - `message`
-  - `after_value`
-- Generates event type as:
-
-```text
-object_type.action
-```
-
-- Parses ISO-8601 timestamps
-
-This supports:
-
-- Audit logging
-- Policy tracking
-- Script execution monitoring
-
----
-
-# 6. MessageType as Routing Contract
+# 5. MessageType as Routing Contract
 
 All deserializers implement:
 
@@ -326,7 +265,7 @@ By centralizing typing here, the system ensures:
 
 ---
 
-# 7. Stream Processing Guarantees
+# 6. Stream Processing Guarantees
 
 The Kafka Streams configuration includes:
 
@@ -343,7 +282,7 @@ These settings balance:
 
 ---
 
-# 8. Design Principles
+# 7. Design Principles
 
 The **Stream Service Core Kafka Streams And Deserialization** module follows these principles:
 
@@ -359,7 +298,6 @@ Each tool has its own deserializer:
 
 - Fleet
 - MeshCentral
-- Tactical RMM
 
 This prevents cross-tool coupling.
 
@@ -386,7 +324,7 @@ The system logs and falls back gracefully.
 
 ---
 
-# 9. Summary
+# 8. Summary
 
 The **Stream Service Core Kafka Streams And Deserialization** module is the ingestion and normalization backbone of the Stream Service.
 

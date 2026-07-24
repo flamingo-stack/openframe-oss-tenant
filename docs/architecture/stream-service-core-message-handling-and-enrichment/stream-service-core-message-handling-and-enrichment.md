@@ -23,7 +23,7 @@ It works closely with:
 
 ```mermaid
 flowchart LR
-    KafkaInbound["Kafka Inbound Topics<br/>MeshCentral / Tactical / Fleet"] --> JsonListener["JsonKafkaListener"]
+    KafkaInbound["Kafka Inbound Topics<br/>MeshCentral / Fleet"] --> JsonListener["JsonKafkaListener"]
     JsonListener --> JsonProcessor["GenericJsonMessageProcessor"]
     JsonProcessor --> EnrichmentService["IntegratedToolDataEnrichmentService"]
     EnrichmentService --> HandlerRouter["DebeziumMessageHandler"]
@@ -57,7 +57,6 @@ This is the Kafka entry point for integrated tool Debezium events.
 It listens to inbound topics:
 
 - MeshCentral events
-- Tactical RMM events
 - Fleet MDM events
 - Fleet MDM query results
 
@@ -183,7 +182,6 @@ Mapping key format:
 Supported integrated tools:
 
 - MeshCentral
-- Tactical RMM
 - Fleet MDM
 
 If no mapping is found, the event is mapped to:
@@ -201,7 +199,6 @@ This abstraction ensures downstream systems operate on consistent event semantic
 Defines structured constants for:
 
 - `MeshCentral`
-- `Tactical`
 - `Fleet`
 
 This avoids string duplication and centralizes event type definitions.

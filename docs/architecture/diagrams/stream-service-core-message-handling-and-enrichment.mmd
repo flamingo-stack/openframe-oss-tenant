@@ -1,5 +1,5 @@
 flowchart LR
-    KafkaInbound["Kafka Inbound Topics<br/>MeshCentral / Tactical / Fleet"] --> JsonListener["JsonKafkaListener"]
+    KafkaInbound["Kafka Inbound Topics<br/>MeshCentral / Fleet"] --> JsonListener["JsonKafkaListener"]
     JsonListener --> JsonProcessor["GenericJsonMessageProcessor"]
     JsonProcessor --> EnrichmentService["IntegratedToolDataEnrichmentService"]
     EnrichmentService --> HandlerRouter["DebeziumMessageHandler"]
