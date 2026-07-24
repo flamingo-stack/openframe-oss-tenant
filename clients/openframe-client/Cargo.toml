@@ -78,6 +78,7 @@ hostname = "0.4"
 bytes = "1.10.1"
 async-nats = { git = "https://github.com/flamingo-stack/nats.rs.git", branch = "main", features = ["websockets"] }
 rustls-pemfile = "1.0"
+redb = "2"
 regex = "1.11.1"
 
 [target.'cfg(windows)'.dependencies]
