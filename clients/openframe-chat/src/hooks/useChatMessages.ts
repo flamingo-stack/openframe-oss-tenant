@@ -284,6 +284,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
               data: {
                 ...executedData,
                 toolTitle: executedData.toolTitle ?? segment.data.toolTitle,
+                toolExplanation: executedData.toolExplanation ?? segment.data.toolExplanation,
                 parameters: executedData.parameters ?? segment.data.parameters,
               },
             } satisfies ToolExecutionSegment;
