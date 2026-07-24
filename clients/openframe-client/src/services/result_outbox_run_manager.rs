@@ -4,7 +4,9 @@ use tokio::sync::Notify;
 use tokio::time::{interval, timeout, Duration};
 use tracing::{error, info, warn};
 
-use crate::config::update_config::{FLUSH_PUBLISH_TIMEOUT_SECS, OUTBOX_FLUSH_INTERVAL_SECS};
+use crate::config::update_config::{
+    FLUSH_PUBLISH_TIMEOUT_SECS, OUTBOX_FLUSH_INTERVAL_SECS, OUTBOX_MAX_PAYLOAD_BYTES,
+};
 use crate::services::result_store::{ResultPublisher, ResultStore};
 
 pub struct ResultOutboxRunManager<P: ResultPublisher> {
@@ -59,6 +61,15 @@ impl<P: ResultPublisher + 'static> ResultOutboxRunManager<P> {
                             break;
                         }
                     };
+
+                    if bytes.len() > OUTBOX_MAX_PAYLOAD_BYTES {
+                        warn!(
+                            key = %key,
+                            size = bytes.len(),
+                            "Outbox entry exceeds max payload and cannot be delivered, skipping so it does not block healthy results"
+                        );
+                        continue;
+                    }
 
                     match timeout(publish_timeout, publisher.publish_raw(&subject, &bytes)).await {
                         Ok(Ok(())) => {

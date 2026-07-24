@@ -23,7 +23,7 @@ pub const EXECUTION_MIN_CONCURRENCY: usize = 4;
 pub const OUTBOX_MAX_ENTRIES: usize = 500;
 pub const OUTBOX_FLUSH_INTERVAL_SECS: u64 = 30;
 pub const FLUSH_PUBLISH_TIMEOUT_SECS: u64 = 30;
-pub const OUTBOX_MAX_PAYLOAD_BYTES: usize = 5 * 1024 * 1024 - 64 * 1024;
+pub const OUTBOX_MAX_PAYLOAD_BYTES: usize = 1024 * 1024 - 64 * 1024;
 
 // Last-known-good update ratchet
 /// How long the updater waits for the new binary's boot marker.

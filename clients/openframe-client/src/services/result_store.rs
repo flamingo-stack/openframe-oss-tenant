@@ -16,7 +16,7 @@ const JOURNAL: TableDefinition<&str, &[u8]> = TableDefinition::new("journal");
 const OUTBOX_META: TableDefinition<&str, &[u8]> = TableDefinition::new("outbox_meta");
 const OUTBOX_PAYLOAD: TableDefinition<&str, &[u8]> = TableDefinition::new("outbox_payload");
 
-const TRUNCATION_MARKER: &str = "output truncated: exceeded 5 MB transport limit";
+const TRUNCATION_MARKER: &str = "output truncated: exceeded transport size limit";
 const ERROR_NOT_STARTED: &str = "not executed: agent restarted earlier in batch";
 const ERROR_INTERRUPTED: &str = "interrupted by agent restart; outcome unknown";
 
