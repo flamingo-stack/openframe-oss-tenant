@@ -36,6 +36,8 @@ pub mod update_cleanup_service;
 pub mod update_handler_service;
 pub mod initial_key_service;
 pub mod execution_service;
+pub mod result_store;
+pub mod result_outbox_run_manager;
 pub mod deactivation_service;
 
 pub use agent_auth_service::AgentAuthService;
