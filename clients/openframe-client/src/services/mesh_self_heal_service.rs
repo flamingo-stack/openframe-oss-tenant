@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
@@ -6,6 +7,7 @@ use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
 use crate::platform::DirectoryManager;
+use crate::services::deactivation_service::DeactivationService;
 use crate::services::tool_kill_service::ToolKillService;
 use crate::services::tool_restart_service::{RestartOutcome, ToolRestartService};
 use crate::services::tool_run_manager::ToolRunManager;
@@ -40,6 +42,7 @@ pub struct MeshSelfHealService {
     initial_config: InitialConfigurationService,
     agent_config: AgentConfigurationService,
     tool_run_manager: ToolRunManager,
+    deactivation: Arc<DeactivationService>,
     http: reqwest::Client,
 }
 
@@ -52,6 +55,7 @@ impl MeshSelfHealService {
         initial_config: InitialConfigurationService,
         agent_config: AgentConfigurationService,
         tool_run_manager: ToolRunManager,
+        deactivation: Arc<DeactivationService>,
     ) -> Self {
         Self {
             directory_manager,
@@ -61,6 +65,7 @@ impl MeshSelfHealService {
             initial_config,
             agent_config,
             tool_run_manager,
+            deactivation,
             http: reqwest::Client::builder()
                 .timeout(HTTP_TIMEOUT)
                 .build()
@@ -99,6 +104,11 @@ impl MeshSelfHealService {
         loop {
             let sleep_started = Instant::now();
             sleep(POLL_INTERVAL).await;
+
+            // Tenant gone: agent is stopped and /generate-msh returns 410 — don't hammer it.
+            if self.deactivation.is_suspended() {
+                continue;
+            }
 
             // The sleep alone overran by far ⇒ the host was suspended (Instant counts suspend on Windows) — discard timers measured across it.
             if sleep_started.elapsed() > POLL_INTERVAL * 5 {

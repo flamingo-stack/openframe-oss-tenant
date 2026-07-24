@@ -38,6 +38,7 @@ pub mod initial_key_service;
 pub mod execution_service;
 pub mod result_store;
 pub mod result_outbox_run_manager;
+pub mod deactivation_service;
 
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;
@@ -72,3 +73,4 @@ pub use last_known_good_service::LastKnownGoodService;
 pub use update_cleanup_service::UpdateCleanupService;
 pub use update_handler_service::UpdateHandlerService;
 pub use initial_key_service::InitialKeyService;
+pub use deactivation_service::DeactivationService;
