@@ -1,7 +1,9 @@
+use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
+use futures::FutureExt;
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
@@ -30,6 +32,8 @@ const ACTION_COOLDOWN: Duration = Duration::from_secs(60 * 60);
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 /// How far back to look for markers when seeding health state at startup.
 const TAIL_BYTES: u64 = 64 * 1024;
+/// Pause before respawning a watcher that exited or panicked.
+const WATCHER_RESPAWN_DELAY: Duration = Duration::from_secs(60);
 
 #[derive(Clone)]
 pub struct MeshSelfHealService {
@@ -71,8 +75,21 @@ impl MeshSelfHealService {
     pub async fn run(&self) -> Result<()> {
         let this = self.clone();
         tokio::spawn(async move {
-            this.watch().await;
-            error!("mesh self-heal watcher exited unexpectedly");
+            // Un-caught, a panic dies silently (spawn swallows it, stderr isn't shipped) — capture it into tracing and respawn.
+            loop {
+                match AssertUnwindSafe(this.clone().watch()).catch_unwind().await {
+                    Ok(()) => error!(
+                        "mesh self-heal watcher exited unexpectedly — respawning in {}s",
+                        WATCHER_RESPAWN_DELAY.as_secs()
+                    ),
+                    Err(panic) => error!(
+                        "mesh self-heal watcher panicked: {} — respawning in {}s",
+                        panic_message(&*panic),
+                        WATCHER_RESPAWN_DELAY.as_secs()
+                    ),
+                }
+                sleep(WATCHER_RESPAWN_DELAY).await;
+            }
         });
         Ok(())
     }
@@ -271,6 +288,14 @@ impl MeshSelfHealService {
         }
         Err(anyhow!("no .msh found in {}", dir.display()))
     }
+}
+
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> &str {
+    payload
+        .downcast_ref::<&str>()
+        .copied()
+        .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
+        .unwrap_or("<non-string panic payload>")
 }
 
 fn parse_msh_field(msh: &str, key: &str) -> Option<String> {
