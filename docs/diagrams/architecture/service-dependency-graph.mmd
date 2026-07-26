@@ -1,0 +1,35 @@
+graph LR
+    subgraph FE["Frontend Clients"]
+        Chat["openframe-chat\n(Tauri)"]
+        Frontend["openframe-frontend\n(Web)"]
+    end
+
+    subgraph Backend["Backend Services"]
+        GW["Gateway\n:8081"]
+        API["API Service\n:8080"]
+        Auth["Auth Server\n:8082"]
+        Ext["External API\n:8083"]
+        Stream["Stream Service\n:8085"]
+        ClientSvc["Client Service\n:8084"]
+    end
+
+    subgraph Agent["Agent"]
+        OFC["openframe-client\n(Rust)"]
+    end
+
+    subgraph Lib["Shared Libraries"]
+        CoreLib["openframe-frontend-core\n(TypeScript npm lib)"]
+    end
+
+    Chat --> CoreLib
+    Frontend --> CoreLib
+    Chat --> GW
+    Frontend --> GW
+    GW --> Auth
+    GW --> API
+    GW --> Ext
+    API --> Stream
+    ClientSvc --> NATS[("NATS")]
+    OFC --> NATS
+    Stream --> Kafka[("Kafka")]
+    API --> Kafka
