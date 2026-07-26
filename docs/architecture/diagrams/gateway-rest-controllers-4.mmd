@@ -1,4 +1,0 @@
-flowchart TD
-    ProbeRequest["GET /internal/authz/probe"] --> Controller["InternalAuthProbeController"]
-    Controller --> ReturnEmpty["Mono.empty()"]
-    ReturnEmpty --> Ok["200 OK"]

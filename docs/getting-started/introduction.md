@@ -1,132 +1,122 @@
-# OpenFrame Platform Introduction
+# Introduction to OpenFrame OSS Tenant
 
-OpenFrame is an AI-powered MSP (Managed Service Provider) platform that replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation. Built by the team at Flamingo, OpenFrame provides the unified platform that integrates multiple MSP tools into a single AI-driven interface.
+**OpenFrame OSS Tenant** is the open-source foundation of the [OpenFrame platform](https://openframe.ai) — an AI-powered MSP (Managed Service Provider) platform built by [Flamingo](https://flamingo.run) that replaces expensive proprietary software with intelligent automation.
 
-[![OpenFrame Product Walkthrough (Beta Access)](https://img.youtube.com/vi/awc-yAnkhIo/maxresdefault.jpg)](https://www.youtube.com/watch?v=awc-yAnkhIo)
-
-## What is OpenFrame?
-
-OpenFrame is a **multi-tenant, microservice-based platform** that serves as the backbone for modern MSP operations. It combines:
-
-- **Mingo AI** - Intelligent technician assistant that automates incident triage and alert management
-- **Fae** - AI-powered client interface for streamlined communication
-- **Unified Dashboard** - Single pane of glass for all MSP tools and data
-- **Open Source Foundation** - Built on proven open-source technologies with enterprise-grade extensions
-
-## Key Features and Benefits
-
-### 🤖 AI-Powered Automation
-- **Autonomous agent architecture** that handles incident triage
-- **Intelligent alert management** to reduce noise and focus on critical issues  
-- **Automated response workflows** for common IT support scenarios
-
-### 🏗️ Microservice Architecture
-- **Spring Boot 3.3.0** backend services with Java 21
-- **Multi-tenant OAuth2/OIDC** authentication and authorization
-- **Event-driven processing** with Kafka Streams for real-time data flow
-- **Scalable infrastructure** designed for enterprise workloads
-
-### 🔌 Comprehensive Integration
-- **Fleet MDM, MeshCentral** - Device management and remote access
-- **Apache NiFi, MongoDB, Cassandra, Apache Pinot** - Data pipeline and analytics
-- **NATS/JetStream** - Real-time messaging and agent communication
-- **Standardized APIs** for third-party tool integration
-
-### 💰 Cost Optimization
-- **Open-source foundation** eliminates expensive proprietary licensing
-- **Unified platform** reduces the need for multiple separate tools
-- **Intelligent automation** decreases manual workload and operational costs
-
-## Target Audience
-
-OpenFrame is designed for:
-
-- **MSP Teams** looking to modernize their technology stack
-- **IT Operations** seeking AI-powered automation and insights
-- **Developers** building MSP tools and integrations
-- **Organizations** wanting to reduce vendor dependency and costs
-
-## High-Level Architecture
-
-```mermaid
-flowchart TD
-    UI[Frontend Tenant UI] --> Gateway[Gateway Service]
-    Chat[Chat Desktop Client] --> Gateway
-    
-    Gateway --> API[API Service]
-    Gateway --> External[External API Service]
-    Gateway --> Auth[Authorization Server]
-    
-    API --> Mongo[(MongoDB)]
-    API --> Pinot[(Apache Pinot)]
-    API --> Kafka[(Kafka Cluster)]
-    
-    Stream[Stream Service] --> Kafka
-    Stream --> Cassandra[(Cassandra)]
-    Stream --> Pinot
-    
-    Client[Client Service] --> Mongo
-    Client --> NATS[(NATS/JetStream)]
-    
-    Auth --> Mongo
-```
-
-The platform follows a **layered microservice architecture** where:
-
-- **Gateway Layer** handles authentication, routing, and security
-- **API Layer** provides REST and GraphQL endpoints for data access
-- **Service Layer** contains domain logic and business rules
-- **Data Layer** includes multiple specialized databases for different use cases
-- **Streaming Layer** processes real-time events and enriches data
-
-## Core Technology Stack
-
-### Backend Services
-- **Java 21** with **Spring Boot 3.3.0**
-- **Spring Cloud** for microservice infrastructure
-- **Spring Security** with OAuth2/OIDC support
-- **Apache Kafka** for event streaming
-- **NATS/JetStream** for agent messaging
-
-### Data Layer
-- **MongoDB** - Primary transactional storage
-- **Apache Cassandra** - Time-series and log persistence  
-- **Apache Pinot** - Real-time analytics
-- **Redis** - Caching and session management
-
-### Frontend & Integration
-- **Node.js** application with AI/LLM capabilities
-- **VoltAgent core** for intelligent automation
-- **Anthropic SDK** and **OpenAI integration**
-- **Cross-platform desktop clients** (Rust/Tauri for chat client)
-
-## Platform Components
-
-| Component | Purpose | Technology |
-|-----------|---------|------------|
-| API Service | Internal REST + GraphQL APIs | Spring Boot, GraphQL |
-| Authorization Server | Multi-tenant OAuth2/OIDC | Spring Authorization Server |
-| Gateway Service | Security, routing, WebSocket proxy | Spring Cloud Gateway |
-| External API Service | Public API endpoints | Spring Boot REST |
-| Stream Service | Event processing and enrichment | Kafka Streams |
-| Client Service | Agent lifecycle management | Spring Boot, NATS |
-| Frontend UI | Web-based tenant dashboard | Next.js-style framework |
-| Chat Client | Desktop AI assistant | Rust/Tauri |
-
-## Getting Started Path
-
-Ready to explore OpenFrame? Here's your recommended learning path:
-
-1. **[Prerequisites](prerequisites.md)** - Set up your development environment
-2. **[Quick Start](quick-start.md)** - Get OpenFrame running in 5 minutes
-3. **[First Steps](first-steps.md)** - Explore key features and functionality
-
-## Community and Support
-
-- **Slack Community**: Join [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- **Documentation**: [Official OpenFrame Docs](https://www.flamingo.run/openframe)
-- **Company**: [Flamingo Platform](https://flamingo.run)
+[![Getting Started with OpenFrame - Organization Setup Basics](https://img.youtube.com/vi/-_56_qYvMWk/maxresdefault.jpg)](https://www.youtube.com/watch?v=-_56_qYvMWk)
 
 ---
 
-*OpenFrame is an open-source project by [Flamingo](https://flamingo.run), empowering MSPs with AI-driven automation and cost-effective tooling.*
+## What Is OpenFrame OSS Tenant?
+
+OpenFrame OSS Tenant is a multi-service, multi-tenant platform that integrates device management, real-time messaging, and AI-assisted support into a single cohesive system. It provides the infrastructure that enables MSPs to:
+
+- Manage endpoints across Windows, macOS, and Linux through a cross-platform Rust agent
+- Deliver AI-powered helpdesk interactions through **Mingo AI** (for technicians) and **Fae** (for clients)
+- Stream events in real-time across Kafka, NATS, and Apache Pinot
+- Enforce strict multi-tenant data isolation through OAuth2/OIDC and JWT-scoped APIs
+
+---
+
+## Key Features
+
+| Feature | Description |
+|---|---|
+| **AI-Assisted Support** | Mingo AI for technicians, Fae for end clients — both powered by streaming LLMs |
+| **Cross-Platform Agent** | Rust-based agent (openframe-client) runs as a system service on Windows, macOS, and Linux |
+| **Desktop AI Chat** | Tauri-based desktop app (openframe-chat) delivering the Fae experience to clients |
+| **Multi-Tenant Architecture** | Full tenant isolation with per-tenant OAuth2 clients, RSA-signed JWTs, and database scoping |
+| **Real-Time Event Streaming** | Apache Kafka + NATS JetStream for device events, script execution, and AI message chunks |
+| **Remote Management (RMM)** | Script execution, scheduling, live commands, and compliance checking across all managed devices |
+| **Integrated Tool Management** | MeshCentral, FleetMDM, and custom tool agents orchestrated through the platform |
+| **Open Source** | Apache-licensed microservice platform you can self-host and extend |
+
+---
+
+## Target Audience
+
+OpenFrame OSS Tenant is designed for:
+
+- **MSP Teams** looking to reduce vendor costs while gaining AI-assisted automation
+- **Platform Engineers** building or extending an MSP platform on open-source infrastructure
+- **Developers** contributing to or building integrations on top of OpenFrame
+
+---
+
+## High-Level Architecture Overview
+
+OpenFrame OSS Tenant is a polyglot microservice system built with Java (Spring Boot 3.3), Rust, and TypeScript (React + Tauri). All client traffic passes through the Spring Cloud Gateway before reaching backend services.
+
+```mermaid
+graph TB
+    subgraph Clients["Client Layer"]
+        ChatApp["openframe-chat\n(Tauri Desktop App)"]
+        FrontendUI["openframe-frontend\n(Web UI)"]
+    end
+
+    subgraph Gateway["Edge Layer"]
+        GW["Gateway Service\n:8081\nSpring Cloud Gateway"]
+    end
+
+    subgraph CoreServices["Core Services"]
+        API["API Service :8080\nSpring Boot + GraphQL"]
+        AuthServer["Auth Server :8082\nOAuth2/OIDC"]
+        ClientSvc["Client Service :8084\nSpring Boot + NATS"]
+        StreamSvc["Stream Service :8085\nKafka Streams"]
+    end
+
+    subgraph AgentLayer["Agent Layer"]
+        OFClient["openframe-client\n(Rust Agent)"]
+    end
+
+    subgraph DataLayer["Data Layer"]
+        Mongo[("MongoDB")]
+        NATS[("NATS JetStream")]
+        Kafka[("Apache Kafka")]
+        Pinot[("Apache Pinot")]
+    end
+
+    ChatApp --> GW
+    FrontendUI --> GW
+    GW --> API
+    GW --> AuthServer
+    API --> Mongo
+    API --> Kafka
+    StreamSvc --> Kafka
+    StreamSvc --> Pinot
+    ClientSvc --> NATS
+    OFClient --> NATS
+```
+
+---
+
+## Core Components at a Glance
+
+| Component | Technology | Role |
+|---|---|---|
+| **Gateway** | Spring Cloud Gateway | Security, JWT validation, routing, WebSocket proxy |
+| **API Service** | Spring Boot + Netflix DGS (GraphQL) | Core business logic, tickets, AI, devices |
+| **Authorization Server** | Spring Authorization Server | OAuth2/OIDC, multi-tenant JWT issuance, SSO |
+| **Client Service** | Spring Boot + NATS | Agent lifecycle, tool orchestration |
+| **Stream Service** | Kafka Streams | Event normalization, analytics writes |
+| **openframe-client** | Rust | Cross-platform endpoint agent |
+| **openframe-chat** | React + Tauri | Desktop AI chat client (Fae) |
+
+---
+
+## The OpenFrame Ecosystem
+
+OpenFrame OSS Tenant works alongside:
+
+- **[OpenFrame CLI](https://github.com/flamingo-stack/openframe-cli)** — Command-line tools for deploying and managing the platform
+- **[OpenFrame Frontend Core](https://github.com/flamingo-stack/openframe-oss-tenant)** — Shared TypeScript UI component library (included in this repo)
+- **[OpenMSP Community](https://www.openmsp.ai/)** — Join the community on Slack for support and discussion
+
+---
+
+## Get Started
+
+Ready to explore OpenFrame OSS Tenant? Continue with:
+
+- [Prerequisites](prerequisites.md) — What you need before setting up
+- [Quick Start](quick-start.md) — Get running in 5 minutes
+- [First Steps](first-steps.md) — What to do after your first setup

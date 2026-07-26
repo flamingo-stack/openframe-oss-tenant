@@ -1,8 +1,0 @@
-flowchart TD
-    CreateReq["CreateOrganizationRequest"] --> Mapper["OrganizationMapper"]
-    Mapper --> Entity["Organization Document"]
-
-    UpdateReq["UpdateOrganizationRequest"] --> Mapper
-
-    Entity --> Mapper
-    Mapper --> Response["OrganizationResponse"]

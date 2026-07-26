@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Browser as Browser
+    participant GW as Gateway
+    participant Auth as Auth Server
+    participant API as API Service
+    participant DB as MongoDB
+
+    Browser->>Auth: OAuth2 login (tenant-scoped PKCE)
+    Auth->>DB: Lookup tenant OAuth2 client
+    Auth-->>Browser: JWT (tenant_id + RSA signed)
+    Browser->>GW: API request with Bearer JWT
+    GW->>GW: Validate issuer + RSA signature
+    GW->>GW: Attach identity context headers
+    GW->>API: Forward with X-Tenant-Id, X-Machine-Id
+    API->>API: Enforce tenant isolation filter
+    API->>DB: Query with tenantId scope
+    DB-->>API: Tenant-scoped results
+    API-->>Browser: Response
