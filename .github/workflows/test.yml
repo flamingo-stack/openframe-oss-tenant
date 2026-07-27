@@ -134,97 +134,6 @@ jobs:
             docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
 
 
-  test:
-    name: Run Tests
-    needs: [build_images, changes]
-    timeout-minutes: 60
-    runs-on: Linux-x64
-    env:
-      CARGO_INCREMENTAL: 0
-    if: |
-      github.event_name == 'pull_request' &&
-      !github.event.pull_request.draft &&
-      !startsWith(github.head_ref, 'release/') &&
-      !startsWith(github.head_ref, 'revert/') &&
-      !startsWith(github.head_ref, 'hotfix/') &&
-      !startsWith(github.head_ref, 'setup/') &&
-      !startsWith(github.head_ref, 'docs/')
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Override helm values
-        uses: ./.github/steps/helm-override
-        with:
-          matrix: ${{ needs.changes.outputs.images_matrix }}
-          changes: ${{ needs.changes.outputs.changes }}
-          commit-sha: ${{ needs.changes.outputs.test_commit_sha }}
-          branch-name: ${{ github.head_ref }}
-
-      - name: Set up JDK 21 for E2E tests
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-          overwrite-settings: false
-
-      - name: Build Test JAR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mvn clean package -pl openframe/services/openframe-test -am -DskipTests -s .mvn/settings.xml
-
-      - name: Bootstrap Openframe
-        working-directory: cli
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENFRAME_CLI_BASE: "https://github.com/${{ env.ORGANISATION }}/openframe-cli/releases/latest/download"
-          OPENFRAME_CLI_ARCHIVE: "openframe-cli_linux_amd64.tar.gz"
-        run: |
-          set -euo pipefail
-          # Download the release archive and verify it against the release checksums before installing.
-          curl -fLo "/tmp/${OPENFRAME_CLI_ARCHIVE}" "${OPENFRAME_CLI_BASE}/${OPENFRAME_CLI_ARCHIVE}"
-          curl -fLo /tmp/checksums.txt "${OPENFRAME_CLI_BASE}/checksums.txt"
-          # Guard: assert the archive is actually listed.
-          grep -qF "${OPENFRAME_CLI_ARCHIVE}" /tmp/checksums.txt
-          ( cd /tmp && sha256sum --ignore-missing -c checksums.txt )
-          tar -xzf "/tmp/${OPENFRAME_CLI_ARCHIVE}" -C /tmp
-          install -m 0755 /tmp/openframe /usr/local/bin/openframe
-          openframe --version
-          openframe bootstrap --non-interactive --verbose
-
-      - name: Setup Telepresence
-        uses: ./.github/steps/setup-telepresence
-
-      - name: Run Tests
-        id: tests
-        env:
-          TEST_ENV_MODE: OSS
-          TEST_BASE_URL: localhost
-          TEST_USER_DOMAIN: localhost
-          MONGODB_URI: mongodb://mongodb-0.mongodb.datasources.svc.cluster.local:27017
-          MONGODB_DATABASE: openframe
-          MONGODB_AUTH_DATABASE: admin
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-          MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
-          MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
-          SLACK_OAUTH_TOKEN: ${{ secrets.SLACK_OAUTH_TOKEN }}
-        run: |
-          java -jar openframe/services/openframe-test/target/openframe-test-1.0.0-SNAPSHOT-jar-with-dependencies.jar
-        continue-on-error: true
-
-      - name: Generate and Deploy Allure Report
-        if: always()
-        uses: ./.github/steps/allure-report
-        with:
-          pr-number: ${{ github.event.pull_request.number }}
-          test-status: ${{ steps.tests.outcome }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-
   test_clients:
     name: "Test Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
     needs: [changes]
@@ -376,7 +285,7 @@ jobs:
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
-    needs: [changes, test]
+    needs: [changes, build_images, test_clients, test_helm]
     runs-on: ubuntu-latest
     if: |
       always() &&
