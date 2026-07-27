@@ -1,6 +1,6 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use tracing::{error, info, warn};
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use crate::models::tool_agent_update_message::{ToolAgentUpdateMessage, AssetUpdate};
 use crate::models::{Installation, InstalledAsset, ToolRecordState};
 use crate::services::InstalledToolsService;
@@ -11,6 +11,20 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::ToolCommandParamsResolver;
 use crate::platform::{DirectoryManager, ToolUpdaterDeps, binary_writer, needs_migration, detect_actual_installation, run_update, run_migration, clear_aside_binary};
+
+const UPDATER_TOOL_AGENT_ID: &str = "openframe-client-updater";
+const UPDATER_STATE_FILE_NAME: &str = "updater_state.json";
+const UPDATER_STATE_STALE_SECS: u64 = 30 * 60;
+const IN_FLIGHT_UPDATER_PHASES: [&str; 8] = [
+    "downloading",
+    "verifying",
+    "stopping_service",
+    "replacing_binary",
+    "starting_service",
+    "verifying_boot",
+    "observing",
+    "rolling_back",
+];
 
 #[derive(Clone)]
 pub struct ToolAgentUpdateService {
@@ -61,6 +75,12 @@ impl ToolAgentUpdateService {
         let new_version = &message.version;
 
         info!("Processing tool agent update for tool: {} to version: {}", tool_agent_id, new_version);
+
+        if tool_agent_id == UPDATER_TOOL_AGENT_ID {
+            if let Some(phase) = self.in_flight_client_update_phase() {
+                bail!("client update in flight (updater phase: {phase}) — deferring updater self-update to redelivery");
+            }
+        }
 
         // Check if tool is installed
         let mut installed_tool = match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
@@ -168,6 +188,24 @@ impl ToolAgentUpdateService {
         }
 
         Ok(())
+    }
+
+    /// The updater persists its CLIENT_UPDATE state machine to {secured}/updater_state.json;
+    /// a non-terminal phase there means stopping com.openframe.client-updater now would
+    /// interrupt a client swap. State files untouched for over 30 minutes are ignored so a
+    /// wedged updater that stopped clearing its state can still be repaired by a tool update.
+    fn in_flight_client_update_phase(&self) -> Option<String> {
+        let path = self.directory_manager.secured_dir().join(UPDATER_STATE_FILE_NAME);
+        let modified = std::fs::metadata(&path).ok()?.modified().ok()?;
+        if let Ok(age) = modified.elapsed() {
+            if age.as_secs() > UPDATER_STATE_STALE_SECS {
+                return None;
+            }
+        }
+        let raw = std::fs::read_to_string(&path).ok()?;
+        let state: serde_json::Value = serde_json::from_str(&raw).ok()?;
+        let phase = state.get("phase")?.as_str()?;
+        IN_FLIGHT_UPDATER_PHASES.contains(&phase).then(|| phase.to_string())
     }
 
     async fn do_tool_update(

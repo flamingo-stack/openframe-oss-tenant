@@ -381,7 +381,6 @@ impl ToolRunManager {
     }
 
     /// Signal all run loops to stop launching new processes.
-    /// Called by self-update before the updater kills the service.
     pub fn signal_shutdown(&self) {
         self.shutting_down.store(true, Ordering::Release);
         info!("Tool run manager: shutdown signalled, no new launches will occur");
