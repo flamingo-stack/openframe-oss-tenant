@@ -1,20 +1,24 @@
 use anyhow::{Context, Result};
 use reqwest::{Client, header::{HeaderMap, HeaderValue}};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::models::AgentTokenResponse;
+use crate::services::deactivation_service::DeactivationService;
 
 #[derive(Clone)]
 pub struct AuthClient {
     http_client: Client,
     base_url: String,
+    deactivation: Arc<DeactivationService>,
 }
 
 impl AuthClient {
-    pub fn new(base_url: String, http_client: Client) -> Self {
+    pub fn new(base_url: String, http_client: Client, deactivation: Arc<DeactivationService>) -> Self {
         Self {
             http_client,
             base_url,
+            deactivation,
         }
     }
 
@@ -43,7 +47,8 @@ impl AuthClient {
             .context("Failed to send token request")?;
 
         let status = response.status();
-        
+        self.deactivation.on_gateway_status(status).await;
+
         if !status.is_success() {
             return Err(anyhow::anyhow!("Failed to obtain access token: with status {} and body {}", status, response.text().await?));
         }
@@ -78,6 +83,7 @@ impl AuthClient {
             .context("Failed to send refresh token request")?;
 
         let status = response.status();
+        self.deactivation.on_gateway_status(status).await;
 
         if !status.is_success() {
             return Err(anyhow::anyhow!("Failed to refresh access token: HTTP {}", status));

@@ -1,3 +1,4 @@
+use crate::listener::client_update_gate::park_or_dispatch;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::tool_uninstall_service::ToolUninstallService;
@@ -74,33 +75,46 @@ impl ToolUninstallMessageListener {
 
     async fn listen(&self) -> Result<()> {
         info!("Run tool uninstall message listener");
-        let client = self.nats_connection_manager
-            .get_client()
-            .await?;
-        let js = jetstream::new((*client).clone());
-
         let machine_id = self.config_service.get_machine_id()?;
 
-        let consumer = self.create_consumer(&js, &machine_id).await;
+        loop {
+            let client = self.nats_connection_manager
+                .get_client()
+                .await?;
+            let mut reconnect_rx = self.nats_connection_manager.subscribe_reconnect();
+            let js = jetstream::new((*client).clone());
 
-        info!("Start listening for tool uninstall messages");
-        let mut messages = consumer.messages().await?;
+            let consumer = self.create_consumer(&js, &machine_id).await;
 
-        while let Some(msg_result) = messages.next().await {
-            let message = match msg_result {
-                Ok(msg) => msg,
-                Err(e) => {
-                    error!("Failed to receive message: {:#}", e);
-                    continue;
+            info!("Start listening for tool uninstall messages");
+            let mut messages = consumer.messages().await?;
+
+            loop {
+                tokio::select! {
+                    msg_result = messages.next() => {
+                        match msg_result {
+                            Some(Ok(message)) => {
+                                if let Err(e) = self.handle_message(message).await {
+                                    error!("Failed to handle message: {:#}", e);
+                                }
+                            }
+                            Some(Err(e)) => {
+                                error!("Message stream error, recreating consumer: {:#}", e);
+                                return Err(anyhow::anyhow!("Message stream error: {}", e));
+                            }
+                            None => {
+                                warn!("Message stream ended, rebinding consumer");
+                                break;
+                            }
+                        }
+                    }
+                    _ = reconnect_rx.recv() => {
+                        info!("NATS reconnected, re-provisioning tool uninstall consumer");
+                        self.create_consumer(&js, &machine_id).await;
+                    }
                 }
-            };
-
-            if let Err(e) = self.handle_message(message).await {
-                error!("Failed to handle message: {:#}", e);
             }
         }
-
-        Ok(())
     }
 
     async fn handle_message(&self, message: Message) -> Result<()> {
@@ -120,12 +134,26 @@ impl ToolUninstallMessageListener {
 
         let tool_agent_id = uninstall_message.tool_agent_id.clone();
 
+        let listener = self.clone();
+        park_or_dispatch(
+            self.tool_run_manager.clone(),
+            message,
+            format!("tool-uninstall:{}", tool_agent_id),
+            move |msg| async move { listener.dispatch(msg, uninstall_message).await; },
+        ).await;
+
+        Ok(())
+    }
+
+    async fn dispatch(&self, message: Message, uninstall_message: ToolUninstallMessage) {
+        let tool_agent_id = uninstall_message.tool_agent_id.clone();
+
         let tool_lock = self.tool_run_manager.tool_lock(&tool_agent_id).await;
         let _guard = match tool_lock.try_lock() {
             Ok(guard) => guard,
             Err(_) => {
                 info!("Tool {} busy with another operation, deferring uninstall for redelivery", tool_agent_id);
-                return Ok(());
+                return;
             }
         };
 
@@ -156,14 +184,13 @@ impl ToolUninstallMessageListener {
         self.tool_run_manager.clear_updating(&tool_agent_id).await;
 
         if ack_message {
-            message.ack().await
-                .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-            info!("Uninstall message acknowledged for tool: {}", tool_agent_id);
+            match message.ack().await {
+                Ok(_) => info!("Uninstall message acknowledged for tool: {}", tool_agent_id),
+                Err(e) => error!("Failed to ack uninstall message for tool {}: {}", tool_agent_id, e),
+            }
         } else {
             info!("Leaving uninstall message unacked for potential redelivery: tool {}", tool_agent_id);
         }
-
-        Ok(())
     }
 
     async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> PushConsumer {

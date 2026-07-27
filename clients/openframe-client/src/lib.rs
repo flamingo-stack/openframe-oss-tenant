@@ -49,8 +49,10 @@ use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::services::tool_uninstall_service::ToolUninstallService;
+use crate::services::tool_restart_service::ToolRestartService;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
 use crate::listener::tool_uninstall_message_listener::ToolUninstallMessageListener;
+use crate::listener::tool_restart_message_listener::ToolRestartMessageListener;
 use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
 use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
 use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
@@ -64,13 +66,16 @@ use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
+use crate::services::result_store::ResultStore;
+use crate::services::result_outbox_run_manager::ResultOutboxRunManager;
 use crate::services::token_refresh_run_manager::TokenRefreshRunManager;
 use crate::services::mesh_self_heal_service::MeshSelfHealService;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
-use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
+use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, LastKnownGoodService, InitialKeyService};
 use crate::services::execution_service::ExecutionService;
+use crate::services::deactivation_service::DeactivationService;
 use crate::listener::execution_listener::ExecutionListener;
-use crate::models::{CommandMessage, ScriptMessage};
+use crate::models::{CommandMessage, ScriptMessage, ScriptScheduleExecutionMessage};
 use crate::logging::nats_streaming::LogStreamingRunManager;
 use crate::config::update_config::{
     HTTP_CLIENT_TIMEOUT_SECS,
@@ -145,21 +150,29 @@ pub struct Client {
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
     tool_uninstall_message_listener: ToolUninstallMessageListener,
+    #[allow(dead_code)] // TODO: remove when tool-restart is implemented on backend
+    tool_restart_message_listener: ToolRestartMessageListener,
     openframe_client_update_listener: OpenFrameClientUpdateListener,
     tool_agent_update_listener: ToolAgentUpdateListener,
     command_execution_listener: ExecutionListener<CommandMessage>,
     script_execution_listener: ExecutionListener<ScriptMessage>,
+    script_schedule_execution_listener: ExecutionListener<ScriptScheduleExecutionMessage>,
     tool_run_manager: ToolRunManager,
     token_refresh_run_manager: TokenRefreshRunManager,
     mesh_self_heal_service: MeshSelfHealService,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
+    result_outbox_run_manager: ResultOutboxRunManager<NatsMessagePublisher>,
+    result_store: Arc<ResultStore>,
     update_handler_service: UpdateHandlerService,
+    openframe_client_info_service: OpenFrameClientInfoService,
+    last_known_good_service: LastKnownGoodService,
     // Services needed for log streaming initialization
     initial_configuration_service: InitialConfigurationService,
     agent_configuration_service: AgentConfigurationService,
     installed_tools_service: InstalledToolsService,
     initial_key_service: Arc<InitialKeyService>,
+    deactivation_service: Arc<DeactivationService>,
 }
 
 impl Client {
@@ -177,6 +190,9 @@ impl Client {
 
         // Perform initial health check
         directory_manager.perform_health_check()?;
+
+        // Detects the gateway's 410 Gone (tenant deleted) and drives backoff / stop / self-uninstall.
+        let deactivation_service = DeactivationService::new(&directory_manager);
 
         // Initialize initial configuration service
         let initial_configuration_service = InitialConfigurationService::new(directory_manager.clone())
@@ -233,7 +249,8 @@ impl Client {
         // Initialize authentication client
         let auth_client = AuthClient::new(
             http_url.clone(),
-            http_client.clone()
+            http_client.clone(),
+            deactivation_service.clone()
         );
         
         // Initialize encryption service
@@ -262,7 +279,8 @@ impl Client {
         // independent of NATS reconnects)
         let token_refresh_run_manager = TokenRefreshRunManager::new(
             auth_service.clone(),
-            config_service.clone()
+            config_service.clone(),
+            deactivation_service.clone()
         );
 
         // Initialize NATS connection manager
@@ -274,6 +292,7 @@ impl Client {
             initial_configuration_service.clone(),
             auth_service.clone(),
             tls_config_provider,
+            deactivation_service.clone(),
         );
         
         // Initialize tool agent file client
@@ -294,6 +313,7 @@ impl Client {
             http_url.clone(),
             initial_configuration_service.clone(),
             config_service.clone(),
+            deactivation_service.clone(),
         ));
 
         // Initialize installed tools service
@@ -325,14 +345,23 @@ impl Client {
             tool_kill_service.clone(),
         );
 
+        // Initialize tool restart service
+        let tool_restart_service = ToolRestartService::new(
+            installed_tools_service.clone(),
+            tool_kill_service.clone(),
+            tool_run_manager.clone(),
+        );
+
         // Initialize mesh self-heal service
         let mesh_self_heal_service = MeshSelfHealService::new(
             directory_manager.clone(),
             installed_tools_service.clone(),
             tool_kill_service.clone(),
+            tool_restart_service.clone(),
             initial_configuration_service.clone(),
             config_service.clone(),
             tool_run_manager.clone(),
+            deactivation_service.clone(),
         );
 
         // Initialize tool connection service
@@ -362,6 +391,9 @@ impl Client {
         let update_cleanup_service = UpdateCleanupService::new()
             .context("Failed to initialize update cleanup service")?;
 
+        let last_known_good_service = LastKnownGoodService::new(directory_manager.clone())
+            .context("Failed to initialize last-known-good service")?;
+
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
             github_download_service.clone(),
@@ -383,6 +415,7 @@ impl Client {
             openframe_client_info_service.clone(),
             github_download_service.clone(),
             update_state_service.clone(),
+            last_known_good_service.clone(),
             tool_run_manager.clone(),
         );
 
@@ -403,7 +436,8 @@ impl Client {
         let tool_installation_message_listener = ToolInstallationMessageListener::new(
             nats_connection_manager.clone(),
             tool_installation_service,
-            config_service.clone()
+            config_service.clone(),
+            tool_run_manager.clone(),
         );
 
         let tool_uninstall_service = ToolUninstallService::new(
@@ -419,6 +453,14 @@ impl Client {
             config_service.clone(),
         );
 
+        // Initialize tool restart listener (shares the restart service with mesh self-heal)
+        let tool_restart_message_listener = ToolRestartMessageListener::new(
+            nats_connection_manager.clone(),
+            tool_restart_service,
+            config_service.clone(),
+            tool_run_manager.clone(),
+        );
+
         // Initialize OpenFrame client update listener
         let openframe_client_update_listener = OpenFrameClientUpdateListener::new(
             nats_connection_manager.clone(),
@@ -430,7 +472,8 @@ impl Client {
         let tool_agent_update_listener = ToolAgentUpdateListener::new(
             nats_connection_manager.clone(),
             tool_agent_update_service,
-            config_service.clone()
+            config_service.clone(),
+            tool_run_manager.clone(),
         );
 
         let execution_service = ExecutionService::new();
@@ -439,20 +482,46 @@ impl Client {
             .unwrap_or(EXECUTION_MIN_CONCURRENCY)
             .max(EXECUTION_MIN_CONCURRENCY);
         let execution_semaphore = Arc::new(tokio::sync::Semaphore::new(execution_concurrency));
+
+        let result_store = Arc::new(ResultStore::open_or_degrade(
+            directory_manager.secured_dir().join("scheduled_outbox.redb"),
+        ));
+        let flush_notify = Arc::new(tokio::sync::Notify::new());
+        let result_outbox_run_manager = ResultOutboxRunManager::new(
+            result_store.clone(),
+            Arc::new(nats_message_publisher.clone()),
+            flush_notify.clone(),
+        );
+        let result_store_for_recovery = result_store.clone();
+
         let command_execution_listener = ExecutionListener::<CommandMessage>::new(
             nats_connection_manager.clone(),
             nats_message_publisher.clone(),
             execution_service.clone(),
             config_service.clone(),
             execution_semaphore.clone(),
+            result_store.clone(),
+            flush_notify.clone(),
         );
         let script_execution_listener = ExecutionListener::<ScriptMessage>::new(
             nats_connection_manager.clone(),
             nats_message_publisher.clone(),
-            execution_service,
+            execution_service.clone(),
             config_service.clone(),
-            execution_semaphore,
+            execution_semaphore.clone(),
+            result_store.clone(),
+            flush_notify.clone(),
         );
+        let script_schedule_execution_listener =
+            ExecutionListener::<ScriptScheduleExecutionMessage>::new(
+                nats_connection_manager.clone(),
+                nats_message_publisher.clone(),
+                execution_service,
+                config_service.clone(),
+                execution_semaphore,
+                result_store.clone(),
+                flush_notify.clone(),
+            );
 
         // Initialize machine heartbeat publisher and run manager
         let machine_heartbeat_publisher = MachineHeartbeatPublisher::new(
@@ -466,6 +535,7 @@ impl Client {
             update_state_service.clone(),
             openframe_client_info_service.clone(),
             update_cleanup_service.clone(),
+            last_known_good_service.clone(),
             installed_agent_message_publisher.clone(),
             config_service.clone(),
         );
@@ -478,25 +548,56 @@ impl Client {
             nats_connection_manager,
             tool_installation_message_listener,
             tool_uninstall_message_listener,
+            tool_restart_message_listener,
             openframe_client_update_listener,
             tool_agent_update_listener,
             command_execution_listener,
             script_execution_listener,
+            script_schedule_execution_listener,
             tool_run_manager,
             token_refresh_run_manager,
             mesh_self_heal_service,
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
+            result_outbox_run_manager,
+            result_store: result_store_for_recovery,
             update_handler_service,
+            openframe_client_info_service,
+            last_known_good_service,
             initial_configuration_service,
             agent_configuration_service: config_service,
             installed_tools_service,
             initial_key_service,
+            deactivation_service,
         })
     }
 
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
+
+        // Tenant-gone supervisor: stops/restarts tools and self-uninstalls off the detection path.
+        // Started first so its commands are consumed even if the startup auth loop (which itself
+        // feeds the 410s) blocks below.
+        self.deactivation_service.start(self.tool_run_manager.clone());
+
+        if let Err(e) = self.openframe_client_info_service
+            .reconcile_version(env!("OPENFRAME_VERSION"))
+            .await
+        {
+            error!("Failed to reconcile client version at startup: {:#}", e);
+        }
+
+        if let Err(e) = self.last_known_good_service.write_boot_marker().await {
+            error!("Failed to write boot marker: {:#}", e);
+        }
+
+        if let Err(e) = self.last_known_good_service.seed_if_missing().await {
+            error!("Failed to seed last-known-good anchor: {:#}", e);
+        }
+
+        if let Err(e) = self.update_handler_service.record_boot_attempt().await {
+            error!("Failed to record boot attempt: {:#}", e);
+        }
 
         self.initial_key_service.clone().ensure_initial_key().await;
 
@@ -530,11 +631,21 @@ impl Client {
 
         self.tool_uninstall_message_listener.start().await?;
 
+        // TODO: uncomment when implemented on backend
+        // self.tool_restart_message_listener.start().await?;
+
         // Start OpenFrame client update listener in background
         self.openframe_client_update_listener.start().await?;
 
         // Start tool agent update listener in background
         self.tool_agent_update_listener.start().await?;
+
+        // Recover interrupted scheduled scripts, then start the outbox flusher,
+        // both strictly before any execution listener can accept new batches
+        if let Err(e) = self.result_store.recover().await {
+            error!("Failed to recover scheduled result outbox: {:#}", e);
+        }
+        self.result_outbox_run_manager.start();
 
         info!("Starting command execution listener...");
         self.command_execution_listener.start().await?;
@@ -542,6 +653,9 @@ impl Client {
         info!("Starting script execution listener...");
         self.script_execution_listener.start().await?;
         info!("Script execution listener started");
+        info!("Starting script schedule execution listener...");
+        self.script_schedule_execution_listener.start().await?;
+        info!("Script schedule execution listener started");
 
         // Start tool run manager
         self.tool_run_manager.run().await?;

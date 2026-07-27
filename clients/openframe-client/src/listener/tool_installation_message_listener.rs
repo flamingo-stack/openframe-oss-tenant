@@ -1,5 +1,7 @@
+use crate::listener::client_update_gate::park_or_dispatch;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_installation_service::ToolInstallationService;
+use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::AgentConfigurationService;
 use crate::config::update_config::{
     CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
@@ -25,6 +27,7 @@ pub struct ToolInstallationMessageListener {
     pub nats_connection_manager: NatsConnectionManager,
     pub tool_installation_service: ToolInstallationService,
     pub config_service: AgentConfigurationService,
+    pub tool_run_manager: ToolRunManager,
 }
 
 impl ToolInstallationMessageListener {
@@ -35,11 +38,13 @@ impl ToolInstallationMessageListener {
         nats_connection_manager: NatsConnectionManager,
         tool_installation_service: ToolInstallationService,
         config_service: AgentConfigurationService,
+        tool_run_manager: ToolRunManager,
     ) -> Self {
         Self {
             nats_connection_manager,
             tool_installation_service,
             config_service,
+            tool_run_manager,
         }
     }
 
@@ -70,33 +75,46 @@ impl ToolInstallationMessageListener {
 
     async fn listen(&self) -> Result<()> {
         info!("Run tool installation message listener");
-        let client = self.nats_connection_manager
-            .get_client()
-            .await?;
-        let js = jetstream::new((*client).clone());
-
         let machine_id = self.config_service.get_machine_id()?;
 
-        let consumer = self.create_consumer(&js, &machine_id).await;
+        loop {
+            let client = self.nats_connection_manager
+                .get_client()
+                .await?;
+            let mut reconnect_rx = self.nats_connection_manager.subscribe_reconnect();
+            let js = jetstream::new((*client).clone());
 
-        info!("Start listening for tool installation messages");
-        let mut messages = consumer.messages().await?;
+            let consumer = self.create_consumer(&js, &machine_id).await;
 
-        while let Some(msg_result) = messages.next().await {
-            let message = match msg_result {
-                Ok(msg) => msg,
-                Err(e) => {
-                    error!("Failed to receive message: {:#}", e);
-                    continue;
+            info!("Start listening for tool installation messages");
+            let mut messages = consumer.messages().await?;
+
+            loop {
+                tokio::select! {
+                    msg_result = messages.next() => {
+                        match msg_result {
+                            Some(Ok(message)) => {
+                                if let Err(e) = self.handle_message(message).await {
+                                    error!("Failed to handle message: {:#}", e);
+                                }
+                            }
+                            Some(Err(e)) => {
+                                error!("Message stream error, recreating consumer: {:#}", e);
+                                return Err(anyhow::anyhow!("Message stream error: {}", e));
+                            }
+                            None => {
+                                warn!("Message stream ended, rebinding consumer");
+                                break;
+                            }
+                        }
+                    }
+                    _ = reconnect_rx.recv() => {
+                        info!("NATS reconnected, re-provisioning tool installation consumer");
+                        self.create_consumer(&js, &machine_id).await;
+                    }
                 }
-            };
-
-            if let Err(e) = self.handle_message(message).await {
-                error!("Failed to handle message: {:#}", e);
             }
         }
-
-        Ok(())
     }
 
     async fn handle_message(&self, message: Message) -> Result<()> {
@@ -117,20 +135,33 @@ impl ToolInstallationMessageListener {
 
         let tool_agent_id = tool_installation_message.tool_agent_id.clone();
 
+        let listener = self.clone();
+        park_or_dispatch(
+            self.tool_run_manager.clone(),
+            message,
+            format!("tool-installation:{}", tool_agent_id),
+            move |msg| async move { listener.dispatch(msg, tool_installation_message).await; },
+        ).await;
+
+        Ok(())
+    }
+
+    async fn dispatch(&self, message: Message, tool_installation_message: ToolInstallationMessage) {
+        let tool_agent_id = tool_installation_message.tool_agent_id.clone();
+
         match self.tool_installation_service.install(tool_installation_message).await {
             Ok(_) => {
                 info!("Acknowledging installation message for tool: {}", tool_agent_id);
-                message.ack().await
-                    .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-                info!("Installation message acknowledged for tool: {}", tool_agent_id);
+                match message.ack().await {
+                    Ok(_) => info!("Installation message acknowledged for tool: {}", tool_agent_id),
+                    Err(e) => error!("Failed to ack message for tool {}: {}", tool_agent_id, e),
+                }
             }
             Err(e) => {
                 error!("Failed to process tool installation message for tool {}: {:#}", tool_agent_id, e);
                 info!("Leaving message unacked for potential redelivery: tool {}", tool_agent_id);
             }
         }
-
-        Ok(())
     }
 
     async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> PushConsumer {
