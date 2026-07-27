@@ -1,0 +1,57 @@
+# OS matrix for the agent-installation stack. Single source of truth for which
+# machines we prove the agent installs on. See tests/agent-targets/README.md.
+#
+# image_source: family (Google-published) | custom (must pre-exist; Win11, README).
+# node_group:   sole-tenant group for BYOL Win11 client SKUs (cost decision, README §6/§7).
+# tier:         core (blocks release) | extended (reported only).
+
+defaults:
+  machine_type: e2-standard-4
+  boot_disk_size: 80GB
+  max_run_duration: 60m
+
+targets:
+  - key: windows-server-2025
+    instance: agent-targets-win-server-2025
+    os_type: windows
+    image_source: family
+    image_project: windows-cloud
+    image_family: windows-2025
+    tier: core
+
+  - key: windows-server-2022
+    instance: agent-targets-win-server-2022
+    os_type: windows
+    image_source: family
+    image_project: windows-cloud
+    image_family: windows-2022
+    tier: core
+
+  # Custom images — must be imported once (README §6). n2 because sole-tenant/BYOL rules out e2.
+  - key: windows-11-25h2
+    instance: agent-targets-win11-25h2
+    os_type: windows
+    image_source: custom
+    image: agent-targets-win11-25h2
+    node_group: ''
+    machine_type: n2-standard-4
+    tier: core
+
+  - key: windows-11-24h2
+    instance: agent-targets-win11-24h2
+    os_type: windows
+    image_source: custom
+    image: agent-targets-win11-24h2
+    node_group: ''
+    machine_type: n2-standard-4
+    tier: core
+
+# Tool agents the client is expected to bring up after enrolment. tactical-rmm is
+# compatibility-only (being removed platform-wide) so its absence is never fatal.
+tool_agents:
+  - id: meshcentral
+    required: true
+  - id: fleet
+    required: true
+  - id: tactical-rmm
+    required: false

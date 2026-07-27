@@ -1,0 +1,35 @@
+name: Destroy agent-targets target
+description: >
+  Deletes the ephemeral target. Always call with `if: always()`. This is the fast
+  path only — the server-side self-destruct and the reaper are the guarantee.
+  See openframe-agent-targets/README.md §4.
+
+inputs:
+  instance:
+    required: true
+  zone:
+    required: true
+  project:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Delete instance
+      shell: bash
+      run: |
+        set -uo pipefail
+
+        if [[ -z "${{ inputs.instance }}" ]]; then
+          echo "no instance was created; nothing to delete"
+          exit 0
+        fi
+
+        # Never fail the job on cleanup — a race with the self-destruct returns
+        # "not found", and the reaper collects anything this misses.
+        if gcloud compute instances delete "${{ inputs.instance }}" \
+             --project="${{ inputs.project }}" --zone="${{ inputs.zone }}" --quiet; then
+          echo "deleted ${{ inputs.instance }}"
+        else
+          echo "::warning::Could not delete ${{ inputs.instance }} — the reaper will collect it within 15 minutes"
+        fi

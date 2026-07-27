@@ -1,0 +1,45 @@
+name: Run a script on an agent-targets target
+description: >
+  Copies a PowerShell script to the target and runs it over SSH through an IAP
+  tunnel, streaming output and propagating the exit code. SSH only — no WinRM.
+
+inputs:
+  instance:
+    required: true
+  zone:
+    required: true
+  project:
+    required: true
+  script:
+    description: 'Path (in the workspace) to the .ps1 to execute on the target.'
+    required: true
+  args:
+    description: 'Arguments passed verbatim to the script.'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Execute
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        base="$(basename "${{ inputs.script }}")"
+        remote="C:/Windows/Temp/${base}"
+
+        ssh_common=(
+          --project="${{ inputs.project }}"
+          --zone="${{ inputs.zone }}"
+          --tunnel-through-iap
+          --quiet
+        )
+
+        gcloud compute scp "${ssh_common[@]}" \
+          "${{ inputs.script }}" "${{ inputs.instance }}:${remote}"
+
+        # `exit $LASTEXITCODE` — without it PowerShell exits 0 whenever the script
+        # merely ran, turning a failed verification into a green step.
+        gcloud compute ssh "${{ inputs.instance }}" "${ssh_common[@]}" --command \
+          "powershell.exe -NoProfile -ExecutionPolicy Bypass -File '${remote//\//\\}' ${{ inputs.args }}; exit \$LASTEXITCODE"

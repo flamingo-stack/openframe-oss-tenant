@@ -1,0 +1,204 @@
+name: Provision agent-targets target
+description: >
+  Creates one ephemeral Windows VM under a stable name, brings up SSH, and waits
+  until SSH answers. Self-destructs server-side so a crashed workflow cannot leak
+  it. See tests/agent-targets/README.md and openframe-agent-targets/README.md §3.
+
+inputs:
+  instance:
+    description: 'Stable instance name from matrix.yml. Reused across runs — the previous one is deleted first.'
+    required: true
+  os_key:
+    description: 'Matrix key, recorded as the os-key label.'
+    required: true
+  image_source:
+    description: 'family | custom'
+    required: true
+  image_project:
+    description: 'Required when image_source=family.'
+    required: false
+    default: ''
+  image_family:
+    description: 'Required when image_source=family.'
+    required: false
+    default: ''
+  image:
+    description: 'Required when image_source=custom. Must already exist in the agent-targets project.'
+    required: false
+    default: ''
+  node_group:
+    description: 'Sole-tenant node group to pin to (BYOL Win11 client). README §6.'
+    required: false
+    default: ''
+  machine_type:
+    required: true
+  boot_disk_size:
+    required: true
+  max_run_duration:
+    description: 'Server-side self-destruct, e.g. 60m.'
+    required: true
+  project:
+    required: true
+  zone:
+    required: true
+  subnet:
+    required: true
+  network_tag:
+    required: true
+  target_sa:
+    required: true
+
+outputs:
+  instance:
+    description: 'Instance name — the same stable value that was passed in.'
+    value: ${{ inputs.instance }}
+  zone:
+    value: ${{ inputs.zone }}
+  internal_dns:
+    description: 'Internal DNS name, resolvable from the agent-targets subnet.'
+    value: ${{ steps.create.outputs.internal_dns }}
+
+runs:
+  using: composite
+  steps:
+    # Stable names are the identity, so a leftover from a prior run must be
+    # cleared first for `create` to be deterministic. A leftover means that run
+    # did not clean up.
+    - name: Remove any previous instance with this name
+      shell: bash
+      run: |
+        set -uo pipefail
+        if gcloud compute instances describe "${{ inputs.instance }}" \
+             --project="${{ inputs.project }}" --zone="${{ inputs.zone }}" \
+             --format='value(name)' > /dev/null 2>&1; then
+          echo "::warning::${{ inputs.instance }} already existed — a previous run did not clean up. Deleting."
+          gcloud compute instances delete "${{ inputs.instance }}" \
+            --project="${{ inputs.project }}" --zone="${{ inputs.zone }}" --quiet
+        fi
+
+    - name: Resolve image
+      id: image
+      shell: bash
+      run: |
+        set -euo pipefail
+        case "${{ inputs.image_source }}" in
+          family)
+            if [[ -z "${{ inputs.image_project }}" || -z "${{ inputs.image_family }}" ]]; then
+              echo "::error::image_source=family requires image_project and image_family"; exit 2
+            fi
+            echo "args=--image-project=${{ inputs.image_project }} --image-family=${{ inputs.image_family }}" >> "$GITHUB_OUTPUT"
+            ;;
+          custom)
+            if [[ -z "${{ inputs.image }}" ]]; then
+              echo "::error::image_source=custom requires image"; exit 2
+            fi
+            # Fail loudly, never fall back to Server — a missing Win11 image is a
+            # one-time provisioning gap with a documented fix (README §6).
+            if ! gcloud compute images describe "${{ inputs.image }}" \
+                   --project="${{ inputs.project }}" --format='value(name)' > /dev/null 2>&1; then
+              echo "::error::Custom image '${{ inputs.image }}' does not exist in ${{ inputs.project }}. Build it once per openframe-agent-targets/README.md §6."
+              exit 1
+            fi
+            echo "args=--image=${{ inputs.image }} --image-project=${{ inputs.project }}" >> "$GITHUB_OUTPUT"
+            ;;
+          *)
+            echo "::error::Unknown image_source '${{ inputs.image_source }}'"; exit 2 ;;
+        esac
+
+    - name: Create instance
+      id: create
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # devstorage.read_write is the narrowest scope allowing an object write
+        # (collect-windows.ps1). Effective access stays objectCreator on the runs
+        # bucket — scopes only narrow IAM.
+        scopes="https://www.googleapis.com/auth/logging.write"
+        scopes+=",https://www.googleapis.com/auth/monitoring.write"
+        scopes+=",https://www.googleapis.com/auth/devstorage.read_write"
+
+        # enable-windows-ssh + enable-oslogin=FALSE + the folder's requireOsLogin
+        # exception are what make Windows SSH work. openframe-agent-targets/README §3.
+        args=(
+          --project="${{ inputs.project }}"
+          --zone="${{ inputs.zone }}"
+          --machine-type="${{ inputs.machine_type }}"
+          --boot-disk-size="${{ inputs.boot_disk_size }}"
+          --boot-disk-type=pd-balanced
+          --subnet="${{ inputs.subnet }}"
+          --tags="${{ inputs.network_tag }}"
+          --service-account="${{ inputs.target_sa }}"
+          --scopes="$scopes"
+          --no-address
+          --max-run-duration="${{ inputs.max_run_duration }}"
+          --instance-termination-action=DELETE
+          --shielded-secure-boot
+          --shielded-vtpm
+          --shielded-integrity-monitoring
+          --metadata=enable-windows-ssh=TRUE,enable-oslogin=FALSE
+          --metadata-from-file=sysprep-specialize-script-ps1="${GITHUB_ACTION_PATH}/enable-ssh.ps1"
+          --labels=managed-by=agent-targets,os-key=${{ inputs.os_key }},github-run-id=${GITHUB_RUN_ID},github-run-attempt=${GITHUB_RUN_ATTEMPT}
+        )
+        read -ra image_args <<< "${{ steps.image.outputs.args }}"
+        args+=("${image_args[@]}")
+
+        # Sole tenancy where a licence requires dedicated hardware. Note: a node
+        # group bills by the hour and does NOT die with the instance (README §6/§7).
+        if [[ -n "${{ inputs.node_group }}" ]]; then
+          args+=(--node-group="${{ inputs.node_group }}")
+        fi
+
+        gcloud compute instances create "${{ inputs.instance }}" "${args[@]}"
+
+        dns="${{ inputs.instance }}.${{ inputs.zone }}.c.${{ inputs.project }}.internal"
+        echo "internal_dns=$dns" >> "$GITHUB_OUTPUT"
+
+        {
+          echo "### \`${{ inputs.os_key }}\`"
+          echo
+          echo '```bash'
+          echo "gcloud compute ssh ${{ inputs.instance }} \\"
+          echo "  --project=${{ inputs.project }} --zone=${{ inputs.zone }} --tunnel-through-iap"
+          echo '```'
+          echo
+          echo "Internal DNS: \`$dns\`"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Wait for SSH
+      shell: bash
+      run: |
+        set -uo pipefail
+
+        # Poll on a command actually running, not a TCP connect: tcp/22 opens
+        # before metadata SSH keys propagate, so a bare connect gets auth errors.
+        # (Serial log and guest attributes are both disabled by org policy.)
+        deadline=$(( SECONDS + 1200 ))
+        attempt=0
+        until (( SECONDS >= deadline )); do
+          attempt=$(( attempt + 1 ))
+          if gcloud compute ssh "${{ inputs.instance }}" \
+               --project="${{ inputs.project }}" --zone="${{ inputs.zone }}" \
+               --tunnel-through-iap --quiet \
+               --command='echo agent-targets-ssh-ready' 2>/tmp/ssh-probe.log | grep -q agent-targets-ssh-ready; then
+            echo "SSH ready after $attempt attempt(s)"
+            exit 0
+          fi
+          echo "attempt $attempt: SSH not ready yet, retrying in 20s"
+          tail -n 3 /tmp/ssh-probe.log 2>/dev/null || true
+          sleep 20
+        done
+
+        echo "::error::${{ inputs.instance }} never accepted an SSH command within 1200s"
+        gcloud compute instances get-screenshot "${{ inputs.instance }}" \
+          --project="${{ inputs.project }}" --zone="${{ inputs.zone }}" \
+          --destination=/tmp/boot-screenshot.png 2>/dev/null || true
+        exit 1
+
+    - name: Upload boot screenshot on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: boot-screenshot-${{ inputs.os_key }}
+        path: /tmp/boot-screenshot.png
+        if-no-files-found: ignore

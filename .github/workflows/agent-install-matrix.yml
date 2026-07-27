@@ -1,0 +1,237 @@
+name: Agent Install Matrix
+
+# Proves the agent installs, enrols and brings up its tool agents on every Windows
+# version we support. See tests/agent-targets/README.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: 'Which targets to run'
+        type: choice
+        options: [core, all]
+        default: core
+      release_tag:
+        description: 'Release to install. Empty = latest.'
+        type: string
+        default: ''
+      os_filter:
+        description: 'Optional substring filter on the matrix key, e.g. "win11".'
+        type: string
+        default: ''
+      keep_targets:
+        description: 'Leave the VMs running for hands-on debugging. The reaper still collects them.'
+        type: boolean
+        default: false
+
+  schedule:
+    # Nightly, after the release workflow has settled.
+    - cron: '0 3 * * *'
+
+  workflow_run:
+    workflows: ['Openframe Release']
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write   # required for OIDC -> GCP; org policy forbids SA keys
+
+concurrency:
+  # Global, NOT per-ref: stable instance names mean two runs would collide. README.
+  group: agent-targets
+  cancel-in-progress: false
+
+env:
+  AGENT_TARGETS_ZONE: ${{ vars.AGENT_TARGETS_ZONE || 'us-central1-a' }}
+
+jobs:
+  plan:
+    name: Plan matrix
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    outputs:
+      targets: ${{ steps.build.outputs.targets }}
+      release_tag: ${{ steps.release.outputs.tag }}
+      defaults: ${{ steps.build.outputs.defaults }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.release_tag }}"
+          if [[ -z "$tag" ]]; then
+            tag="$(gh release view --json tagName -q .tagName)"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Testing release: $tag"
+
+      - name: Build matrix
+        id: build
+        run: |
+          set -euo pipefail
+          # dispatch chooses tier; schedule/workflow_run always run everything.
+          tier="${{ inputs.tier }}"
+          if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then tier=all; fi
+          filter="${{ inputs.os_filter }}"
+
+          select='.targets'
+          [[ "$tier" == "core" ]] && select="$select | map(select(.tier == \"core\"))"
+          [[ -n "$filter" ]] && select="$select | map(select(.key | test(\"$filter\")))"
+
+          targets=$(yq -o=json "$select" tests/agent-targets/matrix.yml | jq -c .)
+          defaults=$(yq -o=json '.defaults' tests/agent-targets/matrix.yml | jq -c .)
+
+          if [[ "$(jq 'length' <<< "$targets")" == "0" ]]; then
+            echo "::error::Matrix is empty — tier='$tier' filter='$filter' matched nothing"
+            exit 1
+          fi
+
+          # Duplicate instance names would make two legs clobber the same VM.
+          dupes=$(jq -r '[.[].instance] | group_by(.) | map(select(length > 1)) | flatten | unique | join(", ")' <<< "$targets")
+          if [[ -n "$dupes" ]]; then
+            echo "::error::Duplicate instance names in matrix.yml: $dupes"
+            exit 1
+          fi
+
+          echo "targets=$targets"   >> "$GITHUB_OUTPUT"
+          echo "defaults=$defaults" >> "$GITHUB_OUTPUT"
+          jq -r '.[] | "  \(.key) -> \(.instance) (\(.tier))"' <<< "$targets"
+
+  install:
+    name: "${{ matrix.target.key }}"
+    needs: plan
+    runs-on: ubuntu-latest
+    # Extended legs report but do not block. README.
+    continue-on-error: ${{ matrix.target.tier != 'core' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan.outputs.targets) }}
+    env:
+      TARGETS_PROJECT: ${{ vars.AGENT_TARGETS_PROJECT }}
+      TARGETS_SUBNET: ${{ vars.AGENT_TARGETS_SUBNET }}
+      TARGETS_TAG: ${{ vars.AGENT_TARGETS_TAG }}
+      TARGETS_BUCKET: ${{ vars.AGENT_TARGETS_BUCKET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.AGENT_TARGETS_WIF_PROVIDER }}
+          service_account: ${{ vars.AGENT_TARGETS_PROVISIONER_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Resolve artifact URL
+        id: artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          assets="$(gh release view "${{ needs.plan.outputs.release_tag }}" --json assets -q '.assets[].name')"
+          name="$(grep -E 'openframe-client.*windows.*\.(msi|zip)$' <<< "$assets" | head -1 || true)"
+          if [[ -z "$name" ]]; then
+            echo "::error::Release ${{ needs.plan.outputs.release_tag }} publishes no Windows client artifact."
+            echo "Available assets:"; sed 's/^/  /' <<< "$assets"
+            exit 1
+          fi
+          echo "url=https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ needs.plan.outputs.release_tag }}/${name}" >> "$GITHUB_OUTPUT"
+          echo "Artifact: $name"
+
+      - name: Provision target
+        id: target
+        uses: ./.github/steps/agent-targets-provision
+        with:
+          instance: ${{ matrix.target.instance }}
+          os_key: ${{ matrix.target.key }}
+          image_source: ${{ matrix.target.image_source }}
+          image_project: ${{ matrix.target.image_project }}
+          image_family: ${{ matrix.target.image_family }}
+          image: ${{ matrix.target.image }}
+          node_group: ${{ matrix.target.node_group }}
+          machine_type: ${{ matrix.target.machine_type || fromJson(needs.plan.outputs.defaults).machine_type }}
+          boot_disk_size: ${{ matrix.target.boot_disk_size || fromJson(needs.plan.outputs.defaults).boot_disk_size }}
+          max_run_duration: ${{ fromJson(needs.plan.outputs.defaults).max_run_duration }}
+          project: ${{ env.TARGETS_PROJECT }}
+          zone: ${{ env.AGENT_TARGETS_ZONE }}
+          subnet: ${{ env.TARGETS_SUBNET }}
+          network_tag: ${{ env.TARGETS_TAG }}
+          target_sa: ${{ vars.AGENT_TARGETS_VM_SA }}
+
+      - name: Install agent
+        uses: ./.github/steps/agent-targets-exec
+        with:
+          instance: ${{ matrix.target.instance }}
+          zone: ${{ env.AGENT_TARGETS_ZONE }}
+          project: ${{ env.TARGETS_PROJECT }}
+          script: tests/agent-targets/install-windows.ps1
+          args: >-
+            -ArtifactUrl '${{ steps.artifact.outputs.url }}'
+            -ServerUrl '${{ secrets.AGENT_TARGETS_SERVER_URL }}'
+            -InitialKey '${{ secrets.AGENT_TARGETS_INITIAL_KEY }}'
+            -OrgId '${{ secrets.AGENT_TARGETS_ORG_ID }}'
+            -Tags 'agent-targets,${{ matrix.target.key }}'
+
+      - name: Verify installation
+        uses: ./.github/steps/agent-targets-exec
+        with:
+          instance: ${{ matrix.target.instance }}
+          zone: ${{ env.AGENT_TARGETS_ZONE }}
+          project: ${{ env.TARGETS_PROJECT }}
+          script: tests/agent-targets/verify-windows.ps1
+
+      # Runs even on failed verification — that is when logs matter most.
+      - name: Collect agent logs
+        if: always() && steps.target.conclusion == 'success'
+        continue-on-error: true
+        uses: ./.github/steps/agent-targets-exec
+        with:
+          instance: ${{ matrix.target.instance }}
+          zone: ${{ env.AGENT_TARGETS_ZONE }}
+          project: ${{ env.TARGETS_PROJECT }}
+          script: tests/agent-targets/collect-windows.ps1
+          args: -Destination 'gs://${{ vars.AGENT_TARGETS_BUCKET }}/runs/${{ github.run_id }}/${{ matrix.target.key }}'
+
+      - name: Destroy target
+        if: always() && !inputs.keep_targets
+        uses: ./.github/steps/agent-targets-destroy
+        with:
+          instance: ${{ matrix.target.instance }}
+          zone: ${{ env.AGENT_TARGETS_ZONE }}
+          project: ${{ env.TARGETS_PROJECT }}
+
+      - name: Report kept target
+        if: always() && inputs.keep_targets
+        run: |
+          {
+            echo "> \`${{ matrix.target.instance }}\` was **kept** at your request."
+            echo "> The reaper will still delete it once it exceeds its age threshold."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  summary:
+    name: Summary
+    needs: [plan, install]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report
+        run: |
+          {
+            echo "## Agent install matrix — \`${{ needs.plan.outputs.release_tag }}\`"
+            echo
+            echo "Result: **${{ needs.install.result }}**"
+            echo
+            echo "Extended-tier legs are \`continue-on-error\` and do not fail the run."
+            echo "Windows 11 legs depend on a custom image existing in the agent-targets project —"
+            echo "see \`openframe-agent-targets/README.md\` §6."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail on core regression
+        if: needs.install.result == 'failure'
+        run: exit 1
