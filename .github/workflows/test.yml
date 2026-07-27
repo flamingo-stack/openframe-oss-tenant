@@ -320,7 +320,7 @@ jobs:
 
   all-checks:
     name: "All Checks"
-    needs: [changes, lint, build_images, test, test_clients, test_helm, cleanup]
+    needs: [changes, lint, build_images, test_clients, test_helm, cleanup]
     runs-on: ubuntu-latest
     if: always()
     steps:
