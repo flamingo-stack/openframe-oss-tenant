@@ -1,5 +1,0 @@
-flowchart TD
-    Start["Incoming OAuth2 Request"] --> Match["Match Authorization Endpoints"]
-    Match --> Authenticated["Require Authentication"]
-    Authenticated --> JwtSupport["Enable JWT Resource Server"]
-    JwtSupport --> End["OAuth2 / OIDC Response"]

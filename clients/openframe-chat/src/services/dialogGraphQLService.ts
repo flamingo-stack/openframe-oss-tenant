@@ -121,6 +121,7 @@ function getDialogMessagesQuery() {
               integratedToolType
               toolFunction
               title
+              toolExplanation
               parameters
               requiresApproval
               approvalStatus
