@@ -1,316 +1,179 @@
 # Prerequisites
 
-Before getting started with OpenFrame, ensure your development environment meets the following requirements.
-
-## System Requirements
-
-### Minimum Hardware Requirements
-
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| CPU | 4 cores | 8+ cores |
-| RAM | 8 GB | 16+ GB |
-| Storage | 50 GB SSD | 100+ GB SSD |
-| Network | Stable internet | High-speed broadband |
-
-### Operating System Support
-
-OpenFrame supports development on:
-
-- **Linux** (Ubuntu 20.04+, CentOS 8+, Debian 11+)
-- **macOS** (10.15+)
-- **Windows** (Windows 10/11 with WSL2 recommended)
-
-## Required Software
-
-### Java Development
-
-| Software | Version | Purpose |
-|----------|---------|---------|
-| **Java JDK** | 21+ | Backend service development |
-| **Apache Maven** | 3.8+ | Build tool for Java services |
-| **Spring Boot** | 3.3.0 | Already included in dependencies |
-
-**Install Java 21:**
-
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install openjdk-21-jdk
-
-# macOS with Homebrew
-brew install openjdk@21
-
-# Windows (download from Oracle or use Chocolatey)
-choco install openjdk21
-```
-
-**Verify Java installation:**
-
-```bash
-java -version
-# Should show: openjdk version "21.x.x"
-
-mvn -version
-# Should show: Apache Maven 3.8.x or higher
-```
-
-### Node.js Development
-
-| Software | Version | Purpose |
-|----------|---------|---------|
-| **Node.js** | 18+ | VoltAgent core and tooling |
-| **npm** | 9+ | Package management |
-
-**Install Node.js:**
-
-```bash
-# Ubuntu/Debian - via NodeSource
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# macOS with Homebrew
-brew install node
-
-# Windows - download from nodejs.org or use Chocolatey
-choco install nodejs
-```
-
-**Verify Node.js installation:**
-
-```bash
-node --version
-# Should show: v18.x.x or higher
-
-npm --version
-# Should show: 9.x.x or higher
-```
-
-### Database Systems
-
-OpenFrame requires several database systems for different purposes:
-
-| Database | Version | Purpose |
-|----------|---------|---------|
-| **MongoDB** | 6.0+ | Primary transactional storage |
-| **Apache Cassandra** | 4.0+ | Time-series and log persistence |
-| **Apache Pinot** | 1.2.0+ | Real-time analytics |
-| **Redis** | 7.0+ | Caching and session storage |
-
-### Message Brokers
-
-| Software | Version | Purpose |
-|----------|---------|---------|
-| **Apache Kafka** | 3.6+ | Event streaming backbone |
-| **NATS Server** | 2.10+ | Agent messaging |
-
-### Development Tools
-
-| Tool | Version | Purpose |
-|------|---------|---------|
-| **Docker** | 20.10+ | Containerization (recommended for databases) |
-| **Docker Compose** | 2.0+ | Multi-container orchestration |
-| **Git** | 2.30+ | Version control |
-| **IDE** | Latest | IntelliJ IDEA, VS Code, or Eclipse |
-
-## Environment Variables
-
-Set the following environment variables for development:
-
-### Database Configuration
-
-```bash
-# MongoDB
-export MONGODB_URI="mongodb://localhost:27017/openframe"
-export MONGODB_DATABASE="openframe"
-
-# Cassandra
-export CASSANDRA_CONTACT_POINTS="localhost:9042"
-export CASSANDRA_KEYSPACE="openframe_logs"
-
-# Redis
-export REDIS_HOST="localhost"
-export REDIS_PORT="6379"
-
-# Apache Pinot
-export PINOT_CONTROLLER_URL="http://localhost:9000"
-export PINOT_BROKER_URL="http://localhost:8000"
-```
-
-### Message Brokers
-
-```bash
-# Kafka
-export KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
-export KAFKA_GROUP_ID="openframe-dev"
-
-# NATS
-export NATS_SERVERS="nats://localhost:4222"
-export NATS_CLUSTER_ID="openframe-cluster"
-```
-
-### Application Configuration
-
-```bash
-# OpenFrame Configuration
-export OPENFRAME_PROFILE="development"
-export OPENFRAME_CONFIG_SERVER="http://localhost:8888"
-
-# Security
-export JWT_SECRET="your-jwt-secret-key-here"
-export OAUTH2_CLIENT_SECRET="your-oauth2-client-secret"
-
-# AI Integration
-export ANTHROPIC_API_KEY="your-anthropic-api-key"
-export OPENAI_API_KEY="your-openai-api-key"
-```
-
-## Account Requirements
-
-### Required Accounts
-
-While OpenFrame is open-source, you may need accounts for:
-
-- **Anthropic** (for Claude AI integration) - [Get API key](https://console.anthropic.com/)
-- **OpenAI** (for GPT integration) - [Get API key](https://platform.openai.com/)
-- **GitHub** (for source code access) - [Free account](https://github.com/)
-
-### Optional Third-party Integrations
-
-Depending on your MSP needs:
-
-- **Google Workspace** (for SSO)
-- **Microsoft Azure AD** (for SSO)
-- **Slack** (for notifications)
-- **Various RMM/PSA tools** (TacticalRMM, ConnectWise, etc.)
-
-## Network Requirements
-
-### Firewall Considerations
-
-Ensure the following ports are accessible:
-
-| Port | Service | Purpose |
-|------|---------|---------|
-| 8080 | API Service | Internal REST/GraphQL API |
-| 8081 | Gateway Service | Edge routing and security |
-| 8082 | Authorization Server | OAuth2/OIDC endpoints |
-| 8083 | External API | Public API endpoints |
-| 8888 | Config Server | Centralized configuration |
-| 3000 | Frontend UI | Web dashboard (development) |
-
-### Database Ports
-
-| Port | Database | Purpose |
-|------|----------|---------|
-| 27017 | MongoDB | Document storage |
-| 9042 | Cassandra | Time-series data |
-| 6379 | Redis | Caching |
-| 9000 | Pinot Controller | Analytics coordination |
-| 8000 | Pinot Broker | Analytics queries |
-
-### Message Broker Ports
-
-| Port | Service | Purpose |
-|------|---------|---------|
-| 9092 | Kafka | Event streaming |
-| 4222 | NATS | Agent messaging |
-| 2181 | Zookeeper | Kafka coordination |
-
-## Verification Commands
-
-Run these commands to verify your environment is ready:
-
-### Check Java and Maven
-
-```bash
-java -version
-mvn -version
-```
-
-### Check Node.js
-
-```bash
-node --version
-npm --version
-```
-
-### Check Docker
-
-```bash
-docker --version
-docker compose version
-```
-
-### Check Git
-
-```bash
-git --version
-```
-
-### Test Database Connections
-
-```bash
-# MongoDB (if running locally)
-mongosh --eval "db.runCommand('ping')"
-
-# Redis (if running locally)
-redis-cli ping
-```
-
-## Quick Setup with Docker
-
-For development, you can start the required databases using Docker Compose:
-
-```bash
-# Create a docker-compose.yml for development dependencies
-curl -o docker-compose.dev.yml https://raw.githubusercontent.com/flamingo-stack/openframe-oss-tenant/main/docker-compose.dev.yml
-
-# Start development databases
-docker compose -f docker-compose.dev.yml up -d
-```
-
-This will start MongoDB, Redis, Kafka, and other required services in development mode.
-
-## Next Steps
-
-Once your environment meets these prerequisites:
-
-1. **[Quick Start Guide](quick-start.md)** - Get OpenFrame running quickly
-2. **[First Steps Guide](first-steps.md)** - Explore the platform features
-
-## Troubleshooting
-
-### Common Issues
-
-**Java Version Conflicts:**
-```bash
-# Check all Java versions
-java -version
-javac -version
-echo `$JAVA_HOME`
-```
-
-**Port Conflicts:**
-```bash
-# Check what's running on OpenFrame ports
-netstat -tulpn | grep :8080
-lsof -i :8080  # macOS
-```
-
-**Docker Issues:**
-```bash
-# Restart Docker service
-sudo systemctl restart docker  # Linux
-# Or restart Docker Desktop on macOS/Windows
-```
-
-### Getting Help
-
-If you encounter issues:
-- Join the [OpenMSP Slack Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- Check the platform documentation for environment-specific guides
+Before working with OpenFrame OSS Tenant, ensure your development environment meets the following requirements.
 
 ---
 
-*Ready to proceed? Continue with the [Quick Start Guide](quick-start.md) to get OpenFrame running.*
+## Required Software
+
+### Backend (Java / Maven)
+
+| Tool | Minimum Version | Notes |
+|---|---|---|
+| **JDK (Java Development Kit)** | 21 | OpenJDK 21 recommended (matches `<java.version>21</java.version>` in pom.xml) |
+| **Apache Maven** | 3.9+ | Used for building all Spring Boot services |
+
+### Frontend / Desktop Client
+
+| Tool | Minimum Version | Notes |
+|---|---|---|
+| **Node.js** | 20 LTS | Required for the `openframe-chat` React app |
+| **npm** | 9+ | Comes bundled with Node.js |
+| **Rust** | 1.78+ (stable) | Required for `openframe-client` (Rust agent) and `openframe-chat` (Tauri backend) |
+| **Tauri CLI** | 2.x | Bundled via `@tauri-apps/cli` devDependency in `openframe-chat` |
+
+### Infrastructure / Data Services
+
+| Service | Notes |
+|---|---|
+| **MongoDB** | Primary transactional datastore for all services |
+| **Apache Kafka** | Event streaming for the Stream Service |
+| **NATS / JetStream** | Agent-to-platform messaging (used by openframe-client and Client Service) |
+| **Redis** | Session cache and rate limiting |
+| **Apache Cassandra** | Time-series log and command result storage |
+| **Apache Pinot** | Real-time analytics queries |
+
+> **Note:** For local development, the manifests directory contains Kubernetes manifests and initialization scripts for these data services. See the [Local Development](../development/setup/local-development.md) guide for environment setup details.
+
+---
+
+## System Requirements
+
+| Requirement | Minimum | Recommended |
+|---|---|---|
+| **CPU** | 4 cores | 8+ cores |
+| **RAM** | 8 GB | 16+ GB |
+| **Disk** | 20 GB free | 40+ GB SSD |
+| **OS** | Linux / macOS / Windows 10+ | Linux (Ubuntu 22.04) or macOS 14+ |
+
+> Running all services locally is resource-intensive. For development, it is common to run infrastructure services (Kafka, MongoDB, NATS, Redis, Cassandra, Pinot) via container orchestration and only run the specific Spring Boot service you are working on locally.
+
+---
+
+## Rust Toolchain Setup
+
+The `openframe-client` (Rust agent) and `openframe-chat` (Tauri) require a working Rust toolchain.
+
+```bash
+# Install rustup (Rust toolchain installer)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install the stable toolchain
+rustup toolchain install stable
+rustup default stable
+
+# Verify
+rustc --version
+cargo --version
+```
+
+For cross-compilation targets (building the agent for other platforms):
+
+```bash
+# macOS ARM → macOS Intel
+rustup target add x86_64-apple-darwin
+
+# Linux x86_64
+rustup target add x86_64-unknown-linux-gnu
+
+# Windows x86_64
+rustup target add x86_64-pc-windows-msvc
+```
+
+---
+
+## Tauri Prerequisites (openframe-chat)
+
+Tauri requires native system libraries for the WebView. Follow the [official Tauri prerequisites guide](https://tauri.app/start/prerequisites/) for your OS.
+
+### Linux (Ubuntu/Debian)
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  libwebkit2gtk-4.1-dev \
+  build-essential \
+  curl \
+  wget \
+  file \
+  libxdo-dev \
+  libssl-dev \
+  libayatana-appindicator3-dev \
+  librsvg2-dev
+```
+
+### macOS
+
+```bash
+xcode-select --install
+```
+
+### Windows
+
+Install the [Microsoft Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) and [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
+
+---
+
+## Account and Access Requirements
+
+| Requirement | Details |
+|---|---|
+| **GitHub Account** | To clone the repository and access releases |
+| **OpenMSP Community (Slack)** | For support, announcements, and discussion — [join here](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) |
+
+---
+
+## Key Environment Variables
+
+The following environment variables are commonly used across the platform. Specific values depend on your deployment configuration.
+
+| Variable | Used By | Purpose |
+|---|---|---|
+| `OPENFRAME_DEV_MODE` | openframe-client | Set to `1` to use user-local directories and disable TLS cert verification for local dev |
+| `SPRING_DATA_MONGODB_URI` | All Spring Boot services | MongoDB connection string |
+| `SPRING_KAFKA_BOOTSTRAP_SERVERS` | API, Stream services | Kafka broker addresses |
+| `SPRING_DATA_REDIS_HOST` | Gateway, Management | Redis host |
+| `NATS_URL` | Client Service | NATS server connection URL |
+
+> Refer to each service's `application.yml` for the full list of supported properties.
+
+---
+
+## Verification Commands
+
+Run these to confirm your environment is ready:
+
+```bash
+# Java
+java -version
+# Expected: openjdk version "21.x.x"
+
+# Maven
+mvn -version
+# Expected: Apache Maven 3.x.x
+
+# Node.js
+node -version
+# Expected: v20.x.x or higher
+
+# Rust
+rustc --version
+# Expected: rustc 1.78.x (stable)
+
+# Cargo
+cargo --version
+# Expected: cargo 1.78.x
+
+# Tauri CLI (install first if missing)
+npx @tauri-apps/cli --version
+# Expected: tauri-cli x.x.x
+```
+
+---
+
+## Next Steps
+
+Once your environment is ready, continue with:
+
+- [Quick Start](quick-start.md) — Clone the repository and run your first build
+- [First Steps](first-steps.md) — Configure and explore the platform after setup

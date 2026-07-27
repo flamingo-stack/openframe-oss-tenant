@@ -65,10 +65,6 @@ meshcentral_enabled = false
 meshcentral_url = ""
 meshcentral_token = ""
 
-tactical_rmm_enabled = false
-tactical_rmm_url = ""
-tactical_rmm_token = ""
-
 fleet_mdm_enabled = false
 fleet_mdm_url = ""
 fleet_mdm_token = ""

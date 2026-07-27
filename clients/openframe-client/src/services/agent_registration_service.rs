@@ -138,8 +138,11 @@ impl AgentRegistrationService {
     }
 
     fn build_registration_request(&self) -> Result<AgentRegistrationRequest> {
-        let hostname = self.device_data_fetcher.get_hostname()
-            .unwrap_or_default();
+        let hostname = self.device_data_fetcher.get_hostname().unwrap_or_default();
+        if hostname.is_empty() {
+            warn!("Could not resolve any hostname — registering with an empty one");
+        }
+        info!("Registering with hostname: '{}'", hostname);
         let agent_version = self.device_data_fetcher.get_agent_version()
             .unwrap_or_default();
         let os_type = self.device_data_fetcher.get_os_type();

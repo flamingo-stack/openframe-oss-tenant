@@ -488,7 +488,6 @@
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/service/ToolInstallationService.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/service/impl/MachineTagEventServiceImpl.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/service/secretretriver/FleetMdmAgentRegistrationSecretRetriever.java
-../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/service/secretretriver/TacticalRmmAgentRegistrationSecretRetriever.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/service/secretretriver/ToolAgentRegistrationSecretRetriever.java
 ../deps/openframe-oss-lib/openframe-external-api-service-core/src/main/java/com/openframe/external/config/OpenApiConfig.java
 ../deps/openframe-oss-lib/openframe-external-api-service-core/src/main/java/com/openframe/external/controller/DeviceController.java
@@ -949,7 +948,6 @@
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons-v2-generated/brand-logos/slack-logo-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons-v2-generated/brand-logos/soundcloud-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons-v2-generated/brand-logos/spotify-icon.tsx
-../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons-v2-generated/brand-logos/tactical-rmm-logo-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons-v2-generated/brand-logos/tiktok-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons-v2-generated/brand-logos/tiktok-square-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons-v2-generated/brand-logos/trello-icon.tsx
@@ -2458,7 +2456,6 @@
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons/sso-configuration-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons/sun-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons/table-view-icon.tsx
-../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons/tactical-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons/telegram-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons/thumbs-down-icon.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/icons/thumbs-up-icon.tsx
@@ -2869,7 +2866,6 @@
 ../deps/openframe-oss-lib/openframe-management-service-core/src/main/java/com/openframe/management/initializer/IntegratedToolAgentInitializer.java
 ../deps/openframe-oss-lib/openframe-management-service-core/src/main/java/com/openframe/management/initializer/NatsStreamConfigurationInitializer.java
 ../deps/openframe-oss-lib/openframe-management-service-core/src/main/java/com/openframe/management/initializer/OpenFrameClientConfigurationInitializer.java
-../deps/openframe-oss-lib/openframe-management-service-core/src/main/java/com/openframe/management/initializer/TacticalRmmScriptsInitializer.java
 ../deps/openframe-oss-lib/openframe-management-service-core/src/main/java/com/openframe/management/listener/DebeziumConnectorInitializer.java
 ../deps/openframe-oss-lib/openframe-management-service-core/src/main/java/com/openframe/management/model/ScriptConfig.java
 ../deps/openframe-oss-lib/openframe-management-service-core/src/main/java/com/openframe/management/scheduler/ApiKeyStatsSyncScheduler.java
@@ -2910,8 +2906,6 @@
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/deserializer/IntegratedToolEventDeserializer.java
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/deserializer/KafkaMessageDeserializer.java
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/deserializer/MeshCentralEventDeserializer.java
-../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/deserializer/TrmmAgentHistoryEventDeserializer.java
-../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/deserializer/TrmmAuditEventDeserializer.java
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/enumeration/OperationType.java
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/handler/DebeziumCassandraMessageHandler.java
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/handler/DebeziumKafkaMessageHandler.java
@@ -2933,7 +2927,6 @@
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/service/DataEnrichmentService.java
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/service/FleetMdmCacheService.java
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/service/IntegratedToolDataEnrichmentService.java
-../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/service/TacticalRmmCacheService.java
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream/util/TimestampParser.java
 ../deps/openframe-oss-lib/openframe-stream-service-core/src/test/java/com/openframe/stream/deserializer/JsonNodeToMapConverterTest.java
 ../deps/openframe-oss-lib/sdk/fleetmdm/src/main/java/com/openframe/sdk/fleetmdm/FleetMdmClient.java
@@ -2946,16 +2939,6 @@
 ../deps/openframe-oss-lib/sdk/fleetmdm/src/main/java/com/openframe/sdk/fleetmdm/model/QueryResult.java
 ../deps/openframe-oss-lib/sdk/fleetmdm/src/test/java/com/openframe/sdk/fleetmdm/FleetMdmClientQueryTest.java
 ../deps/openframe-oss-lib/sdk/fleetmdm/src/test/java/com/openframe/sdk/fleetmdm/FleetMdmClientTest.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/RegistrationSecretParser.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/TacticalRmmClient.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/exception/TacticalRmmApiException.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/exception/TacticalRmmException.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/model/AgentInfo.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/model/AgentListItem.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/model/AgentRegistrationSecretRequest.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/model/CommandResult.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/model/CreateScriptRequest.java
-../deps/openframe-oss-lib/sdk/tacticalrmm/src/main/java/com/openframe/sdk/tacticalrmm/model/ScriptListItem.java
 ./clients/openframe-chat/postcss.config.js
 ./clients/openframe-chat/src-tauri/build.rs
 ./clients/openframe-chat/src-tauri/src/lib.rs
@@ -3078,10 +3061,6 @@
 ./clients/openframe-client/src/system.rs
 ./clients/openframe-client/src/updater.rs
 ./clients/openframe-client/src/utils/version_comparator.rs
-./integrated-tools/tactical-rmm/tactical-base/custom_settings.py
-./integrated-tools/tactical-rmm/tactical-base/local_settings.py
-./integrated-tools/tactical-rmm/tactical-frontend/env-config.js
-./integrated-tools/tactical-rmm/tactical-frontend/websocket.ts
 ./openframe-e2e-tests/src/test/java/com/openframe/api/AuthApi.java
 ./openframe-e2e-tests/src/test/java/com/openframe/api/AuthFlow.java
 ./openframe-e2e-tests/src/test/java/com/openframe/api/DeviceApi.java
@@ -3440,7 +3419,6 @@
 ./openframe/services/openframe-frontend/src/lib/platform-configs/openframe.config.tsx
 ./openframe/services/openframe-frontend/src/lib/query-client-provider.tsx
 ./openframe/services/openframe-frontend/src/lib/runtime-config.ts
-./openframe/services/openframe-frontend/src/lib/tactical-api-client.ts
 ./openframe/services/openframe-frontend/src/lib/upload-with-auth.ts
 ./openframe/services/openframe-frontend/src/lib/use-authenticated-image.ts
 ./openframe/services/openframe-frontend/src/lib/utils.ts

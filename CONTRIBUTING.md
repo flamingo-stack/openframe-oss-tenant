@@ -1,508 +1,309 @@
-# Contributing to OpenFrame
+# Contributing to OpenFrame OSS Tenant
 
-Welcome to OpenFrame! We appreciate your interest in contributing to our AI-powered MSP platform. This guide outlines our development workflow, code standards, and contribution process.
-
-## 🌟 Getting Started
-
-### Prerequisites
-
-Before contributing, ensure you have:
-- **Java 21** or higher
-- **Node.js 18+** and npm
-- **Docker** and Docker Compose
-- **Git** for version control
-- **Maven 3.8+** for building Java services
-
-### Development Environment Setup
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
-   cd openframe-oss-tenant
-   ```
-
-2. **Start development dependencies:**
-   ```bash
-   ./scripts/dev-start-dependencies.sh
-   ```
-
-3. **Initialize configuration:**
-   ```bash
-   ./clients/openframe-client/scripts/setup_dev_init_config.sh
-   ```
-
-4. **Build and start services:**
-   ```bash
-   mvn clean install -DskipTests
-   ./scripts/start-all-services.sh
-   ```
-
-For detailed setup instructions, see our [Development Environment Guide](./docs/development/setup/local-development.md).
-
-## 📝 Code Style and Conventions
-
-### Java/Spring Boot Guidelines
-
-**General Principles:**
-- Follow [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
-- Use **meaningful variable and method names**
-- Write **self-documenting code** with clear intent
-- Apply **SOLID principles** for object-oriented design
-- Maintain **consistent indentation** (4 spaces, no tabs)
-
-**Naming Conventions:**
-```java
-// Class names: PascalCase
-public class DeviceManagementService {
-    
-    // Constants: UPPER_SNAKE_CASE
-    private static final String DEFAULT_DEVICE_STATUS = "UNKNOWN";
-    private static final int MAX_RETRY_ATTEMPTS = 3;
-    
-    // Variables and methods: camelCase
-    private final OrganizationRepository organizationRepository;
-    private String tenantId;
-    
-    public DeviceResponse updateDeviceStatus(String deviceId, DeviceStatus status) {
-        // Implementation
-    }
-    
-    // Boolean methods: use is/has/can prefix
-    public boolean isDeviceOnline(String deviceId) {
-        return checkDeviceStatus(deviceId) == DeviceStatus.ONLINE;
-    }
-}
-```
-
-**Spring Boot Specific Conventions:**
-```java
-// Controllers: Use @RestController and clear mappings
-@RestController
-@RequestMapping("/api/devices")
-@Validated
-public class DeviceController {
-    
-    // Constructor injection (preferred over field injection)
-    private final DeviceService deviceService;
-    private final DeviceMapper deviceMapper;
-    
-    public DeviceController(DeviceService deviceService, DeviceMapper deviceMapper) {
-        this.deviceService = deviceService;
-        this.deviceMapper = deviceMapper;
-    }
-    
-    // HTTP methods: clear, RESTful endpoints
-    @GetMapping("/{deviceId}")
-    public ResponseEntity<DeviceResponse> getDevice(
-            @PathVariable String deviceId,
-            @AuthenticationPrincipal AuthPrincipal principal) {
-        
-        DeviceResponse device = deviceService.getDevice(deviceId, principal.getTenantId());
-        return ResponseEntity.ok(device);
-    }
-}
-```
-
-**Multi-Tenant Security Requirements:**
-- All database queries MUST include tenant ID scoping
-- JWT token validation MUST include tenant context
-- Add tests to prevent cross-tenant data access
-- Use `@AuthenticationPrincipal AuthPrincipal principal` for tenant context
-
-### Frontend Code Style (TypeScript/React)
-
-**TypeScript Conventions:**
-```typescript
-// Interfaces: PascalCase with descriptive names
-interface DeviceStatusProps {
-  deviceId: string;
-  status: 'online' | 'offline' | 'maintenance';
-  onStatusChange?: (deviceId: string, newStatus: string) => void;
-}
-
-// Components: PascalCase, functional components preferred
-export const DeviceStatus: React.FC<DeviceStatusProps> = ({ 
-  deviceId, 
-  status, 
-  onStatusChange 
-}) => {
-  // Use descriptive variable names
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
-  // Clear function names describing what they do
-  const handleStatusChange = useCallback(async (newStatus: string) => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    
-    try {
-      await deviceApi.updateStatus(deviceId, newStatus);
-      onStatusChange?.(deviceId, newStatus);
-    } catch (error) {
-      setErrorMessage('Failed to update device status');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [deviceId, onStatusChange]);
-  
-  return (
-    <div className={`device-status status-${status}`}>
-      {/* Component JSX */}
-    </div>
-  );
-};
-```
-
-## 🔄 Development Workflow
-
-### Branch Naming Convention
-
-**Format**: `<type>/<short-description>`
-
-**Branch Types:**
-- `feature/` - New features or enhancements
-- `bugfix/` - Bug fixes  
-- `hotfix/` - Critical production fixes
-- `refactor/` - Code refactoring without functional changes
-- `docs/` - Documentation updates
-- `test/` - Test additions or improvements
-- `chore/` - Maintenance tasks, dependency updates
-
-**Examples:**
-```text
-✅ Good branch names:
-feature/multi-tenant-device-filtering
-bugfix/jwt-token-validation-error
-hotfix/memory-leak-in-stream-service
-refactor/organization-service-cleanup
-docs/api-documentation-update
-test/integration-test-for-auth-flow
-
-❌ Poor branch names:
-fix
-update
-john-work
-temp-branch
-bug
-```
-
-### Pull Request Process
-
-**1. Before Creating a PR:**
-```bash
-# Ensure your branch is up to date
-git checkout main
-git pull origin main
-git checkout feature/your-feature-name
-git rebase main
-
-# Run tests locally
-mvn clean verify
-npm test  # For frontend changes
-
-# Run code quality checks
-mvn spotbugs:check
-npm run lint
-```
-
-**2. PR Title and Description Format:**
-
-**Title Format**: `[TYPE] Brief description of changes`
-
-**Types:**
-- `[FEATURE]` - New functionality
-- `[BUGFIX]` - Bug resolution
-- `[HOTFIX]` - Critical production fix
-- `[REFACTOR]` - Code improvement without functional changes
-- `[DOCS]` - Documentation updates
-- `[TEST]` - Test-related changes
-
-**Example PR Description:**
-```markdown
-## [FEATURE] Multi-tenant device filtering
-
-### Summary
-Implements tenant-aware device filtering to ensure users only see devices belonging to their organization and tenant.
-
-### Changes Made
-- Added tenant context validation in DeviceController
-- Implemented tenant-scoped queries in DeviceRepository
-- Updated DeviceService to enforce tenant isolation
-- Added integration tests for multi-tenant scenarios
-
-### Testing
-- [x] Unit tests pass (`mvn test`)
-- [x] Integration tests pass (`mvn verify`)
-- [x] Manual testing with multiple tenants
-- [x] Security tests for cross-tenant access prevention
-
-### Security Considerations
-- All database queries are scoped by tenant ID
-- JWT token validation includes tenant context
-- Added tests to prevent cross-tenant data access
-
-### Breaking Changes
-- None
-
-### Related Issues
-Closes #123
-```
-
-### Commit Message Format
-
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
-
-**Format**: `<type>[optional scope]: <description>`
-
-**Types:**
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `style:` - Code style changes (formatting, no logic changes)
-- `refactor:` - Code refactoring
-- `test:` - Adding or updating tests
-- `chore:` - Maintenance tasks
-- `perf:` - Performance improvements
-- `ci:` - CI/CD changes
-- `build:` - Build system changes
-
-**Examples:**
-```text
-✅ Good commit messages:
-feat(auth): implement multi-tenant JWT validation
-fix(devices): resolve null pointer in device status update
-docs(api): add authentication examples to API documentation
-refactor(services): extract common tenant validation logic
-test(integration): add tests for cross-tenant data isolation
-chore(deps): upgrade Spring Boot to 3.3.0
-
-❌ Poor commit messages:
-Update code
-Fix bug
-Changes
-WIP
-Done
-```
-
-## 🧪 Testing Requirements
-
-### Unit Testing
-- **Coverage Target**: Minimum 70% code coverage
-- **Framework**: JUnit 5 for Java, Jest for TypeScript
-- **Naming**: Test methods should clearly describe what is being tested
-- **Isolation**: Tests must be independent and able to run in any order
-
-```java
-@Test
-void shouldFilterDevicesByTenantId() {
-    // Given
-    String tenantId = "tenant-123";
-    List<Device> tenantDevices = Arrays.asList(
-        createDevice("device-1", tenantId),
-        createDevice("device-2", tenantId)
-    );
-    
-    when(deviceRepository.findByTenantId(tenantId)).thenReturn(tenantDevices);
-    
-    // When
-    List<DeviceResponse> result = deviceService.getDevicesByTenant(tenantId);
-    
-    // Then
-    assertThat(result).hasSize(2);
-    assertThat(result.get(0).getTenantId()).isEqualTo(tenantId);
-}
-```
-
-### Integration Testing
-- **Database**: Use TestContainers for real database testing
-- **Security**: Test cross-tenant data isolation
-- **APIs**: Test complete request/response cycles
-- **Multi-tenancy**: Verify tenant isolation at all layers
-
-### End-to-End Testing
-- **Critical Paths**: User registration, authentication, device management
-- **AI Features**: Mingo AI conversations and tool execution
-- **Real-time Features**: WebSocket connections and streaming
-
-## 🔒 Security Guidelines
-
-### Multi-Tenant Security (CRITICAL)
-Every contribution MUST maintain strict tenant isolation:
-
-```java
-// ✅ CORRECT: Always include tenant scoping
-@GetMapping("/devices")
-public ResponseEntity<List<DeviceResponse>> getDevices(
-        @AuthenticationPrincipal AuthPrincipal principal) {
-    List<DeviceResponse> devices = deviceService.getDevicesByTenant(principal.getTenantId());
-    return ResponseEntity.ok(devices);
-}
-
-// ❌ WRONG: Missing tenant context
-@GetMapping("/devices") 
-public ResponseEntity<List<DeviceResponse>> getDevices() {
-    List<DeviceResponse> devices = deviceService.getAllDevices(); // Security violation!
-    return ResponseEntity.ok(devices);
-}
-```
-
-### Input Validation
-- Validate all user inputs at the controller level
-- Use Spring Validation annotations (`@Valid`, `@NotNull`, etc.)
-- Sanitize inputs to prevent XSS and injection attacks
-- Return structured error responses without sensitive data
-
-### Authentication & Authorization
-- JWT tokens MUST include tenant claims
-- API endpoints MUST validate authentication
-- Business logic MUST enforce authorization rules
-- External APIs MUST use proper API key validation
-
-## 🚀 Deployment and Release Process
-
-### Feature Development Process
-
-**1. Planning and Design:**
-- Create or review GitHub issue
-- Discuss architectural approach with team
-- Design API contracts (if applicable)
-- Consider security and multi-tenancy implications
-- Plan testing strategy
-
-**2. Development:**
-```bash
-# Create feature branch
-git checkout -b feature/your-feature-name
-
-# Develop incrementally with frequent commits
-git add -A
-git commit -m "feat(component): implement core functionality"
-
-# Push regularly for backup and collaboration
-git push origin feature/your-feature-name
-```
-
-**3. Testing and Quality Assurance:**
-```bash
-# Run comprehensive test suite
-mvn clean verify
-npm run test:all
-
-# Check code quality
-mvn spotbugs:check
-npm run lint
-npm run type-check
-
-# Manual testing
-./scripts/start-all-services.sh
-# Test feature functionality manually
-```
-
-### Code Review Checklist
-
-**Security Review:**
-- [ ] All user inputs are validated and sanitized
-- [ ] Database queries include tenant ID scoping
-- [ ] No hardcoded secrets or credentials
-- [ ] Authentication is required for sensitive operations
-- [ ] Authorization checks are in place
-- [ ] Error messages don't leak sensitive information
-
-**Architecture Review:**
-- [ ] Follows established patterns and conventions
-- [ ] Proper separation of concerns
-- [ ] Uses dependency injection correctly
-- [ ] Transaction boundaries are appropriate
-- [ ] Error handling is consistent and comprehensive
-- [ ] Performance considerations are addressed
-
-**Testing Review:**
-- [ ] Unit tests cover new functionality
-- [ ] Integration tests cover service interactions
-- [ ] Edge cases and error scenarios are tested
-- [ ] Test coverage meets minimum requirements (70%+)
-
-## 💬 Community and Communication
-
-### Communication Channels
-
-**OpenMSP Slack Community:**
-- **General Discussion**: `#general`
-- **Development Help**: `#dev-help`
-- **Code Reviews**: `#code-review`
-- **Architecture Discussions**: `#architecture`
-
-**Join the community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-
-### Getting Help
-
-**For New Contributors:**
-- Join the `#new-contributors` channel in Slack
-- Read through existing code and documentation
-- Start with "good first issue" labeled tickets
-- Ask questions in appropriate channels
-- Pair with experienced contributors when possible
-
-**Issue Reporting:**
-Use our GitHub issue templates for:
-- Bug reports with reproduction steps
-- Feature requests with use cases
-- Documentation improvements
-- Performance issues
-
-## 🎯 Contributing Areas
-
-### High-Priority Contribution Areas
-
-**AI/ML Features:**
-- Mingo AI conversation improvements
-- Intelligent alert processing
-- Automated incident response workflows
-- Tool execution optimization
-
-**Multi-Tenancy & Security:**
-- Enhanced tenant isolation
-- OAuth provider integrations
-- API security improvements
-- Cross-tenant testing
-
-**Integration & Tools:**
-- New MSP tool integrations
-- Data pipeline enhancements
-- Real-time streaming improvements
-- Agent communication protocols
-
-**Developer Experience:**
-- Documentation improvements
-- Testing framework enhancements
-- Development tooling
-- CI/CD pipeline optimization
-
-### Good First Issues
-
-Look for issues labeled:
-- `good-first-issue` - Beginner-friendly tasks
-- `documentation` - Documentation improvements
-- `testing` - Test coverage improvements
-- `frontend` - UI/UX enhancements
-
-## 📚 Resources and Documentation
-
-**Essential Reading:**
-- [Architecture Overview](./docs/architecture/README.md) - Understand the system design
-- [Security Best Practices](./docs/security/README.md) - Learn security requirements
-- [Testing Guide](./docs/testing/README.md) - Comprehensive testing practices
-
-**External Resources:**
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [React Documentation](https://reactjs.org/docs)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [Jest Testing Framework](https://jestjs.io/docs/getting-started)
-
-## 📄 License
-
-By contributing to OpenFrame, you agree that your contributions will be licensed under the Flamingo AI Unified License v1.0.
+Thank you for your interest in contributing to OpenFrame OSS Tenant! This guide covers everything you need to know about code style, branch naming, the pull request process, commit message format, and the review checklist.
 
 ---
 
-*Thank you for contributing to OpenFrame! Your efforts help build a better, more secure, and more powerful MSP platform. Together, we're creating the future of AI-powered IT operations.*
+## 💬 Community and Communication
+
+> **Important:** OpenFrame OSS Tenant does **not** use GitHub Issues or GitHub Discussions. All development discussions, bug reports, and feature requests are handled in the **OpenMSP Slack community**.
+
+- **Join OpenMSP Slack:** [https://www.openmsp.ai/](https://www.openmsp.ai/)
+- **Direct invite:** [Join Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+
+Before opening a pull request, we encourage you to discuss the change in Slack first — especially for larger features or refactors.
+
+---
+
+## 🛠️ Development Setup
+
+Before contributing, set up your development environment:
+
+1. Follow the [Prerequisites](./docs/getting-started/prerequisites.md) guide to install required tools
+2. Follow the [Local Development](./docs/development/setup/local-development.md) guide to clone and build the project
+3. Review the [Architecture Overview](./docs/development/architecture/README.md) to understand how services interconnect
+
+---
+
+## 📐 Code Style and Conventions
+
+### Java / Spring Boot Services
+
+The codebase follows standard Java conventions with Lombok for boilerplate reduction.
+
+**Key conventions:**
+- Use `@Slf4j` for logging (via Lombok)
+- Use `@Builder`, `@Data`, `@Value` annotations appropriately
+- Prefer constructor injection over field injection (for testability)
+- Use record types for immutable DTOs where appropriate (Java 21)
+- Follow Spring naming conventions: `*Service`, `*Repository`, `*Controller`, `*DataFetcher`
+
+**Package structure:**
+
+```text
+com.openframe.<service>.
+├── config/        # Spring configuration classes
+├── controller/    # REST controllers
+├── datafetcher/   # GraphQL DGS data fetchers
+├── dataloader/    # GraphQL DGS data loaders
+├── dto/           # Data transfer objects
+├── exception/     # Custom exceptions and handlers
+├── mapper/        # MapStruct or manual mappers
+└── service/       # Business logic services
+```
+
+**Formatting:** The Java codebase follows the default IntelliJ IDEA Java formatting.
+
+### Rust (`openframe-client`)
+
+Follow standard Rust conventions as enforced by `rustfmt` and `clippy`.
+
+```bash
+# Format
+cargo fmt
+
+# Lint (warnings are errors)
+cargo clippy -- -D warnings
+
+# Run both before committing
+cargo fmt && cargo clippy -- -D warnings
+```
+
+**Naming conventions:**
+- Functions and variables: `snake_case`
+- Types and traits: `PascalCase`
+- Constants: `SCREAMING_SNAKE_CASE`
+- Modules: `snake_case`
+
+### TypeScript / React (`openframe-chat`)
+
+The project uses [Biome](https://biomejs.dev/) for both formatting and linting (replaces ESLint + Prettier).
+
+```bash
+cd clients/openframe-chat
+
+# Format and lint check
+npx biome check .
+
+# Auto-fix
+npx biome check --write .
+```
+
+**Conventions:**
+- React components: `PascalCase` filenames and function names
+- Hooks: `use` prefix (e.g., `useChat`, `useChatMessages`)
+- Services: camelCase filenames (e.g., `chatApiService.ts`)
+- Types/interfaces: `PascalCase`
+- Use TypeScript strict mode
+- Prefer named exports for hooks and utilities; default export for page/component files
+
+---
+
+## 🌿 Branch Naming
+
+Use descriptive branch names that reflect the purpose of the change:
+
+```text
+feat/add-script-scheduling-api
+feat/openframe-chat-approval-flow
+fix/agent-token-refresh-race-condition
+fix/tenant-isolation-in-device-query
+refactor/extract-nats-publisher-interface
+docs/update-architecture-diagram
+chore/upgrade-spring-boot-3.3.1
+```
+
+**Format:** `<type>/<short-description-in-kebab-case>`
+
+| Type | When to Use |
+|---|---|
+| `feat` | New feature or capability |
+| `fix` | Bug fix |
+| `refactor` | Code restructuring without behavior change |
+| `docs` | Documentation updates |
+| `chore` | Dependency updates, CI, tooling |
+| `test` | Adding or fixing tests |
+| `perf` | Performance improvements |
+
+---
+
+## 📝 Commit Message Format
+
+OpenFrame OSS Tenant uses [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```text
+<type>(<scope>): <short summary>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Examples:**
+
+```text
+feat(api): add script schedule assignment endpoint
+
+Adds GraphQL mutation for assigning scripts to device groups with
+configurable cron triggers. Validates against existing schedule conflicts.
+```
+
+```text
+fix(openframe-client): prevent token refresh during shutdown
+
+The token refresh run manager now checks the shutdown flag before
+scheduling the next refresh to avoid errors during graceful shutdown.
+```
+
+```text
+chore(deps): upgrade openframe-libs to 5.65.0
+```
+
+**Type reference:**
+
+| Type | Description |
+|---|---|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `refactor` | Code refactoring |
+| `docs` | Documentation only |
+| `test` | Tests only |
+| `chore` | Build, CI, dependencies |
+| `perf` | Performance improvement |
+| `style` | Formatting only (no logic change) |
+
+**Scope examples:** `api`, `gateway`, `auth`, `openframe-client`, `openframe-chat`, `stream`, `management`
+
+---
+
+## 🔀 Pull Request Process
+
+### Before Opening a PR
+
+1. **Build successfully:**
+   - Java: `mvn clean install -DskipTests`
+   - Rust: `cargo build`
+   - TypeScript: `npm run build`
+2. **Run tests:**
+   - Java: `mvn test`
+   - Rust: `cargo test`
+   - TypeScript: `npx tsc --noEmit`
+3. **Lint/format:**
+   - Rust: `cargo fmt && cargo clippy -- -D warnings`
+   - TypeScript: `npx biome check --write .`
+4. **Test your changes manually** against a running instance if possible
+
+### PR Description Template
+
+```markdown
+## Summary
+Brief description of what this PR changes and why.
+
+## Changes
+- List of specific changes made
+
+## Testing
+How to verify this change works correctly.
+
+## Breaking Changes
+Any breaking changes and migration path (if applicable).
+```
+
+### PR Size Guidelines
+
+- **Prefer small, focused PRs** — one logical change per PR
+- Large refactors should be broken into a series of smaller PRs when possible
+- Data migrations (Mongock change units) should be in separate PRs
+
+---
+
+## ✅ Review Checklist
+
+Use this checklist when reviewing or submitting PRs:
+
+### Correctness
+- [ ] Logic is correct and handles edge cases
+- [ ] Error handling is appropriate (exceptions caught, logged, propagated correctly)
+- [ ] No unintended side effects or race conditions
+
+### Security
+- [ ] No secrets or credentials committed to the repository
+- [ ] New API endpoints have proper tenant isolation
+- [ ] User input is validated with `@Valid` or equivalent
+- [ ] MongoDB queries go through tenant-scoped templates
+
+### Testing
+- [ ] New code has appropriate unit/integration tests
+- [ ] Tests cover happy path and key error scenarios
+- [ ] Tests are deterministic (no time-dependent or order-dependent tests)
+
+### Code Quality
+- [ ] Code follows existing conventions (naming, package structure)
+- [ ] No unnecessary complexity introduced
+- [ ] Lombok / Rust idioms used appropriately
+- [ ] No dead code or unused imports
+
+### Documentation
+- [ ] New services or significant features have code-level documentation
+- [ ] Breaking changes are clearly documented in the PR description
+- [ ] New environment variables are documented
+
+### Spring Boot Specific
+- [ ] New configurations are defined in `application.yml`, not hardcoded
+- [ ] Async operations use `@Async` or reactive patterns consistently
+- [ ] New Mongock migrations (`@ChangeUnit`) follow the naming convention
+
+### Rust Specific
+- [ ] `cargo clippy -- -D warnings` passes with no warnings
+- [ ] Error handling uses `anyhow::Result` or `thiserror` appropriately
+- [ ] `Arc`/`Mutex` usage is minimal and necessary
+
+---
+
+## 🔒 Security
+
+When contributing, keep these security principles in mind:
+
+- **Never commit secrets or credentials** — use environment variables or `.env` files (which must be in `.gitignore`)
+- **All new API endpoints** must enforce tenant isolation
+- **MongoDB queries** must go through `TenantAwareMongoTemplate` or equivalent tenant-scoped access
+- **User input** must be validated with `@Valid` and custom validators; never passed raw to queries
+
+Security issues should be reported via the **OpenMSP Slack community** — not through public GitHub issues.
+
+For full security guidelines, see the [Security Documentation](./docs/development/security/README.md).
+
+---
+
+## 📦 Dependency Updates
+
+### Shared Java Libraries (`openframe-libs`)
+
+When updating `openframe.libs.version` in `pom.xml`:
+
+1. Update the version in the root `pom.xml`
+2. Build all services: `mvn clean install -DskipTests`
+3. Run tests: `mvn test`
+4. Document any API changes from the library in the PR description
+
+### Frontend Dependencies (`openframe-chat`)
+
+```bash
+cd clients/openframe-chat
+npm update
+npm install
+npx tsc --noEmit
+npx biome check .
+```
+
+---
+
+## 📄 License
+
+By contributing to OpenFrame OSS Tenant, you agree that your contributions will be licensed under the same license as the project. See the [repository](https://github.com/flamingo-stack/openframe-oss-tenant) for license details.
+
+---
+
+<div align="center">
+  Questions? Join the <a href="https://www.openmsp.ai/"><b>OpenMSP Slack community</b></a> — we're happy to help.
+</div>

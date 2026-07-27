@@ -292,11 +292,6 @@
             </dependency>
             <dependency>
                 <groupId>com.openframe.oss</groupId>
-                <artifactId>openframe-tactical-sdk</artifactId>
-                <version>${openframe.libs.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.openframe.oss</groupId>
                 <artifactId>openframe-data-device-aspect</artifactId>
                 <version>${openframe.libs.version}</version>
             </dependency>

@@ -43,17 +43,10 @@ env:
 
 jobs:
   changes:
-    name: Changes
-    uses: ./.github/workflows/changes.yml
+    name: Detect Changes
+    uses: ./.github/workflows/changes.yaml
     if: |
-      github.event_name == 'pull_request' && 
-      !github.event.pull_request.draft
-
-  matrix:
-    name: Matrix
-    uses: ./.github/workflows/matrix.yml
-    if: |
-      github.event_name == 'pull_request' && 
+      github.event_name == 'pull_request' &&
       !github.event.pull_request.draft
 
   lint:
@@ -66,16 +59,16 @@ jobs:
 
   build_images:
     name: "Build: ${{ matrix.name }}"
-    needs: [changes, matrix]
+    needs: [changes]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.matrix.outputs.images_matrix) }}
+        include: ${{ fromJson(needs.changes.outputs.images_matrix) }}
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(needs.changes.outputs.changes || '{}')[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -143,7 +136,7 @@ jobs:
 
   test:
     name: Run Tests
-    needs: [build_images, changes, matrix]
+    needs: [build_images, changes]
     timeout-minutes: 60
     runs-on: Linux-x64
     env:
@@ -164,8 +157,8 @@ jobs:
       - name: Override helm values
         uses: ./.github/steps/helm-override
         with:
-          matrix: ${{ needs.matrix.outputs.images_matrix }}
-          changes: ${{ toJSON(needs.changes.outputs) }}
+          matrix: ${{ needs.changes.outputs.images_matrix }}
+          changes: ${{ needs.changes.outputs.changes }}
           commit-sha: ${{ needs.changes.outputs.test_commit_sha }}
           branch-name: ${{ github.head_ref }}
 
@@ -234,7 +227,7 @@ jobs:
 
   test_clients:
     name: "Test Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
-    needs: [changes, matrix]
+    needs: [changes]
     runs-on: "${{ matrix.os }}-latest"
     env:
       CARGO_INCREMENTAL: 0
@@ -246,12 +239,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.matrix.outputs.clients_matrix) }}
+        include: ${{ fromJson(needs.changes.outputs.clients_matrix) }}
 
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(needs.changes.outputs.changes || '{}')[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -357,12 +350,12 @@ jobs:
 
   test_helm:
     name: "Test Helm Chart"
-    needs: [matrix, changes]
+    needs: [changes]
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'pull_request' && 
-      !github.event.pull_request.draft && 
-      contains(needs.changes.outputs.helm, 'true')
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft &&
+      contains(fromJSON(needs.changes.outputs.changes || '{}').helm, 'true')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -374,51 +367,54 @@ jobs:
 
       - name: Install helm-unittest plugin
         run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v0.4.1
-      
+
       - name: Test Chart
         run: |
-          helm template app ./manifests/app-of-apps 
+          helm template app ./manifests/app-of-apps
           helm unittest ./manifests/app-of-apps
 
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
-    needs: [changes, matrix, test]
+    needs: [changes, test]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
+    if: |
+      always() &&
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft &&
+      needs.changes.result == 'success'
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.matrix.outputs.images_matrix) }}
+        include: ${{ fromJson(needs.changes.outputs.images_matrix || '[]') }}
     steps:
       - uses: actions/checkout@v4
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(fromJSON(needs.changes.outputs.changes || '{}')[matrix.name], 'true')
 
       - name: Login to GitHub Registry
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(fromJSON(needs.changes.outputs.changes || '{}')[matrix.name], 'true')
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      
+
       - name: Delete the CI tag
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(fromJSON(needs.changes.outputs.changes || '{}')[matrix.name], 'true')
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: ${{ needs.changes.outputs.test_commit_sha }}
-  
+
 
   all-checks:
     name: "All Checks"
-    needs: [build_images, test, test_clients, test_helm, cleanup]
+    needs: [changes, lint, build_images, test, test_clients, test_helm, cleanup]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: exit 1
       - run: echo "All checks passed"
-

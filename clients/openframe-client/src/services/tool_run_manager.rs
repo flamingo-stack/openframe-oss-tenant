@@ -10,6 +10,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::{RwLock, Mutex};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use crate::models::installed_tool::{InstalledTool, Installation, ToolRecordState};
+use crate::platform::system_service;
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 use crate::services::tool_kill_service::ToolKillService;
@@ -404,6 +405,50 @@ impl ToolRunManager {
     pub fn signal_shutdown(&self) {
         self.shutting_down.store(true, Ordering::Release);
         info!("Tool run manager: shutdown signalled, no new launches will occur");
+    }
+
+    /// Reversibly stop every managed tool (kill processes / stop services) without uninstalling.
+    /// Used when the tenant is gone, to stop tools hammering their now-unreachable endpoints.
+    pub async fn stop_all(&self) -> Result<()> {
+        self.signal_shutdown();
+        // Clear supervision so a later restart_all()/run() can relaunch these tools (symmetry
+        // with restart_all): the shutdown-triggered loop break leaves ids in running_tools.
+        self.running_tools.write().await.clear();
+        let tools = self
+            .installed_tools_service
+            .get_all()
+            .await
+            .context("Failed to list installed tools for stop_all")?;
+        for tool in &tools {
+            if let Err(e) = self.tool_kill_service.stop_installed_tool(tool, false).await {
+                warn!(tool_id = %tool.tool_agent_id, "stop_all: failed to stop tool: {:#}", e);
+            }
+        }
+        info!("Tool run manager: stopped {} tool(s)", tools.len());
+        Ok(())
+    }
+
+    /// Resume supervision and relaunch every managed tool after a [`stop_all`].
+    /// Clears the one-way shutdown flag and the running set, restarts OS-service tools
+    /// (which `run()` deliberately skips), then re-spawns the standard/GUI supervisors.
+    pub async fn restart_all(&self) -> Result<()> {
+        self.shutting_down.store(false, Ordering::Release);
+        self.running_tools.write().await.clear();
+
+        match self.installed_tools_service.get_all().await {
+            Ok(tools) => {
+                for tool in &tools {
+                    if let Installation::Service { service_name, .. } = &tool.installation {
+                        if let Err(e) = system_service::start_service(service_name).await {
+                            warn!(service = %service_name, "restart_all: failed to start service tool: {:#}", e);
+                        }
+                    }
+                }
+            }
+            Err(e) => warn!("restart_all: failed to list installed tools for service restart: {:#}", e),
+        }
+
+        self.run().await
     }
 
     pub async fn mark_client_update_pending(&self) {

@@ -7,8 +7,6 @@ fn main() {
     forward_required("MESHCENTRAL_AGENT_VERSION");
     #[cfg(feature = "fleetmdm-agent-version")]
     forward_required("FLEETMDM_AGENT_VERSION");
-    #[cfg(feature = "tacticalrmm-agent-version")]
-    forward_required("TACTICALRMM_AGENT_VERSION");
     #[cfg(feature = "osquery-version")]
     forward_required("OSQUERY_VERSION");
 }
