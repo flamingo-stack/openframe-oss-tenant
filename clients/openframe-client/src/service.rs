@@ -461,7 +461,7 @@ impl Service {
         let install_path = Self::get_install_location();
 
         // Deregistration runs inside the platform flow, after the stopped service can no longer heartbeat.
-        let deregistration_service = if std::env::var_os(REINSTALL_ENV).is_some() {
+        let deregistration_service = if std::env::var(REINSTALL_ENV).as_deref() == Ok("1") {
             info!("Reinstall in progress, skipping platform deregistration");
             None
         } else {
