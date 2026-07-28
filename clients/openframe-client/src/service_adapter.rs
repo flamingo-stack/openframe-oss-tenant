@@ -2,8 +2,8 @@ use anyhow::{Context, Result};
 use plist::Dictionary;
 use serde_json;
 use service_manager::{
-    ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
-    ServiceUninstallCtx,
+    RestartPolicy, ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx,
+    ServiceStopCtx, ServiceUninstallCtx,
 };
 use std::collections::HashMap;
 use std::ffi::OsString;
@@ -181,7 +181,11 @@ impl CrossPlatformServiceManager {
             working_directory: Some(working_dir),
             environment: Some(environment),
             autostart: self.config.run_at_load,
-            disable_restart_on_failure: !self.config.restart_on_crash,
+            restart_policy: if self.config.restart_on_crash {
+                RestartPolicy::OnFailure { delay_secs: None, max_retries: None, reset_after_secs: None }
+            } else {
+                RestartPolicy::Never
+            },
         };
 
         // Apply platform-specific configuration
