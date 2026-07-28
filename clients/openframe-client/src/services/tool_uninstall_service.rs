@@ -1,5 +1,8 @@
 use anyhow::{Context, Result};
+use std::process::Stdio;
+use std::time::Instant;
 use tracing::{info, warn, debug};
+use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 use crate::models::{InstalledTool, Installation};
 use crate::services::InstalledToolsService;
@@ -10,6 +13,69 @@ use crate::platform::DirectoryManager;
 use crate::platform::remove_app_bundle;
 #[cfg(target_os = "windows")]
 use crate::platform::file_lock::log_file_lock_info;
+
+const UNINSTALL_COMMAND_TIMEOUT_SECS: u64 = 90;
+const OUTPUT_DRAIN_TIMEOUT_SECS: u64 = 5;
+
+type OutputReader = Option<tokio::task::JoinHandle<()>>;
+
+async fn drain_command_output(stdout: OutputReader, stderr: OutputReader, tool_agent_id: &str) {
+    for (handle, stream) in [(stdout, "stdout"), (stderr, "stderr")] {
+        let Some(mut handle) = handle else { continue };
+        if tokio::time::timeout(
+            tokio::time::Duration::from_secs(OUTPUT_DRAIN_TIMEOUT_SECS),
+            &mut handle,
+        ).await.is_err() {
+            warn!(
+                "{} of uninstall command for {} still open after {}s (child likely left a process holding the pipe); abandoning it",
+                stream, tool_agent_id, OUTPUT_DRAIN_TIMEOUT_SECS
+            );
+            handle.abort();
+        }
+    }
+}
+
+async fn stream_command_output<R>(pipe: R, tool_agent_id: String, stream: &'static str)
+where
+    R: AsyncReadExt + Unpin,
+{
+    let mut pipe = pipe;
+    let mut chunk = [0u8; 1024];
+    let mut line: Vec<u8> = Vec::new();
+
+    loop {
+        match pipe.read(&mut chunk).await {
+            Ok(0) => break,
+            Ok(read) => {
+                for &byte in &chunk[..read] {
+                    if byte == b'\n' || byte == b'\r' {
+                        emit_command_line(&mut line, &tool_agent_id, stream);
+                    } else {
+                        line.push(byte);
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("Failed reading {} of uninstall command for {}: {}", stream, tool_agent_id, e);
+                break;
+            }
+        }
+    }
+
+    emit_command_line(&mut line, &tool_agent_id, stream);
+}
+
+fn emit_command_line(line: &mut Vec<u8>, tool_agent_id: &str, stream: &'static str) {
+    if line.is_empty() {
+        return;
+    }
+    let text = String::from_utf8_lossy(line);
+    let text = text.trim();
+    if !text.is_empty() {
+        info!("[uninstall {} {}] {}", tool_agent_id, stream, text);
+    }
+    line.clear();
+}
 
 pub enum UninstallOutcome {
     Removed,
@@ -144,13 +210,23 @@ impl ToolUninstallService {
             return Ok(());
         }
 
-        info!("Running uninstallation command for tool: {}", tool_agent_id);
+        info!(
+            "Running uninstallation command for tool: {}: {} {:?}",
+            tool_agent_id,
+            agent_path.display(),
+            processed_args
+        );
 
         // Execute uninstallation command
         let mut cmd = Command::new(&agent_path);
         cmd.args(&processed_args);
+        cmd.kill_on_drop(true);
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
 
-        let output = cmd.output().await
+        let started = Instant::now();
+        let mut child = cmd
+            .spawn()
             .map_err(|e| {
                 #[cfg(target_os = "windows")]
                 log_file_lock_info(&e, &agent_path.to_string_lossy(), "execute uninstallation command");
@@ -158,22 +234,52 @@ impl ToolUninstallService {
             })
             .context("Failed to execute uninstallation command")?;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
+        let stdout_reader = child.stdout.take().map(|pipe| {
+            tokio::spawn(stream_command_output(pipe, tool_agent_id.to_string(), "stdout"))
+        });
+        let stderr_reader = child.stderr.take().map(|pipe| {
+            tokio::spawn(stream_command_output(pipe, tool_agent_id.to_string(), "stderr"))
+        });
 
+        let wait_result = tokio::time::timeout(
+            tokio::time::Duration::from_secs(UNINSTALL_COMMAND_TIMEOUT_SECS),
+            child.wait(),
+        ).await;
+
+        let status = match wait_result {
+            Ok(Ok(status)) => {
+                drain_command_output(stdout_reader, stderr_reader, tool_agent_id).await;
+                status
+            }
+            Ok(Err(e)) => {
+                drain_command_output(stdout_reader, stderr_reader, tool_agent_id).await;
+                return Err(e).context("Failed to wait for uninstallation command");
+            }
+            Err(_) => {
+                let _ = child.kill().await;
+                drain_command_output(stdout_reader, stderr_reader, tool_agent_id).await;
+                return Err(anyhow::anyhow!(
+                    "Uninstallation command for {} timed out after {}s (last output above)",
+                    tool_agent_id, UNINSTALL_COMMAND_TIMEOUT_SECS
+                ));
+            }
+        };
+
+        if !status.success() {
             // Fail immediately if uninstall command returns non-zero exit code
             return Err(anyhow::anyhow!(
-                "Uninstallation command for {} exited with status: {}\nstdout: {}\nstderr: {}",
+                "Uninstallation command for {} exited with status: {} after {:?} (output above)",
                 tool_agent_id,
-                output.status,
-                stdout,
-                stderr
+                status,
+                started.elapsed()
             ));
         }
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        info!("Uninstallation command executed successfully for tool: {}\nstdout: {}", tool_agent_id, stdout);
+        info!(
+            "Uninstallation command executed successfully for tool: {} in {:?}",
+            tool_agent_id,
+            started.elapsed()
+        );
 
         // Cleanup any remaining processes after uninstall command (some tools spawn detached processes)
         self.cleanup_tool_processes(tool).await;
