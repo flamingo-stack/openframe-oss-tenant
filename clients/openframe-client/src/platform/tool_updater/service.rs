@@ -166,28 +166,27 @@ impl ToolUpdater for ServiceToolUpdater {
         info!(tool_id = %tool_agent_id, "Finalizing Service tool update");
 
         if let Installation::Service { service_name, .. } = &tool.installation {
-            // A service alive after prepare's stop either restarted on the new binary (benign) or is the surviving pre-update process; a locked .old tells them apart.
+            // A locked .old means a pre-update process is still executing, whatever SCM reports — remediate before any start.
             #[cfg(target_os = "windows")]
-            if system_service::service_not_stopped(service_name) {
+            {
                 let exec_path = self.resolve_executable_path(tool);
-                if clear_aside_binary(&exec_path, tool_agent_id).await {
-                    // Benign: fall through to start_service — it no-ops on RUNNING and recovers a dying StopPending.
-                    info!(tool_id = %tool_agent_id,
-                          "Service {service_name} already active with the updated binary");
-                } else {
+                if !clear_aside_binary(&exec_path, tool_agent_id).await {
                     tracing::error!(tool_id = %tool_agent_id,
-                           "Service {service_name} is still executing the pre-update binary — restarting it on the new one");
+                           "A pre-update process still holds the old {service_name} binary — remediating before start");
                     self.remediate_orphaned_service(tool, service_name, &exec_path).await;
                     cleanup_backup(ctx.backup_path.as_ref(), tool_agent_id).await;
                     return Ok(());
+                }
+                if system_service::service_not_stopped(service_name) {
+                    // Benign: SCM recovery already restarted it on the new binary; start_service below no-ops on RUNNING.
+                    info!(tool_id = %tool_agent_id,
+                          "Service {service_name} already active with the updated binary");
                 }
             }
 
             info!(tool_id = %tool_agent_id, "Starting service: {}", service_name);
             system_service::start_service(service_name).await
                 .with_context(|| format!("Failed to start service: {}", service_name))?;
-
-            clear_aside_binary(&self.resolve_executable_path(tool), tool_agent_id).await;
         }
 
         cleanup_backup(ctx.backup_path.as_ref(), tool_agent_id).await;
