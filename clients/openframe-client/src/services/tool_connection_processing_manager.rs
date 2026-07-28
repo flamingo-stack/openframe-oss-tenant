@@ -128,10 +128,18 @@ impl ToolConnectionProcessingManager {
             // (and is reported as degraded) instead of spinning a tight retry loop forever.
             let mut agent_id_failures: u32 = 0;
             loop {
-                // Stop if the tool was uninstalled while we were retrying.
-                if let Ok(None) = installed_tools_service.get_by_tool_agent_id(&tool.tool_agent_id).await {
-                    info!(tool_id = %tool.tool_id, "Tool no longer installed - stopping connection processing");
-                    break;
+                // Stop if the tool was uninstalled while we were retrying; don't proceed on a failed registry read.
+                match installed_tools_service.get_by_tool_agent_id(&tool.tool_agent_id).await {
+                    Ok(Some(_)) => {}
+                    Ok(None) => {
+                        info!(tool_id = %tool.tool_id, "Tool no longer installed - stopping connection processing");
+                        break;
+                    }
+                    Err(e) => {
+                        warn!(tool_id = %tool.tool_id, "Cannot read installed tools registry: {e:#} - retrying");
+                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                        continue;
+                    }
                 }
 
                 while tool_run_manager.is_updating(&tool.tool_agent_id).await {
