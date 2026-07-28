@@ -55,6 +55,7 @@ use crate::listener::tool_uninstall_message_listener::ToolUninstallMessageListen
 use crate::listener::tool_restart_message_listener::ToolRestartMessageListener;
 use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
 use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
+use crate::listener::client_uninstall_message_listener::ClientUninstallMessageListener;
 use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
 use crate::services::tool_agent_update_service::ToolAgentUpdateService;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
@@ -154,6 +155,8 @@ pub struct Client {
     tool_restart_message_listener: ToolRestartMessageListener,
     openframe_client_update_listener: OpenFrameClientUpdateListener,
     tool_agent_update_listener: ToolAgentUpdateListener,
+    #[allow(dead_code)] // TODO: remove when the CLIENT_UNINSTALL stream exists on the backend
+    client_uninstall_message_listener: ClientUninstallMessageListener,
     command_execution_listener: ExecutionListener<CommandMessage>,
     script_execution_listener: ExecutionListener<ScriptMessage>,
     script_schedule_execution_listener: ExecutionListener<ScriptScheduleExecutionMessage>,
@@ -476,6 +479,13 @@ impl Client {
             tool_run_manager.clone(),
         );
 
+        // Initialize client uninstall listener (dashboard-triggered device uninstall)
+        let client_uninstall_message_listener = ClientUninstallMessageListener::new(
+            nats_connection_manager.clone(),
+            deactivation_service.clone(),
+            config_service.clone(),
+        );
+
         let execution_service = ExecutionService::new();
         let execution_concurrency = std::thread::available_parallelism()
             .map(|n| n.get())
@@ -551,6 +561,7 @@ impl Client {
             tool_restart_message_listener,
             openframe_client_update_listener,
             tool_agent_update_listener,
+            client_uninstall_message_listener,
             command_execution_listener,
             script_execution_listener,
             script_schedule_execution_listener,
@@ -639,6 +650,9 @@ impl Client {
 
         // Start tool agent update listener in background
         self.tool_agent_update_listener.start().await?;
+
+        // TODO: uncomment when the CLIENT_UNINSTALL stream exists on the backend
+        // self.client_uninstall_message_listener.start().await?;
 
         // Recover interrupted scheduled scripts, then start the outbox flusher,
         // both strictly before any execution listener can accept new batches
