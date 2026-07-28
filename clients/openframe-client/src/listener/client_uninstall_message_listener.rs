@@ -14,6 +14,7 @@ use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
 use async_nats::jetstream::consumer::DeliverPolicy;
 use async_nats::jetstream::Message;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::time::Duration;
 use anyhow::Result;
@@ -26,6 +27,7 @@ pub struct ClientUninstallMessageListener {
     nats_connection_manager: NatsConnectionManager,
     deactivation_service: Arc<DeactivationService>,
     config_service: AgentConfigurationService,
+    uninstall_dispatched: Arc<AtomicBool>,
 }
 
 impl ClientUninstallMessageListener {
@@ -41,6 +43,7 @@ impl ClientUninstallMessageListener {
             nats_connection_manager,
             deactivation_service,
             config_service,
+            uninstall_dispatched: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -57,6 +60,12 @@ impl ClientUninstallMessageListener {
                     Err(e) => {
                         error!("Client uninstall message listener error: {:#}", e);
                     }
+                }
+
+                // Stay down after a dispatched uninstall so the deleted durable is not recreated.
+                if listener.uninstall_dispatched.load(Ordering::Acquire) {
+                    info!("Client uninstall dispatched, listener stopping permanently");
+                    break;
                 }
 
                 info!(
@@ -90,8 +99,11 @@ impl ClientUninstallMessageListener {
                     msg_result = messages.next() => {
                         match msg_result {
                             Some(Ok(message)) => {
-                                if let Err(e) = self.handle_message(message).await {
+                                if let Err(e) = self.handle_message(message, &js, &machine_id).await {
                                     error!("Failed to handle message: {:#}", e);
+                                }
+                                if self.uninstall_dispatched.load(Ordering::Acquire) {
+                                    return Ok(());
                                 }
                             }
                             Some(Err(e)) => {
@@ -113,9 +125,17 @@ impl ClientUninstallMessageListener {
         }
     }
 
-    async fn handle_message(&self, message: Message) -> Result<()> {
+    async fn handle_message(&self, message: Message, js: &jetstream::Context, machine_id: &str) -> Result<()> {
         let payload = String::from_utf8_lossy(&message.payload);
         info!("Received client uninstall message: {:?}", payload);
+
+        // Client self-uninstall is macOS/Windows only; drop the command elsewhere.
+        if !cfg!(any(target_os = "macos", target_os = "windows")) {
+            warn!("Client self-uninstall is not supported on this platform, ignoring message");
+            message.ack().await
+                .map_err(|e| anyhow::anyhow!("Failed to ack unsupported-platform message: {}", e))?;
+            return Ok(());
+        }
 
         // Any message on this machine-scoped subject is the command; no payload contract yet.
         self.deactivation_service.request_uninstall().await;
@@ -124,6 +144,15 @@ impl ClientUninstallMessageListener {
         message.ack().await
             .map_err(|e| anyhow::anyhow!("Failed to ack client uninstall message: {}", e))?;
         info!("Client uninstall message acknowledged");
+
+        // Drop the durable so a reinstall starts a fresh consumer instead of inheriting a stale command.
+        let durable_name = Self::build_durable_name(machine_id);
+        match js.delete_consumer_from_stream(&durable_name, Self::STREAM_NAME).await {
+            Ok(_) => info!("Deleted client uninstall consumer {}", durable_name),
+            Err(e) => warn!("Failed to delete client uninstall consumer {} (continuing with uninstall): {:#}", durable_name, e),
+        }
+
+        self.uninstall_dispatched.store(true, Ordering::Release);
 
         Ok(())
     }
