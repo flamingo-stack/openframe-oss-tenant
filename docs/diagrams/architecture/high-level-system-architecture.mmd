@@ -1,0 +1,47 @@
+graph TB
+    subgraph Clients["Client Layer"]
+        ChatApp["openframe-chat\n(Tauri Desktop App)"]
+        FrontendUI["openframe-frontend\n(Web UI)"]
+    end
+
+    subgraph Gateway["Edge Layer"]
+        GW["Gateway Service\n:8081\nSpring Cloud Gateway"]
+    end
+
+    subgraph CoreServices["Core Services"]
+        API["API Service\n:8080\nSpring Boot + GraphQL"]
+        AuthServer["Authorization Server\n:8082\nOAuth2/OIDC"]
+        ExtAPI["External API\n:8083\nSpring Boot REST"]
+        StreamSvc["Stream Service\n:8085\nKafka Streams"]
+        ClientSvc["Client Service\n:8084\nSpring Boot + NATS"]
+    end
+
+    subgraph AgentLayer["Agent Layer"]
+        OFClient["openframe-client\n(Rust Agent)\nSystem Service"]
+    end
+
+    subgraph DataLayer["Data Layer"]
+        Mongo[("MongoDB\nTransactional Storage")]
+        Cassandra[("Cassandra\nTime-Series / Logs")]
+        Pinot[("Apache Pinot\nReal-Time Analytics")]
+        Redis[("Redis\nCache / Sessions")]
+        Kafka[("Apache Kafka\nEvent Streaming")]
+        NATS[("NATS/JetStream\nAgent Messaging")]
+    end
+
+    ChatApp --> GW
+    FrontendUI --> GW
+    GW --> API
+    GW --> AuthServer
+    GW --> ExtAPI
+    API --> Mongo
+    API --> Pinot
+    API --> Kafka
+    StreamSvc --> Kafka
+    StreamSvc --> Cassandra
+    StreamSvc --> Pinot
+    ClientSvc --> Mongo
+    ClientSvc --> NATS
+    AuthServer --> Mongo
+    OFClient --> NATS
+    OFClient --> API

@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Agent as openframe-client
+    participant GW as Gateway
+    participant Auth as Auth Server
+    participant API as API Service
+    participant Mongo as MongoDB
+    participant NATS as NATS JetStream
+
+    Agent->>GW: POST /clients/api/agents/register (X-Initial-Key)
+    GW->>API: Forward registration request
+    API->>Mongo: Persist machine record
+    API-->>Agent: {machineId, clientId, clientSecret}
+    Agent->>GW: POST /clients/oauth/token (client_credentials)
+    GW->>Auth: Forward token request
+    Auth->>Mongo: Lookup OAuth2 client
+    Auth-->>Agent: JWT access_token + refresh_token
+    Agent->>NATS: Subscribe machine.{machineId}.* subjects
+    NATS-->>Agent: Tool install / update / script execution messages

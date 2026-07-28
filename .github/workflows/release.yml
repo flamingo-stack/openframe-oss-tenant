@@ -47,31 +47,24 @@ jobs:
 
   changes:
     name: Detect Changes
-    uses: ./.github/workflows/changes.yml
+    uses: ./.github/workflows/changes.yaml
     if: |
-      github.event_name == 'workflow_dispatch' || 
-      github.event_name == 'push'
-
-  matrix:
-    name: Generate Matrix
-    uses: ./.github/workflows/matrix.yml
-    if: |
-      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push'
 
 
   build_images:
     name: "Build: ${{ matrix.name }}"
-    needs: [version, changes, matrix]
+    needs: [version, changes]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.matrix.outputs.images_matrix) }}
+        include: ${{ fromJson(needs.changes.outputs.images_matrix) }}
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(needs.changes.outputs.changes || '{}')[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -134,11 +127,11 @@ jobs:
             while IFS= read -r t; do [ -n "$t" ] && args+=(--tag "$t"); done <<< "$META_TAGS"
             while IFS= read -r l; do [ -n "$l" ] && args+=(--label "$l"); done <<< "$META_LABELS"
             docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
-      
+
 
   build_clients:
     name: "Build Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
-    needs: [version, changes, matrix]
+    needs: [version, changes]
     runs-on: "${{ matrix.os }}-latest"
     env:
       CARGO_INCREMENTAL: 0
@@ -150,12 +143,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.matrix.outputs.clients_matrix) }}
+        include: ${{ fromJson(needs.changes.outputs.clients_matrix) }}
 
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(needs.changes.outputs.changes || '{}')[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -261,7 +254,7 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs.helm, 'true') }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || contains(fromJSON(needs.changes.outputs.changes || '{}').helm, 'true') }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -286,7 +279,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [version, changes, matrix, build_images, build_clients, build_helm]
+    needs: [version, changes, build_images, build_clients, build_helm]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -304,7 +297,7 @@ jobs:
         run: |
           set -e && mkdir -p final-artifacts/clients
           gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --pattern "*.dmg" --dir final-artifacts/clients || true
-          for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
+          for client in $(echo '${{ needs.changes.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
               if ls release-artifacts/${client}-macos/*.dmg 1>/dev/null 2>&1; then
@@ -326,17 +319,17 @@ jobs:
       - name: Generate release header
         run: |
           VERSION="${{ needs.version.outputs.version }}"
-          IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):'"${VERSION}"'`"')
+          IMAGES=$(echo '${{ needs.changes.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):'"${VERSION}"'`"')
 
           cat > RELEASE_HEADER.md <<EOF
           ## Images
           $IMAGES
 
-          ## OpenFrame Clients
+          ## OpenFrame Client
           - **macOS** (Universal): \`openframe-client_macos.tar.gz\`
           - **Windows** (x64): \`openframe-client_windows.zip\`
 
-          ## OpenFrame Chatgc
+          ## OpenFrame Chat
           - **macOS** (Universal): \`openframe-chat_universal.dmg\`
           - **Windows** (x64): \`openframe-chat_windows.zip\`
 

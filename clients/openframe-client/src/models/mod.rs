@@ -23,7 +23,8 @@ pub mod tool_restart_message;
 
 pub use execution::{
     CommandMessage, ExecutionMessage, ExecutionRequest, PrivilegeLevel, RmmResult, ScriptEnvVar,
-    ScriptMessage, ScriptShell,
+    ScriptMessage, ScriptScheduleExecutionItem, ScriptScheduleExecutionMessage, ScriptShell,
+    ScriptSpec,
 };
 pub use tool_uninstall_message::ToolUninstallMessage;
 pub use tool_restart_message::ToolRestartMessage;
