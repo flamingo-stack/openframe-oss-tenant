@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use std::fs;
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 
 use crate::models::tool_connection::ToolConnection;
 use crate::platform::directories::DirectoryManager;
@@ -31,12 +31,6 @@ impl ToolConnectionService {
         }
 
         self.persist(&list).await
-    }
-
-    /// Check if a connection exists for given tool_agent_id
-    pub async fn exists_by_tool_agent_id(&self, id: &str) -> Result<bool> {
-        let list = self.get_all().await?;
-        Ok(list.iter().any(|c| c.tool_agent_id == id))
     }
 
     pub async fn get_all(&self) -> Result<Vec<ToolConnection>> {

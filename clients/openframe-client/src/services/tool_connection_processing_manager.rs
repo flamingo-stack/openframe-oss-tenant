@@ -70,15 +70,8 @@ impl ToolConnectionProcessingManager {
             return Ok(());
         }
 
+        // Re-resolve and re-publish on every start: the agent id can change behind our back (tool re-key, db wipe) and the backend updates the mapping only when told.
         for tool in tools {
-            if self.tool_connection_service.exists_by_tool_agent_id(&tool.tool_agent_id).await? {
-                info!(
-                "Tool connection for tool {} already exists - skipping",
-                tool.tool_id
-            );
-                return Ok(());
-            }
-
             if self.try_mark_running(&tool.tool_id).await {
                 info!("Processing tool connection for {}", tool.tool_id);
                 self.process_tool(tool).await?;
@@ -91,14 +84,6 @@ impl ToolConnectionProcessingManager {
     }
 
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
-        if self.tool_connection_service.exists_by_tool_agent_id(&installed_tool.tool_agent_id).await? {
-            info!(
-                "Tool connection for tool {} already exists - skipping",
-                installed_tool.tool_id
-            );
-            return Ok(());
-        }
-
         if !self.try_mark_running(&installed_tool.tool_id).await {
             info!(
                 "Connection processing for tool {} is already running - skipping",
@@ -135,12 +120,20 @@ impl ToolConnectionProcessingManager {
         let tool_connection_publisher = self.tool_connection_publisher.clone();
         let tool_connection_service = self.tool_connection_service.clone();
         let tool_run_manager = self.tool_run_manager.clone();
+        let installed_tools_service = self.installed_tools_service.clone();
+        let running_tools = self.running_tools.clone();
 
         tokio::spawn(async move {
             // Counts consecutive agentId-resolution failures so a hung agent backs off
             // (and is reported as degraded) instead of spinning a tight retry loop forever.
             let mut agent_id_failures: u32 = 0;
             loop {
+                // Stop if the tool was uninstalled while we were retrying.
+                if let Ok(None) = installed_tools_service.get_by_tool_agent_id(&tool.tool_agent_id).await {
+                    info!(tool_id = %tool.tool_id, "Tool no longer installed - stopping connection processing");
+                    break;
+                }
+
                 while tool_run_manager.is_updating(&tool.tool_agent_id).await {
                     info!(tool_id = %tool.tool_id, "Tool is being updated, deferring node-id resolution...");
                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
@@ -275,6 +268,9 @@ impl ToolConnectionProcessingManager {
                     }
                 }
             }
+
+            // Release the mark so a later repair/reinstall can spawn a fresh loop.
+            running_tools.write().await.remove(&tool.tool_id);
         });
 
         Ok(())
