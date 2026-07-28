@@ -1,11 +1,14 @@
+use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
+use futures::FutureExt;
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
+use crate::models::ToolRecordState;
 use crate::platform::DirectoryManager;
 use crate::services::deactivation_service::DeactivationService;
 use crate::services::tool_kill_service::ToolKillService;
@@ -32,6 +35,8 @@ const ACTION_COOLDOWN: Duration = Duration::from_secs(60 * 60);
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 /// How far back to look for markers when seeding health state at startup.
 const TAIL_BYTES: u64 = 64 * 1024;
+/// Pause before respawning a watcher that exited or panicked.
+const WATCHER_RESPAWN_DELAY: Duration = Duration::from_secs(60);
 
 #[derive(Clone)]
 pub struct MeshSelfHealService {
@@ -76,8 +81,21 @@ impl MeshSelfHealService {
     pub async fn run(&self) -> Result<()> {
         let this = self.clone();
         tokio::spawn(async move {
-            this.watch().await;
-            error!("mesh self-heal watcher exited unexpectedly");
+            // Un-caught, a panic dies silently (spawn swallows it, stderr isn't shipped) — capture it into tracing and respawn.
+            loop {
+                match AssertUnwindSafe(this.clone().watch()).catch_unwind().await {
+                    Ok(()) => error!(
+                        "mesh self-heal watcher exited unexpectedly — respawning in {}s",
+                        WATCHER_RESPAWN_DELAY.as_secs()
+                    ),
+                    Err(panic) => error!(
+                        "mesh self-heal watcher panicked: {} — respawning in {}s",
+                        panic_message(&*panic),
+                        WATCHER_RESPAWN_DELAY.as_secs()
+                    ),
+                }
+                sleep(WATCHER_RESPAWN_DELAY).await;
+            }
         });
         Ok(())
     }
@@ -156,7 +174,7 @@ impl MeshSelfHealService {
 
             if msh_missing_serverid || stuck {
                 let reason = if msh_missing_serverid {
-                    "current .msh has no ServerID (agent cannot authenticate the server)".to_string()
+                    "current .msh is missing or has no ServerID (agent cannot authenticate the server)".to_string()
                 } else {
                     format!("no successful connect within {}s", STUCK_DURATION.as_secs())
                 };
@@ -250,37 +268,80 @@ impl MeshSelfHealService {
         );
 
         let tmp_path = msh_path.with_extension("msh.tmp");
+        if let Some(parent) = msh_path.parent() {
+            tokio::fs::create_dir_all(parent).await?;
+        }
         tokio::fs::write(&tmp_path, body.as_bytes()).await?;
         tokio::fs::rename(&tmp_path, &msh_path).await?;
         Ok(true)
     }
 
+    /// Unhealthy when the tool is fully installed but its .msh is absent, unreadable, or lacks a ServerID.
     async fn current_msh_missing_serverid(&self) -> bool {
-        let msh_path = match self.mesh_msh_path().await {
-            Ok(p) => p,
-            Err(_) => return false,
+        match self.installed_tools.get_by_tool_agent_id(MESH_TOOL_ID).await {
+            Ok(Some(t)) if t.state == ToolRecordState::Installed => {}
+            _ => return false,
+        }
+        let msh_path = match self.find_existing_msh().await {
+            Ok(Some(p)) => p,
+            Ok(None) => {
+                warn!("mesh self-heal: no .msh file found for {MESH_TOOL_ID}");
+                return true;
+            }
+            // Transient scan error: stay passive rather than bounce a possibly healthy agent.
+            Err(e) => {
+                debug!("mesh self-heal: cannot scan for .msh: {e:#}");
+                return false;
+            }
         };
         match tokio::fs::read_to_string(&msh_path).await {
             Ok(s) => parse_msh_field(&s, "ServerID").is_none(),
-            Err(_) => false,
+            Err(e) => {
+                warn!("mesh self-heal: cannot read {}: {e:#}", msh_path.display());
+                true
+            }
         }
     }
 
+    /// Existing .msh, or the path the agent itself imports (`<exe>.msh`) so a missing file can be recreated.
     async fn mesh_msh_path(&self) -> Result<PathBuf> {
-        self.installed_tools
+        if let Some(p) = self.find_existing_msh().await? {
+            return Ok(p);
+        }
+        let tool = self
+            .installed_tools
             .get_by_tool_agent_id(MESH_TOOL_ID)
             .await?
             .ok_or_else(|| anyhow!("{MESH_TOOL_ID} is not installed"))?;
+        let exe = self
+            .directory_manager
+            .get_tool_executable_path(MESH_TOOL_ID, tool.installation.executable_path());
+        Ok(exe.with_extension("msh"))
+    }
+
+    async fn find_existing_msh(&self) -> Result<Option<PathBuf>> {
         let dir = self.directory_manager.app_support_dir().join(MESH_TOOL_ID);
-        let mut rd = tokio::fs::read_dir(&dir).await?;
+        let mut rd = match tokio::fs::read_dir(&dir).await {
+            Ok(rd) => rd,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(e) => return Err(e.into()),
+        };
         while let Some(entry) = rd.next_entry().await? {
             let p = entry.path();
             if p.extension().and_then(|e| e.to_str()) == Some("msh") {
-                return Ok(p);
+                return Ok(Some(p));
             }
         }
-        Err(anyhow!("no .msh found in {}", dir.display()))
+        Ok(None)
     }
+}
+
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> &str {
+    payload
+        .downcast_ref::<&str>()
+        .copied()
+        .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
+        .unwrap_or("<non-string panic payload>")
 }
 
 fn parse_msh_field(msh: &str, key: &str) -> Option<String> {

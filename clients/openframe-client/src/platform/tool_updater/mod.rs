@@ -165,6 +165,35 @@ pub async fn run_migration(
     }
 }
 
+/// Delete a leftover `.old` rename-aside; returns false when it is locked, i.e. a process from a previous update still executes it.
+pub(crate) async fn clear_aside_binary(exec_path: &Path, tool_agent_id: &str) -> bool {
+    let aside = binary_writer::aside_path(exec_path);
+    if !aside.exists() {
+        return true;
+    }
+    match fs::remove_file(&aside).await {
+        Ok(()) => {
+            info!(tool_id = %tool_agent_id, "Removed stale aside binary: {}", aside.display());
+            true
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => true,
+        Err(e) => {
+            error!(tool_id = %tool_agent_id,
+                   "Cannot remove {} — a process from a previous update is likely still running it: {e}",
+                   aside.display());
+            false
+        }
+    }
+}
+
+/// Post-kill visibility check: a surviving process keeps running the old version until it exits.
+pub(crate) async fn log_update_survivors(deps: &ToolUpdaterDeps, tool: &InstalledTool) {
+    if deps.tool_kill_service.is_installed_tool_running(tool).await {
+        error!(tool_id = %tool.tool_agent_id,
+               "Tool process still running after stop — update proceeds, but the running instance stays on the old version until it exits");
+    }
+}
+
 pub(crate) async fn backup_binary(
     source_path: &Path,
     tool_agent_id: &str,
