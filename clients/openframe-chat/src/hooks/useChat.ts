@@ -83,13 +83,14 @@ export function useChat({
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isResumedDialog, setIsResumedDialog] = useState(false);
-  // Flipped on the first NATS reconnect. History normally loads only for
-  // RESUMED dialogs (`enabled: isResumedDialog`), so for a dialog created
-  // this session the reconnect back-fill had no enabled query to refetch —
-  // an outage longer than the JetStream retention (~10 min) left a permanent
-  // hole. Enabling the query after a reconnect routes recovery through the
-  // standard history+merge path.
-  const [hasReconnected, setHasReconnected] = useState(false);
+  // Dialog that was open across a NATS reconnect. History normally loads only
+  // for RESUMED dialogs (`enabled: isResumedDialog`), so a dialog created this
+  // session had no enabled query to refetch — an outage longer than the
+  // JetStream retention (~10 min) left a permanent hole. Scoped to the id
+  // rather than a sticky flag: a dialog created AFTER the reconnect has nothing
+  // to back-fill, and enabling its query only fires a first fetch whose pending
+  // state blanks the thread with a skeleton.
+  const [backfillDialogId, setBackfillDialogId] = useState<string | null>(null);
   const [isTicketPreview, setIsTicketPreview] = useState(false);
   const { getWsUrl, onBeforeReconnect } = useChatNatsConfig();
 
@@ -141,7 +142,7 @@ export function useChat({
     escalatedApprovals,
     reset: resetDialogMessages,
   } = useDialogMessages(natsDialogId, {
-    enabled: isResumedDialog || hasReconnected,
+    enabled: isResumedDialog || (!!natsDialogId && natsDialogId === backfillDialogId),
     onApprove: approvals.handleApproveRequest,
     onReject: approvals.handleRejectRequest,
     approvalStatuses: approvals.approvalStatuses,
@@ -483,12 +484,10 @@ export function useChat({
   useEffect(() => {
     if (reconnectionCount <= lastHandledReconnectRef.current) return;
     lastHandledReconnectRef.current = reconnectionCount;
-    // Enable the history query for session-created dialogs (see
-    // `hasReconnected`) — invalidating a disabled query is a no-op.
-    setHasReconnected(true);
-    if (natsDialogId) {
-      void queryClient.invalidateQueries({ queryKey: ['dialog-messages', natsDialogId] });
-    }
+    if (!natsDialogId) return;
+    // Arm the history query for session-created dialogs (see `backfillDialogId`).
+    setBackfillDialogId(natsDialogId);
+    void queryClient.invalidateQueries({ queryKey: ['dialog-messages', natsDialogId] });
   }, [reconnectionCount, natsDialogId, queryClient]);
 
   // Stall watchdog: while streaming and visible, surface `isStalled` if no
