@@ -1,3 +1,4 @@
+pub mod failure_log_backoff;
 pub mod fs;
 pub mod jwt;
 
