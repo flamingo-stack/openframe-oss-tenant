@@ -55,7 +55,9 @@ impl ClientUninstallMessageListener {
                 info!("Starting client uninstall message listener...");
                 match listener.listen().await {
                     Ok(_) => {
-                        warn!("Client uninstall message listener exited normally (unexpected)");
+                        if !listener.uninstall_dispatched.load(Ordering::Acquire) {
+                            warn!("Client uninstall message listener exited normally (unexpected)");
+                        }
                     }
                     Err(e) => {
                         error!("Client uninstall message listener error: {:#}", e);
@@ -241,5 +243,26 @@ impl ClientUninstallMessageListener {
 
     fn build_durable_name(machine_id: &str) -> String {
         format!("machine_{}_client-uninstall_consumer", machine_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn subject_and_durable_names_follow_machine_scoped_convention() {
+        assert_eq!(
+            ClientUninstallMessageListener::build_filter_subject("abc123"),
+            "machine.abc123.client-uninstall"
+        );
+        assert_eq!(
+            ClientUninstallMessageListener::build_deliver_subject("abc123"),
+            "machine.abc123.client-uninstall.inbox"
+        );
+        assert_eq!(
+            ClientUninstallMessageListener::build_durable_name("abc123"),
+            "machine_abc123_client-uninstall_consumer"
+        );
     }
 }
