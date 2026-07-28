@@ -12,13 +12,12 @@ use crate::config::service_stop::{
     SERVICE_STOP_CALL_TIMEOUT_SECS, SERVICE_STOP_MAX_ATTEMPTS,
 };
 
-/// Permit pool bounding how many blocking threads a wedged SCM can park at once.
+/// Shared pool bounding in-flight SCM calls; timed-out calls can park at most SCM_MAX_IN_FLIGHT threads.
 #[cfg(target_os = "windows")]
-fn scm_permits() -> &'static std::sync::Arc<tokio::sync::Semaphore> {
-    static PERMITS: std::sync::OnceLock<std::sync::Arc<tokio::sync::Semaphore>> = std::sync::OnceLock::new();
-    PERMITS.get_or_init(|| {
-        std::sync::Arc::new(tokio::sync::Semaphore::new(crate::config::service_stop::SCM_MAX_IN_FLIGHT))
-    })
+fn scm_pool() -> &'static crate::utils::timed_permit_pool::TimedPermitPool {
+    use crate::utils::timed_permit_pool::TimedPermitPool;
+    static POOL: std::sync::OnceLock<TimedPermitPool> = std::sync::OnceLock::new();
+    POOL.get_or_init(|| TimedPermitPool::new(crate::config::service_stop::SCM_MAX_IN_FLIGHT))
 }
 
 /// Run a blocking SCM call off-runtime with a timeout, so a wedged SCM can never hang an async task.
@@ -28,46 +27,13 @@ where
     F: FnOnce() -> T + Send + 'static,
     T: Send + 'static,
 {
-    let permit = match tokio::time::timeout(
-        Duration::from_secs(timeout_secs),
-        scm_permits().clone().acquire_owned(),
-    )
-    .await
-    {
-        Err(_elapsed) => {
-            return Err(anyhow::anyhow!(
-                "SCM {} for service {} not attempted: all {} SCM call slots busy (SCM likely wedged)",
-                what, service_name, crate::config::service_stop::SCM_MAX_IN_FLIGHT
-            ))
-        }
-        Ok(Err(closed)) => {
-            return Err(anyhow::anyhow!(
-                "SCM {} for service {} not attempted: permit pool closed: {}",
-                what, service_name, closed
-            ))
-        }
-        Ok(Ok(permit)) => permit,
-    };
-    // The permit rides inside the closure so it frees only when the blocking call actually returns.
-    match tokio::time::timeout(
-        Duration::from_secs(timeout_secs),
-        tokio::task::spawn_blocking(move || {
-            let _permit = permit;
-            f()
-        }),
-    )
-    .await
-    {
-        Err(_elapsed) => Err(anyhow::anyhow!(
-            "SCM {} for service {} timed out after {}s",
-            what, service_name, timeout_secs
-        )),
-        Ok(Err(join_err)) => Err(anyhow::anyhow!(
-            "SCM {} task for service {} failed: {}",
-            what, service_name, join_err
-        )),
-        Ok(Ok(v)) => Ok(v),
-    }
+    scm_pool()
+        .call(
+            &format!("SCM {} for service {}", what, service_name),
+            Duration::from_secs(timeout_secs),
+            f,
+        )
+        .await
 }
 
 /// `query_service_status_windows` off-runtime with a timeout; the outer Err is an unresponsive SCM.
