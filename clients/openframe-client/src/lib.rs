@@ -155,7 +155,6 @@ pub struct Client {
     tool_restart_message_listener: ToolRestartMessageListener,
     openframe_client_update_listener: OpenFrameClientUpdateListener,
     tool_agent_update_listener: ToolAgentUpdateListener,
-    #[allow(dead_code)] // TODO: remove when the CLIENT_UNINSTALL stream exists on the backend
     client_uninstall_message_listener: ClientUninstallMessageListener,
     command_execution_listener: ExecutionListener<CommandMessage>,
     script_execution_listener: ExecutionListener<ScriptMessage>,
@@ -651,8 +650,8 @@ impl Client {
         // Start tool agent update listener in background
         self.tool_agent_update_listener.start().await?;
 
-        // TODO: uncomment when the CLIENT_UNINSTALL stream exists on the backend
-        // self.client_uninstall_message_listener.start().await?;
+        // Start client uninstall listener in background
+        self.client_uninstall_message_listener.start().await?;
 
         // Recover interrupted scheduled scripts, then start the outbox flusher,
         // both strictly before any execution listener can accept new batches
