@@ -172,6 +172,20 @@ impl CrossPlatformServiceManager {
         let environment = self.config.environment_vars.clone();
 
         // Create the installation context with full configuration
+        // sc.exe cannot encode restart policies (0.11 warns about it); Windows restart comes from the SCM recovery actions applied right after install.
+        #[cfg(windows)]
+        let restart_policy = RestartPolicy::Never;
+        #[cfg(not(windows))]
+        let restart_policy = if self.config.restart_on_crash {
+            RestartPolicy::OnFailure {
+                delay_secs: None,
+                max_retries: None,
+                reset_after_secs: None,
+            }
+        } else {
+            RestartPolicy::Never
+        };
+
         let mut ctx = ServiceInstallCtx {
             label: label.clone(),
             program: self.config.exec_path.clone(),
@@ -181,11 +195,7 @@ impl CrossPlatformServiceManager {
             working_directory: Some(working_dir),
             environment: Some(environment),
             autostart: self.config.run_at_load,
-            restart_policy: if self.config.restart_on_crash {
-                RestartPolicy::OnFailure { delay_secs: None, max_retries: None, reset_after_secs: None }
-            } else {
-                RestartPolicy::Never
-            },
+            restart_policy,
         };
 
         // Apply platform-specific configuration
