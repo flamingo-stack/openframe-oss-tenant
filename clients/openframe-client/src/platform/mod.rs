@@ -1,4 +1,5 @@
 pub mod binary_writer;
+pub mod client_update_probe;
 pub mod console;
 pub mod directories;
 pub mod dmg_extractor;
@@ -23,6 +24,7 @@ pub mod powershell;
 
 // Re-export commonly used items
 pub use binary_writer::{write_executable, set_executable_permissions};
+pub use client_update_probe::{in_flight_client_update_phase, UPDATER_TOOL_AGENT_ID};
 pub use console::configure_console;
 pub use directories::{DirectoryError, DirectoryManager};
 #[cfg(target_os = "macos")]

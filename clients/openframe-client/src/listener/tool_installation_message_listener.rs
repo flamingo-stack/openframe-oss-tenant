@@ -1,3 +1,4 @@
+use crate::platform::{in_flight_client_update_phase, UPDATER_TOOL_AGENT_ID};
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::services::tool_run_manager::ToolRunManager;
@@ -139,6 +140,13 @@ impl ToolInstallationMessageListener {
 
     async fn dispatch(&self, message: Message, tool_installation_message: ToolInstallationMessage) {
         let tool_agent_id = tool_installation_message.tool_agent_id.clone();
+
+        if tool_agent_id == UPDATER_TOOL_AGENT_ID {
+            if let Some(phase) = in_flight_client_update_phase() {
+                info!("Client update in flight (updater phase: {phase}), deferring updater installation for redelivery");
+                return;
+            }
+        }
 
         match self.tool_installation_service.install(tool_installation_message).await {
             Ok(_) => {
