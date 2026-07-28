@@ -10,7 +10,7 @@ use crate::installation_initial_config_service::{
 use crate::platform::machine_info_persistence::{self, PersistedMachineInfo};
 use crate::platform::permissions::{Capability, PermissionUtils};
 use crate::service_adapter::{CrossPlatformServiceManager, RecoveryConfig, ServiceConfig};
-use crate::services::{AgentConfigurationService, AgentRegistrationService};
+use crate::services::{AgentConfigurationService, AgentRegistrationService, DeregistrationService};
 use crate::{platform::DirectoryManager, Client};
 
 #[cfg(windows)]
@@ -38,6 +38,9 @@ const RECOVERY_RESET_PERIOD_DAYS: u32 = 1;
 // Full service identifier used by all platforms
 // Format: "com.openframe.{SERVICE_NAME}" -> "com.openframe.client"
 pub const FULL_SERVICE_NAME: &str = "com.openframe.client";
+
+/// Set by the installer on the uninstall it launches, so a reinstall never deregisters the machine.
+pub const REINSTALL_ENV: &str = "OPENFRAME_REINSTALL";
 
 // Define the Windows service entry point
 #[cfg(windows)]
@@ -233,6 +236,7 @@ impl Service {
 
                 let status = Command::new(&installed_binary_path)
                     .arg("uninstall")
+                    .env(REINSTALL_ENV, "1")
                     .status()
                     .await
                     .context("Failed to launch uninstall process")?;
@@ -456,15 +460,25 @@ impl Service {
         let dir_manager = DirectoryManager::new();
         let install_path = Self::get_install_location();
 
+        // Deregistration runs inside the platform flow, after the stopped service can no longer heartbeat.
+        let deregistration_service = if std::env::var_os(REINSTALL_ENV).is_some() {
+            info!("Reinstall in progress, skipping platform deregistration");
+            None
+        } else {
+            DeregistrationService::new(&dir_manager)
+                .map_err(|e| warn!("Failed to initialize deregistration service, skipping: {:#}", e))
+                .ok()
+        };
+
         // Call platform-specific uninstall implementation
         #[cfg(target_os = "windows")]
         {
-            crate::platform::uninstall::uninstall_windows(&dir_manager, &install_path).await
+            crate::platform::uninstall::uninstall_windows(&dir_manager, &install_path, deregistration_service).await
         }
 
         #[cfg(target_os = "macos")]
         {
-            crate::platform::uninstall::uninstall_macos(&dir_manager, &install_path).await
+            crate::platform::uninstall::uninstall_macos(&dir_manager, &install_path, deregistration_service).await
         }
     }
 

@@ -39,8 +39,10 @@ pub mod execution_service;
 pub mod result_store;
 pub mod result_outbox_run_manager;
 pub mod deactivation_service;
+pub mod deregistration_service;
 
 pub use agent_auth_service::AgentAuthService;
+pub use deregistration_service::DeregistrationService;
 pub use agent_configuration_service::AgentConfigurationService;
 pub use initial_configuration_service::InitialConfigurationService;
 pub use agent_registration_service::AgentRegistrationService;

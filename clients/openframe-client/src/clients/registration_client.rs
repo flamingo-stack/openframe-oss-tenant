@@ -29,6 +29,15 @@ struct ApiError {
     code: String,
 }
 
+/// Outcome of the uninstall deregistration call.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeregistrationOutcome {
+    /// The platform accepted the deregistration.
+    Deregistered,
+    /// The platform no longer knows this machine, or the endpoint is not deployed yet.
+    AlreadyGone(StatusCode),
+}
+
 #[derive(Clone)]
 pub struct RegistrationClient {
     http_client: Client,
@@ -96,6 +105,46 @@ impl RegistrationClient {
 
         Ok(registration_response)
     }
+
+    /// Reports this machine's uninstall so the platform can run its deletion logic.
+    pub async fn deregister(
+        &self,
+        machine_info: &PersistedMachineInfo,
+    ) -> Result<DeregistrationOutcome> {
+        let url = format!("{}/clients/api/agents/uninstall", self.base_url);
+
+        let mut headers = HeaderMap::new();
+        headers.insert("X-Machine-Id", machine_info.machine_id.parse()
+            .context("Failed to parse machine id header")?);
+        headers.insert("X-Client-Secret", machine_info.client_secret.parse()
+            .context("Failed to parse client secret header")?);
+
+        let response = self.http_client
+            .post(&url)
+            .headers(headers)
+            .send()
+            .await
+            .context("Failed to send deregistration request")?;
+
+        let status = response.status();
+        if status.is_success() {
+            return Ok(DeregistrationOutcome::Deregistered);
+        }
+        if is_already_gone(status) {
+            return Ok(DeregistrationOutcome::AlreadyGone(status));
+        }
+        let body = response.text().await.unwrap_or_default();
+        Err(anyhow::anyhow!("Deregistration failed with status {} and body {}", status, body))
+    }
+}
+
+/// Statuses proving a retry cannot help: the platform already forgot this machine
+/// (401/403/410) or does not expose the endpoint yet (404).
+fn is_already_gone(status: StatusCode) -> bool {
+    matches!(
+        status,
+        StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN | StatusCode::NOT_FOUND | StatusCode::GONE
+    )
 }
 
 /// Detects the HTTP 401 with a CLIENT_SECRET_* code.
@@ -140,5 +189,30 @@ mod tests {
             StatusCode::UNAUTHORIZED,
             "gateway timeout"
         ));
+    }
+
+    #[test]
+    fn terminal_statuses_are_already_gone() {
+        for status in [
+            StatusCode::UNAUTHORIZED,
+            StatusCode::FORBIDDEN,
+            StatusCode::NOT_FOUND,
+            StatusCode::GONE,
+        ] {
+            assert!(is_already_gone(status), "{status} should be terminal");
+        }
+    }
+
+    #[test]
+    fn transient_statuses_are_not_already_gone() {
+        for status in [
+            StatusCode::BAD_REQUEST,
+            StatusCode::TOO_MANY_REQUESTS,
+            StatusCode::INTERNAL_SERVER_ERROR,
+            StatusCode::BAD_GATEWAY,
+            StatusCode::SERVICE_UNAVAILABLE,
+        ] {
+            assert!(!is_already_gone(status), "{status} should be retried");
+        }
     }
 }

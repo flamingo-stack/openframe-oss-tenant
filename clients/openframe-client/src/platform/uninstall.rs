@@ -5,8 +5,8 @@ use tracing::{info, warn};
 use crate::platform::DirectoryManager;
 use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
 use crate::services::{
-    AgentConfigurationService, InitialConfigurationService, InstalledToolsService,
-    ToolCommandParamsResolver, ToolKillService, ToolUninstallService,
+    AgentConfigurationService, DeregistrationService, InitialConfigurationService,
+    InstalledToolsService, ToolCommandParamsResolver, ToolKillService, ToolUninstallService,
 };
 
 const SERVICE_NAME: &str = "client";
@@ -331,6 +331,7 @@ pub async fn uninstall_integrated_tools(dir_manager: &DirectoryManager) -> Resul
 pub async fn uninstall_windows(
     dir_manager: &DirectoryManager,
     install_path: &Path,
+    deregistration_service: Option<DeregistrationService>,
 ) -> Result<()> {
     info!("========================================");
     info!("OpenFrame Uninstallation");
@@ -354,6 +355,11 @@ pub async fn uninstall_windows(
             "Service uninstall warning: {} (may not be installed)",
             e
         ),
+    }
+
+    // After the service stop so a heartbeat can't resurrect the deleted machine record.
+    if let Some(deregistration_service) = &deregistration_service {
+        deregistration_service.deregister_best_effort().await;
     }
 
     info!("Step 2: Gracefully uninstalling integrated tools...");
@@ -422,7 +428,11 @@ pub async fn uninstall_windows(
 
 /// macOS-specific uninstall implementation
 #[cfg(target_os = "macos")]
-pub async fn uninstall_macos(dir_manager: &DirectoryManager, install_path: &Path) -> Result<()> {
+pub async fn uninstall_macos(
+    dir_manager: &DirectoryManager,
+    install_path: &Path,
+    deregistration_service: Option<DeregistrationService>,
+) -> Result<()> {
     info!("========================================");
     info!("OpenFrame Uninstallation");
     info!("========================================");
@@ -445,6 +455,11 @@ pub async fn uninstall_macos(dir_manager: &DirectoryManager, install_path: &Path
             "Service uninstall warning: {} (may not be installed)",
             e
         ),
+    }
+
+    // After the service stop so a heartbeat can't resurrect the deleted machine record.
+    if let Some(deregistration_service) = &deregistration_service {
+        deregistration_service.deregister_best_effort().await;
     }
 
     info!("Step 2: Gracefully uninstalling integrated tools...");
