@@ -11,31 +11,55 @@ impl DeviceDataFetcher {
     }
 
     pub fn get_hostname(&self) -> Option<String> {
-        #[cfg(target_os = "macos")]
-        {
-            if let Some(name) = Self::scutil_get("LocalHostName") {
-                return Some(format!("{}.local", name));
-            }
-            if let Some(name) = Self::scutil_get("ComputerName") {
-                return Some(name);
-            }
-        }
-
         match hostname::get() {
             Ok(hostname) => {
                 let hostname_str = hostname.to_string_lossy().trim().to_string();
-                if hostname_str.is_empty() {
-                    warn!("OS returned an empty hostname");
-                    None
-                } else {
-                    Some(hostname_str)
+                if Self::is_valid_hostname(&hostname_str) {
+                    info!("Resolved hostname '{}' from kernel", hostname_str);
+                    return Some(hostname_str);
                 }
+                warn!(
+                    "Kernel hostname '{}' is empty or looks like junk — falling back",
+                    hostname_str
+                );
             }
             Err(e) => {
                 warn!("Failed to get hostname: {:#}", e);
-                None
             }
         }
+
+        #[cfg(target_os = "macos")]
+        {
+            if let Some(name) = Self::scutil_get("LocalHostName") {
+                let name = format!("{}.local", name);
+                if Self::is_valid_hostname(&name) {
+                    info!("Resolved hostname '{}' from LocalHostName", name);
+                    return Some(name);
+                }
+                warn!("LocalHostName '{}' is invalid — falling back", name);
+            }
+            if let Some(name) = Self::scutil_get("ComputerName") {
+                if Self::is_valid_hostname(&name) {
+                    info!("Resolved hostname '{}' from ComputerName", name);
+                    return Some(name);
+                }
+                warn!("ComputerName '{}' is invalid — falling back", name);
+            }
+        }
+
+        warn!("Could not resolve any hostname");
+        None
+    }
+
+    fn is_valid_hostname(name: &str) -> bool {
+        if name.is_empty() {
+            return false;
+        }
+        if name.parse::<std::net::IpAddr>().is_ok() {
+            return false;
+        }
+        let lower = name.to_lowercase();
+        lower != "localhost" && lower != "localhost.localdomain"
     }
 
     #[cfg(target_os = "macos")]

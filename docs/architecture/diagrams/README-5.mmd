@@ -1,6 +1,0 @@
-flowchart TD
-    Agent["Device Agent"] --> ClientService
-    ClientService --> Mongo
-    Agent --> NATS
-    NATS --> ClientService
-    ClientService --> DomainServices
