@@ -5,6 +5,7 @@ use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 use tracing::{info, error};
 
+use crate::services::deactivation_service::DeactivationService;
 use crate::services::{InitialConfigurationService, AgentConfigurationService};
 
 const RETRY_INTERVAL_SECS: u64 = 60;
@@ -19,6 +20,7 @@ pub struct InitialKeyService {
     base_url: String,
     initial_config_service: InitialConfigurationService,
     agent_config_service: AgentConfigurationService,
+    deactivation: Arc<DeactivationService>,
 }
 
 impl InitialKeyService {
@@ -27,12 +29,14 @@ impl InitialKeyService {
         base_url: String,
         initial_config_service: InitialConfigurationService,
         agent_config_service: AgentConfigurationService,
+        deactivation: Arc<DeactivationService>,
     ) -> Self {
         Self {
             http_client,
             base_url,
             initial_config_service,
             agent_config_service,
+            deactivation,
         }
     }
 
@@ -45,6 +49,11 @@ impl InitialKeyService {
 
         tokio::spawn(async move {
             loop {
+                // Tenant gone: don't hammer the gateway; the backoff probe drives recovery.
+                if self.deactivation.is_suspended() {
+                    sleep(Duration::from_secs(RETRY_INTERVAL_SECS)).await;
+                    continue;
+                }
                 match self.fetch_registration_secret().await {
                     Ok(secret) => {
                         if let Err(e) = self.initial_config_service.update_initial_key(secret) {

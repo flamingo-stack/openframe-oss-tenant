@@ -1,5 +1,0 @@
-flowchart TD
-    JetStream["JetStream INSTALLED_AGENTS"] --> Listener["InstalledAgentListener"]
-    Listener --> Extractor["MachineIdExtractor"]
-    Listener --> Service["InstalledAgentService"]
-    Service --> Persist["Persist Installed Agent"]
