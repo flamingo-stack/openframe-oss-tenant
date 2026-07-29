@@ -32,6 +32,14 @@ pub struct LastKnownGoodService {
 }
 
 impl LastKnownGoodService {
+    /// Creates a service for managing the last-known-good state of a client executable.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let service = LastKnownGoodService::new(&directory_manager, client_exe);
+    /// assert!(service.reserve_path().ends_with(".lkg"));
+    /// ```
     pub fn new(directory_manager: &DirectoryManager, client_exe: PathBuf) -> Self {
         let secured = directory_manager.secured_dir();
 
@@ -46,6 +54,22 @@ impl LastKnownGoodService {
         }
     }
 
+    /// Loads the persisted last-known-good version, if an anchor file exists.
+    ///
+    /// Returns `Ok(None)` when the anchor file is missing. Reading or deserializing
+    /// an existing file returns an error if the operation fails.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn example(service: &LastKnownGoodService) -> Result<(), Box<dyn std::error::Error>> {
+    /// let version = service.load_anchor()?;
+    /// if let Some(version) = version {
+    ///     println!("Last-known-good version: {version}");
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn load_anchor(&self) -> Result<Option<String>> {
         if !self.anchor_file_path.exists() {
             debug!(
@@ -68,8 +92,21 @@ impl LastKnownGoodService {
         Ok(Some(anchor.version))
     }
 
-    /// Raise the anchor to `version` and refresh the reserve from the binary
-    /// currently at the client path (the one that just verified its boot).
+    /// Promotes a verified client version and refreshes the reserve binary from the current client executable.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the reserve binary or last-known-good anchor cannot be updated.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// # let service: LastKnownGoodService = todo!();
+    /// service.promote("1.2.3")?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn promote(&self, version: &str) -> Result<()> {
         let temp_reserve = self.reserve_path.with_extension("lkg.tmp");
         fs::copy(&self.client_exe, &temp_reserve).with_context(|| {
@@ -123,15 +160,33 @@ impl LastKnownGoodService {
         }
     }
 
-    /// Last modification time of the boot marker. Each client boot rewrites the
-    /// marker, so an mtime change during observation means the client restarted.
+    /// Gets the boot marker's last modification time.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let modified = service.boot_marker_mtime();
+    /// assert!(modified.is_some());
+    /// ```
+    ///
+    /// Returns `None` if the marker cannot be read or its modification time is unavailable.
     pub fn boot_marker_mtime(&self) -> Option<std::time::SystemTime> {
         fs::metadata(&self.boot_marker_path)
             .and_then(|m| m.modified())
             .ok()
     }
 
-    /// Remove the boot marker so the next marker observed is from the new binary.
+    /// Removes the boot marker so a subsequent marker corresponds to a newly started binary.
+    ///
+    /// The operation succeeds when the marker is absent.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let service: LastKnownGoodService = todo!();
+    /// service.clear_boot_marker().unwrap();
+    /// ```
+    pub fn clear_boot_marker(&self) -> Result<()> {
     pub fn clear_boot_marker(&self) -> Result<()> {
         if self.boot_marker_path.exists() {
             fs::remove_file(&self.boot_marker_path).with_context(|| {
@@ -144,6 +199,16 @@ impl LastKnownGoodService {
         Ok(())
     }
 
+    /// Provides the path to the reserved copy of the verified client binary.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::path::Path;
+    /// # fn example(service: &LastKnownGoodService) {
+    /// let reserve: &Path = service.reserve_path();
+    /// # }
+    /// ```
     pub fn reserve_path(&self) -> &Path {
         &self.reserve_path
     }

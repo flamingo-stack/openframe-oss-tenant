@@ -30,6 +30,27 @@ const SELF_REFRESH_COOLDOWN_SECS: i64 = 60;
 pub struct TokenProvider;
 
 impl TokenProvider {
+    /// Starts the background token provider and returns a shared handle to the current access token.
+    ///
+    /// The provider periodically checks the encrypted token file and obtains a token through
+    /// OAuth2 client credentials when the available token is missing or nearing expiration.
+    ///
+    /// # Arguments
+    ///
+    /// * `token_file_path` - Path to the encrypted shared token file.
+    /// * `auth_client` - Client used to obtain a token during self-refresh.
+    /// * `config_service` - Service that supplies OAuth2 client credentials.
+    ///
+    /// # Returns
+    ///
+    /// A shared, asynchronously readable and writable handle containing the latest available token.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let token = TokenProvider::start(token_file_path, auth_client, config_service);
+    /// let current_token = token.read().await.clone();
+    /// ```
     pub fn start(
         token_file_path: PathBuf,
         auth_client: AuthClient,
@@ -79,8 +100,18 @@ impl TokenProvider {
         current_token
     }
 
-    /// Returns the file token when it is strictly fresher (later `exp`) than the
-    /// current one, or when there is no current token yet.
+    /// Selects a file token when it is newer than the current token.
+    ///
+    /// A file token is selected when no current token exists or when its JWT `exp`
+    /// claim is later than the current token's. Identical or older tokens are
+    /// ignored.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let selected = pick_fresher(&None, Some("token".to_owned()));
+    /// assert_eq!(selected, Some("token".to_owned()));
+    /// ```
     fn pick_fresher(current: &Option<String>, file_token: Option<String>) -> Option<String> {
         let file_token = file_token?;
 
@@ -99,8 +130,17 @@ impl TokenProvider {
         }
     }
 
-    /// True when there is no usable token: missing, undecodable, or inside the
-    /// expiry margin without a fresher token in the shared file.
+    /// Determines whether the current token should be refreshed.
+    ///
+    /// A missing token or a token expiring within the configured margin requires
+    /// refresh. Tokens whose expiration cannot be decoded are treated as
+    /// client-managed and do not require refresh.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert!(TokenProvider::needs_self_refresh(&None));
+    /// ```
     fn needs_self_refresh(current: &Option<String>) -> bool {
         let Some(token) = current else {
             return true;
@@ -112,6 +152,22 @@ impl TokenProvider {
         exp - Utc::now().timestamp() < SELF_REFRESH_MARGIN_SECS
     }
 
+    /// Obtains an access token using the configured OAuth2 client credentials.
+    ///
+    /// # Errors
+    ///
+    /// Propagates errors from credential retrieval or authentication.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let token = TokenProvider::self_refresh(&auth_client, &config_service).await?;
+    /// assert!(!token.is_empty());
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// The access token returned by the authentication service.
     async fn self_refresh(
         auth_client: &AuthClient,
         config_service: &AgentConfigurationService,
@@ -123,6 +179,20 @@ impl TokenProvider {
         Ok(response.access_token)
     }
 
+    /// Reads and decrypts a token from an encrypted file.
+    ///
+    /// Returns `None` when the file cannot be read, is empty, or cannot be decrypted.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::path::Path;
+    /// # let encryption_service = /* configured encryption service */ unimplemented!();
+    /// let token = TokenProvider::read_and_decrypt(
+    ///     Path::new("shared_token.enc"),
+    ///     &encryption_service,
+    /// );
+    /// ```
     fn read_and_decrypt(path: &PathBuf, encryption_service: &EncryptionService) -> Option<String> {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,

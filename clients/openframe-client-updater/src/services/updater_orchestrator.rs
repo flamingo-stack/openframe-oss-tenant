@@ -23,10 +23,33 @@ pub struct UpdaterOrchestrator {
 }
 
 impl UpdaterOrchestrator {
+    /// Creates an updater orchestrator using the provided directory manager.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let orchestrator = UpdaterOrchestrator::new(DirectoryManager::default());
+    /// ```
     pub fn new(dir_manager: DirectoryManager) -> Self {
         Self { dir_manager }
     }
 
+    /// Initializes the updater services, connects to NATS, recovers persisted update state,
+    /// and listens for client update commands.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if configuration, HTTP client, or NATS connection initialization fails,
+    /// or if crash recovery cannot complete.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(orchestrator: UpdaterOrchestrator) -> anyhow::Result<()> {
+    /// orchestrator.start().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn start(&self) -> Result<()> {
         let initial_config_service = InitialConfigurationService::new(&self.dir_manager)
             .context("Failed to init initial configuration service")?;
@@ -134,6 +157,25 @@ impl UpdaterOrchestrator {
         Ok(())
     }
 
+    /// Recovers an interrupted update from persisted updater state.
+    ///
+    /// Pending updates are completed, rolled back, or marked as failed according to
+    /// their recorded phase. Unreadable state is discarded so the updater can start
+    /// cleanly.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if persisted state cannot be cleared.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let result = orchestrator
+    ///     .recover_from_crash(&state_service, &publisher, &lkg_service)
+    ///     .await;
+    /// result?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
     async fn recover_from_crash(
         &self,
         state_service: &UpdaterStateService,
@@ -279,6 +321,20 @@ impl UpdaterOrchestrator {
         Ok(())
     }
 
+    /// Restores the client binary after an updater crash and starts the client service.
+    ///
+    /// Prefers the verified reserve when `prefer_reserve` is `true`; otherwise, it
+    /// prefers the available backup and uses the reserve only when the target binary
+    /// is missing. Publishes the recovery outcome after restoring or when recovery
+    /// cannot proceed.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// orchestrator
+    ///     .restore_and_start(&backup_path, &target, version, &publisher, &lkg_service, true)
+    ///     .await;
+    /// ```
     async fn restore_and_start(
         &self,
         backup_path: &Option<String>,

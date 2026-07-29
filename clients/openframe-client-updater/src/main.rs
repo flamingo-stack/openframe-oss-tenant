@@ -13,6 +13,13 @@ use tracing_subscriber::util::SubscriberInitExt;
 
 const TOOL_AGENT_ID: &str = "openframe-client-updater";
 
+/// Ensures the process has administrator or root privileges, exiting with status code 1 if it does not.
+///
+/// # Examples
+///
+/// ```no_run
+/// ensure_admin_privileges();
+/// ```
 #[cfg(unix)]
 fn ensure_admin_privileges() {
     if unsafe { libc::geteuid() } != 0 {
@@ -21,6 +28,15 @@ fn ensure_admin_privileges() {
     }
 }
 
+/// Ensures the process is running with administrator privileges.
+///
+/// Exits the process with status code 1 when administrator privileges are unavailable.
+///
+/// # Examples
+///
+/// ```no_run
+/// ensure_admin_privileges();
+/// ```
 #[cfg(windows)]
 fn ensure_admin_privileges() {
     if !PermissionUtils::is_admin() {
@@ -49,9 +65,16 @@ enum Commands {
     RunAsService,
 }
 
-/// Resolves the log file path:
-/// {app_support_dir}/openframe-client-updater/openframe-client-updater.log
-/// This mirrors the mesh pattern: {app_support_dir}/meshcentral-agent/meshcentral-agent.log
+/// Builds the path to the updater's log file within the application support directory.
+///
+/// # Examples
+///
+/// ```
+/// let dir_manager = DirectoryManager::new();
+/// let path = log_file_path(&dir_manager);
+///
+/// assert!(path.ends_with("openframe-client-updater.log"));
+/// ```
 fn log_file_path(dir_manager: &DirectoryManager) -> PathBuf {
     dir_manager
         .app_support_dir()
@@ -59,11 +82,18 @@ fn log_file_path(dir_manager: &DirectoryManager) -> PathBuf {
         .join(format!("{}.log", TOOL_AGENT_ID))
 }
 
-/// Initialises tracing with two layers:
-///   - stdout  (compact, for service manager capture)
-///   - file    (non-blocking, same path openframe-client will tail)
+/// Initializes tracing output to stdout and the updater log file.
 ///
-/// Returns the `WorkerGuard` — drop it only when the process exits.
+/// The returned guard must remain alive for the lifetime of the process so that
+/// buffered log messages are flushed.
+///
+/// # Examples
+///
+/// ```no_run
+/// let directory_manager = DirectoryManager::new();
+/// let _log_guard = init_logging(&directory_manager);
+/// ```
+fn init_logging(dir_manager: &DirectoryManager) -> WorkerGuard
 fn init_logging(dir_manager: &DirectoryManager) -> WorkerGuard {
     let log_path = log_file_path(dir_manager);
 
@@ -113,6 +143,20 @@ fn init_logging(dir_manager: &DirectoryManager) -> WorkerGuard {
     guard
 }
 
+/// Runs the OpenFrame Client Updater command-line application.
+///
+/// Initializes the runtime environment and logging, then dispatches the selected
+/// installation, uninstallation, foreground, or service operation.
+///
+/// # Examples
+///
+/// ```text
+/// openframe-client-updater run
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if the Tokio runtime cannot be created.
 fn main() -> Result<()> {
     ensure_admin_privileges();
 

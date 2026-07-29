@@ -230,6 +230,23 @@ impl LogStreamingRunManager {
     }
 }
 
+/// Periodically discovers optional log sources and registers each discovered source.
+///
+/// Discovery continues until both Meshcentral and Updater sources are registered.
+/// The task exits early if the receiving end of the channel is closed.
+///
+/// # Examples
+///
+/// ```ignore
+/// spawn_source_discovery(source_tx, installed_tools_service, directory_manager);
+/// ```
+///
+/// # Parameters
+///
+/// * `tx` - Channel used to register discovered log sources.
+/// * `installed_tools_service` - Service used to identify installed tools.
+/// * `directory_manager` - Provides directories for discovered log sources.
+fn spawn_source_discovery(
 fn spawn_source_discovery(
     tx: mpsc::Sender<Box<dyn LogSource>>,
     installed_tools_service: InstalledToolsService,
@@ -279,6 +296,22 @@ fn spawn_source_discovery(
     });
 }
 
+/// Discovers the installed MeshCentral log source and constructs it when available.
+///
+/// Returns `None` if the installed-tools lookup fails, MeshCentral is not installed,
+/// or its executable path is unavailable.
+///
+/// # Examples
+///
+/// ```no_run
+/// # async fn example(
+/// #     installed_tools_service: &InstalledToolsService,
+/// #     directory_manager: &DirectoryManager,
+/// # ) {
+/// let source = create_meshcentral_source(installed_tools_service, directory_manager).await;
+/// assert!(source.is_some() || source.is_none());
+/// # }
+/// ```
 async fn create_meshcentral_source(
     installed_tools_service: &InstalledToolsService,
     directory_manager: &DirectoryManager,
@@ -297,6 +330,22 @@ async fn create_meshcentral_source(
     Some(Box::new(source))
 }
 
+/// Creates a log source for the installed Updater tool.
+///
+/// The source reads the Updater log from the application support directory and
+/// stores its read offset in the secured directory.
+///
+/// # Examples
+///
+/// ```no_run
+/// let source = create_updater_source(&installed_tools_service, &directory_manager).await;
+/// assert!(source.is_some());
+/// ```
+///
+/// # Returns
+///
+/// `Some` containing the Updater log source if the tool is installed, or `None`
+/// if the installed-tools lookup fails or the Updater is not found.
 async fn create_updater_source(
     installed_tools_service: &InstalledToolsService,
     directory_manager: &DirectoryManager,
@@ -317,6 +366,26 @@ async fn create_updater_source(
     Some(Box::new(source))
 }
 
+/// Continuously reads logs from registered sources, publishes batches to NATS, and manages offsets and log rotation.
+///
+/// Newly discovered sources received through `source_rx` are registered before each batch. Failed
+/// publications roll back the batch so it can be retried; successful publications commit it and
+/// save the main log offset.
+///
+/// # Examples
+///
+/// ```ignore
+/// log_streaming_loop(
+///     registry,
+///     source_rx,
+///     rotation_manager,
+///     connection,
+///     hostname,
+///     tenant_domain,
+///     agent_config_service,
+///     main_log_path,
+/// ).await;
+/// ```
 async fn log_streaming_loop(
     mut registry: LogSourceRegistry,
     mut source_rx: mpsc::Receiver<Box<dyn LogSource>>,

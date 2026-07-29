@@ -117,6 +117,16 @@ impl ToolAgentUpdateListener {
         }
     }
 
+    /// Processes a tool agent update message and acknowledges malformed messages.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # async fn example(listener: &ToolAgentUpdateListener, message: Message) -> Result<()> {
+    /// listener.handle_message(message).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn handle_message(&self, message: Message) -> Result<()> {
         let payload = String::from_utf8_lossy(&message.payload);
         info!("Received tool agent update message: {:?}", payload);

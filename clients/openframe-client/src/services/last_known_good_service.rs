@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -20,6 +19,17 @@ pub struct LastKnownGoodService {
 }
 
 impl LastKnownGoodService {
+    /// Initializes the last-known-good service and prepares its secured storage directory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn example(directory_manager: DirectoryManager) -> Result<()> {
+    /// let service = LastKnownGoodService::new(directory_manager)?;
+    /// # let _ = service;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn new(directory_manager: DirectoryManager) -> Result<Self> {
         let anchor_file_path = directory_manager.secured_dir().join("last_known_good.json");
         let boot_marker_path = directory_manager.secured_dir().join("boot.marker");
@@ -87,6 +97,21 @@ impl LastKnownGoodService {
         Ok(())
     }
 
+    /// Ensures the last-known-good anchor and reserve executable are initialized.
+    ///
+    /// Existing valid state is preserved. If the reserve is missing, it is rebuilt
+    /// from the running executable; when the anchor is absent, both the anchor and
+    /// reserve are seeded with the running version. Anchor loading failures are
+    /// treated as if no anchor exists.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(service: &LastKnownGoodService) -> anyhow::Result<()> {
+    /// service.seed_if_missing().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn seed_if_missing(&self) -> Result<()> {
         let running_version = env!("OPENFRAME_VERSION");
         let anchor = self.load().await.unwrap_or(None);
@@ -114,6 +139,16 @@ impl LastKnownGoodService {
         }
     }
 
+    /// Atomically writes the running version to the boot marker file.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(service: &LastKnownGoodService) -> anyhow::Result<()> {
+    /// service.write_boot_marker().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn write_boot_marker(&self) -> Result<()> {
         let temp_path = self.boot_marker_path.with_extension("marker.tmp");
         fs::write(&temp_path, env!("OPENFRAME_VERSION"))

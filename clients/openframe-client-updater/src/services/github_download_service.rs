@@ -16,12 +16,41 @@ pub struct GithubDownloadService {
 }
 
 impl GithubDownloadService {
+    /// Creates a download service using the provided HTTP client.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let client = reqwest::Client::new();
+    /// let _service = GithubDownloadService::new(client);
+    /// ```
     pub fn new(http_client: Client) -> Self {
         Self { http_client }
     }
 
-    /// Downloads the archive for `config` and extracts the client binary from it.
-    /// Returns raw binary bytes ready to be written to disk.
+    /// Downloads an archive and extracts the configured client binary.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(
+    /// #     service: &GithubDownloadService,
+    /// #     config: &DownloadConfiguration,
+    /// # ) -> anyhow::Result<()> {
+    /// let binary = service.download_and_extract(config).await?;
+    /// # let _ = binary;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// The extracted client binary bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the archive download fails, the archive format is unsupported,
+    /// extraction fails, or the archive or extracted binary is too small.
     pub async fn download_and_extract(&self, config: &DownloadConfiguration) -> Result<Bytes> {
         info!("Downloading from: {}", config.link);
 
@@ -68,7 +97,24 @@ impl GithubDownloadService {
         Ok(binary_bytes)
     }
 
-    /// Returns the `DownloadConfiguration` matching the current OS.
+    /// Selects the download configuration applicable to the current operating system.
+    ///
+    /// # Arguments
+    ///
+    /// * `configs` - The available platform-specific download configurations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let service = GithubDownloadService::new(reqwest::Client::new());
+    /// let configurations: &[DownloadConfiguration] = &[];
+    ///
+    /// assert!(service.find_for_current_os(configurations).is_err());
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when no configuration matches the current operating system.
     pub fn find_for_current_os<'a>(
         &self,
         configs: &'a [DownloadConfiguration],
@@ -81,6 +127,21 @@ impl GithubDownloadService {
 
     // ── internals ──────────────────────────────────────────────────────────
 
+    /// Downloads bytes from a URL, retrying failed attempts and using a CDN fallback for GitHub rate-limit responses.
+    ///
+    /// # Errors
+    ///
+    /// Returns the most recent download error after all attempts fail, or an error describing a CDN failure or timeout when a GitHub rate limit is encountered.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(service: &GithubDownloadService) -> anyhow::Result<()> {
+    /// let bytes = service.download_with_retry("https://github.com/example/project/releases/download/v1.0.0/archive.tar.gz").await?;
+    /// assert!(!bytes.is_empty());
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn download_with_retry(&self, url: &str) -> Result<Bytes> {
         let mut last_error = None;
 
@@ -150,6 +211,26 @@ impl GithubDownloadService {
             .unwrap_or_else(|| anyhow!("Download failed after {} attempts", MAX_DOWNLOAD_RETRIES)))
     }
 
+    /// Downloads the response body from a URL after verifying a successful HTTP status.
+    ///
+    /// # Returns
+    ///
+    /// The response body as bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails, the server responds with an unsuccessful
+    /// status, or the response body cannot be read.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(service: &GithubDownloadService) -> anyhow::Result<()> {
+    /// let bytes = service.download("https://example.com/client.tar.gz").await?;
+    /// # let _ = bytes;
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn download(&self, url: &str) -> Result<Bytes> {
         let response = self
             .http_client
@@ -168,13 +249,45 @@ impl GithubDownloadService {
             .context("Failed to read response bytes")
     }
 
+    /// Converts a GitHub release download URL to its jsDelivr CDN equivalent.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let url = github_to_cdn_url(
+    ///     "https://github.com/owner/repo/releases/download/v1.0.0/client.tar.gz",
+    /// );
+    /// assert_eq!(
+    ///     url,
+    ///     "https://cdn.jsdelivr.net/gh/owner/repo@v1.0.0/client.tar.gz"
+    /// );
+    /// ```
+    ///
+    /// # Arguments
+    ///
+    /// * `github_url` - The GitHub release download URL.
+    ///
+    /// # Returns
+    ///
+    /// The corresponding jsDelivr CDN URL.
     fn github_to_cdn_url(github_url: &str) -> String {
         github_url
             .replace("github.com/", "cdn.jsdelivr.net/gh/")
             .replace("/releases/download/", "@")
     }
 
-    #[cfg(target_os = "windows")]
+    /// Extracts the target file from a ZIP archive using a case-insensitive filename suffix match.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Bytes;
+    ///
+    /// let service = GithubDownloadService::new(reqwest::Client::new());
+    /// let result = service.extract_from_zip(Bytes::new(), "client.exe");
+    ///
+    /// assert!(result.is_err());
+    /// ```
     fn extract_from_zip(&self, archive_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
         use zip::ZipArchive;
 
@@ -199,7 +312,14 @@ impl GithubDownloadService {
         Err(anyhow!("'{}' not found in ZIP", target_filename))
     }
 
-    #[cfg(not(target_os = "windows"))]
+    /// Reports that ZIP archive extraction is unavailable on non-Windows platforms.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let result = service.extract_from_zip(bytes, "client");
+    /// assert!(result.is_err());
+    /// ```
     fn extract_from_zip(&self, _bytes: Bytes, target: &str) -> Result<Bytes> {
         Err(anyhow!(
             "ZIP extraction not supported on this platform for '{}'",
@@ -207,7 +327,37 @@ impl GithubDownloadService {
         ))
     }
 
-    #[cfg(not(target_os = "windows"))]
+    /// Extracts the target file from a gzip-compressed tar archive.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use bytes::Bytes;
+    /// use reqwest::Client;
+    ///
+    /// let service = GithubDownloadService::new(Client::new());
+    /// let archive = Bytes::from(archive_bytes);
+    /// let binary = service.extract_from_tar_gz(archive, "client").unwrap();
+    /// assert!(!binary.is_empty());
+    /// # let archive_bytes = Vec::new();
+    /// ```
+    ///
+    /// `target_filename` is matched against archive entry basenames without regard
+    /// to case. Entries whose basenames begin with `._` are ignored.
+    ///
+    /// # Arguments
+    ///
+    /// * `archive_bytes` - The gzip-compressed tar archive contents.
+    /// * `target_filename` - The filename to extract.
+    ///
+    /// # Returns
+    ///
+    /// The extracted file contents.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the archive cannot be read, an entry cannot be processed,
+    /// or no matching file is found.
     fn extract_from_tar_gz(&self, archive_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
         use flate2::read::GzDecoder;
         use tar::Archive;
@@ -235,7 +385,15 @@ impl GithubDownloadService {
         Err(anyhow!("'{}' not found in tar.gz", target_filename))
     }
 
-    #[cfg(target_os = "windows")]
+    /// Reports that tar.gz extraction is unavailable on Windows.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let service = GithubDownloadService::new(reqwest::Client::new());
+    /// let result = service.extract_from_tar_gz(bytes::Bytes::new(), "client");
+    /// assert!(result.is_err());
+    /// ```
     fn extract_from_tar_gz(&self, _bytes: Bytes, target: &str) -> Result<Bytes> {
         Err(anyhow!(
             "tar.gz extraction not supported on Windows for '{}'",

@@ -1,3 +1,10 @@
+/// Forwards required component version variables to the compiler based on enabled Cargo features.
+///
+/// # Examples
+///
+/// ```
+/// // Cargo invokes this build-script entry point automatically.
+/// ```
 fn main() {
     forward_required("OPENFRAME_VERSION");
 

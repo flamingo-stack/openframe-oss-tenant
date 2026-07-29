@@ -40,6 +40,23 @@ pub struct ServiceConfig {
 }
 
 impl Default for ServiceConfig {
+    /// Creates a service configuration with conservative runtime defaults.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let config = ServiceConfig::default();
+    ///
+    /// assert!(config.run_at_load);
+    /// assert!(config.keep_alive);
+    /// assert!(config.restart_on_crash);
+    /// assert_eq!(config.restart_throttle_seconds, 10);
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A service configuration with empty identifiers and paths, enabled startup and
+    /// restart behavior, and no optional overrides.
     fn default() -> Self {
         Self {
             name: String::new(),
@@ -69,10 +86,32 @@ pub struct CrossPlatformServiceManager {
 }
 
 impl CrossPlatformServiceManager {
+    /// Creates a service manager with the provided configuration.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig::default());
+    /// assert_eq!(manager.config.name, "");
+    /// ```
+    ไทยฟรี
     pub fn with_config(config: ServiceConfig) -> Self {
         Self { config }
     }
 
+    /// Installs the configured service and starts it.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig::default());
+    /// manager.install()?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    ///
+    /// The service is configured with the selected executable, environment, startup
+    /// behavior, and platform-specific settings before installation.
+    pub fn install(&self) -> Result<()>
     pub fn install(&self) -> Result<()> {
         let label = self.label()?;
         let manager =
@@ -113,6 +152,25 @@ impl CrossPlatformServiceManager {
         Ok(())
     }
 
+    /// Removes the service from the native service manager, stopping it first when possible.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig {
+    ///     name: "openframe".into(),
+    ///     ..Default::default()
+    /// });
+    ///
+    /// manager.uninstall()?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    ///
+    /// On Windows, services that have already been removed are treated as successfully uninstalled.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` when the service is removed or already absent; an error if service detection or removal fails.
     pub fn uninstall(&self) -> Result<()> {
         let label = self.label()?;
         let manager =
@@ -154,6 +212,19 @@ impl CrossPlatformServiceManager {
         Ok(())
     }
 
+    /// Starts the configured service.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig::default());
+    /// manager.start()?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the native service manager cannot be detected or the service cannot be started.
     pub fn start(&self) -> Result<()> {
         let label = self.label()?;
         let manager =
@@ -163,6 +234,20 @@ impl CrossPlatformServiceManager {
             .context("Failed to start service")
     }
 
+    /// Stops the configured service.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig {
+    ///     name: "example".into(),
+    ///     ..Default::default()
+    /// });
+    ///
+    /// manager.stop()?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    pub fn stop(&self) -> Result<()>
     pub fn stop(&self) -> Result<()> {
         let label = self.label()?;
         let manager =
@@ -172,6 +257,20 @@ impl CrossPlatformServiceManager {
             .context("Failed to stop service")
     }
 
+    /// Creates a service label from the configured name using the `com.openframe.<name>` format.
+    ///
+    /// The configured name is converted to lowercase before constructing the label.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig {
+    ///     name: "Updater".into(),
+    ///     ..Default::default()
+    /// });
+    ///
+    /// assert!(manager.label().is_ok());
+    /// ```
     fn label(&self) -> Result<ServiceLabel> {
         ServiceLabel::from_str(&format!(
             "com.openframe.{}",
@@ -180,6 +279,14 @@ impl CrossPlatformServiceManager {
         .context("Failed to create service label")
     }
 
+    /// Determines the platform-specific directory used for application support files.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig::default());
+    /// assert!(manager.app_support_dir().is_absolute());
+    /// ```
     fn app_support_dir(&self) -> PathBuf {
         #[cfg(target_os = "windows")]
         {
@@ -196,6 +303,18 @@ impl CrossPlatformServiceManager {
         }
     }
 
+    /// Selects the configured service account, or the platform's default service account.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig {
+    ///     user_name: Some("service-user".to_string()),
+    ///     ..Default::default()
+    /// });
+    ///
+    /// assert_eq!(manager.service_username(), Some("service-user".to_string()));
+    /// ```
     fn service_username(&self) -> Option<String> {
         if let Some(u) = &self.config.user_name {
             return Some(u.clone());
@@ -208,6 +327,18 @@ impl CrossPlatformServiceManager {
         return Some("root".to_string());
     }
 
+    /// Creates parent directories for configured standard output and error log files.
+    ///
+    /// Directory creation errors are ignored, and the operation always succeeds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig::default());
+    /// manager.create_log_dirs()?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    fn create_log_dirs(&self) -> Result<()>
     fn create_log_dirs(&self) -> Result<()> {
         for path in [&self.config.stdout_path, &self.config.stderr_path]
             .into_iter()
@@ -220,6 +351,19 @@ impl CrossPlatformServiceManager {
         Ok(())
     }
 
+    /// Applies the platform-specific service installation configuration.
+    ///
+    /// On macOS, this generates the LaunchDaemons configuration; on other Unix
+    /// platforms, it applies the default platform configuration. Other platforms
+    /// leave the installation context unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig::default());
+    /// let mut context = ServiceInstallCtx::default();
+    /// manager.apply_platform_config(&mut context);
+    /// ```
     fn apply_platform_config(&self, _ctx: &mut ServiceInstallCtx) {
         #[cfg(target_os = "macos")]
         self.apply_macos_config(_ctx);
@@ -228,7 +372,21 @@ impl CrossPlatformServiceManager {
         self.apply_linux_config(_ctx);
     }
 
-    #[cfg(target_os = "macos")]
+    /// Configures the macOS service installation context with a LaunchDaemon property list.
+    ///
+    /// The generated property list reflects the service executable, launch behavior, restart
+    /// policy, logging paths, resource limits, identity, and working directory. If serialization
+    /// fails, the context remains unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(target_os = "macos")]
+    /// # {
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig::default());
+    /// let _ = manager.install();
+    /// # }
+    /// ```
     fn apply_macos_config(&self, ctx: &mut ServiceInstallCtx) {
         use plist::Dictionary;
         use tracing::debug;
@@ -319,7 +477,18 @@ impl CrossPlatformServiceManager {
         }
     }
 
-    #[cfg(all(unix, not(target_os = "macos")))]
+    /// Uses the default systemd service template for Linux installations.
+    ///
+    /// Additional stdout, stderr, file-limit, and restart-on-crash settings are not applied.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(unix, not(target_os = "macos")))]
+    /// # {
+    /// manager.apply_linux_config(&mut ctx);
+    /// # }
+    /// ```
     fn apply_linux_config(&self, _ctx: &mut ServiceInstallCtx) {
         use tracing::debug;
 
@@ -334,7 +503,18 @@ impl CrossPlatformServiceManager {
         );
     }
 
-    #[cfg(target_os = "windows")]
+    /// Waits for the Windows service process to stop until the specified timeout.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the service remains running after `timeout_secs`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let manager = CrossPlatformServiceManager::with_config(ServiceConfig::default());
+    /// assert!(manager.wait_for_process_stop(0).is_err());
+    /// ```
     fn wait_for_process_stop(&self, timeout_secs: u64) -> Result<()> {
         use std::time::{Duration, Instant};
         let svc = format!("com.openframe.{}", self.config.name.to_lowercase());
@@ -351,7 +531,21 @@ impl CrossPlatformServiceManager {
         ))
     }
 
-    #[cfg(target_os = "windows")]
+    /// Checks whether a Windows service is currently reported as running.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(target_os = "windows")]
+    /// # {
+    /// let running = service_process_running("com.openframe.example");
+    /// assert!(running || !running);
+    /// # }
+    /// ```
+    ///
+    /// Returns `true` when the service query succeeds and does not report the
+    /// service as stopped, or `false` when the query fails or reports a stopped
+    /// service.
     fn service_process_running(service_name: &str) -> bool {
         std::process::Command::new("sc")
             .args(["query", service_name])
@@ -364,7 +558,32 @@ impl CrossPlatformServiceManager {
     }
 }
 
-#[cfg(target_os = "windows")]
+/// Configures Windows service failure recovery actions.
+///
+/// # Parameters
+///
+/// * `service_name` - Name of the Windows service to configure.
+/// * `cfg` - Recovery delays, reset period, and non-crash failure settings.
+///
+/// # Errors
+///
+/// Returns an error if the Service Control Manager cannot be accessed, the
+/// service cannot be opened, or its failure actions cannot be updated.
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// let config = RecoveryConfig {
+///     first_restart_secs: 5,
+///     second_restart_secs: 30,
+///     subsequent_restart_secs: 60,
+///     reset_period_days: 1,
+///     enable_on_non_crash_failures: true,
+/// };
+///
+/// apply_windows_recovery("com.openframe.example", &config)?;
+/// # Ok::<(), anyhow::Error>(())
+/// ```
 fn apply_windows_recovery(service_name: &str, cfg: &RecoveryConfig) -> Result<()> {
     use std::time::Duration;
     use windows_service::{

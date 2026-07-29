@@ -15,10 +15,21 @@ const IN_FLIGHT_UPDATER_PHASES: [&str; 8] = [
     "rolling_back",
 ];
 
-/// The updater persists its CLIENT_UPDATE state machine to {secured}/updater_state.json;
-/// a non-terminal phase there means stopping com.openframe.client-updater now would
-/// interrupt a client swap. State files untouched for over 30 minutes are ignored so a
-/// wedged updater that stopped clearing its state can still be repaired remotely.
+/// Determines whether a recent client update is currently in an in-flight phase.
+///
+/// The updater state file must contain a recognized phase and have been modified
+/// within the last 30 minutes. Returns `None` when the state file is unavailable,
+/// invalid, stale, or contains a terminal or unknown phase.
+///
+/// # Examples
+///
+/// ```
+/// if let Some(phase) = in_flight_client_update_phase() {
+///     println!("Client update in progress: {phase}");
+/// }
+/// ```
+///
+/// Returns the current in-flight phase, or `None` when no active update is detected.
 pub fn in_flight_client_update_phase() -> Option<String> {
     let path = get_secured_directory().join(UPDATER_STATE_FILE_NAME);
     let modified = std::fs::metadata(&path).ok()?.modified().ok()?;

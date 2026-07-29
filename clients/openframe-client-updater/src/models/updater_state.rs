@@ -48,6 +48,26 @@ pub struct UpdaterState {
 }
 
 impl UpdaterState {
+    /// Creates a new updater state for the specified target version.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let state = UpdaterState::new("1.2.3".to_string());
+    ///
+    /// assert_eq!(state.target_version, "1.2.3");
+    /// assert_eq!(state.phase, UpdaterPhase::Idle);
+    /// assert!(state.backup_path.is_none());
+    /// assert!(state.downloaded_binary_path.is_none());
+    /// ```
+    ///
+    /// # Arguments
+    ///
+    /// * `target_version` - The version the updater is intended to install.
+    ///
+    /// # Returns
+    ///
+    /// A newly initialized updater state.
     pub fn new(target_version: String) -> Self {
         Self {
             target_version,
@@ -59,6 +79,18 @@ impl UpdaterState {
         }
     }
 
+    /// Determines whether the updater has reached a terminal phase.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the phase is `Completed`, `Failed`, or `RolledBack`, `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let state = UpdaterState::new("1.2.3".to_string());
+    /// assert!(!state.is_terminal());
+    /// ```
     pub fn is_terminal(&self) -> bool {
         matches!(
             self.phase,

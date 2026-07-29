@@ -213,6 +213,32 @@ pub(crate) fn launch_process_in_user_session(command_path: &str, args: &[String]
     launch_process_in_target_session(command_path, args, session_id)
 }
 
+/// Launches a process in the specified Windows user session.
+///
+/// # Errors
+///
+/// Returns an error if the session token cannot be queried or duplicated, or if
+/// Windows cannot create the process.
+///
+/// # Examples
+///
+/// ```no_run
+/// let args = vec!["--background".to_string()];
+/// let (process_id, _process_handle) =
+///     launch_process_in_target_session("C:\\Tools\\agent.exe", &args, 1)?;
+/// assert!(process_id > 0);
+/// # Ok::<(), anyhow::Error>(())
+/// ```
+///
+/// # Parameters
+///
+/// * `command_path` - Path to the executable to launch.
+/// * `args` - Arguments passed to the executable.
+/// * `session_id` - Windows user session in which to launch the process.
+///
+/// # Returns
+///
+/// The created process ID and a handle to the process.
 #[cfg(target_os = "windows")]
 pub(crate) fn launch_process_in_target_session(command_path: &str, args: &[String], session_id: u32) -> Result<(u32, HANDLE)> {
     unsafe {
@@ -357,6 +383,19 @@ pub struct ToolRunManager {
 }
 
 impl ToolRunManager {
+    /// Creates a tool run manager with the provided services and empty supervision state.
+    
+    ///
+    
+    /// # Examples
+    
+    ///
+    
+    /// ```no_run
+    
+    /// let manager = ToolRunManager::new(todo!(), todo!(), todo!());
+    
+    /// ```
     pub fn new(
         installed_tools_service: InstalledToolsService,
         params_processor: ToolCommandParamsResolver,
@@ -373,6 +412,26 @@ impl ToolRunManager {
         }
     }
 
+    /// Gets the mutex associated with a tool ID, creating it when necessary.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(manager: &ToolRunManager) {
+    /// let lock = manager.tool_lock("example-tool").await;
+    /// let _guard = lock.lock().await;
+    /// # }
+    /// ```
+    ///
+    /// The same mutex is returned for subsequent requests using the same tool ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `tool_id` - Identifier of the tool whose mutex should be retrieved.
+    ///
+    /// # Returns
+    ///
+    /// The shared mutex associated with `tool_id`.
     pub async fn tool_lock(&self, tool_id: &str) -> Arc<Mutex<()>> {
         let mut map = self.tool_locks.write().await;
         map.entry(tool_id.to_string())
@@ -407,9 +466,20 @@ impl ToolRunManager {
         Ok(())
     }
 
-    /// Resume supervision and relaunch every managed tool after a [`stop_all`].
-    /// Clears the one-way shutdown flag and the running set, restarts OS-service tools
-    /// (which `run()` deliberately skips), then re-spawns the standard/GUI supervisors.
+    /// Resumes supervision and relaunches all managed tools after [`stop_all`](Self::stop_all).
+    ///
+    /// Clears the shutdown state, restarts installed service tools, and starts supervision
+    /// for standard and GUI tools.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(manager: &ToolRunManager) -> Result<()> {
+    /// manager.restart_all().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    async fn restart_all(&self) -> Result<()> {
     pub async fn restart_all(&self) -> Result<()> {
         self.shutting_down.store(false, Ordering::Release);
         self.running_tools.write().await.clear();
@@ -430,6 +500,18 @@ impl ToolRunManager {
         self.run().await
     }
 
+    /// Marks an update operation as in progress for a tool.
+    ///
+    /// Each call increments the tool's in-flight update count.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # async fn example(manager: &ToolRunManager) {
+    /// manager.mark_updating("example-tool").await;
+    /// # }
+    /// ```
+    pub async fn mark_updating(&self, tool_id: &str) {
     pub async fn mark_updating(&self, tool_id: &str) {
         let mut map = self.updating_tools.write().await;
         let count = map.entry(tool_id.to_string()).or_insert(0);
@@ -534,6 +616,29 @@ impl ToolRunManager {
         set.remove(tool_id);
     }
 
+    /// Starts supervision for an installed tool and restarts managed processes after they exit.
+    ///
+    /// Service installations are left to their service manager. On Windows, a newly installed
+    /// GUI application is launched once in the user session; subsequent launches are handled by
+    /// the system autorun mechanism.
+    ///
+    /// # Arguments
+    ///
+    /// * `tool` - The installed tool to supervise.
+    /// * `new_tool` - Whether the tool was installed during the current operation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an existing managed process cannot be stopped before supervision starts.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(manager: &ToolRunManager, tool: InstalledTool) -> Result<()> {
+    /// manager.run_tool(tool, true).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn run_tool(&self, tool: InstalledTool, new_tool: bool) -> Result<()> {
         if tool.installation.is_service() {
             info!("Installation::Service for {} - self-managed, skipping launch", tool.tool_agent_id);

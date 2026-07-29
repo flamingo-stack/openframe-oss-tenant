@@ -33,6 +33,21 @@ impl ToolRestartMessageListener {
 
     const STREAM_NAME: &'static str = "TOOL_INSTALLATION";
 
+    /// Creates a tool restart message listener with the required service dependencies.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let listener = ToolRestartMessageListener::new(
+    ///     nats_connection_manager,
+    ///     tool_restart_service,
+    ///     config_service,
+    /// );
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A configured tool restart message listener.
     pub fn new(
         nats_connection_manager: NatsConnectionManager,
         tool_restart_service: ToolRestartService,
@@ -113,6 +128,25 @@ impl ToolRestartMessageListener {
         }
     }
 
+    /// Processes a tool restart message and dispatches the requested restart.
+    ///
+    /// Malformed payloads are acknowledged and treated as handled.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// #[tokio::test]
+    /// async fn processes_a_tool_restart_message(
+    ///     listener: &ToolRestartMessageListener,
+    ///     message: Message,
+    /// ) -> Result<()> {
+    ///     listener.handle_message(message).await
+    /// }
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` after the message has been processed.
     async fn handle_message(&self, message: Message) -> Result<()> {
         let payload = String::from_utf8_lossy(&message.payload);
         info!("Received tool restart message: {:?}", payload);
@@ -135,6 +169,19 @@ impl ToolRestartMessageListener {
         Ok(())
     }
 
+    /// Dispatches a tool restart and acknowledges the message when handling succeeds.
+    ///
+    /// Restart requests are deferred without acknowledgement when the tool is busy or
+    /// an updater restart conflicts with an in-flight client update. Failed restarts
+    /// are also left unacknowledged for potential redelivery.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // `listener` is a configured `ToolRestartMessageListener` and `message`
+    /// // contains a serialized tool restart request.
+    /// listener.dispatch(message, "tool-agent-id".to_owned()).await;
+    /// ```
     async fn dispatch(&self, message: Message, tool_agent_id: String) {
         if tool_agent_id == UPDATER_TOOL_AGENT_ID {
             if let Some(phase) = in_flight_client_update_phase() {

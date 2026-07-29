@@ -20,6 +20,14 @@ pub struct ClientUpdateListener {
 }
 
 impl ClientUpdateListener {
+    /// Creates a client update listener from its NATS, update, and configuration services.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let listener = ClientUpdateListener::new(nats, update_service, config_service);
+    /// ```
+    әркин
     pub fn new(
         nats: NatsConnectionManager,
         update_service: ClientUpdateService,
@@ -32,6 +40,18 @@ impl ClientUpdateListener {
         }
     }
 
+    /// Starts the client update listener in a background task.
+    ///
+    /// The task continuously listens for client updates and retries after listener
+    /// errors or unexpected termination.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # let listener: ClientUpdateListener = unimplemented!();
+    /// let handle = listener.start().await;
+    /// handle.abort();
+    /// ```
     pub async fn start(&self) -> tokio::task::JoinHandle<()> {
         let listener = self.clone();
         tokio::spawn(async move {
@@ -47,6 +67,20 @@ impl ClientUpdateListener {
         })
     }
 
+    /// Listens for client update messages and maintains the JetStream consumer across stream and NATS reconnection events.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if obtaining the machine ID, NATS client, or message stream fails, or if the message stream reports an error.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(listener: &ClientUpdateListener) -> anyhow::Result<()> {
+    /// listener.listen().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn listen(&self) -> Result<()> {
         let machine_id = self.config_service.get_machine_id().await?;
 
@@ -91,6 +125,20 @@ impl ClientUpdateListener {
         }
     }
 
+    /// Processes a client update message and acknowledges it according to the outcome.
+    ///
+    /// Malformed payloads are acknowledged to prevent redelivery. Successfully processed
+    /// updates are acknowledged, while processing failures leave the message unacknowledged
+    /// for redelivery. Returns an error if acknowledging a successfully processed message
+    /// fails.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let result = listener.handle_message(message).await;
+    /// assert!(result.is_ok());
+    /// ```
+    async fn handle_message...
     async fn handle_message(&self, message: Message) -> Result<()> {
         let payload = String::from_utf8_lossy(&message.payload);
         info!("Received CLIENT_UPDATE message: {}", payload);
@@ -128,6 +176,16 @@ impl ClientUpdateListener {
         Ok(())
     }
 
+    /// Acquires the machine-specific JetStream push consumer, creating it or attaching to an existing durable consumer.
+    ///
+    /// Retries consumer acquisition indefinitely with exponential backoff between attempts and pauses between retry cycles.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let consumer = listener.acquire_consumer(&js, "machine-123").await;
+    /// ```
+    async fn acquire_consumer(
     async fn acquire_consumer(
         &self,
         js: &jetstream::Context,
@@ -187,6 +245,19 @@ impl ClientUpdateListener {
         }
     }
 
+    /// Builds the JetStream push-consumer configuration for a machine's client updates.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # let listener: ClientUpdateListener = unimplemented!();
+    /// let config = listener.build_consumer_config("machine-123");
+    /// assert_eq!(config.filter_subject, "machine.all.client-update");
+    /// assert_eq!(
+    ///     config.deliver_subject,
+    ///     "machine.machine-123.client-update.inbox"
+    /// );
+    /// ```
     fn build_consumer_config(&self, machine_id: &str) -> push::Config {
         push::Config {
             filter_subject: "machine.all.client-update".to_string(),
@@ -199,6 +270,20 @@ impl ClientUpdateListener {
         }
     }
 
+    /// Builds the durable JetStream consumer name for a machine.
+    ///
+    /// # Arguments
+    ///
+    /// * `machine_id` - Identifier of the machine associated with the consumer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let name = ClientUpdateListener::durable_name("abc123");
+    /// assert_eq!(name, "machine_abc123_client-update_consumer_v2");
+    /// ```
+    ///
+    /// The resulting durable name.
     fn durable_name(machine_id: &str) -> String {
         format!("machine_{}_client-update_consumer_v2", machine_id)
     }

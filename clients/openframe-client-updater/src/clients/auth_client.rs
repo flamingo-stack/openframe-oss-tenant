@@ -14,6 +14,16 @@ pub struct AuthClient {
 }
 
 impl AuthClient {
+    /// Creates an authentication client for the specified base URL.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let auth_client = AuthClient::new(
+    ///     "https://example.com".to_owned(),
+    ///     reqwest::Client::new(),
+    /// );
+    /// ```
     pub fn new(base_url: String, http_client: Client) -> Self {
         Self {
             http_client,
@@ -21,6 +31,32 @@ impl AuthClient {
         }
     }
 
+    /// Authenticates a client using its credentials and obtains an agent token.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> anyhow::Result<()> {
+    /// let client = AuthClient::new(
+    ///     "https://example.com".to_string(),
+    ///     reqwest::Client::new(),
+    /// );
+    /// let token = client
+    ///     .authenticate_with_secret("client-id".to_string(), "client-secret".to_string())
+    ///     .await?;
+    /// # let _ = token;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Parameters
+    ///
+    /// * `client_id` - The OAuth client identifier.
+    /// * `client_secret` - The OAuth client secret.
+    ///
+    /// # Returns
+    ///
+    /// The authenticated agent token response.
     pub async fn authenticate_with_secret(
         &self,
         client_id: String,

@@ -1,3 +1,15 @@
+/// Looks up the compile-time version associated with a tool key.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(lookup("unknown-tool"), None);
+/// ```
+///
+/// # Returns
+///
+/// `Some` containing the tool version when the key identifies an enabled tool,
+/// or `None` when no enabled tool matches the key.
 #[allow(unused_variables)]
 pub fn lookup(tool_key: &str) -> Option<&'static str> {
     match tool_key {

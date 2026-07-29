@@ -33,6 +33,13 @@ const RECOVERY_RESET_PERIOD_DAYS: u32 = 1;
 #[cfg(windows)]
 define_windows_service!(ffi_service_main, windows_service_main);
 
+/// Runs the updater as a Windows service and coordinates service-control shutdown.
+///
+/// # Examples
+///
+/// ```no_run
+/// windows_service_main(Vec::new());
+/// ```
 #[cfg(windows)]
 fn windows_service_main(_args: Vec<std::ffi::OsString>) {
     let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
@@ -89,7 +96,21 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
     let _ = set_service_status(&status_handle, ServiceState::Stopped);
 }
 
-#[cfg(windows)]
+/// Updates the Windows Service Control Manager with the service's current state.
+///
+/// Running services accept stop and shutdown controls; other states accept no controls.
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(windows)]
+/// # fn example(status_handle: &windows_service::service::ServiceStatusHandle) {
+/// #     let _ = set_service_status(
+/// #         status_handle,
+/// #         windows_service::service::ServiceState::Running,
+/// #     );
+/// # }
+/// ```
 fn set_service_status(status_handle: &ServiceStatusHandle, state: ServiceState) -> Result<()> {
     let status = ServiceStatus {
         service_type: ServiceType::OWN_PROCESS,
@@ -112,6 +133,14 @@ fn set_service_status(status_handle: &ServiceStatusHandle, state: ServiceState) 
 pub struct UpdaterService;
 
 impl UpdaterService {
+    /// Determines whether the updater service is installed for the current operating system.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let installed = UpdaterService::is_installed();
+    /// println!("Updater installed: {installed}");
+    /// ```
     pub fn is_installed() -> bool {
         #[cfg(target_os = "windows")]
         {
@@ -137,8 +166,19 @@ impl UpdaterService {
         }
     }
 
-    /// Install the updater as an OS service.
-    /// Requires agent_config.json to already exist (populated by main client install).
+    /// Installs the updater binary and registers it as an operating system service.
+    ///
+    /// Administrative privileges are required, and the main client's `agent_config.json`
+    /// must exist and contain a non-empty `machine_id`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn install_updater() -> anyhow::Result<()> {
+    /// UpdaterService::install().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn install() -> Result<()> {
         if !PermissionUtils::is_admin() {
             return Err(anyhow::anyhow!(
@@ -245,6 +285,23 @@ impl UpdaterService {
         Ok(())
     }
 
+    /// Unregisters the OpenFrame Client Updater service and removes its installed binary.
+    ///
+    /// Administrative privileges are required.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the caller lacks administrative privileges, the service
+    /// cannot be unregistered, or the installed binary cannot be removed.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> anyhow::Result<()> {
+    /// UpdaterService::uninstall().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn uninstall() -> Result<()> {
         if !PermissionUtils::is_admin() {
             return Err(anyhow::anyhow!(
@@ -286,6 +343,16 @@ impl UpdaterService {
         Ok(())
     }
 
+    /// Starts the updater service after verifying its working directories.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// #[tokio::main]
+    /// async fn main() -> anyhow::Result<()> {
+    ///     UpdaterService::run().await
+    /// }
+    /// ```
     pub async fn run() -> Result<()> {
         info!("Starting OpenFrame Client Updater");
 
@@ -302,6 +369,19 @@ impl UpdaterService {
         crate::UpdaterOrchestrator::new(dir_manager).start().await
     }
 
+    /// Runs the updater as an operating-system service.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the service dispatcher or Tokio runtime cannot be started,
+    /// or if the updater fails while running.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// UpdaterService::run_as_service()?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
     pub fn run_as_service() -> Result<()> {
         info!("Running as OS service");
 
@@ -319,6 +399,19 @@ impl UpdaterService {
         }
     }
 
+    /// Determines the filesystem location where the updater executable is installed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let location = UpdaterService::get_install_location();
+    /// assert!(location.ends_with(if cfg!(windows) {
+    ///     "openframe-client-updater.exe"
+    /// } else {
+    ///     "openframe-client-updater"
+    /// }));
+    /// ```
+    ///
     pub fn get_install_location() -> PathBuf {
         #[cfg(target_os = "windows")]
         {

@@ -6,8 +6,16 @@ struct ExpClaim {
     exp: i64,
 }
 
-/// Decode a JWT's `exp` claim (seconds since the Unix epoch) without verifying the signature.
-/// Returns `None` if the token is malformed or carries no `exp`.
+/// Extracts the `exp` claim from a JWT payload without verifying its signature.
+///
+/// # Examples
+///
+/// ```
+/// let token = "header.eyJleHAiOjE3MDAwMDAwMDB9.signature";
+/// assert_eq!(token_exp_unix(token), Some(1_700_000_000));
+/// ```
+///
+/// Returns `None` for malformed tokens or payloads without a valid `exp` claim.
 pub fn token_exp_unix(token: &str) -> Option<i64> {
     // Require a well-formed `header.payload.signature` — reject tokens with missing or extra parts.
     let mut parts = token.split('.');

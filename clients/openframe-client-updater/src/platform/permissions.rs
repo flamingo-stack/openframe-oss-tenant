@@ -34,6 +34,14 @@ impl std::fmt::Display for PermissionError {
 impl std::error::Error for PermissionError {}
 
 impl From<io::Error> for PermissionError {
+    /// Converts an I/O error into a [`PermissionError::Io`] variant.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let error: PermissionError = std::io::Error::other("failed").into();
+    /// assert!(matches!(error, PermissionError::Io(_)));
+    /// ```
     fn from(err: io::Error) -> Self {
         PermissionError::Io(err)
     }
@@ -45,20 +53,67 @@ pub struct Permissions {
 }
 
 impl Permissions {
+    /// Creates permissions for a directory that are accessible by the owner, group, and others.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let permissions = Permissions::directory();
+    /// assert_eq!(permissions.mode, 0o755);
+    /// ```
     pub fn directory() -> Self {
         Self { mode: 0o755 }
     }
 
-    /// Owner-only, matching the client's `create_secured_directory` (0700) so health
-    /// checks never relax the shared secured directory the client locked down.
+    /// Creates permissions for a directory accessible only by its owner.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let permissions = Permissions::secured_directory();
+    /// assert_eq!(permissions.mode, 0o700);
+    /// ```
     pub fn secured_directory() -> Self {
         Self { mode: 0o700 }
     }
 
+    /// Creates permissions for a regular file using mode `0o644`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let permissions = Permissions::file();
+    /// assert_eq!(permissions.mode, 0o644);
+    /// ```
     pub fn file() -> Self {
         Self { mode: 0o644 }
     }
 
+    /// Applies these permissions to the specified path.
+    ///
+    /// On Unix, this applies the full numeric permission mode. On non-Unix platforms,
+    /// it clears the read-only flag when the mode requests write access and the path
+    /// exists.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PermissionError::Io`] if reading metadata or updating permissions
+    /// fails.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs;
+    ///
+    /// let path = std::env::temp_dir().join("permissions-example");
+    /// fs::write(&path, b"example")?;
+    ///
+    /// Permissions::file().apply(&path)?;
+    /// assert!(path.exists());
+    ///
+    /// fs::remove_file(path)?;
+    /// # Ok::<(), PermissionError>(())
+    /// ```
     pub fn apply(&self, path: &Path) -> Result<(), PermissionError> {
         #[cfg(unix)]
         {
@@ -85,6 +140,17 @@ impl Permissions {
 pub struct PermissionUtils;
 
 impl PermissionUtils {
+    /// Determines whether the current process has administrative privileges.
+    ///
+    /// # Returns
+    ///
+    /// `true` if administrative privileges are available, `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let is_admin = PermissionUtils::is_admin();
+    /// ```
     pub fn is_admin() -> bool {
         if ADMIN_PRIVILEGES_GRANTED.load(Ordering::Relaxed) {
             return true;
@@ -114,6 +180,20 @@ pub enum Capability {
 }
 
 impl PermissionUtils {
+    /// Determines whether the current process has the specified capability.
+    ///
+    /// All supported capabilities require administrative privileges.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let can_manage_services = PermissionUtils::has_capability(Capability::ManageServices);
+    /// assert_eq!(can_manage_services, PermissionUtils::is_admin());
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// `true` if the current process has the capability, `false` otherwise.
     pub fn has_capability(capability: Capability) -> bool {
         match capability {
             Capability::ManageServices => Self::is_admin(),

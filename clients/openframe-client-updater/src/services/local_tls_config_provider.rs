@@ -14,12 +14,34 @@ pub struct LocalTlsConfigProvider {
 }
 
 impl LocalTlsConfigProvider {
+    /// Creates a local TLS configuration provider from the initial configuration service.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let initial_configuration_service: InitialConfigurationService = todo!();
+    /// let provider = LocalTlsConfigProvider::new(initial_configuration_service);
+    /// ```
     pub fn new(initial_configuration_service: InitialConfigurationService) -> Self {
         Self {
             initial_configuration_service,
         }
     }
 
+    /// Creates a local-mode TLS client configuration using the configured CA certificate.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # let provider: LocalTlsConfigProvider = todo!();
+    /// let config = provider.create_tls_config()?;
+    /// # let _: async_nats::rustls::ClientConfig = config;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// The TLS client configuration containing the configured CA certificates and no client authentication.
     pub fn create_tls_config(&self) -> Result<ClientConfig> {
         info!("Creating local-mode TLS configuration");
 
@@ -46,6 +68,19 @@ impl LocalTlsConfigProvider {
         Ok(config)
     }
 
+    /// Resolves and validates the local CA certificate path from the initial configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the path cannot be read, is empty, or does not point to an existing file.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::path::PathBuf;
+    /// # let certificate_path = PathBuf::from("/path/to/ca.pem");
+    /// assert!(certificate_path.exists() || !certificate_path.as_os_str().is_empty());
+    /// ```
     fn get_certificate_path(&self) -> Result<String> {
         let saved_path = self
             .initial_configuration_service

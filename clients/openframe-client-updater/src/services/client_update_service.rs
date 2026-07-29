@@ -30,6 +30,18 @@ pub struct ClientUpdateService {
 }
 
 impl ClientUpdateService {
+    /// Creates a client update service with the provided update dependencies.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let service = ClientUpdateService::new(
+    ///     download_service,
+    ///     state_service,
+    ///     progress_publisher,
+    ///     lkg_service,
+    /// );
+    /// ```
     pub fn new(
         download_service: GithubDownloadService,
         state_service: UpdaterStateService,
@@ -46,6 +58,26 @@ impl ClientUpdateService {
         }
     }
 
+    /// Processes an update message while preventing overlapping update operations.
+    ///
+    /// Messages received while another update is running are ignored. Errors from the
+    /// accepted update are propagated to the caller.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # async fn example(
+    /// #     service: &ClientUpdateService,
+    /// #     message: ClientUpdateMessage,
+    /// # ) -> anyhow::Result<()> {
+    /// service.process_update(message).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if processing the accepted update fails.
     pub async fn process_update(&self, msg: ClientUpdateMessage) -> Result<()> {
         let mut guard = self.in_progress.lock().await;
         if *guard {
@@ -67,6 +99,31 @@ impl ClientUpdateService {
         result
     }
 
+    /// Executes the requested client update through installation, startup, boot verification, and post-boot observation.
+    ///
+    /// Invalid or unsupported requests are reported and acknowledged without retrying. Operational failures
+    /// are reported through update progress and may trigger rollback after the existing binary is replaced.
+    ///
+    /// # Arguments
+    ///
+    /// * `msg` - Update request containing the target version, download configurations, and rollback option.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when downloading, reading, validating, installing, starting, or rolling back the
+    /// client binary fails.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # async fn example(
+    /// #     service: &ClientUpdateService,
+    /// #     msg: &ClientUpdateMessage,
+    /// # ) -> anyhow::Result<()> {
+    /// service.run_update(msg).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn run_update(&self, msg: &ClientUpdateMessage) -> Result<()> {
         let requested_semver = match semver::Version::parse(msg.version.trim_start_matches('v')) {
             Ok(v) => v,
@@ -329,6 +386,25 @@ impl ClientUpdateService {
         Ok(())
     }
 
+    /// Starts asynchronous post-boot observation for the updated client binary.
+    
+    ///
+    
+    /// The observation uses the current update generation and finalizes the update
+    
+    /// or initiates a rollback based on the client's health during the observation window.
+    
+    ///
+    
+    /// # Examples
+    
+    ///
+    
+    /// ```no_run
+    
+    /// service.spawn_observation(state, target, backup_path);
+    
+    /// ```
     fn spawn_observation(&self, state: UpdaterState, target: PathBuf, backup_path: PathBuf) {
         let service = self.clone();
         let my_generation = self.generation.load(Ordering::SeqCst);
@@ -339,9 +415,20 @@ impl ClientUpdateService {
         });
     }
 
-    /// Watch the freshly updated client for the observation window. Healthy →
-    /// promote the anchor and clean up. Service gone or crash-looping (boot
-    /// marker rewrites) → automatic rollback to the last known-good binary.
+    /// Monitors the updated client and finalizes the update or initiates an automatic rollback.
+    ///
+    /// The observation ends successfully when the client remains healthy for the configured
+    /// window, promoting the new version and clearing update artifacts. A stopped service or
+    /// excessive restarts trigger rollback. Observation for a superseded update is abandoned.
+    ///
+    /// # Examples
+    ///
+    /// This helper is invoked by the update workflow after the client successfully starts.
+    ///
+    /// ```no_run
+    /// // The update workflow starts post-boot observation after verifying the boot marker.
+    /// service.spawn_observation(state, target, backup_path);
+    /// ```
     async fn observe_and_finalize(
         &self,
         mut state: UpdaterState,
@@ -495,6 +582,29 @@ impl ClientUpdateService {
         ))
     }
 
+    /// Restores the last-known-good client binary and restarts the service after an update failure.
+    ///
+    /// The restore uses the verified reserve when available, otherwise the pre-swap backup.
+    /// It reports rollback progress, clears updater state after a successful restore, and
+    /// returns an error describing the rollback outcome.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if all restore attempts fail or after the update has been successfully
+    /// rolled back, preserving the original failure reason.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let result = service.rollback(
+    ///     &mut state,
+    ///     target_path,
+    ///     backup_path,
+    ///     version,
+    ///     "The updated service stopped unexpectedly",
+    /// ).await;
+    /// assert!(result.is_err());
+    /// ```
     async fn rollback(
         &self,
         state: &mut UpdaterState,
@@ -587,6 +697,18 @@ impl ClientUpdateService {
         Err(anyhow!("Update failed and was rolled back: {}", reason))
     }
 
+    /// Attempts to restart the client service and reports a failure if the restart fails.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// service.try_start_service("1.2.3", true).await;
+    /// ```
+    ///
+    /// # Arguments
+    ///
+    /// * `version` - Version associated with the update.
+    /// * `after_rollback` - Whether the restart follows a rollback.
     async fn try_start_service(&self, version: &str, after_rollback: bool) {
         if let Err(e) = ServiceManagerService::start_async(CLIENT_SERVICE_FULL_NAME).await {
             let ctx = if after_rollback {
@@ -606,9 +728,18 @@ impl ClientUpdateService {
         }
     }
 
-    /// Boot-marker versions come from the client's build env, requested versions
-    /// from the backend — compare semver-first so cosmetic differences (leading
-    /// 'v', metadata formatting) never read as a wrong-binary boot.
+    /// Compares two version strings using semantic-version equality when both are valid versions.
+    ///
+    /// A leading `v` is ignored for semantic-version comparison. If either value is not a
+    /// valid semantic version, the original strings are compared exactly.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert!(versions_match("v1.2.3", "1.2.3"));
+    /// assert!(!versions_match("1.2.3", "1.2.4"));
+    /// assert!(versions_match("development", "development"));
+    /// ```
     fn versions_match(marker: &str, requested: &str) -> bool {
         match (
             semver::Version::parse(marker.trim_start_matches('v')),
@@ -619,9 +750,13 @@ impl ClientUpdateService {
         }
     }
 
-    /// Past the point of no return a state-persistence failure must not abort
-    /// the swap: the file only drives crash recovery, while aborting strands a
-    /// stopped client. Log and continue.
+    /// Persists an updater phase transition without aborting the ongoing update when persistence fails.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// service.transition_best_effort(&mut state, UpdaterPhase::ReplacingBinary);
+    /// ```
     fn transition_best_effort(&self, state: &mut UpdaterState, phase: UpdaterPhase) {
         let label = phase.to_string();
         if let Err(e) = self.state_service.transition(state, phase) {
@@ -629,6 +764,24 @@ impl ClientUpdateService {
         }
     }
 
+    /// Records an update failure, publishes failure progress, and clears persisted updater state.
+    ///
+    /// The failure reason is stored in `state`, and the `rolled_back` flag indicates whether
+    /// the failure occurred after a rollback.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(service: &ClientUpdateService, state: &mut UpdaterState) {
+    /// service
+    ///     .fail(state, "1.2.3", "The client failed to start", true)
+    ///     .await;
+    /// assert_eq!(
+    ///     state.failure_reason.as_deref(),
+    ///     Some("The client failed to start")
+    /// );
+    /// # }
+    /// ```
     async fn fail(&self, state: &mut UpdaterState, version: &str, reason: &str, rolled_back: bool) {
         state.failure_reason = Some(reason.to_string());
         if let Err(e) = self.state_service.transition(state, UpdaterPhase::Failed) {
@@ -640,6 +793,15 @@ impl ClientUpdateService {
         let _ = self.state_service.clear();
     }
 
+    /// Removes the temporary file at the specified path when it exists.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn example(service: &ClientUpdateService, temp_path: &std::path::PathBuf) {
+    /// service.cleanup_temp(temp_path);
+    /// # }
+    /// ```
     fn cleanup_temp(&self, temp_path: &PathBuf) {
         if temp_path.exists() {
             if let Err(e) = std::fs::remove_file(temp_path) {

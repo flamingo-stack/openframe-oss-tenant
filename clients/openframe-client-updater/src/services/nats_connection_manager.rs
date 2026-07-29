@@ -24,6 +24,20 @@ impl NatsConnectionManager {
     const NATS_DEVICE_USER: &'static str = "machine";
     const NATS_DEVICE_PASSWORD: &'static str = "";
 
+    /// Creates a NATS connection manager with the supplied connection configuration and shared token state.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let manager = NatsConnectionManager::new(
+    ///     "nats://localhost:4222".to_owned(),
+    ///     # unimplemented!(),
+    ///     # unimplemented!(),
+    ///     # unimplemented!(),
+    ///     # unimplemented!(),
+    /// );
+    /// ```
+    pub fn new
     pub fn new(
         nats_server_url: String,
         config_service: AgentConfigurationService,
@@ -43,10 +57,28 @@ impl NatsConnectionManager {
         }
     }
 
+    /// Subscribes to notifications emitted when the NATS connection is established or re-established.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let mut reconnects = manager.subscribe_reconnect();
+    /// let _notification = reconnects.recv().await;
+    /// ```
     pub fn subscribe_reconnect(&self) -> broadcast::Receiver<()> {
         self.reconnect_tx.subscribe()
     }
 
+    /// Establishes a connection to the configured NATS server and stores the connected client.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(manager: &NatsConnectionManager) -> anyhow::Result<()> {
+    /// manager.connect().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn connect(&self) -> Result<()> {
         let machine_id = self.config_service.get_machine_id().await?;
 
@@ -127,6 +159,19 @@ impl NatsConnectionManager {
         Ok(())
     }
 
+    /// Builds the NATS WebSocket connection URL using the current authorization token.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when an authorization token is unavailable.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let url = manager.build_nats_connection_url().await?;
+    /// assert!(url.contains("/ws/nats?authorization="));
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
     async fn build_nats_connection_url(&self) -> Result<String> {
         let token =
             self.token.read().await.clone().context(
@@ -138,6 +183,18 @@ impl NatsConnectionManager {
         ))
     }
 
+    /// Retrieves the connected NATS client.
+    ///
+    /// Returns an error if `connect` has not initialized the client.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(manager: &NatsConnectionManager) -> anyhow::Result<()> {
+    /// let client = manager.get_client().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_client(&self) -> Result<Arc<Client>> {
         self.client
             .read()

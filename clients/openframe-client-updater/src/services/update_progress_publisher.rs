@@ -10,6 +10,15 @@ pub struct UpdateProgressPublisher {
 }
 
 impl UpdateProgressPublisher {
+    /// Creates an update progress publisher for the specified machine.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn example(nats_publisher: NatsMessagePublisher) {
+    /// let publisher = UpdateProgressPublisher::new(nats_publisher, "machine-123".to_owned());
+    /// # }
+    /// ```
     pub fn new(nats_publisher: NatsMessagePublisher, machine_id: String) -> Self {
         Self {
             nats_publisher,
@@ -18,6 +27,17 @@ impl UpdateProgressPublisher {
     }
 
     // Errors are swallowed — a NATS hiccup must never abort the binary swap.
+    /// Publishes update progress for the specified phase and version.
+    ///
+    /// Publishing failures are logged and ignored so they do not interrupt the update process.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # async fn example(publisher: &UpdateProgressPublisher) {
+    /// publisher.publish(&UpdaterPhase::Completed, "1.2.3").await;
+    /// # }
+    /// ```
     pub async fn publish(&self, phase: &UpdaterPhase, version: &str) {
         let subject = self.progress_subject();
         let msg = UpdateProgressMessage::new(phase.to_string(), version);
@@ -28,6 +48,29 @@ impl UpdateProgressPublisher {
         }
     }
 
+    /// Publishes a failure notification for an update phase.
+    ///
+    /// Publishing errors are logged and do not propagate to the caller.
+    ///
+    /// # Parameters
+    ///
+    /// * `phase` - The update phase in which the failure occurred.
+    /// * `version` - The update version associated with the failure.
+    /// * `reason` - A description of the failure.
+    /// * `rolled_back` - Whether the update was rolled back.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # async fn example(
+    /// #     publisher: &UpdateProgressPublisher,
+    /// #     phase: &UpdaterPhase,
+    /// # ) {
+    /// publisher
+    ///     .publish_failure(phase, "1.2.3", "download failed", false)
+    ///     .await;
+    /// # }
+    /// ```
     pub async fn publish_failure(
         &self,
         phase: &UpdaterPhase,
@@ -52,6 +95,23 @@ impl UpdateProgressPublisher {
     }
 
     // Reports the updater's own version to the backend on startup.
+    /// Publishes the updater's installed-agent version to the backend.
+    ///
+    /// Publishing failures are logged and do not propagate to the caller.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(
+    /// #     nats_publisher: NatsMessagePublisher,
+    /// # ) {
+    /// let publisher = UpdateProgressPublisher::new(
+    ///     nats_publisher,
+    ///     "machine-123".to_string(),
+    /// );
+    /// publisher.publish_updater_version().await;
+    /// # }
+    /// ```
     pub async fn publish_updater_version(&self) {
         let version = env!("OPENFRAME_UPDATER_VERSION");
         let subject = self.installed_agent_subject();
@@ -66,6 +126,17 @@ impl UpdateProgressPublisher {
     }
 
     // Also publishes installed-agent for backward compat with the existing backend handler.
+    /// Publishes completed update progress and reports the installed client version.
+    ///
+    /// Publication failures are logged and do not propagate to the caller.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(publisher: UpdateProgressPublisher) {
+    /// publisher.publish_success("1.2.3").await;
+    /// # }
+    /// ```
     pub async fn publish_success(&self, version: &str) {
         self.publish(&UpdaterPhase::Completed, version).await;
 
@@ -82,10 +153,30 @@ impl UpdateProgressPublisher {
         }
     }
 
+    /// Builds the NATS subject used for update progress messages.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let machine_id = "machine-123";
+    /// let subject = format!("machine.{machine_id}.client-update-progress");
+    ///
+    /// assert_eq!(subject, "machine.machine-123.client-update-progress");
+    /// ```
     fn progress_subject(&self) -> String {
         format!("machine.{}.client-update-progress", self.machine_id)
     }
 
+    /// Builds the NATS subject used for installed-agent messages.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let machine_id = "machine-123";
+    /// let subject = format!("machine.{machine_id}.installed-agent");
+    ///
+    /// assert_eq!(subject, "machine.machine-123.installed-agent");
+    /// ```
     fn installed_agent_subject(&self) -> String {
         format!("machine.{}.installed-agent", self.machine_id)
     }

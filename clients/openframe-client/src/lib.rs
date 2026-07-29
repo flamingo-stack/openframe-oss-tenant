@@ -172,6 +172,17 @@ pub struct Client {
 
 impl Client {
 
+    /// Constructs a fully initialized client runtime and verifies the required local environment.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let client = Client::new()?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    ///
+    /// Returns an error if required directories, configuration services, or runtime
+    /// dependencies cannot be initialized.
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
 
@@ -532,6 +543,25 @@ impl Client {
         })
     }
 
+    /// Starts the client runtime and runs its background services until the process exits.
+    ///
+    /// Startup errors from required services are returned, while selected reconciliation and
+    /// scheduled-result recovery failures are logged and do not stop startup.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn run() -> anyhow::Result<()> {
+    /// let client = Client::new()?;
+    /// client.start().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a required startup service, connection, listener, metrics
+    /// initialization, or health check fails.
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
 

@@ -17,6 +17,13 @@ pub enum LogSourceKind {
 }
 
 impl fmt::Display for LogSourceKind {
+    /// Formats the log source kind as its log-source identifier.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(LogSourceKind::Updater.to_string(), "openframe-client-updater");
+    /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             LogSourceKind::Openframe => write!(f, "openframe"),

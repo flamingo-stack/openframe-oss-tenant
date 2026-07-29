@@ -117,6 +117,21 @@ impl ToolUninstallMessageListener {
         }
     }
 
+    /// Parses a tool uninstall message and dispatches valid messages for processing.
+    ///
+    /// Malformed messages are acknowledged and ignored.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(
+    /// #     listener: &ToolUninstallMessageListener,
+    /// #     message: Message,
+    /// # ) -> Result<()> {
+    /// listener.handle_message(message).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn handle_message(&self, message: Message) -> Result<()> {
         let payload = String::from_utf8_lossy(&message.payload);
         info!("Received tool uninstall message: {:?}", payload);
@@ -137,6 +152,19 @@ impl ToolUninstallMessageListener {
         Ok(())
     }
 
+    /// Dispatches a tool uninstall request while coordinating tool state and message acknowledgement.
+    ///
+    /// Uninstall requests are deferred for redelivery when an updater uninstall conflicts with
+    /// an active client update or when the tool is already busy. Successful uninstall outcomes are
+    /// acknowledged and clear the tool's running state; failures and panics leave the message
+    /// unacknowledged for potential redelivery.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// listener.dispatch(message, uninstall_message).await;
+    /// ```
+    async fn dispatch...
     async fn dispatch(&self, message: Message, uninstall_message: ToolUninstallMessage) {
         let tool_agent_id = uninstall_message.tool_agent_id.clone();
 

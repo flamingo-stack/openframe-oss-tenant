@@ -117,6 +117,17 @@ impl ToolInstallationMessageListener {
         }
     }
 
+    /// Processes a tool installation message and dispatches valid payloads for installation.
+    ///
+    /// Malformed payloads are acknowledged to prevent redelivery and are treated as handled.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # async fn example(listener: &ToolInstallationMessageListener, message: Message) {
+    /// listener.handle_message(message).await.unwrap();
+    /// # }
+    /// ```
     async fn handle_message(&self, message: Message) -> Result<()> {
         let payload = String::from_utf8_lossy(&message.payload);
         info!("Received tool installation message: {:?}", payload);
@@ -138,6 +149,22 @@ impl ToolInstallationMessageListener {
         Ok(())
     }
 
+    /// Processes a tool installation message and acknowledges it after successful installation.
+    ///
+    /// Updater installations are deferred while a client update is in progress, allowing the
+    /// message to be redelivered. Messages that fail installation remain unacknowledged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example(
+    /// #     listener: &ToolInstallationMessageListener,
+    /// #     message: Message,
+    /// #     installation: ToolInstallationMessage,
+    /// # ) {
+    /// listener.dispatch(message, installation).await;
+    /// # }
+    /// ```
     async fn dispatch(&self, message: Message, tool_installation_message: ToolInstallationMessage) {
         let tool_agent_id = tool_installation_message.tool_agent_id.clone();
 

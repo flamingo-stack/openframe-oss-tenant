@@ -56,6 +56,20 @@ impl ToolAgentUpdateService {
         }
     }
 
+    /// Processes a tool-agent update message, repairing missing installations and updating the tool or its assets as needed.
+    ///
+    /// Updater self-updates are deferred when another client update is in flight.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// service.process_update(message).await?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the updater self-update must be deferred or an update operation fails.
     pub async fn process_update(&self, message: ToolAgentUpdateMessage) -> Result<()> {
         let tool_agent_id = &message.tool_agent_id;
         let new_version = &message.version;
