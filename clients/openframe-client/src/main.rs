@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand};
+use openframe::installation_initial_config_service::InstallConfigParams;
 use openframe::platform::permissions::{Capability, PermissionUtils};
 use openframe::{service::Service, Client};
-use openframe::installation_initial_config_service::InstallConfigParams;
 use std::process;
 
 use tokio::runtime::Runtime;
@@ -125,7 +125,10 @@ fn main() -> Result<()> {
 
             let warns = report.warn_count();
             if warns > 0 {
-                println!("\n{} warning(s). The agent may have connectivity issues.", warns);
+                println!(
+                    "\n{} warning(s). The agent may have connectivity issues.",
+                    warns
+                );
                 process::exit(1);
             }
 

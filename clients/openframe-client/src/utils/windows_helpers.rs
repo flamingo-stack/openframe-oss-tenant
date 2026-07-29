@@ -81,7 +81,11 @@ pub(crate) fn build_command_line(command_path: &str, args: &[String]) -> String 
 
 /// Register `value_name` under the 64-bit HKLM Run key so Windows launches `command_path`
 /// Also deletes any entry from the WOW6432Node mirror to avoid double-launch
-pub(crate) fn register_autorun(value_name: &str, command_path: &str, args: &[String]) -> Result<()> {
+pub(crate) fn register_autorun(
+    value_name: &str,
+    command_path: &str,
+    args: &[String],
+) -> Result<()> {
     let cmdline = build_command_line(command_path, args);
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
 
@@ -99,7 +103,10 @@ pub(crate) fn register_autorun(value_name: &str, command_path: &str, args: &[Str
     if needs_write {
         key.set_value(value_name, &cmdline)
             .with_context(|| format!("Failed to set HKLM\\{}\\{}", AUTORUN_KEY_PATH, value_name))?;
-        info!("Wrote Run-key entry: HKLM\\{} :: {} = {}", AUTORUN_KEY_PATH, value_name, cmdline);
+        info!(
+            "Wrote Run-key entry: HKLM\\{} :: {} = {}",
+            AUTORUN_KEY_PATH, value_name, cmdline
+        );
     }
 
     // Delete any entry from the WOW6432Node mirror
@@ -109,9 +116,15 @@ pub(crate) fn register_autorun(value_name: &str, command_path: &str, args: &[Str
     ) {
         if wow_key.get_value::<String, _>(value_name).is_ok() {
             if let Err(e) = wow_key.delete_value(value_name) {
-                warn!("Failed to delete stale Run-key entry: HKLM\\{}\\{}: {:#}", AUTORUN_KEY_WOW64_PATH, value_name, e);
+                warn!(
+                    "Failed to delete stale Run-key entry: HKLM\\{}\\{}: {:#}",
+                    AUTORUN_KEY_WOW64_PATH, value_name, e
+                );
             } else {
-                info!("Deleted stale Run-key entry: HKLM\\{}\\{}", AUTORUN_KEY_WOW64_PATH, value_name);
+                info!(
+                    "Deleted stale Run-key entry: HKLM\\{}\\{}",
+                    AUTORUN_KEY_WOW64_PATH, value_name
+                );
             }
         }
     }
@@ -169,8 +182,14 @@ pub(crate) fn unregister_autorun(value_name: &str) {
     ) {
         if key.get_value::<String, _>(value_name).is_ok() {
             match key.delete_value(value_name) {
-                Ok(()) => info!("Deleted Run-key entry: HKLM\\{}\\{}", AUTORUN_KEY_PATH, value_name),
-                Err(e) => warn!("Failed to delete Run-key entry: HKLM\\{}\\{}: {:#}", AUTORUN_KEY_PATH, value_name, e),
+                Ok(()) => info!(
+                    "Deleted Run-key entry: HKLM\\{}\\{}",
+                    AUTORUN_KEY_PATH, value_name
+                ),
+                Err(e) => warn!(
+                    "Failed to delete Run-key entry: HKLM\\{}\\{}: {:#}",
+                    AUTORUN_KEY_PATH, value_name, e
+                ),
             }
         }
     }
@@ -182,8 +201,14 @@ pub(crate) fn unregister_autorun(value_name: &str) {
     ) {
         if key.get_value::<String, _>(value_name).is_ok() {
             match key.delete_value(value_name) {
-                Ok(()) => info!("Deleted Run-key entry: HKLM\\{}\\{}", AUTORUN_KEY_WOW64_PATH, value_name),
-                Err(e) => warn!("Failed to delete Run-key entry: HKLM\\{}\\{}: {:#}", AUTORUN_KEY_WOW64_PATH, value_name, e),
+                Ok(()) => info!(
+                    "Deleted Run-key entry: HKLM\\{}\\{}",
+                    AUTORUN_KEY_WOW64_PATH, value_name
+                ),
+                Err(e) => warn!(
+                    "Failed to delete Run-key entry: HKLM\\{}\\{}: {:#}",
+                    AUTORUN_KEY_WOW64_PATH, value_name, e
+                ),
             }
         }
     }

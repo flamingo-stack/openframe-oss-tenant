@@ -1,6 +1,6 @@
-use anyhow::Context;
 use crate::models::InstalledAgentMessage;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
+use anyhow::Context;
 
 #[derive(Clone)]
 pub struct InstalledAgentMessagePublisher {
@@ -8,16 +8,27 @@ pub struct InstalledAgentMessagePublisher {
 }
 
 impl InstalledAgentMessagePublisher {
-
     pub fn new(nats_message_publisher: NatsMessagePublisher) -> Self {
-        Self { nats_message_publisher }
+        Self {
+            nats_message_publisher,
+        }
     }
 
-    pub async fn publish(&self, machine_id: String, agent_type: String, version: String) -> anyhow::Result<()> {
+    pub async fn publish(
+        &self,
+        machine_id: String,
+        agent_type: String,
+        version: String,
+    ) -> anyhow::Result<()> {
         let topic = Self::build_topic_name(machine_id);
         let message = Self::build_message(agent_type, version);
-        self.nats_message_publisher.publish(&topic, message).await
-            .context(format!("Failed to publish installed agent message to topic: {}", topic))
+        self.nats_message_publisher
+            .publish(&topic, message)
+            .await
+            .context(format!(
+                "Failed to publish installed agent message to topic: {}",
+                topic
+            ))
     }
 
     fn build_topic_name(machine_id: String) -> String {
@@ -31,4 +42,3 @@ impl InstalledAgentMessagePublisher {
         }
     }
 }
-

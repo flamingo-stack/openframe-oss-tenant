@@ -246,11 +246,11 @@ impl CrossPlatformServiceManager {
 
         // Uninstall the service
         info!("Uninstalling service via CrossPlatformServiceManager");
-        
+
         #[cfg(target_os = "windows")]
         {
             match manager.uninstall(ctx) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => {
                     let error_msg = e.to_string();
                     // Ignore "already marked for deletion" or "doesn't exist"
@@ -264,10 +264,12 @@ impl CrossPlatformServiceManager {
                 }
             }
         }
-        
+
         #[cfg(not(target_os = "windows"))]
         {
-            manager.uninstall(ctx).context("Failed to uninstall service")?;
+            manager
+                .uninstall(ctx)
+                .context("Failed to uninstall service")?;
         }
 
         Ok(())
@@ -456,7 +458,10 @@ impl CrossPlatformServiceManager {
                         }
                     },
                     Err(e) => {
-                        warn!("Failed to serialize macOS service options to plist: {:#}", e);
+                        warn!(
+                            "Failed to serialize macOS service options to plist: {:#}",
+                            e
+                        );
                     }
                 }
             }
@@ -584,27 +589,30 @@ impl CrossPlatformServiceManager {
     fn wait_for_service_process_to_stop(&self, timeout_seconds: u64) -> Result<()> {
         use std::thread::sleep;
         use std::time::{Duration, Instant};
-        
+
         let service_name = format!("com.openframe.{}", self.config.name.to_lowercase());
         let start = Instant::now();
         let timeout = Duration::from_secs(timeout_seconds);
-        
-        info!("Waiting up to {} seconds for service '{}' to stop...", timeout_seconds, service_name);
-        
+
+        info!(
+            "Waiting up to {} seconds for service '{}' to stop...",
+            timeout_seconds, service_name
+        );
+
         // Poll the service status until it's stopped or timeout
         while start.elapsed() < timeout {
             // Check if the service process still exists
             let service_running = Self::is_service_process_running(&service_name);
-            
+
             if !service_running {
                 info!("Service process stopped successfully");
                 return Ok(());
             }
-            
+
             // Wait a bit before checking again
             sleep(Duration::from_millis(500));
         }
-        
+
         Err(anyhow::anyhow!(
             "Service process did not stop within {} seconds",
             timeout_seconds

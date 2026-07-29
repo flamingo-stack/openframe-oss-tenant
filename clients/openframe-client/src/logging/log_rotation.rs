@@ -1,8 +1,8 @@
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use flate2::write::GzEncoder;
-use flate2::Compression;
 use tracing::{error, info};
 
 const MAX_LOG_FILE_SIZE: u64 = 10 * 1024 * 1024; // 10 MB
@@ -29,7 +29,10 @@ impl LogRotationManager {
         };
 
         if *current_offset >= file_size && file_size >= MAX_LOG_FILE_SIZE {
-            info!("All logs streamed, rotating log file (size: {} bytes)", file_size);
+            info!(
+                "All logs streamed, rotating log file (size: {} bytes)",
+                file_size
+            );
             if let Err(e) = self.rotate() {
                 error!("Failed to rotate log file: {:#}", e);
             } else {

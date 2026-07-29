@@ -57,7 +57,10 @@ pub async fn harden_executable(path: &Path) -> Result<()> {
     use tracing::{info, warn};
 
     let path_str = path.to_string_lossy().to_string();
-    info!("Hardening executable to admin-only permissions: {}", path_str);
+    info!(
+        "Hardening executable to admin-only permissions: {}",
+        path_str
+    );
 
     if let Ok(output) = Command::new("takeown")
         .arg("/F")

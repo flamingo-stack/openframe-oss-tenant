@@ -19,7 +19,8 @@ impl AgentConfigurationService {
     pub fn new(directory_manager: DirectoryManager) -> Result<Self> {
         let config_file_path = directory_manager.secured_dir().join("agent_config.json");
 
-        directory_manager.ensure_directories()
+        directory_manager
+            .ensure_directories()
             .with_context(|| "Failed to ensure secured directory exists")?;
 
         Ok(Self {
@@ -28,7 +29,12 @@ impl AgentConfigurationService {
         })
     }
 
-    pub async fn save_registration_data(&self, machine_id: String, client_id: String, client_secret: String) -> Result<()> {
+    pub async fn save_registration_data(
+        &self,
+        machine_id: String,
+        client_id: String,
+        client_secret: String,
+    ) -> Result<()> {
         let _guard = self.write_lock.lock().await;
         let mut config = self.get()?;
         config.machine_id = machine_id;
@@ -63,10 +69,7 @@ impl AgentConfigurationService {
 
     pub async fn get_client_credentials(&self) -> Result<(String, String)> {
         let config = self.get()?;
-        Ok((
-            config.client_id.clone(),
-            config.client_secret.clone(),
-        ))
+        Ok((config.client_id.clone(), config.client_secret.clone()))
     }
 
     pub async fn get_access_token(&self) -> Result<String> {
@@ -103,5 +106,3 @@ impl AgentConfigurationService {
         Ok(())
     }
 }
-
- 

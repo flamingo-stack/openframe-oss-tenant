@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::Utc;
 use tokio::time::{sleep, timeout, Duration};
-use tracing::{error, info, debug, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::deactivation_service::DeactivationService;
@@ -54,7 +54,10 @@ impl TokenRefreshRunManager {
                 // recorded inside AuthClient (410 -> stay gone / advance uninstall; 2xx -> recover).
                 if deactivation.is_suspended() {
                     let wait = deactivation.next_probe_delay().await;
-                    debug!("Tenant-gone suspension active; next probe in {}s", wait.as_secs());
+                    debug!(
+                        "Tenant-gone suspension active; next probe in {}s",
+                        wait.as_secs()
+                    );
                     sleep(wait).await;
                     let _ = timeout(REAUTH_TIMEOUT, auth_service.reauthenticate()).await;
                     continue;

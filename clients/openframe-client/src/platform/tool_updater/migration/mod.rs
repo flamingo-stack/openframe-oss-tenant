@@ -70,11 +70,7 @@ pub fn create_migrator(
             Ok(Some(Arc::new(StandardToGuiAppMigrator::new(deps))))
         }
         _ => {
-            bail!(
-                "Unsupported migration path: {:?} -> {:?}",
-                from_type,
-                to
-            );
+            bail!("Unsupported migration path: {:?} -> {:?}", from_type, to);
         }
     }
 }

@@ -3,10 +3,10 @@ use reqwest::Client;
 use serde::Deserialize;
 use std::sync::Arc;
 use tokio::time::{sleep, Duration};
-use tracing::{info, error};
+use tracing::{error, info};
 
 use crate::services::deactivation_service::DeactivationService;
-use crate::services::{InitialConfigurationService, AgentConfigurationService};
+use crate::services::{AgentConfigurationService, InitialConfigurationService};
 
 const RETRY_INTERVAL_SECS: u64 = 60;
 
@@ -64,7 +64,10 @@ impl InitialKeyService {
                         return;
                     }
                     Err(e) => {
-                        error!("Failed to fetch initial key: {:#}. Retrying in {}s...", e, RETRY_INTERVAL_SECS);
+                        error!(
+                            "Failed to fetch initial key: {:#}. Retrying in {}s...",
+                            e, RETRY_INTERVAL_SECS
+                        );
                         sleep(Duration::from_secs(RETRY_INTERVAL_SECS)).await;
                     }
                 }
@@ -73,14 +76,17 @@ impl InitialKeyService {
     }
 
     fn is_key_missing(&self) -> bool {
-        self.initial_config_service.is_initial_key_missing().unwrap_or(false)
+        self.initial_config_service
+            .is_initial_key_missing()
+            .unwrap_or(false)
     }
 
     async fn fetch_registration_secret(&self) -> Result<String> {
         let url = format!("{}/clients/agent/registration-secret/active", self.base_url);
         let token = self.agent_config_service.get_access_token().await?;
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .get(&url)
             .header("Authorization", format!("Bearer {}", token))
             .send()

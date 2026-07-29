@@ -293,7 +293,11 @@ impl DirectoryManager {
     }
 
     /// Creates a new DirectoryManager with custom directories
-    pub fn with_custom_dirs(logs_dir: PathBuf, app_support_dir: PathBuf, secured_dir: PathBuf) -> Self {
+    pub fn with_custom_dirs(
+        logs_dir: PathBuf,
+        app_support_dir: PathBuf,
+        secured_dir: PathBuf,
+    ) -> Self {
         Self {
             logs_dir,
             app_support_dir,
@@ -321,7 +325,7 @@ impl DirectoryManager {
     /// Creates a development mode DirectoryManager that only uses user directories
     pub fn for_development() -> Self {
         let user_logs = Self::get_user_logs_directory();
-        
+
         // In development mode, use user logs for everything to avoid permission issues
         Self {
             logs_dir: user_logs.clone(),
@@ -333,7 +337,7 @@ impl DirectoryManager {
 
     /// Checks if this DirectoryManager is configured for development mode
     fn is_development_mode(&self) -> bool {
-        // Development mode is detected when user_logs_dir is set and 
+        // Development mode is detected when user_logs_dir is set and
         // the logs_dir points to a user directory (not system directory)
         if let Some(user_logs) = &self.user_logs_dir {
             self.logs_dir == *user_logs
@@ -478,7 +482,9 @@ impl DirectoryManager {
 
             // In development mode, use regular permissions to avoid permission issues
             if self.is_development_mode() {
-                info!("Development mode: using regular directory permissions for secured directory");
+                info!(
+                    "Development mode: using regular directory permissions for secured directory"
+                );
                 set_directory_permissions(path)
                     .map_err(|e| DirectoryError::FixFailed(path.to_path_buf(), e.to_string()))?;
             } else {
@@ -502,7 +508,7 @@ impl DirectoryManager {
 
         self.validate_directory_permissions(&self.logs_dir, &dir_perms)?;
         self.validate_directory_permissions(&self.app_support_dir, &dir_perms)?;
-        
+
         // Validate secured directory with special admin-only checks
         self.validate_secured_directory_permissions(&self.secured_dir)?;
 
@@ -648,7 +654,7 @@ impl DirectoryManager {
 
         self.fix_directory_permissions(&self.logs_dir, &dir_perms)?;
         self.fix_directory_permissions(&self.app_support_dir, &dir_perms)?;
-        
+
         // Fix secured directory with admin-only permissions
         self.fix_secured_directory_permissions(&self.secured_dir)?;
 
@@ -752,12 +758,20 @@ impl DirectoryManager {
 
     /// Returns the path to the agent executable for a specific tool.
     /// Otherwise uses default agent name.
-    pub fn get_tool_executable_path(&self, tool_agent_id: &str, executable_path: Option<&str>) -> PathBuf {
+    pub fn get_tool_executable_path(
+        &self,
+        tool_agent_id: &str,
+        executable_path: Option<&str>,
+    ) -> PathBuf {
         match executable_path {
             Some(path) if Path::new(path).is_absolute() => PathBuf::from(path),
             Some(path) => self.app_support_dir().join(tool_agent_id).join(path),
             None => {
-                let agent_name = if cfg!(target_os = "windows") { "agent.exe" } else { "agent" };
+                let agent_name = if cfg!(target_os = "windows") {
+                    "agent.exe"
+                } else {
+                    "agent"
+                };
                 self.app_support_dir().join(tool_agent_id).join(agent_name)
             }
         }
@@ -769,16 +783,19 @@ impl DirectoryManager {
     }
 
     /// Returns the path to an asset file for a specific tool, adding .exe extension on Windows if executable
-    pub fn get_asset_path(&self, tool_agent_id: &str, asset_filename: &str, is_executable: bool) -> PathBuf {
+    pub fn get_asset_path(
+        &self,
+        tool_agent_id: &str,
+        asset_filename: &str,
+        is_executable: bool,
+    ) -> PathBuf {
         let asset_name = if cfg!(target_os = "windows") && is_executable {
             format!("{}.exe", asset_filename)
         } else {
             asset_filename.to_string()
         };
-        
-        self.app_support_dir()
-            .join(tool_agent_id)
-            .join(asset_name)
+
+        self.app_support_dir().join(tool_agent_id).join(asset_name)
     }
 
     /// Returns the tool folder path for a specific tool
@@ -789,7 +806,8 @@ impl DirectoryManager {
     /// Find .app bundle path from executable path
     /// e.g., "/path/to/App.app/Contents/MacOS/binary" -> "/path/to/App.app"
     pub fn find_app_bundle_path(executable_path: &Path) -> Option<PathBuf> {
-        executable_path.ancestors()
+        executable_path
+            .ancestors()
             .find(|p| p.extension().map_or(false, |ext| ext == "app"))
             .map(|p| p.to_path_buf())
     }
@@ -807,7 +825,6 @@ impl DirectoryManager {
     }
 }
 
-
 #[cfg(target_os = "macos")]
 pub async fn remove_app_bundle(executable_path: &str) -> Result<()> {
     let path = PathBuf::from(executable_path);
@@ -822,7 +839,8 @@ pub async fn remove_app_bundle(executable_path: &str) -> Result<()> {
     }
 
     info!("Removing .app bundle: {}", app_bundle.display());
-    tokio::fs::remove_dir_all(&app_bundle).await
+    tokio::fs::remove_dir_all(&app_bundle)
+        .await
         .with_context(|| format!("Failed to remove app bundle: {}", app_bundle.display()))?;
 
     info!("Successfully removed app bundle: {}", app_bundle.display());
@@ -832,7 +850,10 @@ pub async fn remove_app_bundle(executable_path: &str) -> Result<()> {
 #[cfg(target_os = "macos")]
 pub async fn remove_app_bundle_path(executable_path: &Path) -> Result<()> {
     let Some(app_bundle) = DirectoryManager::find_app_bundle_path(executable_path) else {
-        warn!("Could not find .app bundle in path: {}", executable_path.display());
+        warn!(
+            "Could not find .app bundle in path: {}",
+            executable_path.display()
+        );
         return Ok(());
     };
 
@@ -842,7 +863,8 @@ pub async fn remove_app_bundle_path(executable_path: &Path) -> Result<()> {
     }
 
     info!("Removing .app bundle: {}", app_bundle.display());
-    tokio::fs::remove_dir_all(&app_bundle).await
+    tokio::fs::remove_dir_all(&app_bundle)
+        .await
         .with_context(|| format!("Failed to remove app bundle: {}", app_bundle.display()))?;
 
     info!("Successfully removed app bundle: {}", app_bundle.display());
@@ -850,236 +872,5 @@ pub async fn remove_app_bundle_path(executable_path: &Path) -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_directory_creation() {
-        let temp_dir = tempdir().unwrap();
-        let logs_dir = temp_dir.path().join("logs");
-        let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
-
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
-
-        // Test directory creation
-        assert!(manager.ensure_directories().is_ok());
-        assert!(logs_dir.exists());
-        assert!(app_dir.exists());
-    }
-
-    #[test]
-    fn test_directory_permissions() {
-        let temp_dir = tempdir().unwrap();
-        let logs_dir = temp_dir.path().join("logs");
-        let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
-
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
-
-        // Create directories first
-        assert!(manager.ensure_directories().is_ok());
-
-        // Test permission validation and fixing
-        assert!(manager.validate_permissions().is_ok());
-
-        // Test user directory creation
-        let user_manager = DirectoryManager::with_user_logs_dir();
-        if let Some(user_logs) = &user_manager.user_logs_dir {
-            assert!(
-                user_logs.to_string_lossy().contains("OpenFrame")
-                    || user_logs.to_string_lossy().contains("openframe")
-            );
-        }
-    }
-
-    #[test]
-    fn test_file_permissions() {
-        let temp_dir = tempdir().unwrap();
-        let logs_dir = temp_dir.path().join("logs");
-        let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
-
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
-
-        // Create directories first
-        assert!(manager.ensure_directories().is_ok());
-
-        // Create a test file in the logs directory
-        let test_file = logs_dir.join("test.log");
-        fs::write(&test_file, "test").unwrap();
-
-        // Apply file permissions
-        let file_perms = Permissions::file();
-        assert!(file_perms.apply(&test_file).is_ok());
-
-        // Verify file permissions
-        #[cfg(unix)]
-        {
-            if unsafe { libc::geteuid() } == 0 {
-                // Only run this check if we're root, otherwise it will fail
-                let metadata = fs::metadata(&test_file).unwrap();
-                assert_eq!(metadata.permissions().mode() & 0o777, 0o644);
-            }
-        }
-    }
-
-    #[test]
-    fn test_error_handling() {
-        // Test with a non-existent directory
-        let non_existent = PathBuf::from("/non_existent_dir_for_test");
-
-        let manager =
-            DirectoryManager::with_custom_dirs(non_existent.clone(), non_existent.clone(), non_existent.clone());
-
-        // This should fail on validate because we can't create the directory
-        #[cfg(unix)]
-        if unsafe { libc::geteuid() } != 0 {
-            // We expect this to fail if we're not root
-            assert!(manager.validate_permissions().is_err());
-        }
-    }
-
-    #[test]
-    fn test_user_logs_directory() {
-        let manager = DirectoryManager::with_user_logs_dir();
-
-        // Ensure the user logs directory exists
-        assert!(manager.user_logs_dir.is_some());
-
-        #[cfg(target_os = "macos")]
-        {
-            let user_logs = manager.user_logs_dir.unwrap();
-            assert!(user_logs
-                .to_string_lossy()
-                .contains("Library/Logs/OpenFrame"));
-        }
-
-        #[cfg(target_os = "windows")]
-        {
-            let user_logs = manager.user_logs_dir.unwrap();
-            assert!(user_logs.to_string_lossy().contains("OpenFrame\\Logs"));
-        }
-
-        #[cfg(target_os = "linux")]
-        {
-            let user_logs = manager.user_logs_dir.unwrap();
-            assert!(user_logs
-                .to_string_lossy()
-                .contains(".local/share/openframe/logs"));
-        }
-    }
-
-    #[test]
-    fn test_health_check() {
-        let temp_dir = tempdir().unwrap();
-        let logs_dir = temp_dir.path().join("logs");
-        let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
-
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
-
-        // Test health check
-        assert!(manager.perform_health_check().is_ok());
-        assert!(logs_dir.exists());
-        assert!(app_dir.exists());
-
-        // Intentionally corrupt permissions to test fixing
-        #[cfg(unix)]
-        {
-            if unsafe { libc::geteuid() } == 0 {
-                // Only run this check if we're root, otherwise it will fail
-                use std::os::unix::fs::PermissionsExt;
-                let bad_perms = fs::Permissions::from_mode(0o700);
-                fs::set_permissions(&logs_dir, bad_perms).unwrap();
-
-                // Health check should fix the permissions
-                assert!(manager.perform_health_check().is_ok());
-
-                // Verify permissions were fixed
-                let metadata = fs::metadata(&logs_dir).unwrap();
-                assert_eq!(metadata.permissions().mode() & 0o777, 0o755);
-            }
-        }
-    }
-
-    #[test]
-    fn test_write_permissions() {
-        let temp_dir = tempdir().unwrap();
-        let logs_dir = temp_dir.path().join("logs");
-        let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
-
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
-
-        // Create directories first
-        assert!(manager.ensure_directories().is_ok());
-
-        // Test write permissions
-        assert!(manager.can_write_to_directory(&logs_dir));
-        assert!(manager.can_write_to_directory(&app_dir));
-    }
-
-    #[test]
-    fn test_get_logs_directory() {
-        let logs_dir = get_logs_directory();
-
-        #[cfg(target_os = "macos")]
-        assert_eq!(logs_dir, PathBuf::from("/Library/Logs/OpenFrame"));
-
-        #[cfg(target_os = "linux")]
-        assert_eq!(logs_dir, PathBuf::from("/var/log/openframe"));
-
-        #[cfg(target_os = "windows")]
-        {
-            let program_data = std::env::var_os("ProgramData").unwrap_or_default();
-            let expected = PathBuf::from(program_data).join("OpenFrame").join("logs");
-            assert_eq!(logs_dir, expected);
-        }
-    }
-
-    #[test]
-    fn test_get_app_support_directory() {
-        let app_dir = get_app_support_directory();
-
-        #[cfg(target_os = "macos")]
-        assert_eq!(
-            app_dir,
-            PathBuf::from("/Library/Application Support/OpenFrame")
-        );
-
-        #[cfg(target_os = "linux")]
-        assert_eq!(app_dir, PathBuf::from("/var/lib/openframe"));
-
-        #[cfg(target_os = "windows")]
-        {
-            let program_data = std::env::var_os("ProgramData").unwrap_or_default();
-            let expected = PathBuf::from(program_data).join("OpenFrame");
-            assert_eq!(app_dir, expected);
-        }
-    }
-
-    #[test]
-    fn test_get_secured_directory() {
-        let secured_dir = get_secured_directory();
-
-        #[cfg(target_os = "macos")]
-        assert_eq!(
-            secured_dir,
-            PathBuf::from("/Library/Application Support/OpenFrame/secured")
-        );
-
-        #[cfg(target_os = "linux")]
-        assert_eq!(secured_dir, PathBuf::from("/var/lib/openframe/secured"));
-
-        #[cfg(target_os = "windows")]
-        {
-            let program_data = std::env::var_os("ProgramData").unwrap_or_default();
-            let expected = PathBuf::from(program_data)
-                .join("OpenFrame")
-                .join("secured");
-            assert_eq!(secured_dir, expected);
-        }
-    }
-}
+#[path = "directories_tests.rs"]
+mod tests;

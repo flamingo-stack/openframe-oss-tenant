@@ -1,9 +1,9 @@
+use crate::models::update_state::UpdateState;
+use crate::platform::directories::DirectoryManager;
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::PathBuf;
-use tracing::{info, debug};
-use crate::models::update_state::UpdateState;
-use crate::platform::directories::DirectoryManager;
+use tracing::{debug, info};
 
 #[derive(Clone)]
 pub struct UpdateStateService {
@@ -14,31 +14,43 @@ impl UpdateStateService {
     pub fn new(directory_manager: DirectoryManager) -> Result<Self> {
         let state_file_path = directory_manager.secured_dir().join("update_state.json");
 
-        directory_manager.ensure_directories()
+        directory_manager
+            .ensure_directories()
             .with_context(|| "Failed to ensure secured directory exists")?;
 
-        Ok(Self {
-            state_file_path
-        })
+        Ok(Self { state_file_path })
     }
 
     pub async fn load(&self) -> Result<Option<UpdateState>> {
-        info!("Checking for update state file at: {}", self.state_file_path.display());
+        info!(
+            "Checking for update state file at: {}",
+            self.state_file_path.display()
+        );
 
         if !self.state_file_path.exists() {
-            info!("No update state file found at: {}", self.state_file_path.display());
+            info!(
+                "No update state file found at: {}",
+                self.state_file_path.display()
+            );
             return Ok(None);
         }
 
-        let json_content = fs::read_to_string(&self.state_file_path)
-            .with_context(|| format!("Failed to read update state file: {:?}", self.state_file_path))?;
+        let json_content = fs::read_to_string(&self.state_file_path).with_context(|| {
+            format!(
+                "Failed to read update state file: {:?}",
+                self.state_file_path
+            )
+        })?;
 
         info!("Read update state file content: {}", json_content);
 
         let state: UpdateState = serde_json::from_str(&json_content)
             .context("Failed to deserialize update state from JSON")?;
 
-        info!("Loaded update state for version: {}, phase: {:?}", state.target_version, state.phase);
+        info!(
+            "Loaded update state for version: {}, phase: {:?}",
+            state.target_version, state.phase
+        );
         Ok(Some(state))
     }
 
@@ -49,17 +61,28 @@ impl UpdateStateService {
         let temp_path = self.state_file_path.with_extension("json.tmp");
         fs::write(&temp_path, json_content)
             .with_context(|| format!("Failed to write temp update state file: {:?}", temp_path))?;
-        fs::rename(&temp_path, &self.state_file_path)
-            .with_context(|| format!("Failed to move update state file into place: {:?}", self.state_file_path))?;
+        fs::rename(&temp_path, &self.state_file_path).with_context(|| {
+            format!(
+                "Failed to move update state file into place: {:?}",
+                self.state_file_path
+            )
+        })?;
 
-        debug!("Saved update state for version: {}, phase: {:?}", state.target_version, state.phase);
+        debug!(
+            "Saved update state for version: {}, phase: {:?}",
+            state.target_version, state.phase
+        );
         Ok(())
     }
 
     pub async fn clear(&self) -> Result<()> {
         if self.state_file_path.exists() {
-            fs::remove_file(&self.state_file_path)
-                .with_context(|| format!("Failed to remove update state file: {:?}", self.state_file_path))?;
+            fs::remove_file(&self.state_file_path).with_context(|| {
+                format!(
+                    "Failed to remove update state file: {:?}",
+                    self.state_file_path
+                )
+            })?;
 
             info!("Cleared update state");
         }

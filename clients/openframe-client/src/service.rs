@@ -57,7 +57,7 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
             match control_event {
                 ServiceControl::Stop | ServiceControl::Shutdown => {
                     info!("Received stop/shutdown signal from Windows SCM");
-                    
+
                     // Send shutdown signal
                     if let Some(tx) = shutdown_tx.lock().unwrap().take() {
                         let _ = tx.send(());
@@ -65,10 +65,8 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
 
                     ServiceControlHandlerResult::NoError
                 }
-                ServiceControl::Interrogate => {
-                    ServiceControlHandlerResult::NoError
-                }
-                _ => ServiceControlHandlerResult::NotImplemented
+                ServiceControl::Interrogate => ServiceControlHandlerResult::NoError,
+                _ => ServiceControlHandlerResult::NotImplemented,
             }
         }
     }) {
@@ -96,7 +94,7 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
     let result = rt.block_on(async {
         // Spawn service core
         let service_handle = tokio::spawn(Service::run());
-        
+
         // Wait for either service completion or shutdown signal
         tokio::select! {
             result = service_handle => {
@@ -136,7 +134,8 @@ fn set_service_status(status_handle: &ServiceStatusHandle, state: ServiceState) 
         process_id: None,
     };
 
-    status_handle.set_service_status(status)
+    status_handle
+        .set_service_status(status)
         .context("Failed to set service status")
 }
 
@@ -179,7 +178,6 @@ impl Service {
 
     /// Install the service on the current platform
     pub async fn install(params: InstallConfigParams) -> Result<()> {
-
         if Self::is_installed() {
             info!("Existing Installation Detected\n");
             info!("An existing OpenFrame installation was found\n");
@@ -224,10 +222,16 @@ impl Service {
             let installed_binary_path = Self::get_install_location();
 
             if !installed_binary_path.exists() {
-                warn!("Installed binary not found at expected location: {}", installed_binary_path.display());
+                warn!(
+                    "Installed binary not found at expected location: {}",
+                    installed_binary_path.display()
+                );
                 info!("Proceeding with installation anyway...");
             } else {
-                info!("Launching uninstall process: {}", installed_binary_path.display());
+                info!(
+                    "Launching uninstall process: {}",
+                    installed_binary_path.display()
+                );
 
                 use tokio::process::Command;
 
@@ -238,7 +242,10 @@ impl Service {
                     .context("Failed to launch uninstall process")?;
 
                 if !status.success() {
-                    warn!("Uninstall process returned non-zero exit code: {:?}", status.code());
+                    warn!(
+                        "Uninstall process returned non-zero exit code: {:?}",
+                        status.code()
+                    );
                     info!("Continuing with installation anyway...");
                 } else {
                     info!("Uninstall process completed successfully");
@@ -259,19 +266,21 @@ impl Service {
             .map_err(|e| anyhow::anyhow!("Directory health check failed: {}", e))?;
 
         // Build and persist initial configuration before registering OS service
-        let installation_initial_config_service = InstallationInitialConfigService::new(dir_manager.clone())
-            .context("Failed to initialize InstallationInitialConfigService")?;
-        
+        let installation_initial_config_service =
+            InstallationInitialConfigService::new(dir_manager.clone())
+                .context("Failed to initialize InstallationInitialConfigService")?;
+
         installation_initial_config_service
             .build_and_save(params)
             .context("Failed to process initial configuration during service installation")?;
 
         // Get the current executable path
-        let current_exe_path = std::env::current_exe().context("Failed to get current executable path")?;
+        let current_exe_path =
+            std::env::current_exe().context("Failed to get current executable path")?;
 
         // Determine the standard installation location for the binary
         let install_path = Self::get_install_location();
-        
+
         // Copy the binary to the installation location if it's not already there
         if current_exe_path != install_path {
             info!("Installing OpenFrame binary to: {}", install_path.display());
@@ -279,16 +288,18 @@ impl Service {
             if let Some(parent) = install_path.parent() {
                 if !parent.exists() {
                     info!("Creating directory: {}", parent.display());
-                    std::fs::create_dir_all(parent)
-                        .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
+                    std::fs::create_dir_all(parent).with_context(|| {
+                        format!("Failed to create directory: {}", parent.display())
+                    })?;
                 }
             }
-            
+
             // Copy the binary
             if let Err(copy_err) = std::fs::copy(&current_exe_path, &install_path) {
                 warn!(
                     "Target binary is in use ({}); killing leftover processes running from {}",
-                    copy_err, install_path.display()
+                    copy_err,
+                    install_path.display()
                 );
                 Self::kill_processes_running_from(&install_path).await;
 
@@ -302,7 +313,8 @@ impl Service {
                         ))?;
                     warn!(
                         "Target binary still in use ({}); moved it aside to {} and retrying copy",
-                        retry_err, aside_path.display()
+                        retry_err,
+                        aside_path.display()
                     );
                     match std::fs::copy(&current_exe_path, &install_path) {
                         Ok(_) => {
@@ -312,42 +324,52 @@ impl Service {
                             if let Err(restore_err) = std::fs::rename(&aside_path, &install_path) {
                                 warn!(
                                     "Could not restore original binary from {}: {}",
-                                    aside_path.display(), restore_err
+                                    aside_path.display(),
+                                    restore_err
                                 );
                             }
-                            return Err(final_err)
-                                .with_context(|| format!("Failed to copy binary to {}", install_path.display()));
+                            return Err(final_err).with_context(|| {
+                                format!("Failed to copy binary to {}", install_path.display())
+                            });
                         }
                     }
                 }
             }
-            
+
             // Set executable permissions on Unix
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
                 let mut perms = std::fs::metadata(&install_path)?.permissions();
                 perms.set_mode(0o755); // rwxr-xr-x
-                std::fs::set_permissions(&install_path, perms)
-                    .with_context(|| format!("Failed to set executable permissions on {}", install_path.display()))?;
+                std::fs::set_permissions(&install_path, perms).with_context(|| {
+                    format!(
+                        "Failed to set executable permissions on {}",
+                        install_path.display()
+                    )
+                })?;
             }
-            
-            info!("Binary installed successfully. You can now use 'openframe' command from anywhere.");
-            
+
+            info!(
+                "Binary installed successfully. You can now use 'openframe' command from anywhere."
+            );
+
             #[cfg(target_os = "windows")]
             {
                 if let Some(bin_dir) = install_path.parent() {
                     info!("Adding {} to system PATH", bin_dir.display());
-                    Self::add_to_windows_path(bin_dir)
-                        .context("Failed to add to PATH")?;
-                    
+                    Self::add_to_windows_path(bin_dir).context("Failed to add to PATH")?;
+
                     info!("⚠️  Please restart your terminal to use 'openframe-client' command");
                 }
             }
         } else {
-            info!("Binary is already in the standard location: {}", install_path.display());
+            info!(
+                "Binary is already in the standard location: {}",
+                install_path.display()
+            );
         }
-        
+
         // Use the installation path for the service registration
         let exec_path = install_path;
 
@@ -405,9 +427,7 @@ impl Service {
 
         let killed = tokio::task::spawn_blocking(move || {
             let mut sys = System::new();
-            sys.refresh_processes_specifics(
-                ProcessRefreshKind::new().with_exe(UpdateKind::Always),
-            );
+            sys.refresh_processes_specifics(ProcessRefreshKind::new().with_exe(UpdateKind::Always));
 
             let mut killed = 0usize;
             for (pid, process) in sys.processes() {
@@ -421,8 +441,14 @@ impl Service {
                 if exe != target {
                     continue;
                 }
-                warn!("Killing leftover process {} running from target binary", pid);
-                if process.kill_with(Signal::Kill).unwrap_or_else(|| process.kill()) {
+                warn!(
+                    "Killing leftover process {} running from target binary",
+                    pid
+                );
+                if process
+                    .kill_with(Signal::Kill)
+                    .unwrap_or_else(|| process.kill())
+                {
                     killed += 1;
                 } else {
                     warn!("Failed to kill leftover process {}", pid);
@@ -435,7 +461,10 @@ impl Service {
 
         if killed > 0 {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-            info!("Killed {} leftover process(es) holding the target binary", killed);
+            info!(
+                "Killed {} leftover process(es) holding the target binary",
+                killed
+            );
         } else {
             info!("No leftover processes found holding the target binary");
         }
@@ -502,7 +531,6 @@ impl Service {
         // Initialize the client
         let client = Client::new()?;
 
-
         // Start the client
         client.start().await
     }
@@ -514,16 +542,16 @@ impl Service {
         {
             PathBuf::from("/usr/local/bin/openframe-client")
         }
-        
+
         #[cfg(target_os = "linux")]
         {
             PathBuf::from("/usr/local/bin/openframe-client")
         }
-        
+
         #[cfg(target_os = "windows")]
         {
-            let program_files = std::env::var("ProgramFiles")
-                .unwrap_or_else(|_| "C:\\Program Files".to_string());
+            let program_files =
+                std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string());
             PathBuf::from(program_files)
                 .join("OpenFrame")
                 .join("bin")
@@ -579,18 +607,24 @@ impl Service {
         use winreg::RegKey;
 
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let env = hklm.open_subkey_with_flags(
-            "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
-            KEY_READ | KEY_WRITE,
-        ).context("Failed to open registry key - admin rights required")?;
+        let env = hklm
+            .open_subkey_with_flags(
+                "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+                KEY_READ | KEY_WRITE,
+            )
+            .context("Failed to open registry key - admin rights required")?;
 
-        let raw_value = env.get_raw_value("Path")
+        let raw_value = env
+            .get_raw_value("Path")
             .context("Failed to read PATH from registry")?;
         let current_path = Self::reg_value_to_string(&raw_value);
 
         let dir_str = dir.to_string_lossy();
 
-        if current_path.split(';').any(|p| p.trim().eq_ignore_ascii_case(dir_str.trim())) {
+        if current_path
+            .split(';')
+            .any(|p| p.trim().eq_ignore_ascii_case(dir_str.trim()))
+        {
             info!("Directory already in PATH: {}", dir_str);
             return Ok(());
         }
@@ -601,8 +635,11 @@ impl Service {
             format!("{};{}", current_path, dir_str)
         };
 
-        env.set_raw_value("Path", &Self::string_to_reg_value(&new_path, raw_value.vtype))
-            .context("Failed to write PATH to registry")?;
+        env.set_raw_value(
+            "Path",
+            &Self::string_to_reg_value(&new_path, raw_value.vtype),
+        )
+        .context("Failed to write PATH to registry")?;
 
         Self::broadcast_environment_change()?;
 
@@ -618,12 +655,15 @@ impl Service {
         use winreg::RegKey;
 
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let env = hklm.open_subkey_with_flags(
-            "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
-            KEY_READ | KEY_WRITE,
-        ).context("Failed to open registry key - admin rights required")?;
+        let env = hklm
+            .open_subkey_with_flags(
+                "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+                KEY_READ | KEY_WRITE,
+            )
+            .context("Failed to open registry key - admin rights required")?;
 
-        let raw_value = env.get_raw_value("Path")
+        let raw_value = env
+            .get_raw_value("Path")
             .context("Failed to read PATH from registry")?;
         let current_path = Self::reg_value_to_string(&raw_value);
 
@@ -636,8 +676,11 @@ impl Service {
 
         let new_path = new_path.join(";");
 
-        env.set_raw_value("Path", &Self::string_to_reg_value(&new_path, raw_value.vtype))
-            .context("Failed to write PATH to registry")?;
+        env.set_raw_value(
+            "Path",
+            &Self::string_to_reg_value(&new_path, raw_value.vtype),
+        )
+        .context("Failed to write PATH to registry")?;
 
         Self::broadcast_environment_change()?;
 

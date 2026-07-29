@@ -141,19 +141,18 @@ impl StandardToGuiAppMigrator {
 
         // 3. Resolve executable path from .app bundle
         let new_app_path = applications_dir.join(&config.target_file_name);
-        let executable_path =
-            if DirectoryManager::find_app_bundle_path(&new_app_path).is_some() {
-                applications_dir
-                    .join(&config.target_file_name)
-                    .to_string_lossy()
-                    .to_string()
-            } else {
-                new_app_path
-                    .join("Contents/MacOS")
-                    .join(tool_agent_id)
-                    .to_string_lossy()
-                    .to_string()
-            };
+        let executable_path = if DirectoryManager::find_app_bundle_path(&new_app_path).is_some() {
+            applications_dir
+                .join(&config.target_file_name)
+                .to_string_lossy()
+                .to_string()
+        } else {
+            new_app_path
+                .join("Contents/MacOS")
+                .join(tool_agent_id)
+                .to_string_lossy()
+                .to_string()
+        };
 
         info!(
             tool_id = %tool_agent_id,

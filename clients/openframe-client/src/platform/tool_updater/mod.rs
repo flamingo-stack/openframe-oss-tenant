@@ -1,25 +1,27 @@
-mod standard;
 #[cfg(target_os = "macos")]
 mod gui_app;
-mod service;
 mod migration;
+mod service;
+mod standard;
 
-pub use standard::StandardToolUpdater;
 #[cfg(target_os = "macos")]
 pub use gui_app::GuiAppToolUpdater;
+pub use migration::{create_migrator, needs_migration, MigrationContext, ToolMigrator};
 pub use service::ServiceToolUpdater;
-pub use migration::{ToolMigrator, MigrationContext, create_migrator, needs_migration};
+pub use standard::StandardToolUpdater;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::fs;
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
-use crate::models::{InstalledTool, Installation, DownloadConfiguration, InstallationType};
-use crate::services::{GithubDownloadService, ToolKillService, ToolRunManager, ToolCommandParamsResolver};
-use crate::platform::{DirectoryManager, binary_writer};
+use crate::models::{DownloadConfiguration, Installation, InstallationType, InstalledTool};
+use crate::platform::{binary_writer, DirectoryManager};
+use crate::services::{
+    GithubDownloadService, ToolCommandParamsResolver, ToolKillService, ToolRunManager,
+};
 
 #[derive(Debug, Clone)]
 pub struct UpdateContext {
@@ -47,11 +49,7 @@ pub trait ToolUpdater: Send + Sync {
         ctx: &UpdateContext,
     ) -> Result<Option<Installation>>;
 
-    async fn finalize(
-        &self,
-        tool: &InstalledTool,
-        ctx: &UpdateContext,
-    ) -> Result<()>;
+    async fn finalize(&self, tool: &InstalledTool, ctx: &UpdateContext) -> Result<()>;
 
     async fn rollback(&self, tool: &InstalledTool, ctx: &UpdateContext) -> Result<()>;
 }
@@ -65,14 +63,9 @@ pub struct ToolUpdaterDeps {
     pub command_params_resolver: ToolCommandParamsResolver,
 }
 
-pub fn create_updater(
-    installation: &Installation,
-    deps: ToolUpdaterDeps,
-) -> Arc<dyn ToolUpdater> {
+pub fn create_updater(installation: &Installation, deps: ToolUpdaterDeps) -> Arc<dyn ToolUpdater> {
     match installation {
-        Installation::Standard { .. } => {
-            Arc::new(StandardToolUpdater::new(deps))
-        }
+        Installation::Standard { .. } => Arc::new(StandardToolUpdater::new(deps)),
         Installation::GuiApp { .. } => {
             #[cfg(target_os = "macos")]
             {
@@ -85,9 +78,7 @@ pub fn create_updater(
                 Arc::new(StandardToolUpdater::new(deps))
             }
         }
-        Installation::Service { .. } => {
-            Arc::new(ServiceToolUpdater::new(deps))
-        }
+        Installation::Service { .. } => Arc::new(ServiceToolUpdater::new(deps)),
     }
 }
 
@@ -100,7 +91,9 @@ pub async fn run_update(
     let updater = create_updater(&tool.installation, deps);
 
     info!(tool_id = %tool_id, "Phase 1: Preparing update");
-    let ctx = updater.prepare(tool).await
+    let ctx = updater
+        .prepare(tool)
+        .await
         .with_context(|| format!("Failed to prepare update for: {}", tool_id))?;
 
     info!(tool_id = %tool_id, "Phase 2: Applying update");
@@ -124,7 +117,9 @@ pub async fn run_update(
         }
         None => tool.clone(),
     };
-    updater.finalize(&finalize_tool, &ctx).await
+    updater
+        .finalize(&finalize_tool, &ctx)
+        .await
         .with_context(|| format!("Failed to finalize update for: {}", tool_id))?;
 
     Ok(new_installation)
@@ -138,18 +133,27 @@ pub async fn run_migration(
 ) -> Result<Installation> {
     let tool_id = &tool.tool_agent_id;
 
-    let migrator = create_migrator(&tool.installation, target_type, deps)?
-        .ok_or_else(|| anyhow::anyhow!("No migration needed: {:?} -> {:?}", tool.installation, target_type))?;
+    let migrator = create_migrator(&tool.installation, target_type, deps)?.ok_or_else(|| {
+        anyhow::anyhow!(
+            "No migration needed: {:?} -> {:?}",
+            tool.installation,
+            target_type
+        )
+    })?;
 
     info!(tool_id = %tool_id, "Migration Phase 1: Preparing");
-    let ctx = migrator.prepare(tool).await
+    let ctx = migrator
+        .prepare(tool)
+        .await
         .with_context(|| format!("Failed to prepare migration for: {}", tool_id))?;
 
     info!(tool_id = %tool_id, "Migration Phase 2: Migrating");
     match migrator.migrate(tool, config, &ctx).await {
         Ok(new_installation) => {
             info!(tool_id = %tool_id, "Migration Phase 3: Finalizing");
-            migrator.finalize(tool, &new_installation, &ctx).await
+            migrator
+                .finalize(tool, &new_installation, &ctx)
+                .await
                 .with_context(|| format!("Failed to finalize migration for: {}", tool_id))?;
 
             info!(tool_id = %tool_id, "Migration completed: {:?}", new_installation);
@@ -207,7 +211,8 @@ pub(crate) async fn backup_binary(
     info!(tool_id = %tool_agent_id, "Backing up binary: {} -> {}",
           source_path.display(), backup_path.display());
 
-    fs::copy(source_path, &backup_path).await
+    fs::copy(source_path, &backup_path)
+        .await
         .with_context(|| format!("Failed to backup: {}", source_path.display()))?;
 
     Ok(Some(backup_path))
@@ -220,13 +225,15 @@ pub(crate) async fn download_and_write_binary(
     tool_agent_id: &str,
 ) -> Result<()> {
     info!(tool_id = %tool_agent_id, "Downloading binary from: {}", config.link);
-    let binary_bytes = deps.github_download_service
+    let binary_bytes = deps
+        .github_download_service
         .download_and_extract(config)
         .await
         .with_context(|| format!("Failed to download: {}", tool_agent_id))?;
 
     info!(tool_id = %tool_agent_id, "Writing binary to: {}", target_path.display());
-    binary_writer::write_executable(&binary_bytes, target_path).await
+    binary_writer::write_executable(&binary_bytes, target_path)
+        .await
         .with_context(|| format!("Failed to write binary for: {}", tool_agent_id))
 }
 
@@ -261,10 +268,12 @@ pub(crate) async fn restore_from_backup(
     info!(tool_id = %tool_agent_id, "Restoring from backup: {} -> {}",
           backup.display(), target_path.display());
 
-    fs::copy(backup, target_path).await
+    fs::copy(backup, target_path)
+        .await
         .with_context(|| "Failed to restore from backup")?;
 
-    fs::remove_file(backup).await
+    fs::remove_file(backup)
+        .await
         .with_context(|| "Failed to remove backup after restore")?;
 
     info!(tool_id = %tool_agent_id, "Rollback completed");

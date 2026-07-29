@@ -17,7 +17,11 @@ pub struct ResultOutboxRunManager<P: ResultPublisher> {
 
 impl<P: ResultPublisher + 'static> ResultOutboxRunManager<P> {
     pub fn new(store: Arc<ResultStore>, publisher: Arc<P>, notify: Arc<Notify>) -> Self {
-        Self { store, publisher, notify }
+        Self {
+            store,
+            publisher,
+            notify,
+        }
     }
 
     pub fn start(&self) {

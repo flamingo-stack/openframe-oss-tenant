@@ -2,8 +2,8 @@ use anyhow::{Context, Result};
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
 
-use crate::services::AgentAuthService;
 use crate::services::agent_configuration_service::AgentConfigurationService;
+use crate::services::AgentAuthService;
 
 #[derive(Clone)]
 pub struct InitialAuthenticationProcessor {
@@ -12,10 +12,7 @@ pub struct InitialAuthenticationProcessor {
 }
 
 impl InitialAuthenticationProcessor {
-    pub fn new(
-        auth_service: AgentAuthService,
-        config_service: AgentConfigurationService,
-    ) -> Self {
+    pub fn new(auth_service: AgentAuthService, config_service: AgentConfigurationService) -> Self {
         Self {
             auth_service,
             config_service,
@@ -25,9 +22,7 @@ impl InitialAuthenticationProcessor {
     pub async fn process(&self) -> Result<()> {
         let access_token = self.config_service.get_access_token().await?;
         if !access_token.is_empty() {
-            info!(
-                "Existing access_token detected. Skipping initial authentication."
-            );
+            info!("Existing access_token detected. Skipping initial authentication.");
 
             return Ok(());
         }
@@ -52,8 +47,10 @@ impl InitialAuthenticationProcessor {
     }
 
     async fn attempt_authentication(&self) -> Result<()> {
-        self.auth_service.authenticate_initial().await
+        self.auth_service
+            .authenticate_initial()
+            .await
             .context("Authentication service init returned an error")?;
         Ok(())
     }
-} 
+}

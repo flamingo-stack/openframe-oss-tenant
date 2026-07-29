@@ -7,7 +7,9 @@ use tracing::{debug, error, info};
 
 use crate::platform::DirectoryManager;
 use crate::services::device_data_fetcher::DeviceDataFetcher;
-use crate::services::{AgentConfigurationService, InitialConfigurationService, InstalledToolsService};
+use crate::services::{
+    AgentConfigurationService, InitialConfigurationService, InstalledToolsService,
+};
 
 use super::log_parser::LogBatchMessage;
 use super::log_rotation::LogRotationManager;
@@ -164,7 +166,10 @@ impl LogStreamingRunManager {
                 match connection.connect().await {
                     Ok(()) => break,
                     Err(e) => {
-                        error!("Failed to connect to NATS logs: {:#}, retrying in {}s", e, RECONNECT_DELAY_SECS);
+                        error!(
+                            "Failed to connect to NATS logs: {:#}, retrying in {}s",
+                            e, RECONNECT_DELAY_SECS
+                        );
                         tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
                     }
                 }
@@ -172,10 +177,8 @@ impl LogStreamingRunManager {
 
             let registry = self.create_source_registry();
 
-            let rotation_manager = LogRotationManager::new(
-                self.log_file_path.clone(),
-                self.offset_file_path.clone(),
-            );
+            let rotation_manager =
+                LogRotationManager::new(self.log_file_path.clone(), self.offset_file_path.clone());
 
             let (source_tx, source_rx) = mpsc::channel::<Box<dyn LogSource>>(4);
 
@@ -248,7 +251,10 @@ fn spawn_source_discovery(
                     return;
                 }
                 None => {
-                    debug!("Meshcentral not installed yet, will retry in {}s", SOURCE_DISCOVERY_INTERVAL_SECS);
+                    debug!(
+                        "Meshcentral not installed yet, will retry in {}s",
+                        SOURCE_DISCOVERY_INTERVAL_SECS
+                    );
                 }
             }
         }
@@ -262,12 +268,16 @@ async fn create_meshcentral_source(
     let meshcentral_id = LogSourceKind::Meshcentral.to_string();
 
     let tools = installed_tools_service.get_all().await.ok()?;
-    let tool = tools.into_iter().find(|t| t.tool_agent_id == meshcentral_id)?;
+    let tool = tools
+        .into_iter()
+        .find(|t| t.tool_agent_id == meshcentral_id)?;
     tool.installation.executable_path()?;
 
     let tool_dir = directory_manager.app_support_dir().join(&meshcentral_id);
     let log_path = tool_dir.join(format!("{}.log", meshcentral_id));
-    let offset_path = directory_manager.secured_dir().join("meshcentral_log_offset");
+    let offset_path = directory_manager
+        .secured_dir()
+        .join("meshcentral_log_offset");
 
     let source = FileLogSource::new(LogSourceKind::Meshcentral, log_path, offset_path);
     Some(Box::new(source))

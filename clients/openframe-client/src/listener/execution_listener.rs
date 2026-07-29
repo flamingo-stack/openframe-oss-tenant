@@ -112,7 +112,10 @@ impl<M: ExecutionMessage + 'static> ExecutionListener<M> {
             let machine_id = machine_id.clone();
             async move {
                 if let Err(e) = listener.handle_message(message, &machine_id).await {
-                    error!(kind = M::KIND, "Failed to handle execution message: {:#}", e);
+                    error!(
+                        kind = M::KIND,
+                        "Failed to handle execution message: {:#}", e
+                    );
                 }
             }
         })
@@ -138,21 +141,34 @@ impl<M: ExecutionMessage + 'static> ExecutionListener<M> {
         let result_subject = format!("machine.{}.{}.result", machine_id, M::RESULT_KIND);
 
         if M::DURABLE && self.result_store.enabled() {
-            self.handle_durable(requests, machine_id, &result_subject, &execution_id, &schedule_id)
-                .await;
+            self.handle_durable(
+                requests,
+                machine_id,
+                &result_subject,
+                &execution_id,
+                &schedule_id,
+            )
+            .await;
         } else {
             for request in requests {
                 let script_id = request.script_id.unwrap_or("-").to_string();
                 let result = self.execution_service.execute(&request, machine_id).await;
                 log_finished(&execution_id, &schedule_id, &script_id, &result);
-                self.publish_result(&result_subject, &result, &execution_id, &script_id).await;
+                self.publish_result(&result_subject, &result, &execution_id, &script_id)
+                    .await;
             }
         }
 
         Ok(())
     }
 
-    async fn publish_result(&self, subject: &str, result: &RmmResult, execution_id: &str, script_id: &str) {
+    async fn publish_result(
+        &self,
+        subject: &str,
+        result: &RmmResult,
+        execution_id: &str,
+        script_id: &str,
+    ) {
         if let Err(e) = self.nats_message_publisher.publish(subject, result).await {
             error!(kind = M::KIND, execution_id = %execution_id, script_id = %script_id, error = %e, "Failed to publish result");
         }
@@ -196,7 +212,14 @@ impl<M: ExecutionMessage + 'static> ExecutionListener<M> {
             }
             Err(e) => {
                 error!(kind = M::KIND, execution_id = %execution_id, error = %e, "Failed to persist batch, falling back to best-effort publish");
-                self.publish_directly(requests, machine_id, result_subject, execution_id, schedule_id).await;
+                self.publish_directly(
+                    requests,
+                    machine_id,
+                    result_subject,
+                    execution_id,
+                    schedule_id,
+                )
+                .await;
                 return;
             }
         }
@@ -212,9 +235,17 @@ impl<M: ExecutionMessage + 'static> ExecutionListener<M> {
             log_finished(execution_id, schedule_id, &script_id, &result);
 
             let bytes = ResultStore::encode_result(&result);
-            if let Err(e) = self.result_store.complete(key.clone(), result_subject.to_string(), bytes).await {
+            if let Err(e) = self
+                .result_store
+                .complete(key.clone(), result_subject.to_string(), bytes)
+                .await
+            {
                 error!(kind = M::KIND, execution_id = %execution_id, script_id = %script_id, error = %e, "Failed to persist result, publishing best-effort");
-                match self.nats_message_publisher.publish(result_subject, &result).await {
+                match self
+                    .nats_message_publisher
+                    .publish(result_subject, &result)
+                    .await
+                {
                     Ok(()) => {
                         if let Err(re) = self.result_store.journal_remove(key).await {
                             warn!(kind = M::KIND, execution_id = %execution_id, script_id = %script_id, error = %re, "Delivered best-effort but failed to clear journal entry");
@@ -242,7 +273,11 @@ impl<M: ExecutionMessage + 'static> ExecutionListener<M> {
             let script_id = request.script_id.unwrap_or("-").to_string();
             let result = self.execution_service.execute(&request, machine_id).await;
             log_finished(execution_id, schedule_id, &script_id, &result);
-            if let Err(e) = self.nats_message_publisher.publish(result_subject, &result).await {
+            if let Err(e) = self
+                .nats_message_publisher
+                .publish(result_subject, &result)
+                .await
+            {
                 error!(kind = M::KIND, execution_id = %execution_id, script_id = %script_id, error = %e, "Failed to publish result");
             }
         }
@@ -261,8 +296,11 @@ fn log_finished(execution_id: &str, schedule_id: &str, script_id: &str, result: 
     );
 }
 
-async fn run_bounded<T, F, Fut>(stream: impl futures::Stream<Item = T>, semaphore: Arc<Semaphore>, handler: F)
-where
+async fn run_bounded<T, F, Fut>(
+    stream: impl futures::Stream<Item = T>,
+    semaphore: Arc<Semaphore>,
+    handler: F,
+) where
     T: Send + 'static,
     F: Fn(T) -> Fut + Clone + Send + 'static,
     Fut: std::future::Future<Output = ()> + Send + 'static,
@@ -282,102 +320,5 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::time::{Duration as StdDuration, Instant};
-
-    async fn wait_for(counter: &AtomicUsize, target: usize) {
-        while counter.load(Ordering::SeqCst) < target {
-            tokio::time::sleep(StdDuration::from_millis(5)).await;
-        }
-    }
-
-    #[tokio::test]
-    async fn runs_up_to_k_in_parallel() {
-        let k = 4;
-        let semaphore = Arc::new(Semaphore::new(k));
-        let active = Arc::new(AtomicUsize::new(0));
-        let max_active = Arc::new(AtomicUsize::new(0));
-        let done = Arc::new(AtomicUsize::new(0));
-
-        let (a, m, d) = (active.clone(), max_active.clone(), done.clone());
-        let start = Instant::now();
-        run_bounded(futures::stream::iter(0..k), semaphore, move |_| {
-            let (a, m, d) = (a.clone(), m.clone(), d.clone());
-            async move {
-                let now = a.fetch_add(1, Ordering::SeqCst) + 1;
-                m.fetch_max(now, Ordering::SeqCst);
-                tokio::time::sleep(StdDuration::from_millis(200)).await;
-                a.fetch_sub(1, Ordering::SeqCst);
-                d.fetch_add(1, Ordering::SeqCst);
-            }
-        })
-        .await;
-        wait_for(&done, k).await;
-
-        assert_eq!(max_active.load(Ordering::SeqCst), k, "all K should run at once");
-        assert!(
-            start.elapsed() < StdDuration::from_millis(600),
-            "K parallel sleeps should take ~one duration, took {:?}",
-            start.elapsed()
-        );
-    }
-
-    #[tokio::test]
-    async fn concurrency_never_exceeds_k() {
-        let k = 2;
-        let n = 10;
-        let semaphore = Arc::new(Semaphore::new(k));
-        let active = Arc::new(AtomicUsize::new(0));
-        let max_active = Arc::new(AtomicUsize::new(0));
-        let done = Arc::new(AtomicUsize::new(0));
-
-        let (a, m, d) = (active.clone(), max_active.clone(), done.clone());
-        run_bounded(futures::stream::iter(0..n), semaphore, move |_| {
-            let (a, m, d) = (a.clone(), m.clone(), d.clone());
-            async move {
-                let now = a.fetch_add(1, Ordering::SeqCst) + 1;
-                m.fetch_max(now, Ordering::SeqCst);
-                tokio::time::sleep(StdDuration::from_millis(30)).await;
-                a.fetch_sub(1, Ordering::SeqCst);
-                d.fetch_add(1, Ordering::SeqCst);
-            }
-        })
-        .await;
-        wait_for(&done, n).await;
-
-        assert!(
-            max_active.load(Ordering::SeqCst) <= k,
-            "observed {} concurrent, cap is {}",
-            max_active.load(Ordering::SeqCst),
-            k
-        );
-        assert_eq!(done.load(Ordering::SeqCst), n, "every item must complete");
-    }
-
-    #[tokio::test]
-    async fn permit_released_on_panic() {
-        let semaphore = Arc::new(Semaphore::new(1));
-        let done = Arc::new(AtomicUsize::new(0));
-
-        let d = done.clone();
-        run_bounded(futures::stream::iter(0..3usize), semaphore, move |i| {
-            let d = d.clone();
-            async move {
-                if i == 0 {
-                    panic!("intentional panic in first task");
-                }
-                d.fetch_add(1, Ordering::SeqCst);
-            }
-        })
-        .await;
-        wait_for(&done, 2).await;
-
-        assert_eq!(
-            done.load(Ordering::SeqCst),
-            2,
-            "a panicking task must release its permit so the rest still run"
-        );
-    }
-}
+#[path = "execution_listener_tests.rs"]
+mod tests;

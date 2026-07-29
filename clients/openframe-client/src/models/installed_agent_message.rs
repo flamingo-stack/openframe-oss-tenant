@@ -6,4 +6,3 @@ pub struct InstalledAgentMessage {
     pub agent_type: String,
     pub version: String,
 }
-

@@ -217,8 +217,8 @@ pub fn execute_binary_cleanup_script(
     let script_content = generate_binary_cleanup_script(install_path, current_pid, bin_dir);
 
     // Write script to file
-    let mut file = fs::File::create(&script_path)
-        .context("Failed to create binary cleanup script file")?;
+    let mut file =
+        fs::File::create(&script_path).context("Failed to create binary cleanup script file")?;
 
     file.write_all(script_content.as_bytes())
         .context("Failed to write binary cleanup script content")?;

@@ -10,8 +10,7 @@ pub struct UpdateCleanupService {
 
 impl UpdateCleanupService {
     pub fn new() -> Result<Self> {
-        let exe_path = std::env::current_exe()
-            .context("Failed to get current executable path")?;
+        let exe_path = std::env::current_exe().context("Failed to get current executable path")?;
 
         Ok(Self { exe_path })
     }
@@ -35,10 +34,14 @@ impl UpdateCleanupService {
     }
 
     async fn cleanup_all_old_backups(&self) -> Result<usize> {
-        let exe_dir = self.exe_path.parent()
+        let exe_dir = self
+            .exe_path
+            .parent()
             .context("Failed to get executable directory")?;
 
-        let exe_name = self.exe_path.file_name()
+        let exe_name = self
+            .exe_path
+            .file_name()
             .context("Failed to get executable name")?
             .to_string_lossy();
 
@@ -84,7 +87,9 @@ impl UpdateCleanupService {
                     .ok()
                     .and_then(|m| m.modified().ok())
                     .and_then(|t| t.elapsed().ok())
-                    .map(|age| age.as_secs() < crate::config::update_config::TEMP_LEFTOVER_MIN_AGE_SECS)
+                    .map(|age| {
+                        age.as_secs() < crate::config::update_config::TEMP_LEFTOVER_MIN_AGE_SECS
+                    })
                     .unwrap_or(true);
                 if too_fresh {
                     continue;

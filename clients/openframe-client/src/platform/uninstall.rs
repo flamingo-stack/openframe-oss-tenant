@@ -111,7 +111,10 @@ pub async fn remove_directory_with_retry(path: &Path, max_retries: u32) -> Resul
         }
 
         if attempt == max_retries - 1 {
-            info!("Attempting to unlock files in directory: {}", path.display());
+            info!(
+                "Attempting to unlock files in directory: {}",
+                path.display()
+            );
             if let Err(e) = unlock_directory_files(path).await {
                 warn!("Failed to unlock files: {}", e);
             }
@@ -213,7 +216,10 @@ async fn unlock_directory_files(path: &Path) -> Result<()> {
 async fn force_remove_directory(path: &Path) -> Result<()> {
     use tokio::process::Command;
 
-    info!("Attempting force removal using Windows rd command for: {}", path.display());
+    info!(
+        "Attempting force removal using Windows rd command for: {}",
+        path.display()
+    );
 
     let _ = crate::platform::file_acl::ensure_writable(path).await;
 
@@ -243,7 +249,9 @@ async fn force_remove_directory(path: &Path) -> Result<()> {
             info!("Directory removed after delay: {}", path.display());
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Directory still exists after force removal"))
+            Err(anyhow::anyhow!(
+                "Directory still exists after force removal"
+            ))
         }
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -260,7 +268,10 @@ async fn force_remove_directory(path: &Path) -> Result<()> {
 async fn force_remove_directory(path: &Path) -> Result<()> {
     use tokio::process::Command;
 
-    info!("Attempting force removal using rm command for: {}", path.display());
+    info!(
+        "Attempting force removal using rm command for: {}",
+        path.display()
+    );
 
     // Use rm -rf for force removal
     let output = Command::new("rm")
@@ -285,7 +296,9 @@ async fn force_remove_directory(path: &Path) -> Result<()> {
             info!("Directory removed after delay: {}", path.display());
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Directory still exists after force removal"))
+            Err(anyhow::anyhow!(
+                "Directory still exists after force removal"
+            ))
         }
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -305,8 +318,11 @@ pub async fn uninstall_integrated_tools(dir_manager: &DirectoryManager) -> Resul
     let agent_config_service = AgentConfigurationService::new(dir_manager.clone())
         .context("Failed to initialize AgentConfigurationService")?;
 
-    let command_params_resolver =
-        ToolCommandParamsResolver::new(dir_manager.clone(), initial_config_service, agent_config_service);
+    let command_params_resolver = ToolCommandParamsResolver::new(
+        dir_manager.clone(),
+        initial_config_service,
+        agent_config_service,
+    );
 
     let tool_kill_service = ToolKillService::new();
 
@@ -328,10 +344,7 @@ pub async fn uninstall_integrated_tools(dir_manager: &DirectoryManager) -> Resul
 
 /// Windows-specific uninstall implementation
 #[cfg(target_os = "windows")]
-pub async fn uninstall_windows(
-    dir_manager: &DirectoryManager,
-    install_path: &Path,
-) -> Result<()> {
+pub async fn uninstall_windows(dir_manager: &DirectoryManager, install_path: &Path) -> Result<()> {
     info!("========================================");
     info!("OpenFrame Uninstallation");
     info!("========================================");
@@ -350,10 +363,7 @@ pub async fn uninstall_windows(
 
     match service.uninstall() {
         Ok(_) => info!("Service uninstalled successfully"),
-        Err(e) => warn!(
-            "Service uninstall warning: {} (may not be installed)",
-            e
-        ),
+        Err(e) => warn!("Service uninstall warning: {} (may not be installed)", e),
     }
 
     info!("Step 2: Gracefully uninstalling integrated tools...");
@@ -364,9 +374,7 @@ pub async fn uninstall_windows(
 
     info!("Step 3: Cleaning up directories and files...");
 
-    if dir_manager.logs_dir().exists()
-        && dir_manager.logs_dir() != dir_manager.app_support_dir()
-    {
+    if dir_manager.logs_dir().exists() && dir_manager.logs_dir() != dir_manager.app_support_dir() {
         info!(
             "Cleaning up logs directory: {}",
             dir_manager.logs_dir().display()
@@ -403,10 +411,7 @@ pub async fn uninstall_windows(
 
         use crate::platform::windows_cleanup::execute_binary_cleanup_script;
 
-        match execute_binary_cleanup_script(
-            &install_path_buf,
-            bin_dir.as_ref(),
-        ) {
+        match execute_binary_cleanup_script(&install_path_buf, bin_dir.as_ref()) {
             Ok(_) => info!("Binary cleanup script launched successfully"),
             Err(e) => warn!("Failed to launch binary cleanup script: {}", e),
         }
@@ -441,10 +446,7 @@ pub async fn uninstall_macos(dir_manager: &DirectoryManager, install_path: &Path
 
     match service.uninstall() {
         Ok(_) => info!("Service uninstalled successfully"),
-        Err(e) => warn!(
-            "Service uninstall warning: {} (may not be installed)",
-            e
-        ),
+        Err(e) => warn!("Service uninstall warning: {} (may not be installed)", e),
     }
 
     info!("Step 2: Gracefully uninstalling integrated tools...");
@@ -456,9 +458,7 @@ pub async fn uninstall_macos(dir_manager: &DirectoryManager, install_path: &Path
     info!("Step 3: Cleaning up directories and files...");
 
     // Clean up directories with retry logic
-    if dir_manager.logs_dir().exists()
-        && dir_manager.logs_dir() != dir_manager.app_support_dir()
-    {
+    if dir_manager.logs_dir().exists() && dir_manager.logs_dir() != dir_manager.app_support_dir() {
         info!(
             "Cleaning up logs directory: {}",
             dir_manager.logs_dir().display()
@@ -515,4 +515,3 @@ pub async fn uninstall_macos(dir_manager: &DirectoryManager, install_path: &Path
 
     Ok(())
 }
-

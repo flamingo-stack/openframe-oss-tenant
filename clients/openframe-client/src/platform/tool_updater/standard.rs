@@ -3,11 +3,10 @@ use async_trait::async_trait;
 use tracing::info;
 
 use super::{
-    ToolUpdater, ToolUpdaterDeps, UpdateContext,
-    backup_binary, clear_aside_binary, cleanup_backup, download_and_write_binary,
-    log_update_survivors, restore_from_backup,
+    backup_binary, cleanup_backup, clear_aside_binary, download_and_write_binary,
+    log_update_survivors, restore_from_backup, ToolUpdater, ToolUpdaterDeps, UpdateContext,
 };
-use crate::models::{InstalledTool, Installation, DownloadConfiguration};
+use crate::models::{DownloadConfiguration, Installation, InstalledTool};
 
 pub struct StandardToolUpdater {
     deps: ToolUpdaterDeps,
@@ -26,7 +25,10 @@ impl ToolUpdater for StandardToolUpdater {
         info!(tool_id = %tool_agent_id, "Preparing Standard tool for update");
 
         info!(tool_id = %tool_agent_id, "Stopping tool process");
-        self.deps.tool_kill_service.stop_tool(tool_agent_id).await
+        self.deps
+            .tool_kill_service
+            .stop_tool(tool_agent_id)
+            .await
             .with_context(|| format!("Failed to stop tool: {}", tool_agent_id))?;
 
         let agent_path = self.deps.directory_manager.get_agent_path(tool_agent_id);
@@ -55,11 +57,7 @@ impl ToolUpdater for StandardToolUpdater {
         Ok(None)
     }
 
-    async fn finalize(
-        &self,
-        tool: &InstalledTool,
-        ctx: &UpdateContext,
-    ) -> Result<()> {
+    async fn finalize(&self, tool: &InstalledTool, ctx: &UpdateContext) -> Result<()> {
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Finalizing Standard tool update");
 

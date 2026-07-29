@@ -12,7 +12,9 @@ use crate::services::deactivation_service::DeactivationService;
 use crate::services::tool_kill_service::ToolKillService;
 use crate::services::tool_restart_service::{RestartOutcome, ToolRestartService};
 use crate::services::tool_run_manager::ToolRunManager;
-use crate::services::{AgentConfigurationService, InitialConfigurationService, InstalledToolsService};
+use crate::services::{
+    AgentConfigurationService, InitialConfigurationService, InstalledToolsService,
+};
 
 const MESH_TOOL_ID: &str = "meshcentral-agent";
 
@@ -96,9 +98,16 @@ impl MeshSelfHealService {
         );
 
         // Start at EOF so stale history can't arm detection, but seed health from the tail to catch an already-wedged agent.
-        let mut offset: u64 = tokio::fs::metadata(&log_path).await.map(|m| m.len()).unwrap_or(0);
+        let mut offset: u64 = tokio::fs::metadata(&log_path)
+            .await
+            .map(|m| m.len())
+            .unwrap_or(0);
         let mut last_marker_healthy = last_marker_in_tail(&log_path).await.unwrap_or(true);
-        let mut stuck_since: Option<Instant> = if last_marker_healthy { None } else { Some(Instant::now()) };
+        let mut stuck_since: Option<Instant> = if last_marker_healthy {
+            None
+        } else {
+            Some(Instant::now())
+        };
         let mut last_action: Option<Instant> = None;
         let mut last_activity = seed_last_activity(&log_path).await;
 
@@ -168,7 +177,9 @@ impl MeshSelfHealService {
                 match self.try_refresh_msh().await {
                     Ok(true) => info!("mesh self-heal: refreshed .msh (NodeID preserved)"),
                     Ok(false) => debug!("mesh self-heal: .msh already current"),
-                    Err(e) => error!("mesh self-heal: .msh refresh failed (restarting anyway): {e:#}"),
+                    Err(e) => {
+                        error!("mesh self-heal: .msh refresh failed (restarting anyway): {e:#}")
+                    }
                 }
                 self.restart_agent().await;
 
@@ -193,7 +204,9 @@ impl MeshSelfHealService {
     async fn restart_agent(&self) {
         match self.tool_restart.restart_guarded(MESH_TOOL_ID).await {
             Ok(RestartOutcome::Restarted) => info!("mesh self-heal: agent restarted"),
-            Ok(RestartOutcome::Busy) => info!("mesh self-heal: meshcentral-agent busy with another operation — skipping restart"),
+            Ok(RestartOutcome::Busy) => info!(
+                "mesh self-heal: meshcentral-agent busy with another operation — skipping restart"
+            ),
             Ok(RestartOutcome::NotInstalled) => {
                 warn!("mesh self-heal: meshcentral-agent not in registry — falling back to a process kill");
                 if let Err(e) = self.tool_kill.stop_tool(MESH_TOOL_ID).await {
@@ -223,13 +236,19 @@ impl MeshSelfHealService {
         let new_mesh = parse_msh_field(&body, "MeshID");
         let new_server = parse_msh_field(&body, "ServerID");
         if new_mesh.is_none() && new_server.is_none() {
-            return Err(anyhow!("/generate-msh response has neither MeshID nor ServerID"));
+            return Err(anyhow!(
+                "/generate-msh response has neither MeshID nor ServerID"
+            ));
         }
 
         let msh_path = self.mesh_msh_path().await?;
         let current = tokio::fs::read_to_string(&msh_path).await.ok();
-        let cur_mesh = current.as_deref().and_then(|s| parse_msh_field(s, "MeshID"));
-        let cur_server = current.as_deref().and_then(|s| parse_msh_field(s, "ServerID"));
+        let cur_mesh = current
+            .as_deref()
+            .and_then(|s| parse_msh_field(s, "MeshID"));
+        let cur_server = current
+            .as_deref()
+            .and_then(|s| parse_msh_field(s, "ServerID"));
 
         let mesh_changed = new_mesh.is_some() && cur_mesh != new_mesh;
         let server_changed = new_server.is_some() && cur_server != new_server;
@@ -246,8 +265,16 @@ impl MeshSelfHealService {
             "mesh self-heal: rewriting {} (mesh_changed={}, serverid {} -> {})",
             msh_path.display(),
             mesh_changed,
-            if cur_server.is_some() { "present" } else { "missing" },
-            if new_server.is_some() { "present" } else { "missing" }
+            if cur_server.is_some() {
+                "present"
+            } else {
+                "missing"
+            },
+            if new_server.is_some() {
+                "present"
+            } else {
+                "missing"
+            }
         );
 
         let tmp_path = msh_path.with_extension("msh.tmp");
@@ -261,7 +288,11 @@ impl MeshSelfHealService {
 
     /// Unhealthy when the tool is fully installed but its .msh is absent, unreadable, or lacks a ServerID.
     async fn current_msh_missing_serverid(&self) -> bool {
-        match self.installed_tools.get_by_tool_agent_id(MESH_TOOL_ID).await {
+        match self
+            .installed_tools
+            .get_by_tool_agent_id(MESH_TOOL_ID)
+            .await
+        {
             Ok(Some(t)) if t.state == ToolRecordState::Installed => {}
             _ => return false,
         }
@@ -322,7 +353,11 @@ impl MeshSelfHealService {
 fn parse_msh_field(msh: &str, key: &str) -> Option<String> {
     let prefix = format!("{key}=");
     msh.lines()
-        .find_map(|l| l.trim().strip_prefix(prefix.as_str()).map(|v| v.trim().to_string()))
+        .find_map(|l| {
+            l.trim()
+                .strip_prefix(prefix.as_str())
+                .map(|v| v.trim().to_string())
+        })
         .filter(|v| !v.is_empty())
 }
 
@@ -346,7 +381,9 @@ async fn last_marker_in_tail(path: &Path) -> Option<bool> {
 
     let mut file = tokio::fs::File::open(path).await.ok()?;
     let len = file.metadata().await.ok()?.len();
-    file.seek(SeekFrom::Start(len.saturating_sub(TAIL_BYTES))).await.ok()?;
+    file.seek(SeekFrom::Start(len.saturating_sub(TAIL_BYTES)))
+        .await
+        .ok()?;
     let mut buf = Vec::new();
     file.read_to_end(&mut buf).await.ok()?;
 
@@ -390,55 +427,5 @@ async fn read_new_lines(path: &Path, offset: &mut u64) -> Result<Vec<String>> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    const FAILED_0_0_22_NO_HTTP: &str = "Connection FAILED: No HTTP response (fd=0, status=Complete/Disconnected, authState=0, connState=0, tls=down, elapsedMs=20016, attempt=ABCD1234-2100)";
-    const FAILED_0_0_22_TIMEOUT: &str = "Connection FAILED: Network timeout - server unreachable or gateway blocking (tls=down, elapsedMs=21016, attempt=ABCD1234-2101)";
-    const FAILED_0_0_23_PLUS: &str = "Connection FAILED (latest attempt): No HTTP response (fd=0, status=Complete/Disconnected, authState=0, connState=0, tls=down, elapsedMs=20016, attempt=ABCD1234-2102)";
-    const CORE_OK: &str = "Received CoreOk from server (coreTimeout=0x0)";
-
-    #[test]
-    fn failure_marker_matches_0_0_22_formats() {
-        assert!(FAILED_0_0_22_NO_HTTP.contains(FAILURE_MARKER));
-        assert!(FAILED_0_0_22_TIMEOUT.contains(FAILURE_MARKER));
-    }
-
-    #[test]
-    fn failure_marker_matches_0_0_23_plus_format() {
-        assert!(FAILED_0_0_23_PLUS.contains(FAILURE_MARKER));
-    }
-
-    #[test]
-    fn markers_ignore_unrelated_lines() {
-        for line in [
-            "Connection: dialing uri=wss://x.openframe.ai/ws/tools/agent/meshcentral-server/agent.ashx host=x.openframe.ai port=443 family=IPv4 ip=1.2.3.4 useproxy=0 proxy=DIRECT attempt=ABCD1234-2103 suppressed=2",
-            "AutoRetry Connect in 299066 milliseconds",
-        ] {
-            assert!(!line.contains(FAILURE_MARKER));
-            assert!(!line.contains(HEALTHY_MARKER));
-        }
-    }
-
-    #[test]
-    fn healthy_marker_matches_core_ok() {
-        assert!(CORE_OK.contains(HEALTHY_MARKER));
-    }
-
-    #[tokio::test]
-    async fn tail_seed_reports_last_marker() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("meshcentral-agent.log");
-
-        assert_eq!(last_marker_in_tail(&path).await, None);
-
-        tokio::fs::write(&path, "startup\nno markers here\n").await.unwrap();
-        assert_eq!(last_marker_in_tail(&path).await, None);
-
-        tokio::fs::write(&path, format!("{FAILED_0_0_22_NO_HTTP}\n{CORE_OK}\n")).await.unwrap();
-        assert_eq!(last_marker_in_tail(&path).await, Some(true));
-
-        tokio::fs::write(&path, format!("{CORE_OK}\n{FAILED_0_0_23_PLUS}\n{FAILED_0_0_22_TIMEOUT}\n")).await.unwrap();
-        assert_eq!(last_marker_in_tail(&path).await, Some(false));
-    }
-}
+#[path = "mesh_self_heal_service_tests.rs"]
+mod tests;

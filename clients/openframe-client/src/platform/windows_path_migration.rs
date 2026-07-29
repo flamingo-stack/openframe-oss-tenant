@@ -26,7 +26,8 @@ pub fn run() {
         }
 
         let path_str = String::from_utf16_lossy(
-            &raw_value.bytes
+            &raw_value
+                .bytes
                 .chunks_exact(2)
                 .map(|c| u16::from_le_bytes([c[0], c[1]]))
                 .collect::<Vec<u16>>(),
@@ -40,14 +41,20 @@ pub fn run() {
 
         info!("Repairing PATH registry type: REG_SZ -> REG_EXPAND_SZ");
 
-        let mut bytes: Vec<u8> = path_str.encode_utf16().flat_map(|c| c.to_le_bytes()).collect();
+        let mut bytes: Vec<u8> = path_str
+            .encode_utf16()
+            .flat_map(|c| c.to_le_bytes())
+            .collect();
         bytes.push(0);
         bytes.push(0);
 
-        env.set_raw_value("Path", &RegValue {
-            vtype: RegType::REG_EXPAND_SZ,
-            bytes,
-        })?;
+        env.set_raw_value(
+            "Path",
+            &RegValue {
+                vtype: RegType::REG_EXPAND_SZ,
+                bytes,
+            },
+        )?;
 
         info!("PATH registry type repaired successfully");
         Ok(())

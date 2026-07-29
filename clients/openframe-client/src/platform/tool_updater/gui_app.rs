@@ -1,13 +1,13 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use std::path::PathBuf;
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 use super::{ToolUpdater, ToolUpdaterDeps, UpdateContext};
-use crate::models::{InstalledTool, Installation, DownloadConfiguration};
-use crate::platform::user_session::{get_console_user, launch_as_user};
+use crate::models::{DownloadConfiguration, Installation, InstalledTool};
+use crate::platform::preferences_writer::{args_to_pairs, write as write_preferences};
 use crate::platform::remove_app_bundle;
-use crate::platform::preferences_writer::{write as write_preferences, args_to_pairs};
+use crate::platform::user_session::{get_console_user, launch_as_user};
 
 pub struct GuiAppToolUpdater {
     deps: ToolUpdaterDeps,
@@ -26,7 +26,10 @@ impl ToolUpdater for GuiAppToolUpdater {
         info!(tool_id = %tool_agent_id, "Preparing GuiApp for update");
 
         info!(tool_id = %tool_agent_id, "Stopping GUI app process");
-        self.deps.tool_kill_service.stop_installed_tool(tool, false).await
+        self.deps
+            .tool_kill_service
+            .stop_installed_tool(tool, false)
+            .await
             .with_context(|| format!("Failed to stop GUI app: {}", tool_agent_id))?;
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -46,8 +49,15 @@ impl ToolUpdater for GuiAppToolUpdater {
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Applying GuiApp update");
 
-        let Installation::GuiApp { executable_path, bundle_id } = &tool.installation else {
-            anyhow::bail!("Expected GuiApp installation type for tool: {}", tool_agent_id);
+        let Installation::GuiApp {
+            executable_path,
+            bundle_id,
+        } = &tool.installation
+        else {
+            anyhow::bail!(
+                "Expected GuiApp installation type for tool: {}",
+                tool_agent_id
+            );
         };
 
         info!(tool_id = %tool_agent_id, "Removing old app bundle");
@@ -56,10 +66,13 @@ impl ToolUpdater for GuiAppToolUpdater {
         let applications_dir = PathBuf::from("/Applications");
 
         info!(tool_id = %tool_agent_id, "Downloading and installing new version from: {}", config.link);
-        self.deps.github_download_service
+        self.deps
+            .github_download_service
             .download_and_extract_all(config, &applications_dir)
             .await
-            .with_context(|| format!("Failed to download and install GUI app: {}", tool_agent_id))?;
+            .with_context(|| {
+                format!("Failed to download and install GUI app: {}", tool_agent_id)
+            })?;
 
         let new_app_path = applications_dir.join(&config.target_file_name);
         if !new_app_path.exists() {
@@ -76,11 +89,7 @@ impl ToolUpdater for GuiAppToolUpdater {
         }))
     }
 
-    async fn finalize(
-        &self,
-        tool: &InstalledTool,
-        ctx: &UpdateContext,
-    ) -> Result<()> {
+    async fn finalize(&self, tool: &InstalledTool, ctx: &UpdateContext) -> Result<()> {
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Finalizing GuiApp update");
 
@@ -89,7 +98,11 @@ impl ToolUpdater for GuiAppToolUpdater {
             return Ok(());
         }
 
-        let Installation::GuiApp { executable_path, bundle_id } = &tool.installation else {
+        let Installation::GuiApp {
+            executable_path,
+            bundle_id,
+        } = &tool.installation
+        else {
             anyhow::bail!("Expected GuiApp installation type");
         };
 
@@ -102,7 +115,9 @@ impl ToolUpdater for GuiAppToolUpdater {
 
         if let Some(bid) = bundle_id {
             // Resolve placeholders (e.g., ${client.serverUrl}) before writing preferences
-            let resolved_args = self.deps.command_params_resolver
+            let resolved_args = self
+                .deps
+                .command_params_resolver
                 .process(tool_agent_id, tool.run_command_args.clone())
                 .unwrap_or_else(|e| {
                     warn!(tool_id = %tool_agent_id, "Failed to resolve command args: {:#}", e);
@@ -148,26 +163,5 @@ impl ToolUpdater for GuiAppToolUpdater {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::Path;
-    use crate::platform::DirectoryManager;
-
-    #[test]
-    fn test_find_app_bundle_path() {
-        assert_eq!(
-            DirectoryManager::find_app_bundle_path(Path::new("/Applications/FAE Chat.app")),
-            Some(PathBuf::from("/Applications/FAE Chat.app"))
-        );
-
-        assert_eq!(
-            DirectoryManager::find_app_bundle_path(Path::new("/Applications/FAE Chat.app/Contents/MacOS/FAE Chat")),
-            Some(PathBuf::from("/Applications/FAE Chat.app"))
-        );
-
-        assert_eq!(
-            DirectoryManager::find_app_bundle_path(Path::new("/usr/bin/some-binary")),
-            None
-        );
-    }
-}
+#[path = "gui_app_tests.rs"]
+mod tests;

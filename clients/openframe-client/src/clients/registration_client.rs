@@ -37,7 +37,10 @@ pub struct RegistrationClient {
 
 impl RegistrationClient {
     pub fn new(base_url: String, http_client: Client) -> Result<Self> {
-        Ok(Self { http_client, base_url })
+        Ok(Self {
+            http_client,
+            base_url,
+        })
     }
 
     pub async fn register(
@@ -53,8 +56,12 @@ impl RegistrationClient {
         };
 
         let mut headers = HeaderMap::new();
-        headers.insert("X-Initial-Key", initial_key.parse()
-            .context("Failed to parse initial key header")?);
+        headers.insert(
+            "X-Initial-Key",
+            initial_key
+                .parse()
+                .context("Failed to parse initial key header")?,
+        );
         if let Some(machine_info) = machine_info {
             let parsed_client_secret = machine_info
                 .client_secret
@@ -69,7 +76,8 @@ impl RegistrationClient {
         }
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(&url)
             .headers(headers)
             .json(&request)
@@ -84,9 +92,12 @@ impl RegistrationClient {
             if is_client_secret_error(status, &body) {
                 return Err(RegistrationError::ClientSecretInvalid);
             }
-            return Err(
-                anyhow::anyhow!("Failed to register agent with status {} and body {}", status, &body)
-                .into());
+            return Err(anyhow::anyhow!(
+                "Failed to register agent with status {} and body {}",
+                status,
+                &body
+            )
+            .into());
         }
 
         let registration_response: AgentRegistrationResponse = response
@@ -107,38 +118,5 @@ fn is_client_secret_error(status: StatusCode, body: &str) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn detects_client_secret_invalid() {
-        let body = r#"{"code":"CLIENT_SECRET_INVALID","message":"Invalid client secret"}"#;
-        assert!(is_client_secret_error(StatusCode::UNAUTHORIZED, body));
-    }
-
-    #[test]
-    fn detects_client_secret_empty() {
-        let body = r#"{"code":"CLIENT_SECRET_EMPTY","message":"Client secret is empty"}"#;
-        assert!(is_client_secret_error(StatusCode::UNAUTHORIZED, body));
-    }
-
-    #[test]
-    fn ignores_other_401_error_codes() {
-        let body = r#"{"code":"INITIAL_KEY_INVALID","message":"..."}"#;
-        assert!(!is_client_secret_error(StatusCode::UNAUTHORIZED, body));
-    }
-
-    #[test]
-    fn ignores_client_secret_error_on_non_401() {
-        let body = r#"{"code":"CLIENT_SECRET_INVALID"}"#;
-        assert!(!is_client_secret_error(StatusCode::BAD_REQUEST, body));
-    }
-
-    #[test]
-    fn handles_non_json_body() {
-        assert!(!is_client_secret_error(
-            StatusCode::UNAUTHORIZED,
-            "gateway timeout"
-        ));
-    }
-}
+#[path = "registration_client_tests.rs"]
+mod tests;

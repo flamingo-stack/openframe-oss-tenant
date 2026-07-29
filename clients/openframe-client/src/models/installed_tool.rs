@@ -21,7 +21,9 @@ pub enum Installation {
 
 impl Default for Installation {
     fn default() -> Self {
-        Installation::Standard { executable_path: None }
+        Installation::Standard {
+            executable_path: None,
+        }
     }
 }
 
@@ -29,8 +31,12 @@ impl Installation {
     pub fn executable_path(&self) -> Option<&str> {
         match self {
             Installation::Standard { executable_path } => executable_path.as_deref(),
-            Installation::GuiApp { executable_path, .. } => Some(executable_path.as_str()),
-            Installation::Service { executable_path, .. } => executable_path.as_deref(),
+            Installation::GuiApp {
+                executable_path, ..
+            } => Some(executable_path.as_str()),
+            Installation::Service {
+                executable_path, ..
+            } => executable_path.as_deref(),
         }
     }
 

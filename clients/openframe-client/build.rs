@@ -14,8 +14,7 @@ fn main() {
 #[allow(dead_code)]
 fn forward_required(var: &str) {
     println!("cargo:rerun-if-env-changed={var}");
-    let value = std::env::var(var).unwrap_or_else(|_| {
-        panic!("{var} environment variable must be set at build time")
-    });
+    let value = std::env::var(var)
+        .unwrap_or_else(|_| panic!("{var} environment variable must be set at build time"));
     println!("cargo:rustc-env={var}={value}");
 }

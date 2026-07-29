@@ -1,7 +1,7 @@
-use anyhow::Result;
 use crate::platform::directories::DirectoryManager;
 use crate::services::EncryptionService;
 use crate::utils::fs::atomic_write;
+use anyhow::Result;
 
 #[derive(Clone)]
 pub struct SharedTokenService {
@@ -11,7 +11,7 @@ pub struct SharedTokenService {
 
 impl SharedTokenService {
     pub fn new(dir_manager: DirectoryManager, encryption_service: EncryptionService) -> Self {
-        Self { 
+        Self {
             dir_manager,
             encryption_service,
         }
@@ -23,4 +23,4 @@ impl SharedTokenService {
         atomic_write(&token_file_path, encrypted_token)?;
         Ok(())
     }
-} 
+}

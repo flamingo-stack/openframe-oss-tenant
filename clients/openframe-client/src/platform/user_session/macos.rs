@@ -79,7 +79,11 @@ pub async fn is_process_running(executable_path: &str) -> bool {
             let running = output.status.success();
             if running {
                 let pids = String::from_utf8_lossy(&output.stdout);
-                info!("Process already running for {}: PIDs={}", executable_path, pids.trim());
+                info!(
+                    "Process already running for {}: PIDs={}",
+                    executable_path,
+                    pids.trim()
+                );
             }
             running
         }

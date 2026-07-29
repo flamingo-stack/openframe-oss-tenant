@@ -11,8 +11,11 @@ use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::services::InitialConfigurationService;
 
 /// Backoff between persisted-read retries before falling back to a fresh install.
-const READ_RETRY_DELAYS: [Duration; 3] =
-    [Duration::from_secs(1), Duration::from_secs(3), Duration::from_secs(5)];
+const READ_RETRY_DELAYS: [Duration; 3] = [
+    Duration::from_secs(1),
+    Duration::from_secs(3),
+    Duration::from_secs(5),
+];
 
 #[derive(Clone)]
 pub struct AgentRegistrationService {
@@ -23,12 +26,11 @@ pub struct AgentRegistrationService {
 }
 
 impl AgentRegistrationService {
-
     pub fn new(
         registration_client: RegistrationClient,
         device_data_fetcher: DeviceDataFetcher,
         config_service: AgentConfigurationService,
-        initial_configuration_service: InitialConfigurationService
+        initial_configuration_service: InitialConfigurationService,
     ) -> Self {
         Self {
             registration_client,
@@ -65,11 +67,13 @@ impl AgentRegistrationService {
             error!("Failed to persist machine info: {}", e);
         }
 
-        self.config_service.save_registration_data(
-            response.machine_id.clone(),
-            response.client_id.clone(),
-            response.client_secret.clone()
-        ).await?;
+        self.config_service
+            .save_registration_data(
+                response.machine_id.clone(),
+                response.client_id.clone(),
+                response.client_secret.clone(),
+            )
+            .await?;
 
         Ok(response)
     }
@@ -143,11 +147,19 @@ impl AgentRegistrationService {
             warn!("Could not resolve any hostname — registering with an empty one");
         }
         info!("Registering with hostname: '{}'", hostname);
-        let agent_version = self.device_data_fetcher.get_agent_version()
+        let agent_version = self
+            .device_data_fetcher
+            .get_agent_version()
             .unwrap_or_default();
         let os_type = self.device_data_fetcher.get_os_type();
-        let organization_id = self.initial_configuration_service.get_org_id().unwrap_or_default();
-        let tags = self.initial_configuration_service.get_tags().unwrap_or_default();
+        let organization_id = self
+            .initial_configuration_service
+            .get_org_id()
+            .unwrap_or_default();
+        let tags = self
+            .initial_configuration_service
+            .get_tags()
+            .unwrap_or_default();
 
         let request = AgentRegistrationRequest {
             hostname,

@@ -76,9 +76,9 @@ fn ensure_complete(info: &PersistedMachineInfo) -> Result<()> {
 /// True if any error in the chain is an OS permission-denied error.
 pub fn is_permission_denied(err: &anyhow::Error) -> bool {
     err.chain().any(|cause| {
-        cause
-            .downcast_ref::<std::io::Error>()
-            .map_or(false, |io| io.kind() == std::io::ErrorKind::PermissionDenied)
+        cause.downcast_ref::<std::io::Error>().map_or(false, |io| {
+            io.kind() == std::io::ErrorKind::PermissionDenied
+        })
     })
 }
 
@@ -167,7 +167,11 @@ fn restrict_key_acl(key: &winreg::RegKey) -> Result<()> {
         )
         .context("Failed to build registry security descriptor")?;
 
-        let result = RegSetKeySecurity(HKEY(key.raw_handle()), DACL_SECURITY_INFORMATION, descriptor);
+        let result = RegSetKeySecurity(
+            HKEY(key.raw_handle()),
+            DACL_SECURITY_INFORMATION,
+            descriptor,
+        );
         // Free the descriptor allocated above; nothing actionable on failure.
         let _ = LocalFree(HLOCAL(descriptor.0));
         result.context("Failed to apply restrictive DACL to OpenFrame registry key")?;
@@ -223,7 +227,9 @@ fn read_default(key: &str) -> Result<Option<String>> {
         .with_context(|| format!("Failed to execute defaults read for {}", key))?;
 
     if output.status.success() {
-        return Ok(Some(String::from_utf8_lossy(&output.stdout).trim().to_string()));
+        return Ok(Some(
+            String::from_utf8_lossy(&output.stdout).trim().to_string(),
+        ));
     }
 
     let stderr = String::from_utf8_lossy(&output.stderr);
@@ -286,7 +292,10 @@ fn secure_plist(plist_path: &str) -> Result<()> {
 #[cfg(target_os = "macos")]
 fn repair_permissions() -> Result<()> {
     let plist_path = plist_path();
-    if std::path::Path::new(&plist_path).try_exists().unwrap_or(false) {
+    if std::path::Path::new(&plist_path)
+        .try_exists()
+        .unwrap_or(false)
+    {
         secure_plist(&plist_path)?;
     }
     Ok(())
@@ -314,7 +323,10 @@ fn read_once() -> Result<Option<PersistedMachineInfo>> {
         .try_exists()
         .with_context(|| format!("Failed to check whether {} exists", record_path.display()))?
     {
-        anyhow::bail!("{} exists but holds no machine info (corrupt or partial write)", CONFIG_DIR);
+        anyhow::bail!(
+            "{} exists but holds no machine info (corrupt or partial write)",
+            CONFIG_DIR
+        );
     }
 
     let raw = std::fs::read_to_string(&record_path)
@@ -347,7 +359,8 @@ fn write_impl(machine_info: &PersistedMachineInfo) -> Result<()> {
             .with_context(|| format!("Failed to create {}", tmp_path.display()))?;
         tmp.write_all(record.as_bytes())
             .context("Failed to write machine info record")?;
-        tmp.sync_all().context("Failed to fsync machine info record")?;
+        tmp.sync_all()
+            .context("Failed to fsync machine info record")?;
     }
     std::fs::rename(&tmp_path, &record_path)
         .with_context(|| format!("Failed to move record into {}", record_path.display()))?;

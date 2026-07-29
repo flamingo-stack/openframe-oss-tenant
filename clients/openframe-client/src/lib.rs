@@ -1,22 +1,23 @@
 use anyhow::{Context, Result};
+use reqwest;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio::time::{ Duration};
+use tokio::time::Duration;
 use tracing::{error, info};
 use uuid;
-use reqwest;
 
+pub mod clients;
 mod config;
+pub mod listener;
 mod metrics;
 pub mod models;
 pub mod platform;
-pub mod clients;
 pub mod services;
-pub mod listener;
 
 pub mod banner;
 pub mod doctor;
+pub mod installation_initial_config_service;
 pub mod logging;
 pub mod monitoring;
 pub mod service;
@@ -29,58 +30,62 @@ pub mod service;
 pub mod service_adapter;
 pub mod system;
 pub mod updater;
-pub mod installation_initial_config_service;
 pub mod utils;
 
 #[cfg(any(unix, windows))]
 pub mod executor;
 
-use crate::platform::DirectoryManager;
-use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::services::{AgentAuthService, AgentRegistrationService, InitialConfigurationService, ToolCommandParamsResolver, ToolUrlParamsResolver, ToolKillService, ToolRunManager, ToolConnectionProcessingManager};
-use crate::services::InstalledToolsService;
-use crate::services::github_download_service::GithubDownloadService;
-use crate::platform::DmgExtractor;
-use crate::services::registration_processor::RegistrationProcessor;
-use crate::clients::{RegistrationClient, AuthClient, ToolApiClient};
-use crate::services::device_data_fetcher::DeviceDataFetcher;
-use crate::services::shared_token_service::SharedTokenService;
-use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
-use crate::services::tool_installation_service::ToolInstallationService;
-use crate::services::tool_uninstall_service::ToolUninstallService;
-use crate::services::tool_restart_service::ToolRestartService;
-use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
-use crate::listener::tool_uninstall_message_listener::ToolUninstallMessageListener;
-use crate::listener::tool_restart_message_listener::ToolRestartMessageListener;
+use crate::clients::{AuthClient, RegistrationClient, ToolApiClient};
+use crate::config::update_config::{
+    DOWNLOAD_CLIENT_TIMEOUT_SECS, EXECUTION_MIN_CONCURRENCY, HTTP_CLIENT_TIMEOUT_SECS,
+};
+use crate::listener::execution_listener::ExecutionListener;
 use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
 use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
-use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
-use crate::services::tool_agent_update_service::ToolAgentUpdateService;
-use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
+use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
+use crate::listener::tool_restart_message_listener::ToolRestartMessageListener;
+use crate::listener::tool_uninstall_message_listener::ToolUninstallMessageListener;
+use crate::logging::nats_streaming::LogStreamingRunManager;
+use crate::models::{CommandMessage, ScriptMessage, ScriptScheduleExecutionMessage};
+use crate::platform::DirectoryManager;
+use crate::platform::DmgExtractor;
+use crate::services::agent_configuration_service::AgentConfigurationService;
+use crate::services::deactivation_service::DeactivationService;
+use crate::services::device_data_fetcher::DeviceDataFetcher;
+use crate::services::encryption_service::EncryptionService;
+use crate::services::execution_service::ExecutionService;
+use crate::services::github_download_service::GithubDownloadService;
 use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
-use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::installed_agent_message_publisher::InstalledAgentMessagePublisher;
+use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
+use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
+use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
+use crate::services::mesh_self_heal_service::MeshSelfHealService;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
-use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
-use crate::services::tool_connection_service::ToolConnectionService;
-use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
-use crate::services::result_store::ResultStore;
+use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
+use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
+use crate::services::registration_processor::RegistrationProcessor;
 use crate::services::result_outbox_run_manager::ResultOutboxRunManager;
+use crate::services::result_store::ResultStore;
+use crate::services::shared_token_service::SharedTokenService;
 use crate::services::token_refresh_run_manager::TokenRefreshRunManager;
-use crate::services::mesh_self_heal_service::MeshSelfHealService;
-use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
-use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, LastKnownGoodService, InitialKeyService};
-use crate::services::execution_service::ExecutionService;
-use crate::services::deactivation_service::DeactivationService;
-use crate::listener::execution_listener::ExecutionListener;
-use crate::models::{CommandMessage, ScriptMessage, ScriptScheduleExecutionMessage};
-use crate::logging::nats_streaming::LogStreamingRunManager;
-use crate::config::update_config::{
-    HTTP_CLIENT_TIMEOUT_SECS,
-    DOWNLOAD_CLIENT_TIMEOUT_SECS,
-    EXECUTION_MIN_CONCURRENCY,
+use crate::services::tool_agent_update_service::ToolAgentUpdateService;
+use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
+use crate::services::tool_connection_service::ToolConnectionService;
+use crate::services::tool_installation_service::ToolInstallationService;
+use crate::services::tool_restart_service::ToolRestartService;
+use crate::services::tool_uninstall_service::ToolUninstallService;
+use crate::services::InstalledToolsService;
+use crate::services::{
+    AgentAuthService, AgentRegistrationService, InitialConfigurationService,
+    ToolCommandParamsResolver, ToolConnectionProcessingManager, ToolKillService, ToolRunManager,
+    ToolUrlParamsResolver,
+};
+use crate::services::{
+    InitialKeyService, LastKnownGoodService, UpdateCleanupService, UpdateHandlerService,
+    UpdateStateService,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -176,7 +181,6 @@ pub struct Client {
 }
 
 impl Client {
-
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
 
@@ -195,8 +199,9 @@ impl Client {
         let deactivation_service = DeactivationService::new(&directory_manager);
 
         // Initialize initial configuration service
-        let initial_configuration_service = InitialConfigurationService::new(directory_manager.clone())
-            .context("Failed to initialize initial configuration service")?;
+        let initial_configuration_service =
+            InitialConfigurationService::new(directory_manager.clone())
+                .context("Failed to initialize initial configuration service")?;
 
         // Initialize configuration service
         let config_service = AgentConfigurationService::new(directory_manager.clone())
@@ -221,17 +226,18 @@ impl Client {
             .context("Failed to create download HTTP client")?;
 
         // Initialize http url
-        let http_url = format!("https://{}", initial_configuration_service.get_server_url()?);
+        let http_url = format!(
+            "https://{}",
+            initial_configuration_service.get_server_url()?
+        );
 
         // Initialize registration client
-        let registration_client = RegistrationClient::new(
-            http_url.clone(),
-            http_client.clone()
-        ).context("Failed to create registration client")?;
-        
+        let registration_client = RegistrationClient::new(http_url.clone(), http_client.clone())
+            .context("Failed to create registration client")?;
+
         // Initialize device data fetcher
         let device_data_fetcher = DeviceDataFetcher::new();
-        
+
         // Initialize registration service
         let registration_service = AgentRegistrationService::new(
             registration_client,
@@ -239,53 +245,48 @@ impl Client {
             config_service.clone(),
             initial_configuration_service.clone(),
         );
-        
+
         // Initialize registration processor
-        let registration_processor = RegistrationProcessor::new(
-            registration_service,
-            config_service.clone()
-        );
+        let registration_processor =
+            RegistrationProcessor::new(registration_service, config_service.clone());
 
         // Initialize authentication client
         let auth_client = AuthClient::new(
             http_url.clone(),
             http_client.clone(),
-            deactivation_service.clone()
+            deactivation_service.clone(),
         );
-        
+
         // Initialize encryption service
         let encryption_service = EncryptionService::new();
-        
+
         // Initialize shared token service
-        let shared_token_service = SharedTokenService::new(
-            directory_manager.clone(),
-            encryption_service.clone()
-        );
-        
+        let shared_token_service =
+            SharedTokenService::new(directory_manager.clone(), encryption_service.clone());
+
         // Initialize authentication service
         let auth_service = AgentAuthService::new(
             auth_client,
             config_service.clone(),
-            shared_token_service.clone()
+            shared_token_service.clone(),
         );
-        
+
         // Initialize authentication processor
-        let auth_processor = InitialAuthenticationProcessor::new(
-            auth_service.clone(),
-            config_service.clone()
-        );
+        let auth_processor =
+            InitialAuthenticationProcessor::new(auth_service.clone(), config_service.clone());
 
         // Initialize proactive token refresh run manager (keeps shared_token.enc valid
         // independent of NATS reconnects)
         let token_refresh_run_manager = TokenRefreshRunManager::new(
             auth_service.clone(),
             config_service.clone(),
-            deactivation_service.clone()
+            deactivation_service.clone(),
         );
 
         // Initialize NATS connection manager
         let ws_url = format!("wss://{}", initial_configuration_service.get_server_url()?);
-        let tls_config_provider = LocalTlsConfigProvider::new(initial_configuration_service.clone());
+        let tls_config_provider =
+            LocalTlsConfigProvider::new(initial_configuration_service.clone());
         let nats_connection_manager = NatsConnectionManager::new(
             ws_url,
             config_service.clone(),
@@ -294,18 +295,16 @@ impl Client {
             tls_config_provider,
             deactivation_service.clone(),
         );
-        
+
         // Initialize tool agent file client
-        let tool_agent_file_client = ToolAgentFileClient::new(
-            download_client.clone(),
-            http_url.clone(),
-        );
+        let tool_agent_file_client =
+            ToolAgentFileClient::new(download_client.clone(), http_url.clone());
 
         // Initialize tool API client
         let tool_api_client = ToolApiClient::new(
             download_client.clone(),
             http_url.clone(),
-            config_service.clone()
+            config_service.clone(),
         );
 
         let initial_key_service = Arc::new(InitialKeyService::new(
@@ -324,16 +323,23 @@ impl Client {
         let nats_message_publisher = NatsMessagePublisher::new(nats_connection_manager.clone());
 
         // Initialize installed agent message publisher
-        let installed_agent_message_publisher = InstalledAgentMessagePublisher::new(nats_message_publisher.clone());
+        let installed_agent_message_publisher =
+            InstalledAgentMessagePublisher::new(nats_message_publisher.clone());
 
         // Initialize tool connection message publisher
-        let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
+        let tool_connection_message_publisher =
+            ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
 
         // Initialize tool command params resolver
-        let tool_command_params_resolver = ToolCommandParamsResolver::new(directory_manager.clone(), initial_configuration_service.clone(), config_service.clone());
+        let tool_command_params_resolver = ToolCommandParamsResolver::new(
+            directory_manager.clone(),
+            initial_configuration_service.clone(),
+            config_service.clone(),
+        );
 
         // Initialize tool URL params resolver
-        let tool_url_params_resolver = ToolUrlParamsResolver::new(initial_configuration_service.clone());
+        let tool_url_params_resolver =
+            ToolUrlParamsResolver::new(initial_configuration_service.clone());
 
         // Initialize tool kill service
         let tool_kill_service = ToolKillService::new();
@@ -379,17 +385,19 @@ impl Client {
         );
 
         // Initialize OpenFrame client info service
-        let openframe_client_info_service = OpenFrameClientInfoService::new(directory_manager.clone())
-            .context("Failed to initialize OpenFrame client info service")?;
+        let openframe_client_info_service =
+            OpenFrameClientInfoService::new(directory_manager.clone())
+                .context("Failed to initialize OpenFrame client info service")?;
 
         // Initialize GitHub download service (used by update and installation services)
-        let github_download_service = GithubDownloadService::new(download_client.clone(), DmgExtractor::new());
+        let github_download_service =
+            GithubDownloadService::new(download_client.clone(), DmgExtractor::new());
 
         // Initialize update state and cleanup services (needed by update service)
         let update_state_service = UpdateStateService::new(directory_manager.clone())
             .context("Failed to initialize update state service")?;
-        let update_cleanup_service = UpdateCleanupService::new()
-            .context("Failed to initialize update cleanup service")?;
+        let update_cleanup_service =
+            UpdateCleanupService::new().context("Failed to initialize update cleanup service")?;
 
         let last_known_good_service = LastKnownGoodService::new(directory_manager.clone())
             .context("Failed to initialize last-known-good service")?;
@@ -465,7 +473,7 @@ impl Client {
         let openframe_client_update_listener = OpenFrameClientUpdateListener::new(
             nats_connection_manager.clone(),
             openframe_client_update_service,
-            config_service.clone()
+            config_service.clone(),
         );
 
         // Initialize tool agent update listener
@@ -484,7 +492,9 @@ impl Client {
         let execution_semaphore = Arc::new(tokio::sync::Semaphore::new(execution_concurrency));
 
         let result_store = Arc::new(ResultStore::open_or_degrade(
-            directory_manager.secured_dir().join("scheduled_outbox.redb"),
+            directory_manager
+                .secured_dir()
+                .join("scheduled_outbox.redb"),
         ));
         let flush_notify = Arc::new(tokio::sync::Notify::new());
         let result_outbox_run_manager = ResultOutboxRunManager::new(
@@ -524,11 +534,10 @@ impl Client {
             );
 
         // Initialize machine heartbeat publisher and run manager
-        let machine_heartbeat_publisher = MachineHeartbeatPublisher::new(
-            nats_message_publisher.clone(),
-            config_service.clone()
-        );
-        let machine_heartbeat_run_manager = MachineHeartbeatRunManager::new(machine_heartbeat_publisher);
+        let machine_heartbeat_publisher =
+            MachineHeartbeatPublisher::new(nats_message_publisher.clone(), config_service.clone());
+        let machine_heartbeat_run_manager =
+            MachineHeartbeatRunManager::new(machine_heartbeat_publisher);
 
         // Initialize update handler service
         let update_handler_service = UpdateHandlerService::new(
@@ -578,9 +587,11 @@ impl Client {
         // Tenant-gone supervisor: stops/restarts tools and self-uninstalls off the detection path.
         // Started first so its commands are consumed even if the startup auth loop (which itself
         // feeds the 410s) blocks below.
-        self.deactivation_service.start(self.tool_run_manager.clone());
+        self.deactivation_service
+            .start(self.tool_run_manager.clone());
 
-        if let Err(e) = self.openframe_client_info_service
+        if let Err(e) = self
+            .openframe_client_info_service
             .reconcile_version(env!("OPENFRAME_VERSION"))
             .await
         {
@@ -606,7 +617,9 @@ impl Client {
             &self.agent_configuration_service,
             &self.installed_tools_service,
             &self.directory_manager,
-        )?.start().await?;
+        )?
+        .start()
+        .await?;
         info!("NATS log streaming initialized successfully");
 
         self.registration_processor.process().await?;

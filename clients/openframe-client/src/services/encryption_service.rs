@@ -1,15 +1,14 @@
 use aes_gcm::{
-    aead::{Aead, KeyInit, OsRng, generic_array::GenericArray, rand_core::RngCore},
+    aead::{generic_array::GenericArray, rand_core::RngCore, Aead, KeyInit, OsRng},
     Aes256Gcm,
 };
 use anyhow::Result;
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 
 #[derive(Clone)]
 pub struct EncryptionService;
 
 impl EncryptionService {
-
     // TODO: use generated key
     const KEY: &'static str = "12345678901234567890123456789012";
 
@@ -25,7 +24,8 @@ impl EncryptionService {
         OsRng.fill_bytes(&mut nonce_bytes);
         let nonce = GenericArray::from_slice(&nonce_bytes);
 
-        let ciphertext = key.encrypt(nonce, data.as_bytes())
+        let ciphertext = key
+            .encrypt(nonce, data.as_bytes())
             .map_err(|e| anyhow::anyhow!("Failed to encrypt data: {}", e))?;
 
         let mut combined = nonce_bytes.to_vec();
@@ -34,4 +34,4 @@ impl EncryptionService {
         let base64_encoded = general_purpose::STANDARD.encode(combined);
         Ok(base64_encoded)
     }
-} 
+}

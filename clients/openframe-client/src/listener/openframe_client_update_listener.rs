@@ -1,25 +1,21 @@
+use crate::config::update_config::{
+    CONSUMER_ACK_WAIT_SECS, CONSUMER_CYCLE_PAUSE_MS, CONSUMER_MAX_DELIVER,
+    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, INITIAL_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS,
+    RECONNECTION_DELAY_MS,
+};
+use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
 use crate::services::AgentConfigurationService;
-use crate::config::update_config::{
-    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
-    INITIAL_RETRY_DELAY_MS,
-    MAX_RETRY_DELAY_MS,
-    CONSUMER_CYCLE_PAUSE_MS,
-    RECONNECTION_DELAY_MS,
-    CONSUMER_ACK_WAIT_SECS,
-    CONSUMER_MAX_DELIVER,
-};
-use async_nats::jetstream::consumer::PushConsumer;
-use async_nats::jetstream::consumer::push;
-use async_nats::jetstream::consumer::DeliverPolicy;
-use async_nats::jetstream::Message;
-use tokio::time::Duration;
 use anyhow::Result;
 use async_nats::jetstream;
+use async_nats::jetstream::consumer::push;
+use async_nats::jetstream::consumer::DeliverPolicy;
+use async_nats::jetstream::consumer::PushConsumer;
+use async_nats::jetstream::Message;
 use futures::StreamExt;
+use tokio::time::Duration;
 use tracing::{error, info, warn};
-use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 
 #[derive(Clone)]
 pub struct OpenFrameClientUpdateListener {
@@ -29,7 +25,6 @@ pub struct OpenFrameClientUpdateListener {
 }
 
 impl OpenFrameClientUpdateListener {
-
     const STREAM_NAME: &'static str = "CLIENT_UPDATE";
 
     pub fn new(
@@ -74,9 +69,7 @@ impl OpenFrameClientUpdateListener {
         let machine_id = self.config_service.get_machine_id()?;
 
         loop {
-            let client = self.nats_connection_manager
-                .get_client()
-                .await?;
+            let client = self.nats_connection_manager.get_client().await?;
             let mut reconnect_rx = self.nats_connection_manager.subscribe_reconnect();
             let js = jetstream::new((*client).clone());
 
@@ -117,29 +110,48 @@ impl OpenFrameClientUpdateListener {
         let payload = String::from_utf8_lossy(&message.payload);
         info!("Received OpenFrame client update message: {:?}", payload);
 
-        let client_update_message: OpenFrameClientUpdateMessage = match serde_json::from_str(&payload) {
-            Ok(msg) => msg,
-            Err(e) => {
-                error!("Failed to parse client update message: {:#}", e);
-                if let Err(ack_err) = message.ack().await {
-                    warn!("Failed to ack malformed message: {}", ack_err);
+        let client_update_message: OpenFrameClientUpdateMessage =
+            match serde_json::from_str(&payload) {
+                Ok(msg) => msg,
+                Err(e) => {
+                    error!("Failed to parse client update message: {:#}", e);
+                    if let Err(ack_err) = message.ack().await {
+                        warn!("Failed to ack malformed message: {}", ack_err);
+                    }
+                    return Ok(());
                 }
-                return Ok(());
-            }
-        };
+            };
 
         let version = client_update_message.version.clone();
 
-        match self.openframe_client_update_service.process_update(client_update_message).await {
+        match self
+            .openframe_client_update_service
+            .process_update(client_update_message)
+            .await
+        {
             Ok(_) => {
-                info!("Acknowledging client update message for version: {}", version);
-                message.ack().await
+                info!(
+                    "Acknowledging client update message for version: {}",
+                    version
+                );
+                message
+                    .ack()
+                    .await
                     .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-                info!("Client update message acknowledged for version: {}", version);
+                info!(
+                    "Client update message acknowledged for version: {}",
+                    version
+                );
             }
             Err(e) => {
-                error!("Failed to process client update message for version {}: {:#}", version, e);
-                info!("Leaving message unacked for potential redelivery: version {}", version);
+                error!(
+                    "Failed to process client update message for version {}: {:#}",
+                    version, e
+                );
+                info!(
+                    "Leaving message unacked for potential redelivery: version {}",
+                    version
+                );
             }
         }
 
@@ -157,21 +169,35 @@ impl OpenFrameClientUpdateListener {
             for attempt in 1..=CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
                 info!(
                     "Creating consumer for stream {} (cycle {}, attempt {}/{})",
-                    Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
+                    Self::STREAM_NAME,
+                    cycle,
+                    attempt,
+                    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
                 );
 
-                match js.create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME).await {
+                match js
+                    .create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME)
+                    .await
+                {
                     Ok(consumer) => {
                         info!("Consumer ready for stream: {}", Self::STREAM_NAME);
                         return consumer;
                     }
                     Err(e) => {
                         let error_msg = format!("{:?}", e);
-                        if error_msg.contains("consumer name already in use") || error_msg.contains("10013") {
+                        if error_msg.contains("consumer name already in use")
+                            || error_msg.contains("10013")
+                        {
                             warn!("Consumer already exists, attempting to get existing consumer");
                             let durable_name = Self::build_durable_name(machine_id);
-                            if let Ok(existing_consumer) = js.get_consumer_from_stream(Self::STREAM_NAME, &durable_name).await {
-                                info!("Retrieved existing consumer for stream: {}", Self::STREAM_NAME);
+                            if let Ok(existing_consumer) = js
+                                .get_consumer_from_stream(Self::STREAM_NAME, &durable_name)
+                                .await
+                            {
+                                info!(
+                                    "Retrieved existing consumer for stream: {}",
+                                    Self::STREAM_NAME
+                                );
                                 return existing_consumer;
                             }
                         }
@@ -195,7 +221,9 @@ impl OpenFrameClientUpdateListener {
 
             info!(
                 "All {} attempts in cycle {} failed. Pausing {} seconds before next cycle...",
-                CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, cycle, CONSUMER_CYCLE_PAUSE_MS / 1000
+                CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
+                cycle,
+                CONSUMER_CYCLE_PAUSE_MS / 1000
             );
             tokio::time::sleep(Duration::from_millis(CONSUMER_CYCLE_PAUSE_MS)).await;
         }
@@ -206,7 +234,10 @@ impl OpenFrameClientUpdateListener {
         let deliver_subject = Self::build_deliver_subject(machine_id);
         let durable_name = Self::build_durable_name(machine_id);
 
-        info!("Consumer configuration - filter subject: {}, deliver subject: {}, durable name: {}", filter_subject, deliver_subject, durable_name);
+        info!(
+            "Consumer configuration - filter subject: {}, deliver subject: {}, durable name: {}",
+            filter_subject, deliver_subject, durable_name
+        );
 
         push::Config {
             filter_subject,

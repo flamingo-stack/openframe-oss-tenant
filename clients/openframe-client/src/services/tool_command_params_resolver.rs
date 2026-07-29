@@ -1,13 +1,12 @@
+use crate::platform::DirectoryManager;
+use crate::services::{AgentConfigurationService, InitialConfigurationService};
 use anyhow::Result;
 use regex::Regex;
 use std::sync::LazyLock;
-use crate::platform::DirectoryManager;
-use crate::services::{AgentConfigurationService, InitialConfigurationService};
 
 /// Regex for matching assets path placeholders like ${client.assetsPath.osquery}
-static ASSETS_PATH_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\$\{client\.assetPath\.([^}]+)\}").unwrap()
-});
+static ASSETS_PATH_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\$\{client\.assetPath\.([^}]+)\}").unwrap());
 
 #[derive(Clone)]
 pub struct ToolCommandParamsResolver {
@@ -35,7 +34,10 @@ impl ToolCommandParamsResolver {
     }
 
     pub fn process(&self, tool_agent_id: &str, command_args: Vec<String>) -> Result<Vec<String>> {
-        let server_url = format!("https://{}", self.initial_configuration_service.get_server_url()?);
+        let server_url = format!(
+            "https://{}",
+            self.initial_configuration_service.get_server_url()?
+        );
         let token_path = self.build_token_path();
         let machine_id = self.agent_configuration_service.get_machine_id()?;
 
@@ -44,7 +46,10 @@ impl ToolCommandParamsResolver {
             // Resolve standard placeholders
             .map(|arg| {
                 arg.replace(Self::SERVER_URL_PLACEHOLDER, &server_url)
-                    .replace(Self::OPENFRAME_SECRET_PLACEHOLDER, "12345678901234567890123456789012")
+                    .replace(
+                        Self::OPENFRAME_SECRET_PLACEHOLDER,
+                        "12345678901234567890123456789012",
+                    )
                     .replace(Self::OPENFRAME_TOKEN_PATH_PLACEHOLDER, &token_path)
                     .replace(Self::MACHINE_ID_PLACEHOLDER, &machine_id)
             })
@@ -62,12 +67,14 @@ impl ToolCommandParamsResolver {
     }
 
     fn process_assets_placeholders(&self, arg: &str, tool_agent_id: &str) -> String {
-        ASSETS_PATH_REGEX.replace_all(arg, |caps: &regex::Captures| {
-            let asset_name = &caps[1];
-            self.directory_manager
-                .get_asset_path(tool_agent_id, asset_name, true) // Assets referenced in commands are typically executable
-                .to_string_lossy()
-                .into_owned()
-        }).to_string()
+        ASSETS_PATH_REGEX
+            .replace_all(arg, |caps: &regex::Captures| {
+                let asset_name = &caps[1];
+                self.directory_manager
+                    .get_asset_path(tool_agent_id, asset_name, true) // Assets referenced in commands are typically executable
+                    .to_string_lossy()
+                    .into_owned()
+            })
+            .to_string()
     }
 }

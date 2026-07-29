@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use std::fs;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 use crate::models::tool_connection::ToolConnection;
 use crate::platform::directories::DirectoryManager;
@@ -13,7 +13,9 @@ pub struct ToolConnectionService {
 impl ToolConnectionService {
     /// Creates new service storing data in secured directory file `tool_connections.json`
     pub fn new(directory_manager: DirectoryManager) -> Result<Self> {
-        let path = directory_manager.secured_dir().join("tool_connections.json");
+        let path = directory_manager
+            .secured_dir()
+            .join("tool_connections.json");
         directory_manager
             .ensure_directories()
             .with_context(|| "Failed to ensure secured directory exists")?;
@@ -24,7 +26,10 @@ impl ToolConnectionService {
     pub async fn save(&self, connection: ToolConnection) -> Result<()> {
         let mut list = self.get_all().await?;
 
-        if let Some(existing) = list.iter_mut().find(|c| c.tool_agent_id == connection.tool_agent_id) {
+        if let Some(existing) = list
+            .iter_mut()
+            .find(|c| c.tool_agent_id == connection.tool_agent_id)
+        {
             *existing = connection;
         } else {
             list.push(connection);
@@ -43,8 +48,9 @@ impl ToolConnectionService {
         if !self.file_path.exists() {
             return Ok(Vec::new());
         }
-        let json = fs::read_to_string(&self.file_path)
-            .with_context(|| format!("Failed to read tool connections file: {:?}", self.file_path))?;
+        let json = fs::read_to_string(&self.file_path).with_context(|| {
+            format!("Failed to read tool connections file: {:?}", self.file_path)
+        })?;
         let list: Vec<ToolConnection> = serde_json::from_str(&json)
             .context("Failed to deserialize tool connections from JSON")?;
         Ok(list)
@@ -55,7 +61,7 @@ impl ToolConnectionService {
         let mut list = self.get_all().await?;
         let initial_len = list.len();
         list.retain(|c| c.tool_agent_id != tool_agent_id);
-        
+
         if list.len() != initial_len {
             self.persist(&list).await?;
             Ok(true)
@@ -67,8 +73,12 @@ impl ToolConnectionService {
     async fn persist(&self, list: &[ToolConnection]) -> Result<()> {
         let json = serde_json::to_string_pretty(list)
             .context("Failed to serialize tool connections to JSON")?;
-        fs::write(&self.file_path, json)
-            .with_context(|| format!("Failed to write tool connections file: {:?}", self.file_path))?;
+        fs::write(&self.file_path, json).with_context(|| {
+            format!(
+                "Failed to write tool connections file: {:?}",
+                self.file_path
+            )
+        })?;
         Ok(())
     }
 }

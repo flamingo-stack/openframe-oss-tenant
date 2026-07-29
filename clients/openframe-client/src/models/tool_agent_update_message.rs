@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::download_configuration::DownloadConfiguration;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

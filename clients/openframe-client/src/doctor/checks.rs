@@ -8,10 +8,18 @@ use crate::platform::permissions::PermissionUtils;
 
 pub fn check_required_args(params: &InstallConfigParams) -> CheckResult {
     let mut missing = Vec::new();
-    if params.server_url.as_ref().map_or(true, |s| s.trim().is_empty()) {
+    if params
+        .server_url
+        .as_ref()
+        .map_or(true, |s| s.trim().is_empty())
+    {
         missing.push("--serverUrl");
     }
-    if params.initial_key.as_ref().map_or(true, |s| s.trim().is_empty()) {
+    if params
+        .initial_key
+        .as_ref()
+        .map_or(true, |s| s.trim().is_empty())
+    {
         missing.push("--initialKey");
     }
     if params.org_id.as_ref().map_or(true, |s| s.trim().is_empty()) {
@@ -19,7 +27,10 @@ pub fn check_required_args(params: &InstallConfigParams) -> CheckResult {
     }
 
     if missing.is_empty() {
-        CheckResult::pass(CheckCategory::Command, "Install command: all required arguments provided")
+        CheckResult::pass(
+            CheckCategory::Command,
+            "Install command: all required arguments provided",
+        )
     } else {
         CheckResult::fail(
             CheckCategory::Command,
@@ -56,7 +67,10 @@ pub fn check_dir_writable(path: &Path, label: &str) -> CheckResult {
         return CheckResult::fail(
             CheckCategory::Disk,
             &name,
-            format!("Path {} does not exist and has no accessible parent.", path.display()),
+            format!(
+                "Path {} does not exist and has no accessible parent.",
+                path.display()
+            ),
         );
     };
 
@@ -69,7 +83,10 @@ pub fn check_dir_writable(path: &Path, label: &str) -> CheckResult {
         Err(_) => CheckResult::fail(
             CheckCategory::Disk,
             &name,
-            format!("Cannot write to {}. Please check directory permissions.", path.display()),
+            format!(
+                "Cannot write to {}. Please check directory permissions.",
+                path.display()
+            ),
         ),
     }
 }
@@ -131,7 +148,10 @@ pub fn check_dns_resolve(server_url: &str) -> CheckResult {
         .unwrap_or(false);
 
     if resolved {
-        CheckResult::pass(CheckCategory::Network, &format!("Network: DNS resolves {}", host))
+        CheckResult::pass(
+            CheckCategory::Network,
+            &format!("Network: DNS resolves {}", host),
+        )
     } else {
         CheckResult::fail(
             CheckCategory::Network,
@@ -163,7 +183,11 @@ pub fn check_tcp_connect(server_url: &str) -> CheckResult {
             if connected {
                 CheckResult::pass(
                     CheckCategory::Network,
-                    &format!("Network: TCP {}:{} reachable", strip_port(host), port_display),
+                    &format!(
+                        "Network: TCP {}:{} reachable",
+                        strip_port(host),
+                        port_display
+                    ),
                 )
             } else {
                 CheckResult::warn(

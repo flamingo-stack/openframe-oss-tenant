@@ -1,26 +1,22 @@
-use crate::listener::client_update_gate::park_or_dispatch;
-use crate::services::nats_connection_manager::NatsConnectionManager;
-use crate::services::tool_restart_service::ToolRestartService;
-use crate::services::tool_restart_service::RestartOutcome;
-use crate::services::tool_run_manager::ToolRunManager;
-use crate::services::AgentConfigurationService;
-use crate::models::ToolRestartMessage;
 use crate::config::update_config::{
-    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
-    INITIAL_RETRY_DELAY_MS,
-    MAX_RETRY_DELAY_MS,
-    CONSUMER_CYCLE_PAUSE_MS,
-    RECONNECTION_DELAY_MS,
-    CONSUMER_ACK_WAIT_SECS,
+    CONSUMER_ACK_WAIT_SECS, CONSUMER_CYCLE_PAUSE_MS, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
+    INITIAL_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS, RECONNECTION_DELAY_MS,
     RESTART_CONSUMER_MAX_DELIVER,
 };
-use async_nats::jetstream::consumer::PushConsumer;
-use async_nats::jetstream::consumer::push;
-use async_nats::jetstream::Message;
-use tokio::time::Duration;
+use crate::listener::client_update_gate::park_or_dispatch;
+use crate::models::ToolRestartMessage;
+use crate::services::nats_connection_manager::NatsConnectionManager;
+use crate::services::tool_restart_service::RestartOutcome;
+use crate::services::tool_restart_service::ToolRestartService;
+use crate::services::tool_run_manager::ToolRunManager;
+use crate::services::AgentConfigurationService;
 use anyhow::Result;
 use async_nats::jetstream;
+use async_nats::jetstream::consumer::push;
+use async_nats::jetstream::consumer::PushConsumer;
+use async_nats::jetstream::Message;
 use futures::StreamExt;
+use tokio::time::Duration;
 use tracing::{error, info, warn};
 
 #[derive(Clone)]
@@ -32,7 +28,6 @@ pub struct ToolRestartMessageListener {
 }
 
 impl ToolRestartMessageListener {
-
     const STREAM_NAME: &'static str = "TOOL_INSTALLATION";
 
     pub fn new(
@@ -78,9 +73,7 @@ impl ToolRestartMessageListener {
         let machine_id = self.config_service.get_machine_id()?;
 
         loop {
-            let client = self.nats_connection_manager
-                .get_client()
-                .await?;
+            let client = self.nats_connection_manager.get_client().await?;
             let mut reconnect_rx = self.nats_connection_manager.subscribe_reconnect();
             let js = jetstream::new((*client).clone());
 
@@ -140,16 +133,26 @@ impl ToolRestartMessageListener {
             self.tool_run_manager.clone(),
             message,
             label,
-            move |msg| async move { listener.dispatch(msg, tool_agent_id).await; },
-        ).await;
+            move |msg| async move {
+                listener.dispatch(msg, tool_agent_id).await;
+            },
+        )
+        .await;
 
         Ok(())
     }
 
     async fn dispatch(&self, message: Message, tool_agent_id: String) {
-        let ack_message = match self.tool_restart_service.restart_guarded(&tool_agent_id).await {
+        let ack_message = match self
+            .tool_restart_service
+            .restart_guarded(&tool_agent_id)
+            .await
+        {
             Ok(RestartOutcome::Busy) => {
-                info!("Tool {} busy with another operation, deferring restart for redelivery", tool_agent_id);
+                info!(
+                    "Tool {} busy with another operation, deferring restart for redelivery",
+                    tool_agent_id
+                );
                 return;
             }
             Ok(RestartOutcome::Restarted) | Ok(RestartOutcome::NotInstalled) => true,
@@ -162,10 +165,16 @@ impl ToolRestartMessageListener {
         if ack_message {
             match message.ack().await {
                 Ok(_) => info!("Restart message acknowledged for tool: {}", tool_agent_id),
-                Err(e) => error!("Failed to ack restart message for tool {}: {}", tool_agent_id, e),
+                Err(e) => error!(
+                    "Failed to ack restart message for tool {}: {}",
+                    tool_agent_id, e
+                ),
             }
         } else {
-            info!("Leaving restart message unacked for potential redelivery: tool {}", tool_agent_id);
+            info!(
+                "Leaving restart message unacked for potential redelivery: tool {}",
+                tool_agent_id
+            );
         }
     }
 
@@ -180,21 +189,35 @@ impl ToolRestartMessageListener {
             for attempt in 1..=CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
                 info!(
                     "Creating restart consumer for stream {} (cycle {}, attempt {}/{})",
-                    Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
+                    Self::STREAM_NAME,
+                    cycle,
+                    attempt,
+                    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
                 );
 
-                match js.create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME).await {
+                match js
+                    .create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME)
+                    .await
+                {
                     Ok(consumer) => {
                         info!("Restart consumer created for stream: {}", Self::STREAM_NAME);
                         return consumer;
                     }
                     Err(e) => {
                         let error_msg = format!("{:?}", e);
-                        if error_msg.contains("consumer name already in use") || error_msg.contains("10013") {
+                        if error_msg.contains("consumer name already in use")
+                            || error_msg.contains("10013")
+                        {
                             warn!("Restart consumer already exists, attempting to get existing consumer");
                             let durable_name = Self::build_durable_name(machine_id);
-                            if let Ok(existing_consumer) = js.get_consumer_from_stream(Self::STREAM_NAME, &durable_name).await {
-                                info!("Retrieved existing restart consumer for stream: {}", Self::STREAM_NAME);
+                            if let Ok(existing_consumer) = js
+                                .get_consumer_from_stream(Self::STREAM_NAME, &durable_name)
+                                .await
+                            {
+                                info!(
+                                    "Retrieved existing restart consumer for stream: {}",
+                                    Self::STREAM_NAME
+                                );
                                 return existing_consumer;
                             }
                         }
@@ -218,7 +241,9 @@ impl ToolRestartMessageListener {
 
             info!(
                 "All {} attempts in cycle {} failed. Pausing {} seconds before next cycle...",
-                CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, cycle, CONSUMER_CYCLE_PAUSE_MS / 1000
+                CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
+                cycle,
+                CONSUMER_CYCLE_PAUSE_MS / 1000
             );
             tokio::time::sleep(Duration::from_millis(CONSUMER_CYCLE_PAUSE_MS)).await;
         }

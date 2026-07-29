@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 use std::panic;
-use tracing::{info, warn, debug};
+use tracing::{debug, info, warn};
 
 #[derive(Clone)]
 pub struct DeviceDataFetcher;
@@ -80,7 +80,11 @@ impl DeviceDataFetcher {
         }
 
         let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if value.is_empty() { None } else { Some(value) }
+        if value.is_empty() {
+            None
+        } else {
+            Some(value)
+        }
     }
 
     pub fn get_agent_version(&self) -> Option<String> {
@@ -96,4 +100,4 @@ impl DeviceDataFetcher {
             "MAC_OS".to_string()
         }
     }
-} 
+}

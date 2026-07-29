@@ -1,21 +1,21 @@
-use anyhow::{Context, Result, anyhow};
-use tracing::{info, warn, error};
 use crate::config::update_config::ALLOW_DOWNGRADE;
-use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 use crate::models::openframe_client_info::ClientUpdateStatus;
-use crate::models::update_state::{UpdateState, UpdatePhase};
-use crate::service::FULL_SERVICE_NAME;
-use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
-use crate::services::github_download_service::GithubDownloadService;
-use crate::services::update_state_service::UpdateStateService;
-use crate::services::last_known_good_service::LastKnownGoodService;
+use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
+use crate::models::update_state::{UpdatePhase, UpdateState};
 use crate::platform::updater_launcher::{self, UpdaterParams};
+use crate::service::FULL_SERVICE_NAME;
+use crate::services::github_download_service::GithubDownloadService;
+use crate::services::last_known_good_service::LastKnownGoodService;
+use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::tool_run_manager::ToolRunManager;
+use crate::services::update_state_service::UpdateStateService;
+use anyhow::{anyhow, Context, Result};
+use semver::Version;
 use std::path::PathBuf;
-use uuid::Uuid;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use semver::Version;
+use tracing::{error, info, warn};
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct OpenFrameClientUpdateService {
@@ -54,14 +54,19 @@ impl OpenFrameClientUpdateService {
 
         if self.tool_run_manager.any_tool_op_in_progress().await {
             warn!("Tool operation in progress, deferring client update to version {} (will redeliver)", requested_version);
-            return Err(anyhow!("Tool operation in progress, deferring client update"));
+            return Err(anyhow!(
+                "Tool operation in progress, deferring client update"
+            ));
         }
 
         // 1. Check if update is already in progress (race condition protection)
         {
             let mut update_lock = self.update_in_progress.lock().await;
             if *update_lock {
-                warn!("Update already in progress, ignoring duplicate request for version: {}", requested_version);
+                warn!(
+                    "Update already in progress, ignoring duplicate request for version: {}",
+                    requested_version
+                );
                 return Err(anyhow!("Update already in progress"));
             }
             // Set flag to indicate update is starting
@@ -97,7 +102,10 @@ impl OpenFrameClientUpdateService {
         let canonical_version = requested_semver.to_string();
 
         if canonical_version == env!("OPENFRAME_VERSION") {
-            info!("Already running version {}, ignoring update request", canonical_version);
+            info!(
+                "Already running version {}, ignoring update request",
+                canonical_version
+            );
             self.tool_run_manager.clear_client_update_pending().await;
             return Ok(());
         }
@@ -106,25 +114,37 @@ impl OpenFrameClientUpdateService {
             let anchor = match self.last_known_good_service.load().await {
                 Ok(anchor) => anchor,
                 Err(e) => {
-                    warn!("Failed to load last-known-good anchor, skipping downgrade guard: {:#}", e);
+                    warn!(
+                        "Failed to load last-known-good anchor, skipping downgrade guard: {:#}",
+                        e
+                    );
                     None
                 }
             };
             if let Some(anchor) = anchor {
                 match Self::parse_version(&anchor) {
                     Ok(anchor_semver) if requested_semver < anchor_semver => {
-                        warn!("refusing downgrade to {} — anchored at {}", requested_version, anchor);
+                        warn!(
+                            "refusing downgrade to {} — anchored at {}",
+                            requested_version, anchor
+                        );
                         self.tool_run_manager.clear_client_update_pending().await;
                         return Ok(());
                     }
                     Ok(_) => {}
-                    Err(e) => warn!("Failed to parse last-known-good anchor '{}': {:#}", anchor, e),
+                    Err(e) => warn!(
+                        "Failed to parse last-known-good anchor '{}': {:#}",
+                        anchor, e
+                    ),
                 }
             }
         }
 
         // 4. Log current version for informational purposes
-        let client_info = self.client_info_service.get().await
+        let client_info = self
+            .client_info_service
+            .get()
+            .await
             .context("Failed to get current client info")?;
 
         if !client_info.current_version.is_empty() {
@@ -133,17 +153,25 @@ impl OpenFrameClientUpdateService {
                 client_info.current_version, requested_version
             );
         } else {
-            info!("No current version set, installing version: {}", requested_version);
+            info!(
+                "No current version set, installing version: {}",
+                requested_version
+            );
         }
 
         // 5. Create update state for tracking
         let mut update_state = UpdateState::new(canonical_version.clone());
-        self.update_state_service.save(&update_state).await
+        self.update_state_service
+            .save(&update_state)
+            .await
             .context("Failed to save initial update state")?;
 
         // 6. Set update status to updating
         self.client_info_service
-            .set_update_status(ClientUpdateStatus::Updating, Some(canonical_version.clone()))
+            .set_update_status(
+                ClientUpdateStatus::Updating,
+                Some(canonical_version.clone()),
+            )
             .await
             .context("Failed to set update status")?;
 
@@ -157,7 +185,8 @@ impl OpenFrameClientUpdateService {
             error!("Update failed: {:#}", e);
 
             // Set status to Failed
-            if let Err(status_err) = self.client_info_service
+            if let Err(status_err) = self
+                .client_info_service
                 .set_update_status(ClientUpdateStatus::Failed, Some(canonical_version.clone()))
                 .await
             {
@@ -171,18 +200,28 @@ impl OpenFrameClientUpdateService {
     }
 
     /// Execute the actual update process
-    async fn execute_update(&self, message: &OpenFrameClientUpdateMessage, update_state: &mut UpdateState) -> Result<()> {
+    async fn execute_update(
+        &self,
+        message: &OpenFrameClientUpdateMessage,
+        update_state: &mut UpdateState,
+    ) -> Result<()> {
         // 1. Find the appropriate download configuration for current OS
-        let download_config = self.github_download_service.find_config_for_current_os(&message.download_configurations)
+        let download_config = self
+            .github_download_service
+            .find_config_for_current_os(&message.download_configurations)
             .context("Failed to find download configuration for current OS")?;
 
-        info!("Using download configuration for OS: {}", download_config.os);
+        info!(
+            "Using download configuration for OS: {}",
+            download_config.os
+        );
 
         // 2. Download and extract binary using GithubDownloadService
         update_state.set_phase(UpdatePhase::Downloading);
         self.update_state_service.save(update_state).await?;
 
-        let binary_bytes = match self.github_download_service
+        let binary_bytes = match self
+            .github_download_service
             .download_and_extract(download_config)
             .await
         {
@@ -195,7 +234,10 @@ impl OpenFrameClientUpdateService {
             }
         };
 
-        info!("Binary downloaded and extracted ({} bytes)", binary_bytes.len());
+        info!(
+            "Binary downloaded and extracted ({} bytes)",
+            binary_bytes.len()
+        );
 
         self.tool_run_manager.mark_client_update_pending().await;
 
@@ -208,7 +250,10 @@ impl OpenFrameClientUpdateService {
         update_state.set_phase(UpdatePhase::PreparingUpdater);
         self.update_state_service.save(update_state).await?;
 
-        let archive_path = match self.create_temp_archive(&binary_bytes, &download_config.target_file_name).await {
+        let archive_path = match self
+            .create_temp_archive(&binary_bytes, &download_config.target_file_name)
+            .await
+        {
             Ok(path) => path,
             Err(e) => {
                 error!("Failed to create archive: {:#}", e);
@@ -224,8 +269,8 @@ impl OpenFrameClientUpdateService {
         update_state.set_phase(UpdatePhase::UpdaterLaunched);
         self.update_state_service.save(update_state).await?;
 
-        let current_exe = std::env::current_exe()
-            .context("Failed to get current executable path")?;
+        let current_exe =
+            std::env::current_exe().context("Failed to get current executable path")?;
 
         let params = UpdaterParams {
             binary_path: archive_path.clone(),
@@ -233,9 +278,14 @@ impl OpenFrameClientUpdateService {
             service_name: FULL_SERVICE_NAME.to_string(),
             update_state_path: self.update_state_service.get_state_file_path(),
             target_version: update_state.target_version.clone(),
-            boot_marker_path: self.last_known_good_service.boot_marker_path().to_path_buf(),
+            boot_marker_path: self
+                .last_known_good_service
+                .boot_marker_path()
+                .to_path_buf(),
             lkg_path: self.last_known_good_service.reserve_path().to_path_buf(),
-            transcript_path: self.last_known_good_service.new_transcript_path(&update_state.target_version),
+            transcript_path: self
+                .last_known_good_service
+                .new_transcript_path(&update_state.target_version),
             rollback_only: false,
         };
 
@@ -245,7 +295,9 @@ impl OpenFrameClientUpdateService {
                 warn!("Failed to remove archive after deferring: {}", cleanup_err);
             }
             self.update_state_service.clear().await?;
-            return Err(anyhow!("Tool operation started during download, deferring client update"));
+            return Err(anyhow!(
+                "Tool operation started during download, deferring client update"
+            ));
         }
 
         let launch_result = updater_launcher::launch_updater(params).await;
@@ -255,7 +307,10 @@ impl OpenFrameClientUpdateService {
             error!("Failed to launch updater: {:#}", e);
             // Cleanup archive
             if let Err(cleanup_err) = std::fs::remove_file(&archive_path) {
-                warn!("Failed to remove archive after launch failure: {}", cleanup_err);
+                warn!(
+                    "Failed to remove archive after launch failure: {}",
+                    cleanup_err
+                );
             }
             // Clear update state
             self.update_state_service.clear().await?;
@@ -268,44 +323,47 @@ impl OpenFrameClientUpdateService {
         info!("Update process launched, service will be stopped by update script");
         Ok(())
     }
-    
+
     /// Creates a temporary ZIP archive containing the binary for the updater script
     #[cfg(windows)]
     async fn create_temp_archive(&self, binary_bytes: &[u8], binary_name: &str) -> Result<PathBuf> {
         use std::io::Write;
         use zip::write::{FileOptions, ZipWriter};
-        
+
         let temp_dir = std::env::temp_dir();
         let archive_path = temp_dir.join(format!("openframe-update-{}.zip", Uuid::new_v4()));
-        
-        let file = std::fs::File::create(&archive_path)
-            .context("Failed to create temporary ZIP file")?;
-        
+
+        let file =
+            std::fs::File::create(&archive_path).context("Failed to create temporary ZIP file")?;
+
         let mut zip = ZipWriter::new(file);
-        let options = FileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated);
-        
+        let options = FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+
         zip.start_file(binary_name, options)
             .context("Failed to start file in ZIP")?;
-        
+
         zip.write_all(binary_bytes)
             .context("Failed to write binary to ZIP")?;
-        
-        zip.finish()
-            .context("Failed to finalize ZIP archive")?;
-        
+
+        zip.finish().context("Failed to finalize ZIP archive")?;
+
         Ok(archive_path)
     }
-    
+
     /// On Unix, we can directly write the binary (no ZIP needed)
     #[cfg(unix)]
     async fn create_temp_archive(&self, binary_bytes: &[u8], binary_name: &str) -> Result<PathBuf> {
         let temp_dir = std::env::temp_dir();
-        let binary_path = temp_dir.join(format!("openframe-update-{}-{}", Uuid::new_v4(), binary_name));
-        
-        tokio::fs::write(&binary_path, binary_bytes).await
+        let binary_path = temp_dir.join(format!(
+            "openframe-update-{}-{}",
+            Uuid::new_v4(),
+            binary_name
+        ));
+
+        tokio::fs::write(&binary_path, binary_bytes)
+            .await
             .context("Failed to write binary file")?;
-        
+
         Ok(binary_path)
     }
 
@@ -315,14 +373,20 @@ impl OpenFrameClientUpdateService {
         // Remove 'v' prefix if present
         let version = version.trim().trim_start_matches('v');
 
-        Version::parse(version)
-            .with_context(|| format!("Failed to parse version: {}", version))
+        Version::parse(version).with_context(|| format!("Failed to parse version: {}", version))
     }
 
     /// Validate version format (basic semver check)
     fn is_valid_version(version: &str) -> bool {
         !version.is_empty()
-            && version.chars().next().map(|c| c.is_ascii_digit() || c == 'v').unwrap_or(false)
-            && version.trim_start_matches('v').chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '+')
+            && version
+                .chars()
+                .next()
+                .map(|c| c.is_ascii_digit() || c == 'v')
+                .unwrap_or(false)
+            && version
+                .trim_start_matches('v')
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '+')
     }
 }

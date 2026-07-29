@@ -1,17 +1,15 @@
-use anyhow::{Context, Result, anyhow};
-use tracing::{info, warn};
-use crate::models::download_configuration::DownloadConfiguration;
 use crate::config::update_config::{
-    MAX_DOWNLOAD_RETRIES,
-    DOWNLOAD_TIMEOUT_SECS,
-    MIN_BINARY_SIZE_BYTES,
+    DOWNLOAD_TIMEOUT_SECS, MAX_DOWNLOAD_RETRIES, MIN_BINARY_SIZE_BYTES,
 };
+use crate::models::download_configuration::DownloadConfiguration;
 use crate::platform::binary_writer;
-use reqwest::Client;
+use anyhow::{anyhow, Context, Result};
 use bytes::Bytes;
+use reqwest::Client;
 use std::io::Cursor;
 use std::path::Path;
 use tokio::time::Duration;
+use tracing::{info, warn};
 
 #[derive(Clone)]
 pub struct GithubDownloadService {
@@ -21,7 +19,10 @@ pub struct GithubDownloadService {
 
 impl GithubDownloadService {
     pub fn new(http_client: Client, dmg_extractor: crate::platform::DmgExtractor) -> Self {
-        Self { http_client, dmg_extractor }
+        Self {
+            http_client,
+            dmg_extractor,
+        }
     }
 
     /// Downloads and extracts agent binary from the given download configuration
@@ -30,7 +31,9 @@ impl GithubDownloadService {
         info!("Downloading from: {}", config.link);
 
         // Download the archive with retry
-        let archive_bytes = self.download_with_retry(&config.link).await
+        let archive_bytes = self
+            .download_with_retry(&config.link)
+            .await
             .with_context(|| format!("Failed to download from: {}", config.link))?;
 
         info!("Downloaded {} bytes", archive_bytes.len());
@@ -45,7 +48,10 @@ impl GithubDownloadService {
         }
 
         // Extract based on file extension
-        info!("Archive file_name: '{}', target_file_name: '{}'", config.file_name, config.target_file_name);
+        info!(
+            "Archive file_name: '{}', target_file_name: '{}'",
+            config.file_name, config.target_file_name
+        );
 
         let binary_bytes = if config.file_name.ends_with(".zip") {
             info!("Detected ZIP format, extracting...");
@@ -68,7 +74,11 @@ impl GithubDownloadService {
             ));
         }
 
-        info!("Extracted binary: {} ({} bytes)", config.target_file_name, binary_bytes.len());
+        info!(
+            "Extracted binary: {} ({} bytes)",
+            config.target_file_name,
+            binary_bytes.len()
+        );
 
         Ok(binary_bytes)
     }
@@ -78,12 +88,17 @@ impl GithubDownloadService {
         let mut last_error = None;
 
         for attempt in 1..=MAX_DOWNLOAD_RETRIES {
-            info!("Download attempt {}/{} for: {}", attempt, MAX_DOWNLOAD_RETRIES, url);
+            info!(
+                "Download attempt {}/{} for: {}",
+                attempt, MAX_DOWNLOAD_RETRIES, url
+            );
 
             match tokio::time::timeout(
                 Duration::from_secs(DOWNLOAD_TIMEOUT_SECS),
-                self.download(url)
-            ).await {
+                self.download(url),
+            )
+            .await
+            {
                 Ok(Ok(bytes)) => {
                     info!("Download successful on attempt {}", attempt);
                     return Ok(bytes);
@@ -98,8 +113,10 @@ impl GithubDownloadService {
 
                         match tokio::time::timeout(
                             Duration::from_secs(DOWNLOAD_TIMEOUT_SECS),
-                            self.download(&cdn_url)
-                        ).await {
+                            self.download(&cdn_url),
+                        )
+                        .await
+                        {
                             Ok(Ok(bytes)) => {
                                 info!("Successfully downloaded from jsDelivr CDN");
                                 return Ok(bytes);
@@ -124,7 +141,8 @@ impl GithubDownloadService {
                     last_error = Some(e);
                 }
                 Err(_) => {
-                    let timeout_err = anyhow!("Download timeout after {} seconds", DOWNLOAD_TIMEOUT_SECS);
+                    let timeout_err =
+                        anyhow!("Download timeout after {} seconds", DOWNLOAD_TIMEOUT_SECS);
                     warn!("Download attempt {} timed out", attempt);
                     last_error = Some(timeout_err);
                 }
@@ -138,7 +156,8 @@ impl GithubDownloadService {
             }
         }
 
-        Err(last_error.unwrap_or_else(|| anyhow!("Download failed after {} attempts", MAX_DOWNLOAD_RETRIES)))
+        Err(last_error
+            .unwrap_or_else(|| anyhow!("Download failed after {} attempts", MAX_DOWNLOAD_RETRIES)))
     }
 
     /// Convert GitHub release URL to jsDelivr CDN URL
@@ -153,12 +172,13 @@ impl GithubDownloadService {
 
     /// Downloads file from URL and returns bytes
     async fn download(&self, url: &str) -> Result<Bytes> {
-        let response = self.http_client
+        let response = self
+            .http_client
             .get(url)
             .send()
             .await
             .context("Failed to send download request")?;
-        
+
         if !response.status().is_success() {
             return Err(anyhow!(
                 "Download failed with status: {} - URL: {}",
@@ -166,10 +186,12 @@ impl GithubDownloadService {
                 url
             ));
         }
-        
-        let bytes = response.bytes().await
+
+        let bytes = response
+            .bytes()
+            .await
             .context("Failed to read response bytes")?;
-        
+
         Ok(bytes)
     }
 
@@ -179,35 +201,41 @@ impl GithubDownloadService {
         use zip::ZipArchive;
 
         let cursor = Cursor::new(archive_bytes);
-        let mut archive = ZipArchive::new(cursor)
-            .context("Failed to read ZIP archive")?;
-        
+        let mut archive = ZipArchive::new(cursor).context("Failed to read ZIP archive")?;
+
         // Search for the target file in the archive
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i)
-                .context("Failed to read ZIP entry")?;
-            
+            let mut file = archive.by_index(i).context("Failed to read ZIP entry")?;
+
             let file_name = file.name().to_string();
 
             // Check if this is the target file (case-insensitive, check basename)
-            if file_name.to_lowercase().ends_with(&target_filename.to_lowercase()) {
+            if file_name
+                .to_lowercase()
+                .ends_with(&target_filename.to_lowercase())
+            {
                 info!("Found target file: {}", file_name);
-                
+
                 let mut buffer = Vec::new();
-                std::io::copy(&mut file, &mut buffer)
-                    .context("Failed to read file from ZIP")?;
-                
+                std::io::copy(&mut file, &mut buffer).context("Failed to read file from ZIP")?;
+
                 return Ok(Bytes::from(buffer));
             }
         }
-        
-        Err(anyhow!("File '{}' not found in ZIP archive", target_filename))
+
+        Err(anyhow!(
+            "File '{}' not found in ZIP archive",
+            target_filename
+        ))
     }
 
     /// Placeholder for non-Windows platforms
     #[cfg(not(target_os = "windows"))]
     fn extract_from_zip(&self, _archive_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
-        Err(anyhow!("ZIP extraction not supported on this platform. Expected tar.gz for {}", target_filename))
+        Err(anyhow!(
+            "ZIP extraction not supported on this platform. Expected tar.gz for {}",
+            target_filename
+        ))
     }
 
     /// Extracts a file from tar.gz archive
@@ -216,7 +244,11 @@ impl GithubDownloadService {
         use flate2::read::GzDecoder;
         use tar::Archive;
 
-        info!("Extracting {} from tar.gz archive ({} bytes)", target_filename, archive_bytes.len());
+        info!(
+            "Extracting {} from tar.gz archive ({} bytes)",
+            target_filename,
+            archive_bytes.len()
+        );
 
         let cursor = Cursor::new(archive_bytes);
         let decoder = GzDecoder::new(cursor);
@@ -231,7 +263,8 @@ impl GithubDownloadService {
             let entry_size = entry.size();
             info!("Found file in tar.gz: {} ({} bytes)", file_name, entry_size);
 
-            let basename = path.file_name()
+            let basename = path
+                .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
 
@@ -247,18 +280,28 @@ impl GithubDownloadService {
             }
         }
 
-        Err(anyhow!("File '{}' not found in tar.gz archive", target_filename))
+        Err(anyhow!(
+            "File '{}' not found in tar.gz archive",
+            target_filename
+        ))
     }
 
     /// Placeholder for Windows platform
     #[cfg(target_os = "windows")]
     fn extract_from_tar_gz(&self, _archive_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
-        Err(anyhow!("tar.gz extraction not supported on Windows. Expected ZIP for {}", target_filename))
+        Err(anyhow!(
+            "tar.gz extraction not supported on Windows. Expected ZIP for {}",
+            target_filename
+        ))
     }
 
     /// Finds the appropriate download configuration for the current OS
-    pub fn find_config_for_current_os<'a>(&self, configs: &'a [DownloadConfiguration]) -> Result<&'a DownloadConfiguration> {
-        configs.iter()
+    pub fn find_config_for_current_os<'a>(
+        &self,
+        configs: &'a [DownloadConfiguration],
+    ) -> Result<&'a DownloadConfiguration> {
+        configs
+            .iter()
             .find(|c| c.matches_current_os())
             .ok_or_else(|| anyhow!("No download configuration found for current OS"))
     }
@@ -272,10 +315,14 @@ impl GithubDownloadService {
     ) -> Result<Option<String>> {
         if config.is_folder_extraction() {
             let file_path = tool_folder_path.join(&config.target_file_name);
-            self.download_and_extract_all(config, tool_folder_path).await?;
+            self.download_and_extract_all(config, tool_folder_path)
+                .await?;
             binary_writer::set_executable_permissions(&file_path).await?;
             if !file_path.exists() {
-                warn!("Executable not found at {} after extraction", file_path.display());
+                warn!(
+                    "Executable not found at {} after extraction",
+                    file_path.display()
+                );
             }
             Ok(Some(config.target_file_name.clone()))
         } else {
@@ -287,10 +334,16 @@ impl GithubDownloadService {
 
     /// Downloads archive and extracts all contents to target path (macOS only).
     #[cfg(target_os = "macos")]
-    pub async fn download_and_extract_all(&self, config: &DownloadConfiguration, target_dir: &Path) -> Result<()> {
+    pub async fn download_and_extract_all(
+        &self,
+        config: &DownloadConfiguration,
+        target_dir: &Path,
+    ) -> Result<()> {
         info!("Downloading archive from: {}", config.link);
 
-        let archive_bytes = self.download_with_retry(&config.link).await
+        let archive_bytes = self
+            .download_with_retry(&config.link)
+            .await
             .with_context(|| format!("Failed to download from: {}", config.link))?;
 
         info!("Downloaded {} bytes", archive_bytes.len());
@@ -311,11 +364,15 @@ impl GithubDownloadService {
                 .components()
                 .next()
                 .map(|c| c.as_os_str().to_string_lossy().to_string());
-            self.dmg_extractor.extract_all(archive_bytes, target_dir, source_path.as_deref())
+            self.dmg_extractor
+                .extract_all(archive_bytes, target_dir, source_path.as_deref())
                 .await
                 .with_context(|| "Failed to extract DMG")?;
         } else {
-            return Err(anyhow!("Unsupported archive format for macOS: {}. Expected .tar.gz or .dmg", config.file_name));
+            return Err(anyhow!(
+                "Unsupported archive format for macOS: {}. Expected .tar.gz or .dmg",
+                config.file_name
+            ));
         }
 
         info!("Archive extracted to {}", target_dir.display());
@@ -323,17 +380,24 @@ impl GithubDownloadService {
     }
 
     #[cfg(not(target_os = "macos"))]
-    pub async fn download_and_extract_all(&self, config: &DownloadConfiguration, _target_dir: &Path) -> Result<()> {
-        Err(anyhow!("Archive extraction is only supported on macOS. Config: {}", config.file_name))
+    pub async fn download_and_extract_all(
+        &self,
+        config: &DownloadConfiguration,
+        _target_dir: &Path,
+    ) -> Result<()> {
+        Err(anyhow!(
+            "Archive extraction is only supported on macOS. Config: {}",
+            config.file_name
+        ))
     }
 
     /// Extracts all contents from tar.gz archive to target path (macOS only)
     #[cfg(target_os = "macos")]
     fn extract_all_from_tar_gz(&self, archive_bytes: Bytes, target_dir: &Path) -> Result<()> {
         use flate2::read::GzDecoder;
-        use tar::Archive;
         use std::fs;
         use std::os::unix::fs::PermissionsExt;
+        use tar::Archive;
 
         let cursor = Cursor::new(archive_bytes);
         let decoder = GzDecoder::new(cursor);
@@ -347,12 +411,14 @@ impl GithubDownloadService {
             let dest_path = target_dir.join(&path);
 
             if entry.header().entry_type().is_dir() {
-                fs::create_dir_all(&dest_path)
-                    .with_context(|| format!("Failed to create directory: {}", dest_path.display()))?;
+                fs::create_dir_all(&dest_path).with_context(|| {
+                    format!("Failed to create directory: {}", dest_path.display())
+                })?;
             } else {
                 if let Some(parent) = dest_path.parent() {
-                    fs::create_dir_all(parent)
-                        .with_context(|| format!("Failed to create parent directory: {}", parent.display()))?;
+                    fs::create_dir_all(parent).with_context(|| {
+                        format!("Failed to create parent directory: {}", parent.display())
+                    })?;
                 }
 
                 let mut file = std::fs::File::create(&dest_path)
@@ -376,4 +442,3 @@ impl GithubDownloadService {
         Ok(())
     }
 }
-

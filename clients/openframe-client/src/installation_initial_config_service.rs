@@ -63,7 +63,8 @@ impl InstallationInitialConfigService {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 return Err(anyhow!(
                     "'mkcert -CAROOT' failed with status {}: {}",
-                    output.status, stderr
+                    output.status,
+                    stderr
                 ));
             }
 
@@ -94,5 +95,3 @@ impl InstallationInitialConfigService {
         Ok(())
     }
 }
-
-

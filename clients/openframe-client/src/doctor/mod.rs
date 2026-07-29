@@ -32,19 +32,39 @@ pub struct CheckResult {
 
 impl CheckResult {
     pub fn pass(category: CheckCategory, name: &str) -> Self {
-        Self { category, status: CheckStatus::Pass, name: name.to_string(), hint: None }
+        Self {
+            category,
+            status: CheckStatus::Pass,
+            name: name.to_string(),
+            hint: None,
+        }
     }
 
     pub fn fail(category: CheckCategory, name: &str, hint: impl Into<String>) -> Self {
-        Self { category, status: CheckStatus::Fail, name: name.to_string(), hint: Some(hint.into()) }
+        Self {
+            category,
+            status: CheckStatus::Fail,
+            name: name.to_string(),
+            hint: Some(hint.into()),
+        }
     }
 
     pub fn warn(category: CheckCategory, name: &str, hint: impl Into<String>) -> Self {
-        Self { category, status: CheckStatus::Warn, name: name.to_string(), hint: Some(hint.into()) }
+        Self {
+            category,
+            status: CheckStatus::Warn,
+            name: name.to_string(),
+            hint: Some(hint.into()),
+        }
     }
 
     pub fn info(category: CheckCategory, name: &str) -> Self {
-        Self { category, status: CheckStatus::Info, name: name.to_string(), hint: None }
+        Self {
+            category,
+            status: CheckStatus::Info,
+            name: name.to_string(),
+            hint: None,
+        }
     }
 }
 
@@ -59,11 +79,17 @@ impl DoctorReport {
     }
 
     pub fn failure_count(&self) -> usize {
-        self.results.iter().filter(|r| r.status == CheckStatus::Fail).count()
+        self.results
+            .iter()
+            .filter(|r| r.status == CheckStatus::Fail)
+            .count()
     }
 
     pub fn warn_count(&self) -> usize {
-        self.results.iter().filter(|r| r.status == CheckStatus::Warn).count()
+        self.results
+            .iter()
+            .filter(|r| r.status == CheckStatus::Warn)
+            .count()
     }
 
     pub fn print(&self) {
@@ -89,12 +115,18 @@ pub async fn run_preinstall(params: &InstallConfigParams) -> DoctorReport {
 
     results.push(check_required_args(params));
     if results.last().unwrap().status == CheckStatus::Fail {
-        return DoctorReport { results, title: "pre-install diagnostics" };
+        return DoctorReport {
+            results,
+            title: "pre-install diagnostics",
+        };
     }
 
     results.push(check_admin_privileges());
     if results.last().unwrap().status == CheckStatus::Fail {
-        return DoctorReport { results, title: "pre-install diagnostics" };
+        return DoctorReport {
+            results,
+            title: "pre-install diagnostics",
+        };
     }
 
     if let Some(webview2) = check_webview2_runtime() {
@@ -103,9 +135,21 @@ pub async fn run_preinstall(params: &InstallConfigParams) -> DoctorReport {
 
     let dir_manager = DirectoryManager::new();
     let disk_targets: Vec<(&std::path::Path, &str)> = vec![
-        (dir_manager.app_support_dir(), dir_manager.app_support_dir().to_str().unwrap_or("app support")),
-        (dir_manager.secured_dir(), dir_manager.secured_dir().to_str().unwrap_or("secured")),
-        (dir_manager.logs_dir(), dir_manager.logs_dir().to_str().unwrap_or("logs")),
+        (
+            dir_manager.app_support_dir(),
+            dir_manager
+                .app_support_dir()
+                .to_str()
+                .unwrap_or("app support"),
+        ),
+        (
+            dir_manager.secured_dir(),
+            dir_manager.secured_dir().to_str().unwrap_or("secured"),
+        ),
+        (
+            dir_manager.logs_dir(),
+            dir_manager.logs_dir().to_str().unwrap_or("logs"),
+        ),
     ];
 
     let install_path = Service::get_install_location();
@@ -122,7 +166,10 @@ pub async fn run_preinstall(params: &InstallConfigParams) -> DoctorReport {
     let server_url = params.server_url.as_deref().unwrap_or_default();
     run_network_checks(&mut results, server_url).await;
 
-    DoctorReport { results, title: "pre-install diagnostics" }
+    DoctorReport {
+        results,
+        title: "pre-install diagnostics",
+    }
 }
 
 /// Post-install health check. Reads config from disk, checks admin + network.
@@ -131,7 +178,10 @@ pub async fn run_healthcheck() -> DoctorReport {
 
     results.push(check_admin_privileges());
     if results.last().unwrap().status == CheckStatus::Fail {
-        return DoctorReport { results, title: "health check" };
+        return DoctorReport {
+            results,
+            title: "health check",
+        };
     }
 
     if let Some(webview2) = check_webview2_runtime() {
@@ -142,32 +192,42 @@ pub async fn run_healthcheck() -> DoctorReport {
     let config_path = dir_manager.secured_dir().join("initial_config.json");
 
     let server_url = match std::fs::read_to_string(&config_path) {
-        Ok(json) => {
-            match serde_json::from_str::<serde_json::Value>(&json) {
-                Ok(val) => {
-                    results.push(CheckResult::pass(CheckCategory::Command, "Config: initial_config.json loaded"));
-                    match val["server_host"].as_str().filter(|s| !s.trim().is_empty()) {
-                        Some(host) => host.to_string(),
-                        None => {
-                            results.push(CheckResult::fail(
-                                CheckCategory::Command,
-                                "Config: server_host",
-                                format!("'server_host' missing or empty in {}", config_path.display()),
-                            ));
-                            return DoctorReport { results, title: "health check" };
-                        }
+        Ok(json) => match serde_json::from_str::<serde_json::Value>(&json) {
+            Ok(val) => {
+                results.push(CheckResult::pass(
+                    CheckCategory::Command,
+                    "Config: initial_config.json loaded",
+                ));
+                match val["server_host"].as_str().filter(|s| !s.trim().is_empty()) {
+                    Some(host) => host.to_string(),
+                    None => {
+                        results.push(CheckResult::fail(
+                            CheckCategory::Command,
+                            "Config: server_host",
+                            format!(
+                                "'server_host' missing or empty in {}",
+                                config_path.display()
+                            ),
+                        ));
+                        return DoctorReport {
+                            results,
+                            title: "health check",
+                        };
                     }
                 }
-                Err(_) => {
-                    results.push(CheckResult::fail(
-                        CheckCategory::Command,
-                        "Config: initial_config.json",
-                        format!("Config file is corrupted: {}", config_path.display()),
-                    ));
-                    return DoctorReport { results, title: "health check" };
-                }
             }
-        }
+            Err(_) => {
+                results.push(CheckResult::fail(
+                    CheckCategory::Command,
+                    "Config: initial_config.json",
+                    format!("Config file is corrupted: {}", config_path.display()),
+                ));
+                return DoctorReport {
+                    results,
+                    title: "health check",
+                };
+            }
+        },
         Err(_) => {
             results.push(CheckResult::fail(
                 CheckCategory::Command,
@@ -177,13 +237,19 @@ pub async fn run_healthcheck() -> DoctorReport {
                     config_path.display()
                 ),
             ));
-            return DoctorReport { results, title: "health check" };
+            return DoctorReport {
+                results,
+                title: "health check",
+            };
         }
     };
 
     run_network_checks(&mut results, &server_url).await;
 
-    DoctorReport { results, title: "health check" }
+    DoctorReport {
+        results,
+        title: "health check",
+    }
 }
 
 async fn run_network_checks(results: &mut Vec<CheckResult>, server_url: &str) {

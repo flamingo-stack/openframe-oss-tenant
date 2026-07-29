@@ -75,7 +75,11 @@ impl DeactivationService {
     pub fn new(directory_manager: &DirectoryManager) -> Arc<Self> {
         let (commands_tx, commands_rx) = mpsc::unbounded_channel();
         let secured_dir = directory_manager.secured_dir().to_path_buf();
-        let gone_since = if ENABLED { load_marker(&secured_dir) } else { None };
+        let gone_since = if ENABLED {
+            load_marker(&secured_dir)
+        } else {
+            None
+        };
 
         if let Some(ts) = gone_since {
             warn!(
@@ -190,7 +194,9 @@ impl DeactivationService {
             }
             st.consecutive_gone = st.consecutive_gone.saturating_add(1);
 
-            if st.phase == Phase::Healthy && st.consecutive_gone >= STOP_TOOLS_AFTER_CONSECUTIVE_GONE {
+            if st.phase == Phase::Healthy
+                && st.consecutive_gone >= STOP_TOOLS_AFTER_CONSECUTIVE_GONE
+            {
                 st.phase = Phase::Suspended;
                 st.probe_backoff = PROBE_BACKOFF_INITIAL;
                 self.suspended.store(true, Ordering::Release);

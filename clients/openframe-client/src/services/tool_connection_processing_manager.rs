@@ -1,18 +1,18 @@
 use anyhow::{Context, Result};
-use tracing::{info, error, warn};
-use tokio::process::Command;
-use tokio::time::{sleep, timeout};
-use std::time::Duration;
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::Duration;
+use tokio::process::Command;
 use tokio::sync::RwLock;
+use tokio::time::{sleep, timeout};
+use tracing::{error, info, warn};
 
 use crate::models::installed_tool::InstalledTool;
 use crate::models::ToolConnection;
+use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
-use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::tool_run_manager::ToolRunManager;
 
@@ -71,11 +71,15 @@ impl ToolConnectionProcessingManager {
         }
 
         for tool in tools {
-            if self.tool_connection_service.exists_by_tool_agent_id(&tool.tool_agent_id).await? {
+            if self
+                .tool_connection_service
+                .exists_by_tool_agent_id(&tool.tool_agent_id)
+                .await?
+            {
                 info!(
-                "Tool connection for tool {} already exists - skipping",
-                tool.tool_id
-            );
+                    "Tool connection for tool {} already exists - skipping",
+                    tool.tool_id
+                );
                 return Ok(());
             }
 
@@ -83,7 +87,10 @@ impl ToolConnectionProcessingManager {
                 info!("Processing tool connection for {}", tool.tool_id);
                 self.process_tool(tool).await?;
             } else {
-                info!("Connection processing for tool {} is already running - skipping", tool.tool_id);
+                info!(
+                    "Connection processing for tool {} is already running - skipping",
+                    tool.tool_id
+                );
             }
         }
 
@@ -91,7 +98,11 @@ impl ToolConnectionProcessingManager {
     }
 
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
-        if self.tool_connection_service.exists_by_tool_agent_id(&installed_tool.tool_agent_id).await? {
+        if self
+            .tool_connection_service
+            .exists_by_tool_agent_id(&installed_tool.tool_agent_id)
+            .await?
+        {
             info!(
                 "Tool connection for tool {} already exists - skipping",
                 installed_tool.tool_id
@@ -155,16 +166,14 @@ impl ToolConnectionProcessingManager {
                     String::new()
                 } else {
                     // Resolve placeholders for tool_agent_id_command_args (gets agent_tool_id from command output)
-                    let processed_args = match params_processor.process(
-                        &tool.tool_agent_id,
-                        tool.tool_agent_id_command_args.clone(),
-                    ) {
+                    let processed_args = match params_processor
+                        .process(&tool.tool_agent_id, tool.tool_agent_id_command_args.clone())
+                    {
                         Ok(args) => args,
                         Err(e) => {
                             error!(
                                 "Failed to resolve tool {} agent_tool_id_command args: {:#}",
-                                tool.tool_id,
-                                e
+                                tool.tool_id, e
                             );
                             backoff_agent_id_failure(&tool.tool_id, &mut agent_id_failures).await;
                             continue;
@@ -173,12 +182,15 @@ impl ToolConnectionProcessingManager {
 
                     info!(
                         "Run tool {} agentId command (to get agent_tool_id) with args: {:?}",
-                        tool.tool_id,
-                        processed_args
+                        tool.tool_id, processed_args
                     );
 
-                    let command_path = params_processor.directory_manager
-                        .get_tool_executable_path(&tool.tool_agent_id, tool.installation.executable_path())
+                    let command_path = params_processor
+                        .directory_manager
+                        .get_tool_executable_path(
+                            &tool.tool_agent_id,
+                            tool.installation.executable_path(),
+                        )
                         .to_string_lossy()
                         .to_string();
 
@@ -190,7 +202,10 @@ impl ToolConnectionProcessingManager {
                     let output = match timeout(Duration::from_secs(15), command_future).await {
                         // Command finished within timeout
                         Ok(Ok(out)) => {
-                            info!("Command completed successfully: {}", String::from_utf8_lossy(&out.stdout));
+                            info!(
+                                "Command completed successfully: {}",
+                                String::from_utf8_lossy(&out.stdout)
+                            );
                             out
                         }
                         // Command returned an error before timeout
@@ -254,11 +269,14 @@ impl ToolConnectionProcessingManager {
                             continue;
                         }
 
-                        if let Err(e) = tool_connection_service.save(ToolConnection {
-                            tool_agent_id: tool.tool_agent_id.clone(),
-                            agent_tool_id: agent_tool_id.clone(),
-                            published: true,
-                        }).await {
+                        if let Err(e) = tool_connection_service
+                            .save(ToolConnection {
+                                tool_agent_id: tool.tool_agent_id.clone(),
+                                agent_tool_id: agent_tool_id.clone(),
+                                published: true,
+                            })
+                            .await
+                        {
                             error!(tool_id = %tool.tool_id, error = %e, "Failed to save tool connection record");
                             sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                             continue;
@@ -306,5 +324,3 @@ async fn backoff_agent_id_failure(tool_id: &str, failures: &mut u32) {
     };
     sleep(Duration::from_secs(delay)).await;
 }
-
-

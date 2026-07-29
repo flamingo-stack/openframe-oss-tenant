@@ -20,7 +20,15 @@ pub fn write<'a>(
 
     for (key, value) in &prefs {
         let status = Command::new("sudo")
-            .args(["-u", &user.username, "defaults", "write", bundle_id, key, value])
+            .args([
+                "-u",
+                &user.username,
+                "defaults",
+                "write",
+                bundle_id,
+                key,
+                value,
+            ])
             .status()
             .with_context(|| format!("Failed to write preference '{}'", key))?;
 

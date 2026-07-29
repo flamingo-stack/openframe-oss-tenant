@@ -36,7 +36,10 @@ pub async fn park_or_dispatch<F, Fut>(
             tokio::time::sleep(Duration::from_secs(PROGRESS_ACK_INTERVAL_SECS)).await;
         }
 
-        info!("Client update no longer pending: dispatching parked {}", label);
+        info!(
+            "Client update no longer pending: dispatching parked {}",
+            label
+        );
         dispatch(message).await;
     });
 }

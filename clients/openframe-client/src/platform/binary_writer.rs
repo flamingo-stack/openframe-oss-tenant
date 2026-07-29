@@ -16,14 +16,19 @@ pub fn aside_path(path: &Path) -> PathBuf {
 
 pub async fn write_executable(bytes: &[u8], path: &Path) -> Result<()> {
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).await
+        fs::create_dir_all(parent)
+            .await
             .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
     }
 
     let mut file = match File::create(path).await {
         Ok(file) => file,
         Err(first_err) => {
-            warn!("Failed to create {}: {}. Attempting lock/permission recovery", path.display(), first_err);
+            warn!(
+                "Failed to create {}: {}. Attempting lock/permission recovery",
+                path.display(),
+                first_err
+            );
             let _ = crate::platform::file_acl::ensure_writable(path).await;
 
             #[cfg(target_os = "windows")]
@@ -31,14 +36,18 @@ pub async fn write_executable(bytes: &[u8], path: &Path) -> Result<()> {
                 let aside = aside_path(path);
                 let _ = fs::remove_file(&aside).await;
                 match fs::rename(path, &aside).await {
-                    Ok(()) => info!("Moved locked file {} aside to {}", path.display(), aside.display()),
+                    Ok(()) => info!(
+                        "Moved locked file {} aside to {}",
+                        path.display(),
+                        aside.display()
+                    ),
                     Err(e) => warn!("Failed to move locked file {} aside: {}", path.display(), e),
                 }
             }
 
-            File::create(path)
-                .await
-                .with_context(|| format!("Failed to create file after recovery: {}", path.display()))?
+            File::create(path).await.with_context(|| {
+                format!("Failed to create file after recovery: {}", path.display())
+            })?
         }
     };
 
@@ -74,12 +83,5 @@ pub async fn set_executable_permissions(path: &Path) -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn aside_path_appends_old_to_full_filename() {
-        assert_eq!(aside_path(Path::new(r"C:\x\agent.exe")), PathBuf::from(r"C:\x\agent.exe.old"));
-        assert_eq!(aside_path(Path::new("/x/agent")), PathBuf::from("/x/agent.old"));
-    }
-}
+#[path = "binary_writer_tests.rs"]
+mod tests;
