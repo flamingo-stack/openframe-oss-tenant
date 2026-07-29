@@ -49,6 +49,12 @@ impl Permissions {
         Self { mode: 0o755 }
     }
 
+    /// Owner-only, matching the client's `create_secured_directory` (0700) so health
+    /// checks never relax the shared secured directory the client locked down.
+    pub fn secured_directory() -> Self {
+        Self { mode: 0o700 }
+    }
+
     pub fn file() -> Self {
         Self { mode: 0o644 }
     }

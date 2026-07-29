@@ -47,8 +47,15 @@ impl UpdaterStateService {
         let json =
             serde_json::to_string_pretty(state).context("Failed to serialize updater state")?;
 
-        fs::write(&self.state_file_path, json)
-            .with_context(|| format!("Failed to write {}", self.state_file_path.display()))?;
+        let temp_path = self.state_file_path.with_extension("json.tmp");
+        fs::write(&temp_path, json)
+            .with_context(|| format!("Failed to write {}", temp_path.display()))?;
+        fs::rename(&temp_path, &self.state_file_path).with_context(|| {
+            format!(
+                "Failed to move state file into place: {}",
+                self.state_file_path.display()
+            )
+        })?;
 
         info!(phase = %state.phase, version = %state.target_version, "Saved updater state");
         Ok(())

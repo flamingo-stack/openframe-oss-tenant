@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -86,7 +86,12 @@ impl ClientUpdateService {
 
         // The boot marker holds the version the client last booted with — the
         // updater's only view of the running client version.
-        if self.lkg_service.boot_marker_version().as_deref() == Some(version.as_str()) {
+        if self
+            .lkg_service
+            .boot_marker_version()
+            .map(|m| Self::versions_match(&m, version))
+            .unwrap_or(false)
+        {
             info!(
                 "Client already booted with version {}, ignoring update request",
                 version
@@ -153,10 +158,20 @@ impl ClientUpdateService {
                 }
             }
         } else {
-            let config = self
+            let config = match self
                 .download_service
                 .find_for_current_os(&msg.download_configurations)
-                .with_context(|| format!("No download config for current OS (v{})", version))?;
+            {
+                Ok(c) => c,
+                Err(e) => {
+                    let reason =
+                        format!("No download config for current OS (v{}): {:#}", version, e);
+                    error!("{}", reason);
+                    self.fail(&mut state, version, &reason, false).await;
+                    // Ok → ACK: a message with no artifact for this OS never becomes valid.
+                    return Ok(());
+                }
+            };
 
             self.state_service
                 .transition(&mut state, UpdaterPhase::Downloading)?;
@@ -211,7 +226,7 @@ impl ClientUpdateService {
             .publish(&UpdaterPhase::StoppingService, version)
             .await;
 
-        if let Err(e) = ServiceManagerService::stop(CLIENT_SERVICE_FULL_NAME) {
+        if let Err(e) = ServiceManagerService::stop_async(CLIENT_SERVICE_FULL_NAME).await {
             let reason = format!("Failed to stop service: {:#}", e);
             error!("{}", reason);
             self.cleanup_temp(&temp_path);
@@ -219,8 +234,10 @@ impl ClientUpdateService {
             return Err(anyhow!(reason));
         }
 
-        self.state_service
-            .transition(&mut state, UpdaterPhase::ReplacingBinary)?;
+        // Point of no return: from here a state-persistence failure must not abort
+        // the swap — the file only drives crash recovery, while aborting strands a
+        // stopped client.
+        self.transition_best_effort(&mut state, UpdaterPhase::ReplacingBinary);
         self.progress_publisher
             .publish(&UpdaterPhase::ReplacingBinary, version)
             .await;
@@ -236,7 +253,9 @@ impl ClientUpdateService {
             }
         };
         state.backup_path = Some(backup_path.to_string_lossy().to_string());
-        self.state_service.save(&state)?;
+        if let Err(e) = self.state_service.save(&state) {
+            warn!("Failed to persist backup path (continuing): {:#}", e);
+        }
 
         // Stale markers must go before the new binary starts: the verification
         // below treats any marker that doesn't match the target as a failure.
@@ -248,13 +267,12 @@ impl ClientUpdateService {
                 .await;
         }
 
-        self.state_service
-            .transition(&mut state, UpdaterPhase::StartingService)?;
+        self.transition_best_effort(&mut state, UpdaterPhase::StartingService);
         self.progress_publisher
             .publish(&UpdaterPhase::StartingService, version)
             .await;
 
-        if let Err(e) = ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
+        if let Err(e) = ServiceManagerService::start_async(CLIENT_SERVICE_FULL_NAME).await {
             let reason = format!("Failed to start new service: {:#}", e);
             error!("{}", reason);
             return self
@@ -264,7 +282,7 @@ impl ClientUpdateService {
 
         tokio::time::sleep(tokio::time::Duration::from_secs(SERVICE_START_SETTLE_SECS)).await;
 
-        match ServiceManagerService::is_running(CLIENT_SERVICE_FULL_NAME) {
+        match ServiceManagerService::is_running_async(CLIENT_SERVICE_FULL_NAME).await {
             Ok(true) => {}
             Ok(false) => {
                 let reason = "Service is not running after start".to_string();
@@ -282,8 +300,7 @@ impl ClientUpdateService {
             }
         }
 
-        self.state_service
-            .transition(&mut state, UpdaterPhase::VerifyingBoot)?;
+        self.transition_best_effort(&mut state, UpdaterPhase::VerifyingBoot);
         self.progress_publisher
             .publish(&UpdaterPhase::VerifyingBoot, version)
             .await;
@@ -300,8 +317,7 @@ impl ClientUpdateService {
         // A client that dies or crash-loops after a good boot is rolled back
         // automatically; deferring the promotion also means a backend-pushed
         // downgrade to the previous version is never blocked by the bad build.
-        self.state_service
-            .transition(&mut state, UpdaterPhase::Observing)?;
+        self.transition_best_effort(&mut state, UpdaterPhase::Observing);
         self.progress_publisher.publish_success(version).await;
 
         self.spawn_observation(state, target, backup_path);
@@ -354,7 +370,7 @@ impl ClientUpdateService {
                 return;
             }
 
-            match ServiceManagerService::is_running(CLIENT_SERVICE_FULL_NAME) {
+            match ServiceManagerService::is_running_async(CLIENT_SERVICE_FULL_NAME).await {
                 Ok(true) => {}
                 Ok(false) => {
                     failure = Some(format!(
@@ -418,10 +434,26 @@ impl ClientUpdateService {
                 );
             }
             Some(reason) => {
+                // Take the update slot before rolling back so a concurrently arriving
+                // CLIENT_UPDATE can't interleave its own swap with this restore; if a
+                // newer update already claimed it, that update owns the binary now.
+                let mut guard = self.in_progress.lock().await;
+                if *guard || self.generation.load(Ordering::SeqCst) != my_generation {
+                    info!(
+                        "Observation rollback of v{} superseded by a newer update — skipping",
+                        version
+                    );
+                    return;
+                }
+                *guard = true;
+                drop(guard);
+
                 error!("{} — rolling back automatically", reason);
                 let _ = self
                     .rollback(&mut state, &target, &backup_path, &version, &reason)
                     .await;
+
+                *self.in_progress.lock().await = false;
             }
         }
     }
@@ -438,7 +470,7 @@ impl ClientUpdateService {
         let mut elapsed = 0u64;
         while elapsed < BOOT_MARKER_WAIT_SECS {
             match self.lkg_service.boot_marker_version() {
-                Some(marker) if marker == version => {
+                Some(marker) if Self::versions_match(&marker, version) => {
                     info!("Boot marker matched target version {}", version);
                     return Ok(());
                 }
@@ -473,16 +505,15 @@ impl ClientUpdateService {
     ) -> Result<()> {
         warn!("Rolling back update to v{}: {}", version, reason);
 
-        self.state_service
-            .transition(state, UpdaterPhase::RollingBack)?;
+        self.transition_best_effort(state, UpdaterPhase::RollingBack);
         self.progress_publisher
             .publish(&UpdaterPhase::RollingBack, version)
             .await;
 
         // The service may still be running the bad binary (e.g. it booted but
         // reported the wrong version) — stop it before touching the file.
-        if let Ok(true) = ServiceManagerService::is_running(CLIENT_SERVICE_FULL_NAME) {
-            if let Err(e) = ServiceManagerService::stop(CLIENT_SERVICE_FULL_NAME) {
+        if let Ok(true) = ServiceManagerService::is_running_async(CLIENT_SERVICE_FULL_NAME).await {
+            if let Err(e) = ServiceManagerService::stop_async(CLIENT_SERVICE_FULL_NAME).await {
                 warn!("Failed to stop service before rollback restore: {:#}", e);
             }
         }
@@ -545,18 +576,19 @@ impl ClientUpdateService {
 
         self.try_start_service(version, true).await;
 
-        self.state_service
-            .transition(state, UpdaterPhase::RolledBack)?;
+        self.transition_best_effort(state, UpdaterPhase::RolledBack);
         self.progress_publisher
             .publish_failure(&UpdaterPhase::RolledBack, version, reason, true)
             .await;
 
-        self.state_service.clear()?;
+        if let Err(e) = self.state_service.clear() {
+            warn!("Failed to clear updater state after rollback: {:#}", e);
+        }
         Err(anyhow!("Update failed and was rolled back: {}", reason))
     }
 
     async fn try_start_service(&self, version: &str, after_rollback: bool) {
-        if let Err(e) = ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
+        if let Err(e) = ServiceManagerService::start_async(CLIENT_SERVICE_FULL_NAME).await {
             let ctx = if after_rollback {
                 "after rollback"
             } else {
@@ -571,6 +603,29 @@ impl ClientUpdateService {
                     after_rollback,
                 )
                 .await;
+        }
+    }
+
+    /// Boot-marker versions come from the client's build env, requested versions
+    /// from the backend — compare semver-first so cosmetic differences (leading
+    /// 'v', metadata formatting) never read as a wrong-binary boot.
+    fn versions_match(marker: &str, requested: &str) -> bool {
+        match (
+            semver::Version::parse(marker.trim_start_matches('v')),
+            semver::Version::parse(requested.trim_start_matches('v')),
+        ) {
+            (Ok(m), Ok(r)) => m == r,
+            _ => marker == requested,
+        }
+    }
+
+    /// Past the point of no return a state-persistence failure must not abort
+    /// the swap: the file only drives crash recovery, while aborting strands a
+    /// stopped client. Log and continue.
+    fn transition_best_effort(&self, state: &mut UpdaterState, phase: UpdaterPhase) {
+        let label = phase.to_string();
+        if let Err(e) = self.state_service.transition(state, phase) {
+            warn!("Failed to persist {} state (continuing): {:#}", label, e);
         }
     }
 

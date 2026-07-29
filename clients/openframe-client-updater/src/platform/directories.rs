@@ -175,7 +175,7 @@ impl DirectoryManager {
         let dir_perms = Permissions::directory();
         self.create_directory(&self.logs_dir, &dir_perms)?;
         self.create_directory(&self.app_support_dir, &dir_perms)?;
-        self.create_directory(&self.secured_dir, &dir_perms)?;
+        self.create_directory(&self.secured_dir, &Permissions::secured_directory())?;
         Ok(())
     }
 

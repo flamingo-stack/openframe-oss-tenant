@@ -222,14 +222,17 @@ impl CrossPlatformServiceManager {
 
     fn apply_platform_config(&self, _ctx: &mut ServiceInstallCtx) {
         #[cfg(target_os = "macos")]
-        self.apply_macos_config(ctx);
+        self.apply_macos_config(_ctx);
 
         #[cfg(all(unix, not(target_os = "macos")))]
-        self.apply_linux_config(ctx);
+        self.apply_linux_config(_ctx);
     }
 
     #[cfg(target_os = "macos")]
     fn apply_macos_config(&self, ctx: &mut ServiceInstallCtx) {
+        use plist::Dictionary;
+        use tracing::debug;
+
         let mut dict = Dictionary::new();
 
         dict.insert(
@@ -317,37 +320,18 @@ impl CrossPlatformServiceManager {
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]
-    fn apply_linux_config(&self, ctx: &mut ServiceInstallCtx) {
-        let mut opts: HashMap<&str, String> = HashMap::new();
+    fn apply_linux_config(&self, _ctx: &mut ServiceInstallCtx) {
+        use tracing::debug;
 
-        if let Some(p) = &self.config.stdout_path {
-            opts.insert("StandardOutput", "file".to_string());
-            opts.insert("StandardOutputPath", p.to_string_lossy().to_string());
-        }
-        if let Some(p) = &self.config.stderr_path {
-            opts.insert("StandardError", "file".to_string());
-            opts.insert("StandardErrorPath", p.to_string_lossy().to_string());
-        }
-        if let Some(limit) = self.config.file_limit {
-            opts.insert("LimitNOFILE", limit.to_string());
-        }
-        if self.config.restart_on_crash {
-            opts.insert("Restart", "on-failure".to_string());
-            opts.insert(
-                "RestartSec",
-                self.config.restart_throttle_seconds.to_string(),
-            );
-        }
-
-        if !opts.is_empty() {
-            match serde_json::to_string(&opts) {
-                Ok(s) => {
-                    debug!("Linux service options: {}", s);
-                    ctx.contents = Some(s);
-                }
-                Err(e) => warn!("Failed to serialize Linux service options: {}", e),
-            }
-        }
+        // Overriding `contents` requires a complete systemd unit; until linux is a shipped
+        // target the service-manager default template is used and the extras stay unapplied.
+        debug!(
+            "Linux service uses the default systemd unit template (stdout={:?}, stderr={:?}, file_limit={:?}, restart_on_crash={})",
+            self.config.stdout_path,
+            self.config.stderr_path,
+            self.config.file_limit,
+            self.config.restart_on_crash
+        );
     }
 
     #[cfg(target_os = "windows")]

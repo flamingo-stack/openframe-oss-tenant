@@ -140,9 +140,21 @@ impl UpdaterOrchestrator {
         publisher: &UpdateProgressPublisher,
         lkg_service: &LastKnownGoodService,
     ) -> Result<()> {
-        let state = match state_service.load()? {
-            None => return Ok(()),
-            Some(s) => s,
+        let state = match state_service.load() {
+            Ok(None) => return Ok(()),
+            Ok(Some(s)) => s,
+            Err(e) => {
+                // An unreadable state file must not crash-loop the service via KeepAlive —
+                // drop it and start clean; the NATS message redelivers any lost update.
+                warn!(
+                    "Updater state file unreadable — removing it and skipping crash recovery: {:#}",
+                    e
+                );
+                if let Err(remove_err) = std::fs::remove_file(state_service.state_file_path()) {
+                    warn!("Failed to remove unreadable state file: {}", remove_err);
+                }
+                return Ok(());
+            }
         };
 
         info!(

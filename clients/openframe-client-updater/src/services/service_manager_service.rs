@@ -30,6 +30,27 @@ impl ServiceManagerService {
         Self::is_running_impl(service_name)
     }
 
+    /// Async wrappers: the sync implementations block (SCM polling up to
+    /// SERVICE_STOP_TIMEOUT_SECS) and must run on the blocking pool, not a
+    /// tokio worker.
+    pub async fn stop_async(service_name: &'static str) -> Result<()> {
+        tokio::task::spawn_blocking(move || Self::stop(service_name))
+            .await
+            .context("Service stop task failed to join")?
+    }
+
+    pub async fn start_async(service_name: &'static str) -> Result<()> {
+        tokio::task::spawn_blocking(move || Self::start(service_name))
+            .await
+            .context("Service start task failed to join")?
+    }
+
+    pub async fn is_running_async(service_name: &'static str) -> Result<bool> {
+        tokio::task::spawn_blocking(move || Self::is_running(service_name))
+            .await
+            .context("Service status task failed to join")?
+    }
+
     /// Returns the standard install path for the openframe-client binary.
     pub fn client_binary_path() -> PathBuf {
         #[cfg(target_os = "windows")]

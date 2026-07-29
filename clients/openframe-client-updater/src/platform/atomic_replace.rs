@@ -83,8 +83,15 @@ pub fn write_temp(bytes: &[u8], target: &Path) -> Result<PathBuf> {
         uuid::Uuid::new_v4()
     ));
 
-    std::fs::write(&temp_path, bytes)
-        .with_context(|| format!("Failed to write temp binary to {}", temp_path.display()))?;
+    {
+        use std::io::Write;
+        let mut file = std::fs::File::create(&temp_path)
+            .with_context(|| format!("Failed to create temp binary at {}", temp_path.display()))?;
+        file.write_all(bytes)
+            .with_context(|| format!("Failed to write temp binary to {}", temp_path.display()))?;
+        file.sync_all()
+            .with_context(|| format!("Failed to sync temp binary at {}", temp_path.display()))?;
+    }
 
     #[cfg(unix)]
     {
@@ -92,6 +99,11 @@ pub fn write_temp(bytes: &[u8], target: &Path) -> Result<PathBuf> {
         let perms = std::fs::Permissions::from_mode(0o755);
         std::fs::set_permissions(&temp_path, perms)
             .with_context(|| format!("Failed to set permissions on {}", temp_path.display()))?;
+        let dir_handle = std::fs::File::open(dir)
+            .with_context(|| format!("Failed to open {} for directory sync", dir.display()))?;
+        dir_handle
+            .sync_all()
+            .with_context(|| format!("Failed to sync directory {}", dir.display()))?;
     }
 
     info!(
