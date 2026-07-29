@@ -27,7 +27,6 @@ default = []
 openframe-chat-version     = []
 meshcentral-agent-version  = []
 fleetmdm-agent-version     = []
-tacticalrmm-agent-version  = []
 
 # Asset-level version overrides. Keyed by Asset.id inside a ToolInstallationMessage.
 # These binaries ship as assets under another tool and can be pinned independently.
@@ -38,7 +37,6 @@ all-tool-versions = [
     "openframe-chat-version",
     "meshcentral-agent-version",
     "fleetmdm-agent-version",
-    "tacticalrmm-agent-version",
     "osquery-version",
 ]
 
@@ -76,17 +74,18 @@ tar = "0.4"
 service-manager = "0.8"
 plist = "1.7.1"
 # System information collection dependencies
-hostname = "0.3"
+hostname = "0.4"
 bytes = "1.10.1"
 async-nats = { git = "https://github.com/flamingo-stack/nats.rs.git", branch = "main", features = ["websockets"] }
 rustls-pemfile = "1.0"
+redb = "2"
 regex = "1.11.1"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
 winapi = { version = "0.3", features = ["winuser", "shellapi", "securitybaseapi", "errhandlingapi", "winerror", "wincon", "consoleapi", "processenv", "winbase"] }
 is_elevated = "0.1"
-windows-service = "0.6"
+windows-service = "0.8"
 windows = { version = "0.52", features = ["Win32_Foundation", "Win32_System_Threading", "Win32_System_RemoteDesktop", "Win32_System_JobObjects", "Win32_UI_WindowsAndMessaging", "Win32_System_RestartManager", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Registry", "Win32_System_Environment"] }
 
 [target.'cfg(unix)'.dependencies]

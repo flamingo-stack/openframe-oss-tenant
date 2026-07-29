@@ -5,6 +5,7 @@ use tracing::info;
 use uuid::Uuid;
 
 use super::UpdaterParams;
+use crate::config::update_config::BOOT_MARKER_WAIT_SECS;
 use crate::platform::update_scripts::{UPDATE_SCRIPT_MACOS, UPDATER_PLIST_TEMPLATE};
 
 /// Launch bash updater script on macOS
@@ -46,7 +47,13 @@ pub async fn launch_updater(params: UpdaterParams) -> Result<()> {
         .replace("{BINARY_PATH}", &params.binary_path.to_string_lossy())
         .replace("{SERVICE_LABEL}", &params.service_name)
         .replace("{TARGET_EXE}", &params.target_exe.to_string_lossy())
-        .replace("{UPDATE_STATE_PATH}", &params.update_state_path);
+        .replace("{UPDATE_STATE_PATH}", &params.update_state_path)
+        .replace("{TARGET_VERSION}", &params.target_version)
+        .replace("{BOOT_MARKER_PATH}", &params.boot_marker_path.to_string_lossy())
+        .replace("{LKG_PATH}", &params.lkg_path.to_string_lossy())
+        .replace("{BOOT_MARKER_WAIT_SECS}", &BOOT_MARKER_WAIT_SECS.to_string())
+        .replace("{ROLLBACK_ONLY}", if params.rollback_only { "1" } else { "0" })
+        .replace("{TRANSCRIPT_PATH}", &params.transcript_path.to_string_lossy());
 
     std::fs::write(&plist_path, &plist_content)
         .context("Failed to write updater plist")?;

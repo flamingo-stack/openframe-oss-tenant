@@ -1,5 +1,5 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 use anyhow::{Context, Result};
 use crate::models::tool_agent_update_message::{ToolAgentUpdateMessage, AssetUpdate};
 use crate::models::{Installation, InstalledAsset, ToolRecordState};
@@ -10,7 +10,7 @@ use crate::services::InstalledAgentMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::ToolCommandParamsResolver;
-use crate::platform::{DirectoryManager, ToolUpdaterDeps, binary_writer, needs_migration, detect_actual_installation, run_update, run_migration};
+use crate::platform::{DirectoryManager, ToolUpdaterDeps, binary_writer, needs_migration, detect_actual_installation, run_update, run_migration, clear_aside_binary};
 
 #[derive(Clone)]
 pub struct ToolAgentUpdateService {
@@ -226,10 +226,20 @@ impl ToolAgentUpdateService {
         // Same-type update
         let new_installation = run_update(installed_tool, download_config, deps).await?;
 
-        installed_tool.version = new_version.to_string();
         if let Some(installation) = new_installation {
             installed_tool.installation = installation;
         }
+
+        let exec_path = self.directory_manager
+            .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
+        if !clear_aside_binary(&exec_path, tool_agent_id).await {
+            error!(tool_id = %tool_agent_id,
+                   "Pre-update process still holds {}: keeping recorded version {} instead of {} — the new binary is on disk but not running",
+                   exec_path.display(), installed_tool.version, new_version);
+            return Ok(());
+        }
+
+        installed_tool.version = new_version.to_string();
         self.installed_tools_service.save(installed_tool.clone()).await
             .with_context(|| format!("Failed to save updated tool: {}", tool_agent_id))?;
 

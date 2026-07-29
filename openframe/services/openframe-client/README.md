@@ -20,7 +20,7 @@ openframe-client (service) → openframe-client-core (lib) → openframe-data-*,
 
 - **Agent Registration**: Handles agent onboarding and authentication
 - **Machine Management**: Tracks machine lifecycle and status
-- **Tool Integration**: Connects with Tactical RMM, Fleet MDM, and MeshCentral
+- **Tool Integration**: Connects with Fleet MDM and MeshCentral
 - **WebSocket Support**: Real-time agent communications
 - **Heartbeat Monitoring**: Tracks agent health and connectivity
 - **Tag Management**: Organizes machines with tags
@@ -149,7 +149,6 @@ mvn test
 ## Integration
 
 ### Tool SDKs
-- **Tactical RMM SDK**: Agent ID transformation and API integration
 - **Fleet MDM SDK**: osquery integration
 - **MeshCentral**: Remote access capabilities
 

@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant User as End User
+    participant Tauri as Tauri Shell
+    participant React as React UI
+    participant Rust as Rust NATS Bridge
+    participant GW as Gateway
+    participant API as API Service
+    participant NATS as NATS JetStream
+
+    Tauri->>React: AES-256-GCM decrypted JWT token
+    React->>GW: POST /chat/api/v1/dialogs (Bearer JWT)
+    GW->>API: Create dialog (tenant-scoped)
+    API-->>React: dialogId
+    React->>GW: POST /chat/api/v1/messages {dialogId, content}
+    GW->>API: Send message
+    API->>NATS: Publish to CHAT_CHUNKS stream
+    NATS-->>Rust: JetStream ordered consumer chunks
+    Rust->>React: Channel<NatsEvent> via Tauri IPC
+    React->>React: Merge realtime chunks with history
+    React-->>User: Streaming AI response (Fae)

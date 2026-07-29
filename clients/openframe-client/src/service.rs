@@ -7,8 +7,10 @@ use tracing::{error, info, warn};
 use crate::installation_initial_config_service::{
     InstallConfigParams, InstallationInitialConfigService,
 };
+use crate::platform::machine_info_persistence::{self, PersistedMachineInfo};
 use crate::platform::permissions::{Capability, PermissionUtils};
 use crate::service_adapter::{CrossPlatformServiceManager, RecoveryConfig, ServiceConfig};
+use crate::services::{AgentConfigurationService, AgentRegistrationService};
 use crate::{platform::DirectoryManager, Client};
 
 #[cfg(windows)]
@@ -149,17 +151,7 @@ impl Service {
     pub fn is_installed() -> bool {
         #[cfg(target_os = "windows")]
         {
-            use std::process::Command;
-
-            // Check if Windows service exists using sc query
-            let output = Command::new("sc")
-                .args(&["query", FULL_SERVICE_NAME])
-                .output();
-
-            match output {
-                Ok(output) => output.status.success(),
-                Err(_) => false,
-            }
+            crate::platform::system_service::service_exists(FULL_SERVICE_NAME)
         }
 
         #[cfg(target_os = "macos")]
@@ -191,6 +183,41 @@ impl Service {
         if Self::is_installed() {
             info!("Existing Installation Detected\n");
             info!("An existing OpenFrame installation was found\n");
+
+            // Pre-1.0.0 clients never wrote the machine-info store; backfill it before uninstall wipes their agent config.
+            info!("Checking if persisted machine info exists...");
+            let persisted_machine_info = AgentRegistrationService::read_persisted_credentials()
+                .await
+                .unwrap_or_else(|e| {
+                    warn!("Failed to read persisted machine info: {}", e);
+                    None
+                });
+            if persisted_machine_info.is_none() {
+                info!("No persisted machine info found, trying to read from agent config...");
+                match AgentConfigurationService::new(DirectoryManager::new())
+                    .and_then(|config_service| config_service.get_registration_credentials())
+                {
+                    Ok((machine_id, client_secret))
+                        if !machine_id.trim().is_empty() && !client_secret.trim().is_empty() =>
+                    {
+                        let machine_info = PersistedMachineInfo {
+                            machine_id,
+                            client_secret,
+                        };
+                        match machine_info_persistence::write(&machine_info) {
+                            Ok(()) => info!("Machine info persisted successfully"),
+                            Err(e) => error!("Failed to persist machine info: {}", e),
+                        }
+                    }
+                    Ok(_) => {
+                        info!("Agent config has no registration credentials, skipping backfill")
+                    }
+                    Err(e) => warn!("Failed to read machine info from agent config: {}", e),
+                }
+            } else {
+                info!("Persisted machine info was found");
+            }
+
             info!("To proceed with the new installation, the old version must be removed\n");
             info!("Uninstalling existing installation...");
 
@@ -258,8 +285,42 @@ impl Service {
             }
             
             // Copy the binary
-            std::fs::copy(&current_exe_path, &install_path)
-                .with_context(|| format!("Failed to copy binary to {}", install_path.display()))?;
+            if let Err(copy_err) = std::fs::copy(&current_exe_path, &install_path) {
+                warn!(
+                    "Target binary is in use ({}); killing leftover processes running from {}",
+                    copy_err, install_path.display()
+                );
+                Self::kill_processes_running_from(&install_path).await;
+
+                if let Err(retry_err) = std::fs::copy(&current_exe_path, &install_path) {
+                    let aside_path = install_path.with_extension("exe.old");
+                    let _ = std::fs::remove_file(&aside_path);
+                    std::fs::rename(&install_path, &aside_path)
+                        .with_context(|| format!(
+                            "Failed to copy binary to {} ({}), and could not move the existing binary aside",
+                            install_path.display(), retry_err
+                        ))?;
+                    warn!(
+                        "Target binary still in use ({}); moved it aside to {} and retrying copy",
+                        retry_err, aside_path.display()
+                    );
+                    match std::fs::copy(&current_exe_path, &install_path) {
+                        Ok(_) => {
+                            let _ = std::fs::remove_file(&aside_path);
+                        }
+                        Err(final_err) => {
+                            if let Err(restore_err) = std::fs::rename(&aside_path, &install_path) {
+                                warn!(
+                                    "Could not restore original binary from {}: {}",
+                                    aside_path.display(), restore_err
+                                );
+                            }
+                            return Err(final_err)
+                                .with_context(|| format!("Failed to copy binary to {}", install_path.display()));
+                        }
+                    }
+                }
+            }
             
             // Set executable permissions on Unix
             #[cfg(unix)]
@@ -334,6 +395,50 @@ impl Service {
 
         info!("OpenFrame service installed successfully");
         Ok(())
+    }
+
+    async fn kill_processes_running_from(target: &std::path::Path) {
+        use sysinfo::{ProcessRefreshKind, Signal, System, UpdateKind};
+
+        let target = target.to_string_lossy().to_lowercase();
+        let own_pid = std::process::id();
+
+        let killed = tokio::task::spawn_blocking(move || {
+            let mut sys = System::new();
+            sys.refresh_processes_specifics(
+                ProcessRefreshKind::new().with_exe(UpdateKind::Always),
+            );
+
+            let mut killed = 0usize;
+            for (pid, process) in sys.processes() {
+                if pid.as_u32() == own_pid {
+                    continue;
+                }
+                let exe = process
+                    .exe()
+                    .map(|p| p.to_string_lossy().to_lowercase())
+                    .unwrap_or_default();
+                if exe != target {
+                    continue;
+                }
+                warn!("Killing leftover process {} running from target binary", pid);
+                if process.kill_with(Signal::Kill).unwrap_or_else(|| process.kill()) {
+                    killed += 1;
+                } else {
+                    warn!("Failed to kill leftover process {}", pid);
+                }
+            }
+            killed
+        })
+        .await
+        .unwrap_or(0);
+
+        if killed > 0 {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            info!("Killed {} leftover process(es) holding the target binary", killed);
+        } else {
+            info!("No leftover processes found holding the target binary");
+        }
     }
 
     /// Uninstall the service on the current platform
