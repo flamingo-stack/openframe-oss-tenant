@@ -89,11 +89,21 @@ impl DeviceDataFetcher {
         Some(version)
     }
 
+    /// The platform this host runs, reported once at registration and stored verbatim as
+    /// `Machine.osType`. The spelling is a contract rather than a label: the backend scopes
+    /// script schedules to devices by matching it against a platform, so a host that reports
+    /// the wrong one is targeted by the wrong schedules.
+    ///
+    /// `MAC_OS` is kept as the macOS spelling deliberately — it is what every already-registered
+    /// Mac carries, and changing it here would introduce a second spelling for the same platform
+    /// without repairing any existing device.
     pub fn get_os_type(&self) -> String {
         if cfg!(target_os = "windows") {
             "WINDOWS".to_string()
-        } else {
+        } else if cfg!(target_os = "macos") {
             "MAC_OS".to_string()
+        } else {
+            "LINUX".to_string()
         }
     }
 } 
