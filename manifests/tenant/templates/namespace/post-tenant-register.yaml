@@ -12,10 +12,18 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      {{- with .Values.initImage.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 
       containers:
       - name: register
         image: {{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}
+        {{- with .Values.initImage.securityContext }}
+        securityContext:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
         command:
           - /bin/sh
           - -c
