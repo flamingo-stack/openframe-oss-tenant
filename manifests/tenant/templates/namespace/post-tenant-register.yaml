@@ -8,8 +8,15 @@ metadata:
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
     "argocd.argoproj.io/sync-options": Replace=true
 spec:
-  backoffLimit: 3
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: post-tenant-register
   template:
+    metadata:
+      labels:
+        app: post-tenant-register
     spec:
       restartPolicy: Never
       {{- with .Values.initImage.podSecurityContext }}
