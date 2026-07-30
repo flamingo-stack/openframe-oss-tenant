@@ -4,7 +4,8 @@ use tracing::info;
 
 use super::{
     ToolUpdater, ToolUpdaterDeps, UpdateContext,
-    backup_binary, download_and_write_binary, cleanup_backup, restore_from_backup,
+    backup_binary, clear_aside_binary, cleanup_backup, download_and_write_binary,
+    log_update_survivors, restore_from_backup,
 };
 use crate::models::{InstalledTool, Installation, DownloadConfiguration};
 
@@ -29,6 +30,9 @@ impl ToolUpdater for StandardToolUpdater {
             .with_context(|| format!("Failed to stop tool: {}", tool_agent_id))?;
 
         let agent_path = self.deps.directory_manager.get_agent_path(tool_agent_id);
+        clear_aside_binary(&agent_path, tool_agent_id).await;
+        log_update_survivors(&self.deps, tool).await;
+
         let backup_path = backup_binary(&agent_path, tool_agent_id).await?;
 
         Ok(UpdateContext {
