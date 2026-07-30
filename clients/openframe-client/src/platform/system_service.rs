@@ -1,15 +1,52 @@
 //! System service management utilities (launchctl, systemctl, SCM).
 
-#[cfg(target_os = "windows")]
-use crate::config::service_stop::{
-    PROCESS_CHECK_INTERVAL_MS, SERVICE_FORCE_KILL_MAX_ATTEMPTS, SERVICE_START_MAX_ATTEMPTS,
-    SERVICE_STOP_CALL_TIMEOUT_SECS, SERVICE_STOP_MAX_ATTEMPTS,
-};
 use anyhow::{Context, Result};
 use tokio::process::Command;
+use tracing::{error, info, warn};
 #[cfg(target_os = "windows")]
 use tokio::time::{sleep, Duration};
-use tracing::{error, info, warn};
+#[cfg(target_os = "windows")]
+use crate::config::service_stop::{
+    PROCESS_CHECK_INTERVAL_MS, SCM_QUERY_MAX_CONSECUTIVE_FAILURES, SCM_QUERY_TIMEOUT_SECS,
+    SERVICE_FORCE_KILL_MAX_ATTEMPTS, SERVICE_START_CALL_TIMEOUT_SECS, SERVICE_START_MAX_ATTEMPTS,
+    SERVICE_STOP_CALL_TIMEOUT_SECS, SERVICE_STOP_MAX_ATTEMPTS,
+};
+
+/// Shared pool bounding in-flight SCM calls; timed-out calls can park at most SCM_MAX_IN_FLIGHT threads.
+#[cfg(target_os = "windows")]
+fn scm_pool() -> &'static crate::utils::timed_permit_pool::TimedPermitPool {
+    use crate::utils::timed_permit_pool::TimedPermitPool;
+    static POOL: std::sync::OnceLock<TimedPermitPool> = std::sync::OnceLock::new();
+    POOL.get_or_init(|| TimedPermitPool::new(crate::config::service_stop::SCM_MAX_IN_FLIGHT))
+}
+
+/// Run a blocking SCM call off-runtime with a timeout, so a wedged SCM can never hang an async task.
+#[cfg(target_os = "windows")]
+async fn scm_call_timed<T, F>(service_name: &str, what: &str, timeout_secs: u64, f: F) -> Result<T>
+where
+    F: FnOnce() -> T + Send + 'static,
+    T: Send + 'static,
+{
+    scm_pool()
+        .call(
+            &format!("SCM {} for service {}", what, service_name),
+            Duration::from_secs(timeout_secs),
+            f,
+        )
+        .await
+}
+
+/// `query_service_status_windows` off-runtime with a timeout; the outer Err is an unresponsive SCM.
+#[cfg(target_os = "windows")]
+async fn query_service_status_timed(
+    service_name: &str,
+) -> Result<windows_service::Result<windows_service::service::ServiceStatus>> {
+    let name = service_name.to_string();
+    scm_call_timed(service_name, "status query", SCM_QUERY_TIMEOUT_SECS, move || {
+        query_service_status_windows(&name)
+    })
+    .await
+}
 
 /// Start a macOS service via launchctl load
 #[cfg(target_os = "macos")]
@@ -39,24 +76,34 @@ pub async fn start_service(service_name: &str) -> Result<()> {
 
     let mut last_err = String::new();
     for attempt in 1..=SERVICE_START_MAX_ATTEMPTS {
-        match try_start_service_windows(service_name) {
-            Ok(()) if wait_for_service_running_windows(service_name).await => {
-                info!("Service {} confirmed running", service_name);
-                return Ok(());
-            }
-            Ok(()) => {
-                last_err = "service did not reach RUNNING after start".to_string();
-                warn!(
-                    "Start attempt {}/{} for service {}: {}",
-                    attempt, SERVICE_START_MAX_ATTEMPTS, service_name, last_err
-                );
-            }
+        let name = service_name.to_string();
+        let start_result = scm_call_timed(service_name, "start call", SERVICE_START_CALL_TIMEOUT_SECS, move || {
+            try_start_service_windows(&name)
+        })
+        .await
+        .map_err(|e| format!("{e:#}"))
+        .and_then(|r| r);
+        match start_result {
+            Ok(()) => match wait_for_service_running_windows(service_name).await {
+                Some(true) => {
+                    info!("Service {} confirmed running", service_name);
+                    return Ok(());
+                }
+                Some(false) => {
+                    last_err = "service did not reach RUNNING after start".to_string();
+                    warn!("Start attempt {}/{} for service {}: {}",
+                          attempt, SERVICE_START_MAX_ATTEMPTS, service_name, last_err);
+                }
+                None => {
+                    last_err = "could not confirm RUNNING (SCM unresponsive)".to_string();
+                    warn!("Start attempt {}/{} for service {}: {}",
+                          attempt, SERVICE_START_MAX_ATTEMPTS, service_name, last_err);
+                }
+            },
             Err(e) => {
                 last_err = e;
-                warn!(
-                    "Start attempt {}/{} for service {} failed: {}",
-                    attempt, SERVICE_START_MAX_ATTEMPTS, service_name, last_err
-                );
+                warn!("Start attempt {}/{} for service {} failed: {}",
+                      attempt, SERVICE_START_MAX_ATTEMPTS, service_name, last_err);
             }
         }
         if attempt < SERVICE_START_MAX_ATTEMPTS {
@@ -64,26 +111,30 @@ pub async fn start_service(service_name: &str) -> Result<()> {
         }
     }
 
-    anyhow::bail!(
-        "Failed to start service {} after {} attempts: {}",
-        service_name,
-        SERVICE_START_MAX_ATTEMPTS,
-        last_err
-    )
+    anyhow::bail!("Failed to start service {} after {} attempts: {}",
+                  service_name, SERVICE_START_MAX_ATTEMPTS, last_err)
 }
 
+/// Some(true) = RUNNING, Some(false) = polls exhausted without RUNNING, None = SCM unresponsive.
 #[cfg(target_os = "windows")]
-async fn wait_for_service_running_windows(service_name: &str) -> bool {
+async fn wait_for_service_running_windows(service_name: &str) -> Option<bool> {
     use windows_service::service::ServiceState;
+    let mut query_failures = 0u32;
     for _ in 1..=SERVICE_STOP_MAX_ATTEMPTS {
         sleep(Duration::from_millis(PROCESS_CHECK_INTERVAL_MS)).await;
-        if let Ok(status) = query_service_status_windows(service_name) {
-            if status.current_state == ServiceState::Running {
-                return true;
+        match query_service_status_timed(service_name).await {
+            Ok(Ok(status)) if status.current_state == ServiceState::Running => return Some(true),
+            Ok(_) => query_failures = 0,
+            Err(e) => {
+                query_failures += 1;
+                warn!("Status query for service {} failed while awaiting RUNNING: {e:#}", service_name);
+                if query_failures >= SCM_QUERY_MAX_CONSECUTIVE_FAILURES {
+                    return None;
+                }
             }
         }
     }
-    false
+    Some(false)
 }
 
 #[cfg(target_os = "windows")]
@@ -95,10 +146,7 @@ fn try_start_service_windows(service_name: &str) -> std::result::Result<(), Stri
     let manager = ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CONNECT)
         .map_err(|e| format!("connect to SCM: {}", e))?;
     let service = manager
-        .open_service(
-            service_name,
-            ServiceAccess::START | ServiceAccess::QUERY_STATUS,
-        )
+        .open_service(service_name, ServiceAccess::START | ServiceAccess::QUERY_STATUS)
         .map_err(|e| format!("open service: {}", e))?;
 
     match service.start::<&std::ffi::OsStr>(&[]) {
@@ -115,10 +163,7 @@ fn try_start_service_windows(service_name: &str) -> std::result::Result<(), Stri
 /// Start a Linux service via systemctl start
 #[cfg(target_os = "linux")]
 pub async fn start_service(service_name: &str) -> Result<()> {
-    info!(
-        "Starting Linux service via systemctl start: {}",
-        service_name
-    );
+    info!("Starting Linux service via systemctl start: {}", service_name);
 
     let output = Command::new("sudo")
         .args(["systemctl", "start", service_name])
@@ -167,17 +212,14 @@ pub async fn verify_service_running(service_name: &str) -> Result<()> {
     #[cfg(target_os = "windows")]
     {
         use windows_service::service::ServiceState;
-        if let Ok(status) = query_service_status_windows(service_name) {
+        if let Ok(Ok(status)) = query_service_status_timed(service_name).await {
             if status.current_state == ServiceState::Running {
                 return Ok(());
             }
         }
-        start_service(service_name).await.with_context(|| {
-            format!(
-                "service {} did not reach RUNNING after install",
-                service_name
-            )
-        })
+        start_service(service_name)
+            .await
+            .with_context(|| format!("service {} did not reach RUNNING after install", service_name))
     }
     #[cfg(not(target_os = "windows"))]
     {
@@ -192,7 +234,13 @@ pub async fn verify_service_running(service_name: &str) -> Result<()> {
 pub async fn service_clear_for_install(service_name: &str) -> bool {
     #[cfg(target_os = "windows")]
     {
-        service_stopped_or_missing(&query_service_status_windows(service_name))
+        match query_service_status_timed(service_name).await {
+            Ok(status) => service_stopped_or_missing(&status),
+            Err(e) => {
+                warn!("Status query for service {} failed during install check: {e:#}", service_name);
+                false
+            }
+        }
     }
     #[cfg(not(target_os = "windows"))]
     {
@@ -203,41 +251,25 @@ pub async fn service_clear_for_install(service_name: &str) -> bool {
 
 #[cfg(target_os = "windows")]
 async fn stop_service_windows(service_name: &str, allow_delete: bool) -> Result<()> {
+    use windows_service::service::ServiceAccess;
     use winapi::shared::winerror::{
         ERROR_SERVICE_CANNOT_ACCEPT_CTRL, ERROR_SERVICE_DOES_NOT_EXIST, ERROR_SERVICE_NOT_ACTIVE,
     };
-    use windows_service::service::ServiceAccess;
 
     info!("Stopping Windows service via SCM: {}", service_name);
 
     let svc = service_name.to_string();
-    let stop_call = tokio::task::spawn_blocking(move || {
-        let service =
-            open_service_windows(&svc, ServiceAccess::QUERY_STATUS | ServiceAccess::STOP)?;
+    let stop_result = match scm_call_timed(service_name, "stop call", SERVICE_STOP_CALL_TIMEOUT_SECS, move || {
+        let service = open_service_windows(&svc, ServiceAccess::QUERY_STATUS | ServiceAccess::STOP)?;
         service.stop()
-    });
-
-    let stop_result = match tokio::time::timeout(
-        Duration::from_secs(SERVICE_STOP_CALL_TIMEOUT_SECS),
-        stop_call,
-    )
+    })
     .await
     {
-        Err(_elapsed) => {
-            warn!(
-                "service.stop() for {} timed out after {}s; force-killing service process",
-                service_name, SERVICE_STOP_CALL_TIMEOUT_SECS
-            );
+        Err(e) => {
+            warn!("service.stop() for {} did not complete ({e:#}); force-killing service process", service_name);
             return force_stop_service_windows(service_name, allow_delete).await;
         }
-        Ok(Err(join_err)) => {
-            error!(
-                "service.stop() task for {} failed: {}; force-killing service process",
-                service_name, join_err
-            );
-            return force_stop_service_windows(service_name, allow_delete).await;
-        }
-        Ok(Ok(result)) => result,
+        Ok(result) => result,
     };
 
     match stop_result {
@@ -246,44 +278,30 @@ async fn stop_service_windows(service_name: &str, allow_delete: bool) -> Result<
             if wait_for_service_stop_windows(service_name).await? {
                 return Ok(());
             }
-            warn!(
-                "Service {} did not reach STOPPED after stop request; force-killing",
-                service_name
-            );
+            warn!("Service {} did not reach STOPPED after stop request; force-killing", service_name);
             force_stop_service_windows(service_name, allow_delete).await
         }
         Err(windows_service::Error::Winapi(e))
             if e.raw_os_error() == Some(ERROR_SERVICE_DOES_NOT_EXIST as i32) =>
         {
-            warn!(
-                "Service {} does not exist (error {})",
-                service_name, ERROR_SERVICE_DOES_NOT_EXIST
-            );
+            warn!("Service {} does not exist (error {})", service_name, ERROR_SERVICE_DOES_NOT_EXIST);
             Ok(())
         }
         Err(windows_service::Error::Winapi(e))
             if e.raw_os_error() == Some(ERROR_SERVICE_NOT_ACTIVE as i32) =>
         {
-            info!(
-                "Service {} is not running (error {})",
-                service_name, ERROR_SERVICE_NOT_ACTIVE
-            );
+            info!("Service {} is not running (error {})", service_name, ERROR_SERVICE_NOT_ACTIVE);
             Ok(())
         }
         Err(windows_service::Error::Winapi(e))
             if e.raw_os_error() == Some(ERROR_SERVICE_CANNOT_ACCEPT_CTRL as i32) =>
         {
-            warn!(
-                "Service {} cannot accept stop control (error {}); force-killing service process",
-                service_name, ERROR_SERVICE_CANNOT_ACCEPT_CTRL
-            );
+            warn!("Service {} cannot accept stop control (error {}); force-killing service process",
+                  service_name, ERROR_SERVICE_CANNOT_ACCEPT_CTRL);
             force_stop_service_windows(service_name, allow_delete).await
         }
         Err(e) => {
-            error!(
-                "Failed to stop service {} via SCM: {}; force-killing service process",
-                service_name, e
-            );
+            error!("Failed to stop service {} via SCM: {}; force-killing service process", service_name, e);
             force_stop_service_windows(service_name, allow_delete).await
         }
     }
@@ -292,43 +310,35 @@ async fn stop_service_windows(service_name: &str, allow_delete: bool) -> Result<
 #[cfg(target_os = "windows")]
 async fn force_stop_service_windows(service_name: &str, allow_delete: bool) -> Result<()> {
     for attempt in 1..=SERVICE_FORCE_KILL_MAX_ATTEMPTS {
-        let status = query_service_status_windows(service_name);
-        if service_stopped_or_missing(&status) {
-            info!(
-                "Service {} is no longer running (force-stop attempt {})",
-                service_name, attempt
-            );
+        let status = match query_service_status_timed(service_name).await {
+            Ok(status) => Some(status),
+            Err(e) => {
+                warn!("Status query for service {} failed during force-stop (attempt {}/{}): {e:#}",
+                      service_name, attempt, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
+                None
+            }
+        };
+        if status.as_ref().is_some_and(service_stopped_or_missing) {
+            info!("Service {} is no longer running (force-stop attempt {})", service_name, attempt);
             return Ok(());
         }
 
-        match status.as_ref().ok().and_then(|s| s.process_id) {
+        match status.as_ref().and_then(|s| s.as_ref().ok()).and_then(|s| s.process_id) {
             Some(pid) => {
-                info!(
-                    "Force-killing service {} process tree (pid {}, attempt {}/{})",
-                    service_name, pid, attempt, SERVICE_FORCE_KILL_MAX_ATTEMPTS
-                );
+                info!("Force-killing service {} process tree (pid {}, attempt {}/{})",
+                      service_name, pid, attempt, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
 
                 let output = Command::new("taskkill")
                     .args(["/F", "/T", "/PID", &pid.to_string()])
                     .output()
                     .await
-                    .with_context(|| {
-                        format!(
-                            "Failed to execute taskkill for service {} (pid {})",
-                            service_name, pid
-                        )
-                    })?;
+                    .with_context(|| format!("Failed to execute taskkill for service {} (pid {})", service_name, pid))?;
 
                 if !output.status.success() {
                     let kill_stdout = String::from_utf8_lossy(&output.stdout);
                     let kill_stderr = String::from_utf8_lossy(&output.stderr);
-                    warn!(
-                        "taskkill for service {} (pid {}) reported: stdout={} stderr={}",
-                        service_name,
-                        pid,
-                        kill_stdout.trim(),
-                        kill_stderr.trim()
-                    );
+                    warn!("taskkill for service {} (pid {}) reported: stdout={} stderr={}",
+                          service_name, pid, kill_stdout.trim(), kill_stderr.trim());
                 }
             }
             None => {
@@ -336,7 +346,16 @@ async fn force_stop_service_windows(service_name: &str, allow_delete: bool) -> R
                 // other transitional states) the PID is hidden, so the SCM-PID path can never
                 // act on a wedged service. Fall back to the service's configured image path
                 // and kill any live process running from it directly.
-                match service_image_exe_path_windows(service_name) {
+                let name = service_name.to_string();
+                let image_path = scm_call_timed(service_name, "config query", SCM_QUERY_TIMEOUT_SECS, move || {
+                    service_image_exe_path_windows(&name)
+                })
+                .await
+                .unwrap_or_else(|e| {
+                    warn!("Config query for service {} failed during force-stop: {e:#}", service_name);
+                    None
+                });
+                match image_path {
                     Some(exe) => {
                         let killed = kill_processes_by_exe_path_windows(&exe).await;
                         if killed > 0 {
@@ -348,10 +367,7 @@ async fn force_stop_service_windows(service_name: &str, allow_delete: bool) -> R
                         }
                     }
                     None => {
-                        let state = status
-                            .as_ref()
-                            .map(|s| format!("{:?}", s.current_state))
-                            .unwrap_or_else(|_| "unqueryable".to_string());
+                        let state = service_state_label(status.as_ref());
                         info!("Service {} has no reportable PID and no resolvable image path (state {}, attempt {}/{}); waiting",
                               service_name, state, attempt, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
                     }
@@ -362,16 +378,13 @@ async fn force_stop_service_windows(service_name: &str, allow_delete: bool) -> R
         sleep(Duration::from_millis(PROCESS_CHECK_INTERVAL_MS)).await;
     }
 
-    let status = query_service_status_windows(service_name);
-    if service_stopped_or_missing(&status) {
+    let status = query_service_status_timed(service_name).await.ok();
+    if status.as_ref().is_some_and(service_stopped_or_missing) {
         info!("Service {} force-stopped successfully", service_name);
         return Ok(());
     }
 
-    let state = status
-        .as_ref()
-        .map(|s| format!("{:?}", s.current_state))
-        .unwrap_or_else(|_| "unqueryable".to_string());
+    let state = service_state_label(status.as_ref());
 
     // Only delete when the caller will recreate the service (install/reinstall/uninstall). The
     // update/restore paths pass allow_delete=false: deleting there would brick the tool because
@@ -379,9 +392,7 @@ async fn force_stop_service_windows(service_name: &str, allow_delete: bool) -> R
     if !allow_delete {
         return Err(anyhow::anyhow!(
             "Failed to force-stop service {} (state {} after {} attempts)",
-            service_name,
-            state,
-            SERVICE_FORCE_KILL_MAX_ATTEMPTS
+            service_name, state, SERVICE_FORCE_KILL_MAX_ATTEMPTS
         ));
     }
 
@@ -392,23 +403,14 @@ async fn force_stop_service_windows(service_name: &str, allow_delete: bool) -> R
           service_name, state, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
     match delete_service_windows(service_name).await {
         Ok(()) => {
-            info!(
-                "Service {} deleted; a fresh install will recreate it",
-                service_name
-            );
+            info!("Service {} deleted; a fresh install will recreate it", service_name);
             Ok(())
         }
         Err(e) => {
-            error!(
-                "Service {} could not be stopped or deleted: {:#}",
-                service_name, e
-            );
+            error!("Service {} could not be stopped or deleted: {:#}", service_name, e);
             Err(anyhow::anyhow!(
                 "Failed to force-stop or delete service {} (state {} after {} attempts): {:#}",
-                service_name,
-                state,
-                SERVICE_FORCE_KILL_MAX_ATTEMPTS,
-                e
+                service_name, state, SERVICE_FORCE_KILL_MAX_ATTEMPTS, e
             ))
         }
     }
@@ -416,39 +418,41 @@ async fn force_stop_service_windows(service_name: &str, allow_delete: bool) -> R
 
 #[cfg(target_os = "windows")]
 async fn wait_for_service_stop_windows(service_name: &str) -> Result<bool> {
+    let mut query_failures = 0u32;
     for attempt in 1..=SERVICE_STOP_MAX_ATTEMPTS {
         sleep(Duration::from_millis(PROCESS_CHECK_INTERVAL_MS)).await;
 
-        if service_stopped_or_missing(&query_service_status_windows(service_name)) {
-            info!(
-                "Service {} confirmed stopped after {} attempts",
-                service_name, attempt
-            );
-            return Ok(true);
+        match query_service_status_timed(service_name).await {
+            Ok(status) => {
+                query_failures = 0;
+                if service_stopped_or_missing(&status) {
+                    info!("Service {} confirmed stopped after {} attempts", service_name, attempt);
+                    return Ok(true);
+                }
+            }
+            Err(e) => {
+                query_failures += 1;
+                warn!("Status query for service {} failed while awaiting stop: {e:#}", service_name);
+                if query_failures >= SCM_QUERY_MAX_CONSECUTIVE_FAILURES {
+                    warn!("SCM unresponsive for service {}; escalating to force-stop", service_name);
+                    return Ok(false);
+                }
+            }
         }
     }
 
-    warn!(
-        "Service {} did not confirm stopped after {} attempts",
-        service_name, SERVICE_STOP_MAX_ATTEMPTS
-    );
+    warn!("Service {} did not confirm stopped after {} attempts", service_name, SERVICE_STOP_MAX_ATTEMPTS);
     Ok(false)
 }
 
 #[cfg(target_os = "macos")]
 async fn stop_service_macos(service_name: &str) -> Result<()> {
     let plist_path = format!("/Library/LaunchDaemons/{}.plist", service_name);
-    info!(
-        "Stopping macOS service via sudo launchctl unload: {}",
-        plist_path
-    );
+    info!("Stopping macOS service via sudo launchctl unload: {}", plist_path);
 
     // Check if plist exists
     if !std::path::Path::new(&plist_path).exists() {
-        warn!(
-            "Plist not found at {}, service may not be installed",
-            plist_path
-        );
+        warn!("Plist not found at {}, service may not be installed", plist_path);
         return Ok(());
     }
 
@@ -456,12 +460,7 @@ async fn stop_service_macos(service_name: &str) -> Result<()> {
         .args(["launchctl", "unload", &plist_path])
         .output()
         .await
-        .with_context(|| {
-            format!(
-                "Failed to execute sudo launchctl unload for: {}",
-                plist_path
-            )
-        })?;
+        .with_context(|| format!("Failed to execute sudo launchctl unload for: {}", plist_path))?;
 
     let stderr = String::from_utf8_lossy(&output.stderr);
 
@@ -486,21 +485,13 @@ async fn stop_service_macos(service_name: &str) -> Result<()> {
 
 #[cfg(target_os = "linux")]
 async fn stop_service_linux(service_name: &str) -> Result<()> {
-    info!(
-        "Stopping Linux service via sudo systemctl stop: {}",
-        service_name
-    );
+    info!("Stopping Linux service via sudo systemctl stop: {}", service_name);
 
     let output = Command::new("sudo")
         .args(["systemctl", "stop", service_name])
         .output()
         .await
-        .with_context(|| {
-            format!(
-                "Failed to execute sudo systemctl stop for service: {}",
-                service_name
-            )
-        })?;
+        .with_context(|| format!("Failed to execute sudo systemctl stop for service: {}", service_name))?;
 
     let stderr = String::from_utf8_lossy(&output.stderr);
 
@@ -554,11 +545,24 @@ fn service_stopped_or_missing(
     }
 }
 
+/// Human-readable state for logs; None or an SCM-level error reads as "unqueryable".
+#[cfg(target_os = "windows")]
+fn service_state_label(
+    status: Option<&windows_service::Result<windows_service::service::ServiceStatus>>,
+) -> String {
+    status
+        .and_then(|s| s.as_ref().ok())
+        .map(|s| format!("{:?}", s.current_state))
+        .unwrap_or_else(|| "unqueryable".to_string())
+}
+
+// Sync SCM call on the caller's thread; not timeboxed (callers are off the restart path).
 #[cfg(target_os = "windows")]
 pub fn service_exists(service_name: &str) -> bool {
     query_service_status_windows(service_name).is_ok()
 }
 
+// Sync SCM call on the caller's thread; not timeboxed (callers are off the restart path).
 #[cfg(target_os = "windows")]
 pub fn service_not_stopped(service_name: &str) -> bool {
     use windows_service::service::ServiceState;
@@ -645,28 +649,42 @@ async fn kill_processes_by_exe_path_windows(exe_path: &std::path::Path) -> usize
 async fn delete_service_windows(service_name: &str) -> Result<()> {
     use windows_service::service::ServiceAccess;
 
-    if service_missing_windows(service_name) {
+    if service_missing_timed(service_name).await.unwrap_or_else(|e| {
+        warn!("Existence query for service {} failed before delete: {e:#}", service_name);
+        false
+    }) {
         return Ok(());
     }
 
-    // Scope the handle so it is closed before we poll — SCM only finalizes removal once the
-    // last open handle is released.
-    {
-        let service = open_service_windows(service_name, ServiceAccess::DELETE)
-            .with_context(|| format!("open service {} for deletion", service_name))?;
-        service
-            .delete()
-            .with_context(|| format!("DeleteService failed for {}", service_name))?;
-    }
+    // The handle is opened, used, and dropped inside the closure — SCM only finalizes removal
+    // once the last open handle is released.
+    let name = service_name.to_string();
+    scm_call_timed(service_name, "delete call", SCM_QUERY_TIMEOUT_SECS, move || {
+        open_service_windows(&name, ServiceAccess::DELETE)?.delete()
+    })
+    .await?
+    .with_context(|| format!("open/DeleteService failed for {}", service_name))?;
 
+    let mut query_failures = 0u32;
     for _ in 1..=SERVICE_STOP_MAX_ATTEMPTS {
-        if service_missing_windows(service_name) {
-            return Ok(());
+        match service_missing_timed(service_name).await {
+            Ok(true) => return Ok(()),
+            Ok(false) => query_failures = 0,
+            Err(e) => {
+                query_failures += 1;
+                warn!("Existence query for service {} failed while confirming deletion: {e:#}", service_name);
+                if query_failures >= SCM_QUERY_MAX_CONSECUTIVE_FAILURES {
+                    return Err(anyhow::anyhow!(
+                        "SCM unresponsive while confirming deletion of service {}",
+                        service_name
+                    ));
+                }
+            }
         }
         sleep(Duration::from_millis(PROCESS_CHECK_INTERVAL_MS)).await;
     }
 
-    if service_missing_windows(service_name) {
+    if service_missing_timed(service_name).await.unwrap_or(false) {
         Ok(())
     } else {
         Err(anyhow::anyhow!(
@@ -674,4 +692,14 @@ async fn delete_service_windows(service_name: &str) -> Result<()> {
             service_name
         ))
     }
+}
+
+/// `service_missing_windows` off-runtime with a timeout; the outer Err is an unresponsive SCM.
+#[cfg(target_os = "windows")]
+async fn service_missing_timed(service_name: &str) -> Result<bool> {
+    let name = service_name.to_string();
+    scm_call_timed(service_name, "existence query", SCM_QUERY_TIMEOUT_SECS, move || {
+        service_missing_windows(&name)
+    })
+    .await
 }

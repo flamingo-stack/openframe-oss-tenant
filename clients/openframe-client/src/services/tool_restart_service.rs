@@ -1,12 +1,14 @@
-use crate::models::{Installation, InstalledTool};
-use crate::platform::system_service;
-use crate::services::tool_run_manager::ToolRunManager;
-use crate::services::InstalledToolsService;
-use crate::services::ToolKillService;
 use anyhow::{Context, Result};
 use futures::FutureExt;
 use std::panic::AssertUnwindSafe;
+use std::time::Duration;
 use tracing::{info, warn};
+use crate::config::service_stop::TOOL_RESTART_TIMEOUT_SECS;
+use crate::models::{InstalledTool, Installation};
+use crate::services::InstalledToolsService;
+use crate::services::ToolKillService;
+use crate::services::tool_run_manager::ToolRunManager;
+use crate::platform::system_service;
 
 pub enum RestartOutcome {
     Restarted,
@@ -68,34 +70,31 @@ impl ToolRestartService {
             tool_agent_id: tool_agent_id.to_string(),
             lock_guard: Some(lock_guard),
         };
-        let outcome = AssertUnwindSafe(self.restart_by_tool_agent_id(tool_agent_id))
-            .catch_unwind()
-            .await;
+        // Hard cap so a wedged OS call can't hold the flag/lock forever and freeze callers (e.g. mesh self-heal).
+        let outcome = tokio::time::timeout(
+            Duration::from_secs(TOOL_RESTART_TIMEOUT_SECS),
+            AssertUnwindSafe(self.restart_by_tool_agent_id(tool_agent_id)).catch_unwind(),
+        )
+        .await;
         match outcome {
-            Ok(result) => result,
-            Err(_) => Err(anyhow::anyhow!(
-                "Restart panicked for tool {}",
-                tool_agent_id
+            // May leave the tool stopped; self-heal or server-sent restarts recover it on their next cycle.
+            Err(_elapsed) => Err(anyhow::anyhow!(
+                "Restart of tool {} timed out after {}s",
+                tool_agent_id, TOOL_RESTART_TIMEOUT_SECS
             )),
+            Ok(Err(_panic)) => Err(anyhow::anyhow!("Restart panicked for tool {}", tool_agent_id)),
+            Ok(Ok(result)) => result,
         }
     }
 
     async fn restart_by_tool_agent_id(&self, tool_agent_id: &str) -> Result<RestartOutcome> {
-        match self
-            .installed_tools_service
-            .get_by_tool_agent_id(tool_agent_id)
-            .await?
-        {
+        match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             None => {
-                info!(
-                    "Tool {} not present in registry, nothing to restart",
-                    tool_agent_id
-                );
+                info!("Tool {} not present in registry, nothing to restart", tool_agent_id);
                 Ok(RestartOutcome::NotInstalled)
             }
             Some(tool) => {
-                self.restart_tool(&tool)
-                    .await
+                self.restart_tool(&tool).await
                     .with_context(|| format!("Failed to restart tool: {}", tool_agent_id))?;
                 Ok(RestartOutcome::Restarted)
             }
@@ -107,9 +106,7 @@ impl ToolRestartService {
 
         // Stop the tool: for Service installs this stops the OS service and kills detached children.
         info!("Stopping tool for restart: {}", tool_agent_id);
-        self.tool_kill_service
-            .stop_installed_tool(tool, false)
-            .await
+        self.tool_kill_service.stop_installed_tool(tool, false).await
             .with_context(|| format!("Failed to stop tool for restart: {}", tool_agent_id))?;
 
         match &tool.installation {
@@ -122,20 +119,15 @@ impl ToolRestartService {
                         info!(service_name = %service_name, "start_service failed but the tool is running — treating as restarted: {e:#}");
                     } else {
                         warn!(service_name = %service_name, "start_service failed, retrying once: {e:#}");
-                        system_service::start_service(service_name)
-                            .await
+                        system_service::start_service(service_name).await
                             .with_context(|| format!("Failed to start service {}", service_name))?;
                     }
                 }
             }
             _ => {
                 // Supervised process: the run-manager loop relaunches it once the update flag clears.
-                self.tool_run_manager
-                    .run_new_tool(tool.clone())
-                    .await
-                    .with_context(|| {
-                        format!("Failed to ensure supervision for tool: {}", tool_agent_id)
-                    })?;
+                self.tool_run_manager.run_new_tool(tool.clone()).await
+                    .with_context(|| format!("Failed to ensure supervision for tool: {}", tool_agent_id))?;
             }
         }
 
