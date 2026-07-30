@@ -152,9 +152,11 @@ impl ToolConnectionProcessingManager {
                     }
                 }
 
-                while tool_run_manager.is_updating(&tool.tool_agent_id).await {
+                // `continue` instead of an inner wait loop so an uninstall during the update window is caught by the registry check above.
+                if tool_run_manager.is_updating(&tool.tool_agent_id).await {
                     info!(tool_id = %tool.tool_id, "Tool is being updated, deferring node-id resolution...");
                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                    continue;
                 }
 
                 // If tool_agent_id_command_args is empty, use empty string as agent_tool_id
