@@ -72,6 +72,11 @@ impl ToolConnectionProcessingManager {
 
         // Re-resolve and re-publish on every start: the agent id can change behind our back (tool re-key, db wipe) and the backend updates the mapping only when told.
         for tool in tools {
+            if tool.tool_type.is_empty() {
+                warn!(tool_agent_id = %tool.tool_agent_id, "Tool has no tool_type - skipping connection publish (the backend rejects empty tool types)");
+                continue;
+            }
+
             if self.try_mark_running(&tool.tool_id).await {
                 info!("Processing tool connection for {}", tool.tool_id);
                 self.process_tool(tool).await?;
@@ -84,6 +89,11 @@ impl ToolConnectionProcessingManager {
     }
 
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
+        if installed_tool.tool_type.is_empty() {
+            warn!(tool_agent_id = %installed_tool.tool_agent_id, "Tool has no tool_type - skipping connection publish (the backend rejects empty tool types)");
+            return Ok(());
+        }
+
         if !self.try_mark_running(&installed_tool.tool_id).await {
             info!(
                 "Connection processing for tool {} is already running - skipping",
