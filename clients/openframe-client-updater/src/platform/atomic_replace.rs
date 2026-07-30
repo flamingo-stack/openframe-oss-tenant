@@ -147,3 +147,7 @@ fn rename_with_retry(from: &Path, to: &Path) -> Result<()> {
     }
     unreachable!()
 }
+
+#[cfg(test)]
+#[path = "atomic_replace_tests.rs"]
+mod tests;

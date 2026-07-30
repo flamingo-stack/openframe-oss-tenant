@@ -148,3 +148,7 @@ impl LastKnownGoodService {
         &self.reserve_path
     }
 }
+
+#[cfg(test)]
+#[path = "last_known_good_service_tests.rs"]
+mod tests;

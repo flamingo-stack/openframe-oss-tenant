@@ -652,3 +652,7 @@ impl ClientUpdateService {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "client_update_service_tests.rs"]
+mod tests;

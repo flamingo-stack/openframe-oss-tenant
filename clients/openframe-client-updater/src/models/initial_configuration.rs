@@ -10,3 +10,7 @@ pub struct InitialConfiguration {
     #[serde(default)]
     pub local_ca_cert_path: String,
 }
+
+#[cfg(test)]
+#[path = "initial_configuration_tests.rs"]
+mod tests;

@@ -35,3 +35,7 @@ impl UpdateProgressMessage {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "update_progress_message_tests.rs"]
+mod tests;

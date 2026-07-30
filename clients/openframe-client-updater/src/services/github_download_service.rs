@@ -243,3 +243,7 @@ impl GithubDownloadService {
         ))
     }
 }
+
+#[cfg(test)]
+#[path = "github_download_service_tests.rs"]
+mod tests;

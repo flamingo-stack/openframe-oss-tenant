@@ -210,3 +210,7 @@ impl DirectoryManager {
         result.is_ok()
     }
 }
+
+#[cfg(test)]
+#[path = "directories_tests.rs"]
+mod tests;

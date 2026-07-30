@@ -24,3 +24,7 @@ impl DownloadConfiguration {
         self.os.eq_ignore_ascii_case(current_os)
     }
 }
+
+#[cfg(test)]
+#[path = "download_configuration_tests.rs"]
+mod tests;

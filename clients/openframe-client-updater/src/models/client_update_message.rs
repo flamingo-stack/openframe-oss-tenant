@@ -13,3 +13,7 @@ pub struct ClientUpdateMessage {
     #[serde(default)]
     pub rollback: bool,
 }
+
+#[cfg(test)]
+#[path = "client_update_message_tests.rs"]
+mod tests;

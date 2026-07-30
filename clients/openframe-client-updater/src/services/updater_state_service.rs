@@ -97,3 +97,7 @@ impl UpdaterStateService {
         self.save(state)
     }
 }
+
+#[cfg(test)]
+#[path = "updater_state_service_tests.rs"]
+mod tests;

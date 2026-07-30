@@ -66,3 +66,7 @@ impl UpdaterState {
         )
     }
 }
+
+#[cfg(test)]
+#[path = "updater_state_tests.rs"]
+mod tests;

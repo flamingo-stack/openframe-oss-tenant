@@ -121,3 +121,7 @@ impl PermissionUtils {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "permissions_tests.rs"]
+mod tests;

@@ -63,3 +63,7 @@ impl EncryptionService {
             .map_err(|e| anyhow::anyhow!("Failed to convert to UTF-8: {}", e))
     }
 }
+
+#[cfg(test)]
+#[path = "encryption_service_tests.rs"]
+mod tests;
