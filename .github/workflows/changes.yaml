@@ -113,7 +113,7 @@ jobs:
             --argjson images "$IMAGES" \
             --argjson clients "$CLIENTS" \
             --argjson addons "$ADDONS" '
-            ( [ $images[]  | { key: .name,          value: (.paths // ["./pom.xml", "./.dockerignore", "./openframe/services/\(.name)/**"]) } ]
+            ( [ $images[]  | { key: .name,          value: (.paths // ["./pom.xml", "./openframe/services/\(.name)/**"]) } ]
             + [ $clients[] | { key: (.id // .name), value: ["\(.path)/**"] } ]
               | from_entries )
             + $addons
