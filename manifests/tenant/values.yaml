@@ -188,8 +188,11 @@ openframe-saas:
   frontend:
     enabled: true
     image:
-      registry: ghcr.io/flamingo-stack/openframe-frontend
-      repository: openframe-frontend
+      # The frontend repo was renamed openframe-frontend -> openframe-oss-frontend;
+      # ghcr packages do not follow repo renames, so the old path 403s anonymously.
+      # Its CI publishes ghcr.io/flamingo-stack/<repo>/<repo>.
+      registry: ghcr.io/flamingo-stack/openframe-oss-frontend
+      repository: openframe-oss-frontend
       tag: ""
     # frontend has no /metrics endpoint; only ship logs
     podAnnotations:
