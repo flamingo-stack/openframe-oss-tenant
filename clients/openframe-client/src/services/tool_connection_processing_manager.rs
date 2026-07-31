@@ -81,9 +81,9 @@ impl ToolConnectionProcessingManager {
                 continue;
             }
 
-            if self.try_mark_running(&tool.tool_id).await {
+            if let Some(wake) = self.try_mark_running(&tool.tool_id).await {
                 info!("Processing tool connection for {}", tool.tool_id);
-                self.process_tool(tool).await?;
+                self.process_tool(tool, wake).await?;
             } else {
                 info!("Connection processing for tool {} is already running - skipping", tool.tool_id);
             }
@@ -98,41 +98,46 @@ impl ToolConnectionProcessingManager {
             return Ok(());
         }
 
-        if !self.try_mark_running(&installed_tool.tool_id).await {
-            // Reinstall with the loop still alive: wake it so the (possibly new) id publishes now, not at the next hourly tick.
-            if let Some(wake) = self.wake_signals.read().await.get(&installed_tool.tool_id) {
-                wake.notify_one();
-                info!(
-                    "Connection processing for tool {} is already running - requested immediate re-publish",
-                    installed_tool.tool_id
-                );
-            } else {
-                info!(
-                    "Connection processing for tool {} is already running - skipping",
-                    installed_tool.tool_id
-                );
+        let wake = match self.try_mark_running(&installed_tool.tool_id).await {
+            Some(wake) => wake,
+            None => {
+                // Reinstall with the loop still alive: wake it so the (possibly new) id publishes now, not at the next hourly tick.
+                if let Some(wake) = self.wake_signals.read().await.get(&installed_tool.tool_id) {
+                    wake.notify_one();
+                    info!(
+                        "Connection processing for tool {} is already running - requested immediate re-publish",
+                        installed_tool.tool_id
+                    );
+                } else {
+                    info!(
+                        "Connection processing for tool {} is already running - skipping",
+                        installed_tool.tool_id
+                    );
+                }
+                return Ok(());
             }
-            return Ok(());
-        }
+        };
 
         info!(
             "Processing tool connection for newly installed tool {}",
             installed_tool.tool_id
         );
-        self.process_tool(installed_tool).await
+        self.process_tool(installed_tool, wake).await
     }
 
-    async fn try_mark_running(&self, tool_id: &str) -> bool {
+    /// Marks the tool as running and registers its wake handle under the same guard, so a racing run_new_tool can always nudge a marked tool.
+    async fn try_mark_running(&self, tool_id: &str) -> Option<Arc<Notify>> {
         let mut set = self.running_tools.write().await;
         if set.contains(tool_id) {
-            false
-        } else {
-            set.insert(tool_id.to_string());
-            true
+            return None;
         }
+        set.insert(tool_id.to_string());
+        let wake = Arc::new(Notify::new());
+        self.wake_signals.write().await.insert(tool_id.to_string(), wake.clone());
+        Some(wake)
     }
 
-    async fn process_tool(&self, mut tool: InstalledTool) -> Result<()> {
+    async fn process_tool(&self, mut tool: InstalledTool, wake: Arc<Notify>) -> Result<()> {
         let params_processor = self.params_processor.clone();
         let config_service = self.config_service.clone();
         let tool_connection_publisher = self.tool_connection_publisher.clone();
@@ -141,8 +146,6 @@ impl ToolConnectionProcessingManager {
         let installed_tools_service = self.installed_tools_service.clone();
         let running_tools = self.running_tools.clone();
         let wake_signals = self.wake_signals.clone();
-        let wake = Arc::new(Notify::new());
-        wake_signals.write().await.insert(tool.tool_id.clone(), wake.clone());
 
         tokio::spawn(async move {
             // Counts consecutive agentId-resolution failures so a hung agent backs off
