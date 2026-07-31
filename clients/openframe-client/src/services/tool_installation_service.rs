@@ -197,9 +197,6 @@ impl ToolInstallationService {
                     warn!("Failed to remove tool connection: {:#}", e);
                 }
 
-                // Do NOT clear the tool-connection processing mark on reinstall: its re-publish loop
-                // keeps running with the stable cached agent id, so run_new_tool below must not spawn a
-                // duplicate loop for the same tool.
                 // Do NOT clear tool_run_manager's tracking entry: the existing supervisor loop
                 // resumes with the new binary on its own. Clearing it makes the post-install
                 // run_new_tool spawn a second supervisor, causing two osqueryd to fight over the

@@ -23,7 +23,7 @@ const AGENT_ID_MAX_FAST_RETRIES: u32 = 5;
 /// Back-off delay between agentId attempts once resolution is degraded, so a persistently
 /// unhealthy agent can't spin a tight 15s loop forever while staying invisible.
 const AGENT_ID_DEGRADED_BACKOFF_SECONDS: u64 = 300;
-const REPUBLISH_INTERVAL_SECONDS: u64 = 900;
+const REPUBLISH_INTERVAL_SECONDS: u64 = 3600;
 
 // TODO: refactor class
 #[derive(Clone)]
