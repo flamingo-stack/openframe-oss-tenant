@@ -23,6 +23,7 @@ const AGENT_ID_MAX_FAST_RETRIES: u32 = 5;
 /// Back-off delay between agentId attempts once resolution is degraded, so a persistently
 /// unhealthy agent can't spin a tight 15s loop forever while staying invisible.
 const AGENT_ID_DEGRADED_BACKOFF_SECONDS: u64 = 300;
+const REPUBLISH_INTERVAL_SECONDS: u64 = 900;
 
 // TODO: refactor class
 #[derive(Clone)]
@@ -137,6 +138,7 @@ impl ToolConnectionProcessingManager {
             // Counts consecutive agentId-resolution failures so a hung agent backs off
             // (and is reported as degraded) instead of spinning a tight retry loop forever.
             let mut agent_id_failures: u32 = 0;
+            let mut cached_agent_tool_id: Option<String> = None;
             loop {
                 // Stop if the tool was uninstalled while we were retrying; don't proceed on a failed registry read.
                 match installed_tools_service.get_by_tool_agent_id(&tool.tool_agent_id).await {
@@ -160,7 +162,9 @@ impl ToolConnectionProcessingManager {
                 }
 
                 // If tool_agent_id_command_args is empty, use empty string as agent_tool_id
-                let agent_tool_id = if tool.tool_agent_id_command_args.is_empty() {
+                let agent_tool_id = if let Some(id) = cached_agent_tool_id.clone() {
+                    id
+                } else if tool.tool_agent_id_command_args.is_empty() {
                     info!(
                         tool_id = %tool.tool_id,
                         "No agentId command configured - using empty agent_tool_id"
@@ -253,6 +257,9 @@ impl ToolConnectionProcessingManager {
                         continue;
                     }
                 };
+                if cached_agent_tool_id.is_none() {
+                    cached_agent_tool_id = Some(agent_tool_id.clone());
+                }
 
                 // Publish tool connection message
                 match config_service.get_machine_id() {
@@ -278,8 +285,7 @@ impl ToolConnectionProcessingManager {
                         }
 
                         info!(tool_id = %tool.tool_id, agent_tool_id = %agent_tool_id, "Tool connection message published successfully and saved");
-                        // Stop processing after successful publish
-                        break;
+                        sleep(Duration::from_secs(REPUBLISH_INTERVAL_SECONDS)).await;
                     }
                     Err(e) => {
                         error!("Failed to get machine_id: {:#}", e);
