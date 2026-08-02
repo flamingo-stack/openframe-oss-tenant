@@ -6,11 +6,13 @@
   "description": "OpenFrame Chat Desktop Client - Tauri + React",
   "scripts": {
     "dev": "tauri dev",
+    "dev:isolated": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "frontend:dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "icons": "node scripts/generate-icons.js",
+    "token:sync": "node scripts/sync-dev-token.mjs",
     "type-check": "tsc --noEmit",
     "lint:biome": "biome check .",
     "lint:biome:fix": "biome check --fix .",
