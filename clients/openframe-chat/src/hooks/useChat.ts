@@ -407,9 +407,25 @@ export function useChat({
    */
   const resumedAnchor = useMemo(() => {
     if (!isResumedDialog || !incompleteState) return null;
-    const trailing = [...allMessages].reverse().find(m => m.role === 'assistant');
+    // Backwards scan, not `[...allMessages].reverse().find()`: this memo
+    // recomputes whenever `allMessages` changes, which during a stream is every
+    // chunk, and the spread cloned the whole thread each time just to read its
+    // last assistant row.
+    let trailing: Message | undefined;
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      if (allMessages[i].role === 'assistant') {
+        trailing = allMessages[i];
+        break;
+      }
+    }
     if (!trailing || !Array.isArray(trailing.content)) return null;
-    return trailing;
+    // COPY, not the object itself. When the trailing bubble comes from history
+    // it belongs to the React Query cache, and handing that reference to live
+    // state aliases the two: the live thread is then one accumulator bug away
+    // from mutating cached data, and a refetch would resurrect the mutation.
+    // The `content` array is cloned for the same reason — the segment
+    // accumulator is handed it directly.
+    return { ...trailing, content: [...trailing.content] };
   }, [isResumedDialog, incompleteState, allMessages]);
 
   // ONE-SHOT PER BUBBLE: keyed on the anchor's id, not a boolean, because the
@@ -423,6 +439,24 @@ export function useChat({
     anchoredIdRef.current = resumedAnchor.id;
     messagesRef.current.addMessage(resumedAnchor);
   }, [resumedAnchor]);
+
+  /**
+   * Emptying the live thread MUST drop the anchor guard with it — always, not
+   * only on the path that happens to remember to.
+   *
+   * The guard holds the bubble id it seeded, and that id does not change when
+   * the user leaves a dialog and comes back. So a clear that leaves it set
+   * makes the next anchor attempt for the SAME dialog a no-op: the live array
+   * stays empty, and the first continuation chunk opens the second bubble this
+   * whole mechanism exists to prevent. Three call sites empty the thread
+   * (`clearMessages`, `showTicketPreview`, `resumeDialog`) and only one used to
+   * clear the guard, so leaving dialog A through `resumeDialog` and returning
+   * reproduced the split turn exactly.
+   */
+  const clearLiveThread = useCallback(() => {
+    messages.clearMessages();
+    anchoredIdRef.current = null;
+  }, [messages]);
 
   const { processChunk: processRealtimeChunk, reset: resetChunkProcessor } = useRealtimeChunkProcessor({
     callbacks: realtimeCallbacks,
@@ -699,7 +733,7 @@ export function useChat({
   }, []);
 
   const clearMessages = useCallback(() => {
-    messages.clearMessages();
+    clearLiveThread();
     setIsTyping(false);
     setNatsStreaming(false);
     setError(null);
@@ -708,18 +742,15 @@ export function useChat({
     setIsTicketPreview(false);
     escalatedApprovalsRef.current.clear();
     approvals.clearApprovals();
-    // Re-entering the SAME dialog must re-anchor: the guard remembers the
-    // bubble id it anchored, and that id does not change across a leave.
-    anchoredIdRef.current = null;
     resetChunkProcessor();
     resetDialogMessages();
     apiServiceRef.current?.reset();
     cancelSubscriptionWait();
-  }, [messages, approvals, resetChunkProcessor, resetDialogMessages, cancelSubscriptionWait]);
+  }, [clearLiveThread, approvals, resetChunkProcessor, resetDialogMessages, cancelSubscriptionWait]);
 
   const showTicketPreview = useCallback(
     (ticket: { title: string; description?: string }) => {
-      messages.clearMessages();
+      clearLiveThread();
       setIsTyping(false);
       setNatsStreaming(false);
       setError(null);
@@ -756,6 +787,7 @@ export function useChat({
     },
     [
       messages,
+      clearLiveThread,
       approvals,
       resetChunkProcessor,
       resetDialogMessages,
@@ -770,7 +802,7 @@ export function useChat({
       try {
         cancelSubscriptionWait();
         setError(null);
-        messages.clearMessages();
+        clearLiveThread();
         setIsTyping(false);
         setNatsStreaming(false);
         setIsTicketPreview(false);
@@ -798,7 +830,7 @@ export function useChat({
         return false;
       }
     },
-    [messages, approvals, waitForNatsSubscription, cancelSubscriptionWait],
+    [clearLiveThread, approvals, waitForNatsSubscription, cancelSubscriptionWait],
   );
 
   return {
