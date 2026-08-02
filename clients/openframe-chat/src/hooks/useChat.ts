@@ -10,7 +10,6 @@ import {
   type TokenUsageData,
   type ToolExecutionSegment,
   useJetStreamDialogSubscription,
-  useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -28,6 +27,7 @@ import { useChatConfig } from './useChatConfig';
 import { useChatMessages } from './useChatMessages';
 import { CHAT_NATS_CLIENT_CONFIG, useChatNatsConfig } from './useChatNatsConfig';
 import { useDialogMessages } from './useDialogMessages';
+import { useRealtimeChunkProcessor } from './useRealtimeChunkProcessor';
 
 const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
 
@@ -389,6 +389,41 @@ export function useChat({
     };
   }, [incompleteState]);
 
+  /**
+   * ADOPTION ANCHOR for a resumed dialog.
+   *
+   * History lives in React Query and the live tail in `useChatMessages`, so on
+   * re-entry the live array starts EMPTY while the turn's bubble sits in
+   * history. A continuation chunk then reaches `appendSegmentsToLastAssistant`,
+   * finds no assistant row to append to, and opens a SECOND bubble beside the
+   * persisted one — the split turn seen after leaving and re-entering a dialog.
+   *
+   * The merge layer is built for the opposite: `mergeHistoryWithRealtime`
+   * expects the processor to ADOPT the persisted row — keep its id while
+   * accumulating more than history has — and collapses the pair by that id.
+   * So seed the live array with a copy of the trailing assistant bubble,
+   * carrying its persisted id. Continuations then land IN it, and the merge
+   * keeps the richer live copy instead of rendering both.
+   */
+  const resumedAnchor = useMemo(() => {
+    if (!isResumedDialog || !incompleteState) return null;
+    const trailing = [...allMessages].reverse().find(m => m.role === 'assistant');
+    if (!trailing || !Array.isArray(trailing.content)) return null;
+    return trailing;
+  }, [isResumedDialog, incompleteState, allMessages]);
+
+  // ONE-SHOT PER BUBBLE: keyed on the anchor's id, not a boolean, because the
+  // hook is not remounted on dialog switch — a latched flag would leave every
+  // later resumed dialog unanchored. Skipped once the live array already holds
+  // an assistant row (a fresh send, or a previous anchor still in place).
+  const anchoredIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!resumedAnchor || anchoredIdRef.current === resumedAnchor.id) return;
+    if (messagesRef.current.messages.some(m => m.role === 'assistant')) return;
+    anchoredIdRef.current = resumedAnchor.id;
+    messagesRef.current.addMessage(resumedAnchor);
+  }, [resumedAnchor]);
+
   const { processChunk: processRealtimeChunk, reset: resetChunkProcessor } = useRealtimeChunkProcessor({
     callbacks: realtimeCallbacks,
     displayApprovalTypes: ['CLIENT'],
@@ -673,6 +708,9 @@ export function useChat({
     setIsTicketPreview(false);
     escalatedApprovalsRef.current.clear();
     approvals.clearApprovals();
+    // Re-entering the SAME dialog must re-anchor: the guard remembers the
+    // bubble id it anchored, and that id does not change across a leave.
+    anchoredIdRef.current = null;
     resetChunkProcessor();
     resetDialogMessages();
     apiServiceRef.current?.reset();
