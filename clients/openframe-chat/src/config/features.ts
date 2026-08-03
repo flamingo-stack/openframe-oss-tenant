@@ -1,8 +1,4 @@
-export const FEATURE_FLAG_NAMES = [
-  'batch-approval',
-  'customer-ai-assistant-settings',
-  'notifications',
-] as const;
+export const FEATURE_FLAG_NAMES = ['batch-approval', 'customer-ai-assistant-settings', 'notifications'] as const;
 
 export type FeatureFlagName = (typeof FEATURE_FLAG_NAMES)[number];
 

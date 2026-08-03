@@ -22,6 +22,24 @@ initImage:
   registry: ghcr.io/flamingo-stack/registry
   repository: curlimages/curl
   tag: "8.9.1"
+  # curlimages/curl runs as uid 100 (curl_user), gid 101 (curl_group)
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 100
+    runAsGroup: 101
+    fsGroup: 101
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 100
+    runAsGroup: 101
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
 
 
 
@@ -132,6 +150,23 @@ openframe-saas:
   podAnnotations:
     loki.grafana.com/scrape: "true"
     prometheus.io/scrape: "true"
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
 
   api:
     enabled: true
@@ -188,8 +223,8 @@ openframe-saas:
   frontend:
     enabled: true
     image:
-      registry: ghcr.io/flamingo-stack/openframe-frontend
-      repository: openframe-frontend
+      registry: ghcr.io/flamingo-stack/openframe-oss-frontend
+      repository: openframe-oss-frontend
       tag: ""
     # frontend has no /metrics endpoint; only ship logs
     podAnnotations:
