@@ -197,7 +197,6 @@ impl ToolInstallationService {
                     warn!("Failed to remove tool connection: {:#}", e);
                 }
 
-                self.tool_connection_processing_manager.clear_running_tool(&installed_tool.tool_id).await;
                 // Do NOT clear tool_run_manager's tracking entry: the existing supervisor loop
                 // resumes with the new binary on its own. Clearing it makes the post-install
                 // run_new_tool spawn a second supervisor, causing two osqueryd to fight over the

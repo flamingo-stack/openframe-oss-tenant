@@ -23,6 +23,7 @@ const AGENT_ID_MAX_FAST_RETRIES: u32 = 5;
 /// Back-off delay between agentId attempts once resolution is degraded, so a persistently
 /// unhealthy agent can't spin a tight 15s loop forever while staying invisible.
 const AGENT_ID_DEGRADED_BACKOFF_SECONDS: u64 = 300;
+const REPUBLISH_INTERVAL_SECONDS: u64 = 3600;
 
 // TODO: refactor class
 #[derive(Clone)]
@@ -70,13 +71,11 @@ impl ToolConnectionProcessingManager {
             return Ok(());
         }
 
+        // Re-resolve and re-publish on every start: the agent id can change behind our back (tool re-key, db wipe) and the backend updates the mapping only when told.
         for tool in tools {
-            if self.tool_connection_service.exists_by_tool_agent_id(&tool.tool_agent_id).await? {
-                info!(
-                "Tool connection for tool {} already exists - skipping",
-                tool.tool_id
-            );
-                return Ok(());
+            if tool.tool_type.is_empty() {
+                warn!(tool_agent_id = %tool.tool_agent_id, "Tool has no tool_type - skipping connection publish (the backend rejects empty tool types)");
+                continue;
             }
 
             if self.try_mark_running(&tool.tool_id).await {
@@ -91,11 +90,8 @@ impl ToolConnectionProcessingManager {
     }
 
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
-        if self.tool_connection_service.exists_by_tool_agent_id(&installed_tool.tool_agent_id).await? {
-            info!(
-                "Tool connection for tool {} already exists - skipping",
-                installed_tool.tool_id
-            );
+        if installed_tool.tool_type.is_empty() {
+            warn!(tool_agent_id = %installed_tool.tool_agent_id, "Tool has no tool_type - skipping connection publish (the backend rejects empty tool types)");
             return Ok(());
         }
 
@@ -135,19 +131,40 @@ impl ToolConnectionProcessingManager {
         let tool_connection_publisher = self.tool_connection_publisher.clone();
         let tool_connection_service = self.tool_connection_service.clone();
         let tool_run_manager = self.tool_run_manager.clone();
+        let installed_tools_service = self.installed_tools_service.clone();
+        let running_tools = self.running_tools.clone();
 
         tokio::spawn(async move {
             // Counts consecutive agentId-resolution failures so a hung agent backs off
             // (and is reported as degraded) instead of spinning a tight retry loop forever.
             let mut agent_id_failures: u32 = 0;
+            let mut cached_agent_tool_id: Option<String> = None;
             loop {
-                while tool_run_manager.is_updating(&tool.tool_agent_id).await {
+                // Stop if the tool was uninstalled while we were retrying; don't proceed on a failed registry read.
+                match installed_tools_service.get_by_tool_agent_id(&tool.tool_agent_id).await {
+                    Ok(Some(_)) => {}
+                    Ok(None) => {
+                        info!(tool_id = %tool.tool_id, "Tool no longer installed - stopping connection processing");
+                        break;
+                    }
+                    Err(e) => {
+                        warn!(tool_id = %tool.tool_id, "Cannot read installed tools registry: {e:#} - retrying");
+                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                        continue;
+                    }
+                }
+
+                // `continue` instead of an inner wait loop so an uninstall during the update window is caught by the registry check above.
+                if tool_run_manager.is_updating(&tool.tool_agent_id).await {
                     info!(tool_id = %tool.tool_id, "Tool is being updated, deferring node-id resolution...");
                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                    continue;
                 }
 
                 // If tool_agent_id_command_args is empty, use empty string as agent_tool_id
-                let agent_tool_id = if tool.tool_agent_id_command_args.is_empty() {
+                let agent_tool_id = if let Some(id) = cached_agent_tool_id.clone() {
+                    id
+                } else if tool.tool_agent_id_command_args.is_empty() {
                     info!(
                         tool_id = %tool.tool_id,
                         "No agentId command configured - using empty agent_tool_id"
@@ -240,6 +257,9 @@ impl ToolConnectionProcessingManager {
                         continue;
                     }
                 };
+                if cached_agent_tool_id.is_none() {
+                    cached_agent_tool_id = Some(agent_tool_id.clone());
+                }
 
                 // Publish tool connection message
                 match config_service.get_machine_id() {
@@ -265,8 +285,7 @@ impl ToolConnectionProcessingManager {
                         }
 
                         info!(tool_id = %tool.tool_id, agent_tool_id = %agent_tool_id, "Tool connection message published successfully and saved");
-                        // Stop processing after successful publish
-                        break;
+                        sleep(Duration::from_secs(REPUBLISH_INTERVAL_SECONDS)).await;
                     }
                     Err(e) => {
                         error!("Failed to get machine_id: {:#}", e);
@@ -275,6 +294,9 @@ impl ToolConnectionProcessingManager {
                     }
                 }
             }
+
+            // Release the mark so a later repair/reinstall can spawn a fresh loop.
+            running_tools.write().await.remove(&tool.tool_id);
         });
 
         Ok(())
