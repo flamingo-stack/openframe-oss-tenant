@@ -36,7 +36,10 @@ runs:
             '</mirror></mirrors></settings>' > /tmp/central-mirror.xml
           margs=(-B -q -fn -DskipTests -gs /tmp/central-mirror.xml dependency:go-offline)
           [ -f .mvn/settings.xml ] && margs+=(-s .mvn/settings.xml)
-          mvn "${margs[@]}" || echo "::warning::Maven dependency resolution incomplete; pom.xml scan depth may be reduced"
+          mvn "${margs[@]}" | tee /tmp/mvn.log || true
+          if grep -q '\[ERROR\]' /tmp/mvn.log; then
+            echo "::warning::Some Maven dependencies could not be resolved; pom.xml scan depth may be reduced"
+          fi
         fi
 
         # --- fs: lockfile dependencies ---
@@ -56,14 +59,14 @@ runs:
         while IFS= read -r img; do
           [ -z "$img" ] && continue
           [ "$img" = "scratch" ] && continue
-          case "$img" in *'$'*) continue ;; esac
+          case "$img" in *'$'*) echo "::warning::Skipping base image with unresolved variable: ${img}"; continue ;; esac
           grep -qxF "$img" aliases.txt && continue
           echo "Scanning base image ${img}"
           if trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --format json -o img.json "$img"; then
             jq --arg s "$img" '.Results = ((.Results // []) | map(. + {ScanSrc: ("image " + $s)}))' img.json > img2.json
             jq -s '{Results: (.[0].Results + (.[1].Results // []))}' combined.json img2.json > tmp.json && mv tmp.json combined.json
           else
-            echo "skip ${img}"
+            echo "::warning::Base image ${img} could not be scanned (pull/scan error); it was NOT checked"
           fi
         done < imgs.txt
 
