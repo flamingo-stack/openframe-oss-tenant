@@ -57,6 +57,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/steps/yaml-lint
 
+  trivy_scan:
+    name: "Trivy Scan"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    if: github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && !github.event.pull_request.draft
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Trivy scan (fs + base images)
+        uses: ./.github/steps/trivy
+
   build_images:
     name: "Build: ${{ matrix.name }}"
     needs: [changes]
@@ -320,7 +336,7 @@ jobs:
 
   all-checks:
     name: "All Checks"
-    needs: [changes, lint, build_images, test_clients, test_helm, cleanup]
+    needs: [changes, lint, trivy_scan, build_images, test_clients, test_helm, cleanup]
     runs-on: ubuntu-latest
     if: always()
     steps:
