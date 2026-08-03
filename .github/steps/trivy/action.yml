@@ -1,0 +1,87 @@
+name: "Trivy"
+description: "PR security gate: scans repository dependencies (fs) and Dockerfile base images, prints findings and fails on HIGH/CRITICAL with a fix available"
+
+inputs:
+  maven-token:
+    description: "Token Maven uses to read internal artifacts from GitHub Packages (defaults to the workflow token, which cannot read other repos' packages)"
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Trivy
+      uses: aquasecurity/setup-trivy@v0.3.1
+      with:
+        version: v0.73.0
+        cache: true
+
+    - name: Scan and evaluate
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.maven-token }}
+        GITHUB_ACTOR: ${{ github.actor }}
+      run: |
+        set -euo pipefail
+
+        # --- maven: resolve deps into ~/.m2 via Google's Central mirror so trivy
+        #     can analyze parent-managed versions fully offline (no rate limits) ---
+        if [ -f pom.xml ]; then
+          printf '%s\n' \
+            '<settings><mirrors><mirror>' \
+            '  <id>google-central</id>' \
+            '  <name>Google mirror of Maven Central</name>' \
+            '  <url>https://maven-central.storage-download.googleapis.com/maven2/</url>' \
+            '  <mirrorOf>central</mirrorOf>' \
+            '</mirror></mirrors></settings>' > /tmp/central-mirror.xml
+          margs=(-B -q -fn -DskipTests -gs /tmp/central-mirror.xml dependency:go-offline)
+          [ -f .mvn/settings.xml ] && margs+=(-s .mvn/settings.xml)
+          mvn "${margs[@]}" || echo "::warning::Maven dependency resolution incomplete; pom.xml scan depth may be reduced"
+        fi
+
+        # --- fs: lockfile dependencies ---
+        trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --offline-scan \
+          --format json -o trivy-report.json .
+        jq '.Results = ((.Results // []) | map(. + {ScanSrc: "fs"}))' trivy-report.json > combined.json
+
+        # --- image: base images from Dockerfiles ---
+        find . \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name 'Dockerfile-*' \) -not -path '*/node_modules/*' -not -path './.git/*' > dfs.txt || : > dfs.txt
+        : > aliases.txt
+        : > imgs.txt
+        while IFS= read -r df; do
+          awk 'toupper($1)=="FROM" { if (toupper($3)=="AS") print $4; if (toupper($4)=="AS") print $5 }' "$df" >> aliases.txt
+          awk 'toupper($1)=="FROM" { i=$2; if (i ~ /^--/) i=$3; print i }' "$df" >> imgs.txt
+        done < dfs.txt
+        sort -u imgs.txt -o imgs.txt
+        while IFS= read -r img; do
+          [ -z "$img" ] && continue
+          [ "$img" = "scratch" ] && continue
+          case "$img" in *'$'*) continue ;; esac
+          grep -qxF "$img" aliases.txt && continue
+          echo "Scanning base image ${img}"
+          if trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --format json -o img.json "$img"; then
+            jq --arg s "$img" '.Results = ((.Results // []) | map(. + {ScanSrc: ("image " + $s)}))' img.json > img2.json
+            jq -s '{Results: (.[0].Results + (.[1].Results // []))}' combined.json img2.json > tmp.json && mv tmp.json combined.json
+          else
+            echo "skip ${img}"
+          fi
+        done < imgs.txt
+
+        # --- report (deduplicated: one row per unique vulnerability, with occurrence count) ---
+        total=$(jq '[.Results[]?.Vulnerabilities[]?] | length' combined.json)
+        uniq=$(jq '[.Results[]? as $r | $r.Vulnerabilities[]?
+          | [.Severity, ($r.ScanSrc // "fs"), .PkgName, .VulnerabilityID]] | unique | length' combined.json)
+        if [ "$total" -gt 0 ]; then
+          echo ""
+          echo "=== HIGH/CRITICAL findings: ${uniq} unique (${total} occurrences across modules/images) ==="
+          jq -r '[.Results[]? as $r | $r.Vulnerabilities[]?
+              | {s: .Severity, ty: ($r.ScanSrc // "fs"), p: .PkgName, i: .InstalledVersion,
+                 f: (.FixedVersion // "-"), id: .VulnerabilityID}]
+            | group_by([.s, .ty, .p, .id]) | map(.[0] + {n: length}) | sort_by(.s, .ty, .p)
+            | .[] | [.s, .ty, .p, .i + " -> " + .f, .id, "x\(.n)"] | @tsv' combined.json \
+            | column -t -s "$(printf '\t')"
+          echo ""
+          echo "::error::Trivy found ${uniq} unique HIGH/CRITICAL vulnerabilities (${total} occurrences, fs + base images)"
+          exit 1
+        fi
+        echo "No HIGH/CRITICAL vulnerabilities found."
