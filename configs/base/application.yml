@@ -127,6 +127,12 @@ logging:
 
 openframe:
   cluster-id: ${OPENFRAME_CLUSTER_ID:cluster-id}
+  # See the comment block at the end of this file: OSS runs the shared libs in
+  # tenant-isolation mode so the tenant-aware repositories (and their
+  # TenantAwareMongoTemplate) exist — without it every Java service crash-loops
+  # on startup with lib >= 6.16.
+  tenant-isolation:
+    enabled: true
   redis:
     tenant-id: default
   client:
@@ -153,3 +159,14 @@ pinot:
 debezium:
   connector:
     create: http://debezium-connect.datasources:8083/connectors
+
+# OSS single-tenant deployments run the shared libs in tenant-isolation mode:
+# lib >= 6.16 registers services (notifications, tickets, knowledge base, ...)
+# that constructor-require @TenantAwareRepository repositories, and those are
+# only enabled by TenantAwareSyncConfig when this flag is on (MongoSyncConfig,
+# the non-isolated variant, deliberately excludes them — leaving the beans
+# unsatisfiable and every service crash-looping at startup). With the flag on,
+# reads and writes also agree on the tenant id (TenantIdProvider), fixing the
+# openframe_client_configuration E11000 self-collision on first boot.
+# Requires openframe-oss-lib >= the release with TenantAwareInfraConfig (the
+# mongoTemplate/TenantAwareMongoTemplate bean) — see the lib-side fix.
