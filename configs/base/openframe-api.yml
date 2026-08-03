@@ -112,3 +112,13 @@ oauth:
 fleet:
   api:
     url: http://fleet-service.tenant.svc.cluster.local:8080
+
+# Knowledge-base attachments (lib >= 6.16): KnowledgeBaseAttachmentService
+# constructor-requires GcsPresignedUrlService, which only registers when
+# storage.s3.disabled=false is EXPLICITLY set — without these keys the service
+# fails startup. The GCS client is lazy, so boot succeeds without cloud
+# credentials; the attachments feature itself needs a real bucket + GCP creds.
+storage:
+  s3:
+    disabled: false
+    bucket: local-dev-bucket
