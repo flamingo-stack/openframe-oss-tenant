@@ -72,7 +72,7 @@ tracing-appender = "0.2"
 flate2 = "1.0"
 indexmap = "2.0"
 tar = "0.4"
-service-manager = "0.8"
+service-manager = "0.11"
 plist = "1.7.1"
 # System information collection dependencies
 hostname = "0.4"

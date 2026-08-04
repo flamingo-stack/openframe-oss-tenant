@@ -21,10 +21,19 @@ spec:
         prometheus.io/port: "8889"
         prometheus.io/path: "/management/{{ .Values.image.tag }}/prometheus"
     spec:
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
 
       containers:
         - name: openframe-config
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - containerPort: 8888
               name: http
@@ -37,6 +46,15 @@ spec:
           env:
             - name: RELEASE_VERSION
               value: "{{ .Values.image.tag }}"
+            # jgit caches
+            - name: XDG_CONFIG_HOME
+              value: /tmp/.config
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: logs
+              mountPath: /app/logs
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -62,3 +80,9 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
