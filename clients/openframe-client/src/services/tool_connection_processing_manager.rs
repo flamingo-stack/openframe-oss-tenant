@@ -3,9 +3,9 @@ use tracing::{info, error, warn};
 use tokio::process::Command;
 use tokio::time::{sleep, timeout};
 use std::time::Duration;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{Notify, RwLock};
 
 use crate::models::installed_tool::InstalledTool;
 use crate::models::ToolConnection;
@@ -23,6 +23,7 @@ const AGENT_ID_MAX_FAST_RETRIES: u32 = 5;
 /// Back-off delay between agentId attempts once resolution is degraded, so a persistently
 /// unhealthy agent can't spin a tight 15s loop forever while staying invisible.
 const AGENT_ID_DEGRADED_BACKOFF_SECONDS: u64 = 300;
+/// Cadence of the periodic re-resolve + re-publish, so a mid-run re-key heals within the hour.
 const REPUBLISH_INTERVAL_SECONDS: u64 = 3600;
 
 // TODO: refactor class
@@ -35,6 +36,7 @@ pub struct ToolConnectionProcessingManager {
     tool_connection_service: ToolConnectionService,
     tool_run_manager: ToolRunManager,
     running_tools: Arc<RwLock<HashSet<String>>>,
+    wake_signals: Arc<RwLock<HashMap<String, Arc<Notify>>>>,
 }
 
 impl ToolConnectionProcessingManager {
@@ -54,6 +56,7 @@ impl ToolConnectionProcessingManager {
             tool_connection_service,
             tool_run_manager,
             running_tools: Arc::new(RwLock::new(HashSet::new())),
+            wake_signals: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -78,9 +81,9 @@ impl ToolConnectionProcessingManager {
                 continue;
             }
 
-            if self.try_mark_running(&tool.tool_id).await {
+            if let Some(wake) = self.try_mark_running(&tool.tool_id).await {
                 info!("Processing tool connection for {}", tool.tool_id);
-                self.process_tool(tool).await?;
+                self.process_tool(tool, wake).await?;
             } else {
                 info!("Connection processing for tool {} is already running - skipping", tool.tool_id);
             }
@@ -95,37 +98,46 @@ impl ToolConnectionProcessingManager {
             return Ok(());
         }
 
-        if !self.try_mark_running(&installed_tool.tool_id).await {
-            info!(
-                "Connection processing for tool {} is already running - skipping",
-                installed_tool.tool_id
-            );
-            return Ok(());
-        }
+        let wake = match self.try_mark_running(&installed_tool.tool_id).await {
+            Some(wake) => wake,
+            None => {
+                // Reinstall with the loop still alive: wake it so the (possibly new) id publishes now, not at the next hourly tick.
+                if let Some(wake) = self.wake_signals.read().await.get(&installed_tool.tool_id) {
+                    wake.notify_one();
+                    info!(
+                        "Connection processing for tool {} is already running - requested immediate re-publish",
+                        installed_tool.tool_id
+                    );
+                } else {
+                    info!(
+                        "Connection processing for tool {} is already running - skipping",
+                        installed_tool.tool_id
+                    );
+                }
+                return Ok(());
+            }
+        };
 
         info!(
             "Processing tool connection for newly installed tool {}",
             installed_tool.tool_id
         );
-        self.process_tool(installed_tool).await
+        self.process_tool(installed_tool, wake).await
     }
 
-    async fn try_mark_running(&self, tool_id: &str) -> bool {
+    /// Marks the tool as running and registers its wake handle under the same guard, so a racing run_new_tool can always nudge a marked tool.
+    async fn try_mark_running(&self, tool_id: &str) -> Option<Arc<Notify>> {
         let mut set = self.running_tools.write().await;
         if set.contains(tool_id) {
-            false
-        } else {
-            set.insert(tool_id.to_string());
-            true
+            return None;
         }
+        set.insert(tool_id.to_string());
+        let wake = Arc::new(Notify::new());
+        self.wake_signals.write().await.insert(tool_id.to_string(), wake.clone());
+        Some(wake)
     }
 
-    pub async fn clear_running_tool(&self, tool_id: &str) {
-        let mut set = self.running_tools.write().await;
-        set.remove(tool_id);
-    }
-
-    async fn process_tool(&self, tool: InstalledTool) -> Result<()> {
+    async fn process_tool(&self, mut tool: InstalledTool, wake: Arc<Notify>) -> Result<()> {
         let params_processor = self.params_processor.clone();
         let config_service = self.config_service.clone();
         let tool_connection_publisher = self.tool_connection_publisher.clone();
@@ -133,15 +145,17 @@ impl ToolConnectionProcessingManager {
         let tool_run_manager = self.tool_run_manager.clone();
         let installed_tools_service = self.installed_tools_service.clone();
         let running_tools = self.running_tools.clone();
+        let wake_signals = self.wake_signals.clone();
 
         tokio::spawn(async move {
             // Counts consecutive agentId-resolution failures so a hung agent backs off
             // (and is reported as degraded) instead of spinning a tight retry loop forever.
             let mut agent_id_failures: u32 = 0;
-            let mut cached_agent_tool_id: Option<String> = None;
             loop {
                 // Stop if the tool was uninstalled while we were retrying; don't proceed on a failed registry read.
                 match installed_tools_service.get_by_tool_agent_id(&tool.tool_agent_id).await {
+                    // Adopt the fresh record so a reinstall/update can't leave the loop resolving with stale config.
+                    Ok(Some(fresh)) if !fresh.tool_type.is_empty() => tool = fresh,
                     Ok(Some(_)) => {}
                     Ok(None) => {
                         info!(tool_id = %tool.tool_id, "Tool no longer installed - stopping connection processing");
@@ -162,9 +176,7 @@ impl ToolConnectionProcessingManager {
                 }
 
                 // If tool_agent_id_command_args is empty, use empty string as agent_tool_id
-                let agent_tool_id = if let Some(id) = cached_agent_tool_id.clone() {
-                    id
-                } else if tool.tool_agent_id_command_args.is_empty() {
+                let agent_tool_id = if tool.tool_agent_id_command_args.is_empty() {
                     info!(
                         tool_id = %tool.tool_id,
                         "No agentId command configured - using empty agent_tool_id"
@@ -257,9 +269,6 @@ impl ToolConnectionProcessingManager {
                         continue;
                     }
                 };
-                if cached_agent_tool_id.is_none() {
-                    cached_agent_tool_id = Some(agent_tool_id.clone());
-                }
 
                 // Publish tool connection message
                 match config_service.get_machine_id() {
@@ -285,7 +294,10 @@ impl ToolConnectionProcessingManager {
                         }
 
                         info!(tool_id = %tool.tool_id, agent_tool_id = %agent_tool_id, "Tool connection message published successfully and saved");
-                        sleep(Duration::from_secs(REPUBLISH_INTERVAL_SECONDS)).await;
+                        tokio::select! {
+                            _ = sleep(Duration::from_secs(REPUBLISH_INTERVAL_SECONDS)) => {}
+                            _ = wake.notified() => info!(tool_id = %tool.tool_id, "Immediate re-publish requested - re-resolving agent id now"),
+                        }
                     }
                     Err(e) => {
                         error!("Failed to get machine_id: {:#}", e);
@@ -295,7 +307,8 @@ impl ToolConnectionProcessingManager {
                 }
             }
 
-            // Release the mark so a later repair/reinstall can spawn a fresh loop.
+            // Drop the wake entry before the mark so a successor loop's fresh entry can't be clobbered.
+            wake_signals.write().await.remove(&tool.tool_id);
             running_tools.write().await.remove(&tool.tool_id);
         });
 
