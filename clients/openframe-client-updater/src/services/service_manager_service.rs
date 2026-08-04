@@ -170,9 +170,35 @@ impl ServiceManagerService {
             .context("Failed to run launchctl unload")?;
 
         if !status.success() {
+            // A not-loaded service is already stopped — failing here would
+            // wedge every future update at StoppingService.
+            if !Self::is_loaded(service_name)? {
+                info!(
+                    "Service '{}' is not loaded — treating as stopped",
+                    service_name
+                );
+                return Ok(());
+            }
             return Err(anyhow!("launchctl unload failed with: {:?}", status.code()));
         }
-        Ok(())
+
+        // unload returns before the process exits — wait, or the binary swap
+        // races the dying client.
+        let deadline =
+            std::time::Instant::now() + std::time::Duration::from_secs(SERVICE_STOP_TIMEOUT_SECS);
+        loop {
+            if !matches!(Self::is_running_impl(service_name), Ok(true)) {
+                return Ok(());
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err(anyhow!(
+                    "Service '{}' did not stop within {}s after unload",
+                    service_name,
+                    SERVICE_STOP_TIMEOUT_SECS
+                ));
+            }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
     }
 
     #[cfg(target_os = "macos")]
@@ -184,9 +210,24 @@ impl ServiceManagerService {
             .context("Failed to run launchctl load")?;
 
         if !status.success() {
+            // load errors when the service is already loaded — not a start failure.
+            if Self::is_loaded(service_name)? {
+                info!("Service '{}' is already loaded", service_name);
+                return Ok(());
+            }
             return Err(anyhow!("launchctl load failed with: {:?}", status.code()));
         }
         Ok(())
+    }
+
+    /// True when launchd knows the service (loaded), running or not.
+    #[cfg(target_os = "macos")]
+    fn is_loaded(service_name: &str) -> Result<bool> {
+        let output = std::process::Command::new("launchctl")
+            .args(["list", service_name])
+            .output()
+            .context("Failed to run launchctl list")?;
+        Ok(output.status.success())
     }
 
     #[cfg(target_os = "macos")]

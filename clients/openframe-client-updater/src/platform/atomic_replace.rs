@@ -4,26 +4,33 @@ use tracing::{info, warn};
 
 use crate::config::updater_config::{REPLACE_MAX_RETRIES, REPLACE_RETRY_DELAY_MS};
 
-/// Renames `target` to a timestamped backup, then renames `new_binary` to `target`.
-/// Returns the backup path so the caller can restore on failure.
-pub fn replace(target: &Path, new_binary: &Path) -> Result<PathBuf> {
-    let backup_path = backup_path_for(target);
+/// Renames `target` to `backup_path`, then renames `new_binary` to `target`.
+/// The caller persists `backup_path` before calling, so crash recovery can
+/// find the backup even if this never returns.
+pub fn replace(target: &Path, new_binary: &Path, backup_path: &Path) -> Result<()> {
+    if target.exists() {
+        rename_with_retry(target, backup_path)
+            .with_context(|| format!("Failed to move {} to backup", target.display()))?;
+        info!("Backed up current binary: {}", backup_path.display());
+    } else {
+        warn!(
+            "No binary at {} — installing new binary directly",
+            target.display()
+        );
+    }
 
-    rename_with_retry(target, &backup_path)
-        .with_context(|| format!("Failed to move {} to backup", target.display()))?;
-
-    info!("Backed up current binary: {}", backup_path.display());
-
-    if let Err(e) = std::fs::rename(new_binary, target) {
-        warn!("Failed to activate new binary, restoring backup: {}", e);
-        if let Err(restore_err) = std::fs::rename(&backup_path, target) {
-            warn!("Restore also failed: {}", restore_err);
+    if let Err(e) = rename_with_retry(new_binary, target) {
+        warn!("Failed to activate new binary, restoring backup: {:#}", e);
+        if backup_path.exists() {
+            if let Err(restore_err) = rename_with_retry(backup_path, target) {
+                warn!("Restore also failed: {:#}", restore_err);
+            }
         }
         return Err(anyhow!("Failed to activate new binary: {}", e));
     }
 
     info!("New binary activated: {}", target.display());
-    Ok(backup_path)
+    Ok(())
 }
 
 pub fn restore(backup: &Path, target: &Path) -> Result<()> {
@@ -114,7 +121,7 @@ pub fn write_temp(bytes: &[u8], target: &Path) -> Result<PathBuf> {
     Ok(temp_path)
 }
 
-fn backup_path_for(target: &Path) -> PathBuf {
+pub fn backup_path_for(target: &Path) -> PathBuf {
     let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S");
     let filename = target
         .file_name()

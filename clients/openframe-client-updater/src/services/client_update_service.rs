@@ -49,16 +49,19 @@ impl ClientUpdateService {
     pub async fn process_update(&self, msg: ClientUpdateMessage) -> Result<()> {
         let mut guard = self.in_progress.lock().await;
         if *guard {
+            // Only an observation-rollback holds the slot here (the listener is
+            // sequential); an ACK would silently consume a genuinely new update.
             warn!(
-                "Update already in progress, ignoring message for v{}",
+                "Update already in progress — leaving message for v{} unacked for redelivery",
                 msg.version
             );
-            return Ok(());
+            return Err(anyhow!(
+                "update already in progress, deferring v{} to redelivery",
+                msg.version
+            ));
         }
         *guard = true;
         drop(guard);
-
-        self.generation.fetch_add(1, Ordering::SeqCst);
 
         let result = self.run_update(&msg).await;
 
@@ -128,6 +131,10 @@ impl ClientUpdateService {
                 ),
             }
         }
+
+        // Bumped after the guards: a redelivered duplicate must not cancel the
+        // observation task of the update it duplicates.
+        self.generation.fetch_add(1, Ordering::SeqCst);
 
         let mut state = UpdaterState::new(version.clone());
 
@@ -236,25 +243,30 @@ impl ClientUpdateService {
 
         // Point of no return: from here a state-persistence failure must not abort
         // the swap — the file only drives crash recovery, while aborting strands a
-        // stopped client.
+        // stopped client. The backup path is persisted before the binary is
+        // touched, so recovery knows where the previous binary went even if the
+        // swap never returns.
+        let backup_path = atomic_replace::backup_path_for(&target);
+        state.backup_path = Some(backup_path.to_string_lossy().to_string());
         self.transition_best_effort(&mut state, UpdaterPhase::ReplacingBinary);
         self.progress_publisher
             .publish(&UpdaterPhase::ReplacingBinary, version)
             .await;
 
-        let backup_path = match atomic_replace::replace(&target, &temp_path) {
-            Ok(p) => p,
-            Err(e) => {
-                let reason = format!("Binary replacement failed: {:#}", e);
-                error!("{}", reason);
+        if let Err(e) = atomic_replace::replace(&target, &temp_path, &backup_path) {
+            let reason = format!("Binary replacement failed: {:#}", e);
+            error!("{}", reason);
+            if target.exists() {
                 self.try_start_service(version, false).await;
                 self.fail(&mut state, version, &reason, true).await;
-                return Err(anyhow!(reason));
+            } else {
+                // Half-swapped: keep the state file (it holds the backup path
+                // crash recovery needs) and leave the message unacked.
+                self.progress_publisher
+                    .publish_failure(&UpdaterPhase::Failed, version, &reason, false)
+                    .await;
             }
-        };
-        state.backup_path = Some(backup_path.to_string_lossy().to_string());
-        if let Err(e) = self.state_service.save(&state) {
-            warn!("Failed to persist backup path (continuing): {:#}", e);
+            return Err(anyhow!(reason));
         }
 
         // Stale markers must go before the new binary starts: the verification

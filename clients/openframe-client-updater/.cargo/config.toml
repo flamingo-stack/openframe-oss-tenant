@@ -1,0 +1,5 @@
+# Statically link the Visual C++ Runtime, same as openframe-client: the
+# recovery service must start on machines without the VC++ redistributable.
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

@@ -1,12 +1,19 @@
 // Download retry settings
 pub const MAX_DOWNLOAD_RETRIES: u32 = 3;
 pub const DOWNLOAD_TIMEOUT_SECS: u64 = 300;
+/// The download service's own HTTP client budget — must not be lower than
+/// DOWNLOAD_TIMEOUT_SECS or the reqwest timeout fires first and shrinks the
+/// download window (the general-purpose client keeps its shorter timeout).
+pub const DOWNLOAD_CLIENT_TIMEOUT_SECS: u64 = 300;
 pub const MIN_BINARY_SIZE_BYTES: u64 = 100 * 1024; // 100 KB
 
 // NATS consumer settings
 pub const CLIENT_UPDATE_STREAM: &str = "CLIENT_UPDATE";
 pub const CLIENT_UPDATE_FILTER_SUBJECT: &str = "machine.all.client-update";
-pub const CLIENT_UPDATE_ACK_WAIT_SECS: u64 = 120;
+/// Must comfortably exceed a normal update's time-to-ACK (download + service
+/// stop + swap + up to 90s boot wait) — at 120s the same message was
+/// redelivered mid-update and killed the observation window right after boot.
+pub const CLIENT_UPDATE_ACK_WAIT_SECS: u64 = 600;
 pub const CLIENT_UPDATE_MAX_DELIVER: i64 = 10;
 pub const RECONNECTION_DELAY_MS: u64 = 5000;
 

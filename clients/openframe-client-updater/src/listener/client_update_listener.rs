@@ -187,10 +187,15 @@ impl ClientUpdateListener {
         }
     }
 
+    // Deliberately NOT the old in-client listener's durable/inbox: sharing them
+    // would fan every delivery out to both a pre-migration client and this
+    // updater, and both would swap the same binary. A fresh durable with
+    // DeliverPolicy::New also leaves pending pre-migration updates to the old
+    // consumer.
     fn build_consumer_config(&self, machine_id: &str) -> push::Config {
         push::Config {
             filter_subject: "machine.all.client-update".to_string(),
-            deliver_subject: format!("machine.{}.client-update.inbox", machine_id),
+            deliver_subject: format!("machine.{}.client-updater.client-update.inbox", machine_id),
             durable_name: Some(Self::durable_name(machine_id)),
             ack_wait: Duration::from_secs(CLIENT_UPDATE_ACK_WAIT_SECS),
             deliver_policy: DeliverPolicy::New,
@@ -200,6 +205,6 @@ impl ClientUpdateListener {
     }
 
     fn durable_name(machine_id: &str) -> String {
-        format!("machine_{}_client-update_consumer_v2", machine_id)
+        format!("machine_{}_client-updater_client-update_consumer", machine_id)
     }
 }

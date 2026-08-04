@@ -31,18 +31,9 @@ fn write_temp_fails_without_parent_directory() {
 }
 
 #[test]
-fn replace_backs_up_old_and_activates_new() {
-    let dir = tempfile::tempdir().unwrap();
-    let target = dir.path().join("openframe-client");
-    let new_binary = dir.path().join("incoming");
-    std::fs::write(&target, b"old").unwrap();
-    std::fs::write(&new_binary, b"new").unwrap();
-
-    let backup = replace(&target, &new_binary).unwrap();
-
-    assert_eq!(read(&target), b"new");
-    assert_eq!(read(&backup), b"old");
-    assert!(!new_binary.exists(), "new binary is renamed, not copied");
+fn backup_path_for_uses_timestamped_sibling() {
+    let backup = backup_path_for(Path::new("/opt/bin/openframe-client"));
+    assert_eq!(backup.parent().unwrap(), Path::new("/opt/bin"));
     assert!(backup
         .file_name()
         .unwrap()
@@ -51,13 +42,45 @@ fn replace_backs_up_old_and_activates_new() {
 }
 
 #[test]
+fn replace_backs_up_old_and_activates_new() {
+    let dir = tempfile::tempdir().unwrap();
+    let target = dir.path().join("openframe-client");
+    let new_binary = dir.path().join("incoming");
+    let backup = backup_path_for(&target);
+    std::fs::write(&target, b"old").unwrap();
+    std::fs::write(&new_binary, b"new").unwrap();
+
+    replace(&target, &new_binary, &backup).unwrap();
+
+    assert_eq!(read(&target), b"new");
+    assert_eq!(read(&backup), b"old");
+    assert!(!new_binary.exists(), "new binary is renamed, not copied");
+}
+
+// A half-failed swap can leave no binary at the target — a retry installs directly.
+#[test]
+fn replace_installs_directly_when_target_missing() {
+    let dir = tempfile::tempdir().unwrap();
+    let target = dir.path().join("openframe-client");
+    let new_binary = dir.path().join("incoming");
+    let backup = backup_path_for(&target);
+    std::fs::write(&new_binary, b"new").unwrap();
+
+    replace(&target, &new_binary, &backup).unwrap();
+
+    assert_eq!(read(&target), b"new");
+    assert!(!backup.exists(), "nothing existed to back up");
+}
+
+#[test]
 fn replace_restores_backup_when_activation_fails() {
     let dir = tempfile::tempdir().unwrap();
     let target = dir.path().join("openframe-client");
+    let backup = backup_path_for(&target);
     std::fs::write(&target, b"old").unwrap();
     let missing_new = dir.path().join("does-not-exist");
 
-    assert!(replace(&target, &missing_new).is_err());
+    assert!(replace(&target, &missing_new, &backup).is_err());
     assert_eq!(read(&target), b"old", "old binary must be back in place");
 }
 
