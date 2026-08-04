@@ -1,3 +1,4 @@
+use crate::listener::client_update_gate::park_or_dispatch;
 use crate::platform::{in_flight_client_update_phase, UPDATER_TOOL_AGENT_ID};
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_run_manager::ToolRunManager;
@@ -132,7 +133,12 @@ impl ToolUninstallMessageListener {
             }
         };
 
-        self.dispatch(message, uninstall_message).await;
+        let listener = self.clone();
+        let label = format!("tool-uninstall:{}", uninstall_message.tool_agent_id);
+        park_or_dispatch(message, label, move |msg| async move {
+            listener.dispatch(msg, uninstall_message).await;
+        })
+        .await;
 
         Ok(())
     }

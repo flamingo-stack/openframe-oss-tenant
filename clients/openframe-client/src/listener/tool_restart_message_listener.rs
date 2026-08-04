@@ -1,3 +1,4 @@
+use crate::listener::client_update_gate::park_or_dispatch;
 use crate::platform::{in_flight_client_update_phase, UPDATER_TOOL_AGENT_ID};
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_restart_service::ToolRestartService;
@@ -130,7 +131,12 @@ impl ToolRestartMessageListener {
 
         let tool_agent_id = restart_message.tool_agent_id;
 
-        self.dispatch(message, tool_agent_id).await;
+        let listener = self.clone();
+        let label = format!("tool-restart:{}", tool_agent_id);
+        park_or_dispatch(message, label, move |msg| async move {
+            listener.dispatch(msg, tool_agent_id).await;
+        })
+        .await;
 
         Ok(())
     }

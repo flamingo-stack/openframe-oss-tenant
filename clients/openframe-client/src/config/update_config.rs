@@ -28,5 +28,6 @@ pub const OUTBOX_MAX_PAYLOAD_BYTES: usize = 1024 * 1024 - 64 * 1024;
 // NATS message settings
 pub const CONSUMER_ACK_WAIT_SECS: u64 = 120;
 pub const CONSUMER_MAX_DELIVER: i64 = 10; // Maximum delivery attempts
+pub const PROGRESS_ACK_INTERVAL_SECS: u64 = 60; // parked-message heartbeat, well inside ack_wait (120s)
 pub const UNINSTALL_CONSUMER_MAX_DELIVER: i64 = 20; // Larger budget: uninstall may defer behind a long install holding the tool lock
 pub const RESTART_CONSUMER_MAX_DELIVER: i64 = 20; // Larger budget: restart may defer behind a long install holding the tool lock
