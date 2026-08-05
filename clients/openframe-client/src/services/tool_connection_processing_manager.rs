@@ -17,8 +17,8 @@ use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::tool_run_manager::ToolRunManager;
 
 const RETRY_DELAY_SECONDS: u64 = 15;
-/// agentId command timeout; generous because `-nodeid-base64` boots the full agent runtime.
-const AGENT_ID_COMMAND_TIMEOUT_SECONDS: u64 = 30;
+/// agentId command timeout; the spawned process is killed when it expires.
+const AGENT_ID_COMMAND_TIMEOUT_SECONDS: u64 = 15;
 /// Consecutive agentId-resolution failures tolerated at the normal cadence before the tool
 /// connection is treated as degraded and the retry loop backs off (e.g. a hung `-nodeid-base64`).
 const AGENT_ID_MAX_FAST_RETRIES: u32 = 5;
