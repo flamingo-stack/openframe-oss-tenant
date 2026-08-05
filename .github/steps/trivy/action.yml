@@ -73,28 +73,11 @@ runs:
         jq -r '.Results[]? as $r | $r.Vulnerabilities[]? | [.Severity, .PkgName, .InstalledVersion, (.FixedVersion // "-"), .VulnerabilityID, $r.Target] | @tsv' /tmp/t.json | sort -u > "$out"
         find . -maxdepth 1 -name 'trivy-*.tsv' -empty -delete
 
-    - name: Upload code report
-      if: inputs.scan == 'code'
+    - name: Upload report
       uses: actions/upload-artifact@v4
       with:
-        name: trivy-${{ github.event.repository.name }}-code-report
-        path: trivy-*-code-report.tsv
-        if-no-files-found: ignore
-
-    - name: Upload docker report
-      if: inputs.scan == 'code'
-      uses: actions/upload-artifact@v4
-      with:
-        name: trivy-${{ github.event.repository.name }}-docker-report
-        path: trivy-*-docker-report.tsv
-        if-no-files-found: ignore
-
-    - name: Upload image report
-      if: inputs.scan == 'image'
-      uses: actions/upload-artifact@v4
-      with:
-        name: trivy-${{ github.event.repository.name }}-image-report-${{ inputs.image-name }}
-        path: trivy-*-image-report-*.tsv
+        name: ${{ inputs.scan == 'code' && format('trivy-{0}-code-report', github.event.repository.name) || format('trivy-{0}-image-report-{1}', github.event.repository.name, inputs.image-name) }}
+        path: trivy-*.tsv
         if-no-files-found: ignore
 
     - name: Evaluate
