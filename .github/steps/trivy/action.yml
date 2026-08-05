@@ -86,5 +86,5 @@ runs:
         set -euo pipefail
         files=$(ls trivy-*.tsv 2>/dev/null) || { echo "No vulnerabilities found."; exit 0; }
         column -t -s "$(printf '\t')" $files
-        echo "::error::Trivy found $(cat $files | wc -l | tr -d ' ') HIGH/CRITICAL vulnerabilities in: ${files//$'\n'/, } (full report in the run artifacts)"
+        echo "::error::Trivy found $(cut -f1,2,5 $files | sort -u | wc -l | tr -d ' ') unique HIGH/CRITICAL vulnerabilities ($(cat $files | wc -l | tr -d ' ') occurrences across modules) in: ${files//$'\n'/, } (full report in the run artifacts)"
         exit 1
