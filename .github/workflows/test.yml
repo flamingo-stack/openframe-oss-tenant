@@ -57,13 +57,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/steps/yaml-lint
 
-  trivy_scan:
-    name: "Trivy Scan"
+  trivy_code:
+    name: "Trivy Code Scan"
     runs-on: ubuntu-latest
+    needs: [changes]
     permissions:
       contents: read
       packages: read
-    if: github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && !github.event.pull_request.draft
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,8 +71,10 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
-      - name: Trivy scan (fs + base images)
+      - name: Trivy scan (dependencies + Dockerfile base images)
         uses: ./.github/steps/trivy
+        with:
+          scan: code
 
   build_images:
     name: "Build: ${{ matrix.name }}"
@@ -149,6 +151,17 @@ jobs:
             while IFS= read -r t; do [ -n "$t" ] && args+=(--tag "$t"); done <<< "$META_TAGS"
             while IFS= read -r l; do [ -n "$l" ] && args+=(--label "$l"); done <<< "$META_LABELS"
             docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
+
+      - name: Trivy scan built image
+        if: steps.should_run.outputs.run == 'true'
+        continue-on-error: true
+        uses: ./.github/steps/trivy
+        with:
+          scan: image
+          image-name: ${{ matrix.name }}
+          dockerfile: ${{ matrix.path }}/Dockerfile
+          context: ${{ matrix.context || matrix.path }}
+
 
 
   test_clients:
