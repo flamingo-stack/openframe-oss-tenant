@@ -17,6 +17,8 @@ use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::tool_run_manager::ToolRunManager;
 
 const RETRY_DELAY_SECONDS: u64 = 15;
+/// agentId command timeout; generous because `-nodeid-base64` boots the full agent runtime.
+const AGENT_ID_COMMAND_TIMEOUT_SECONDS: u64 = 30;
 /// Consecutive agentId-resolution failures tolerated at the normal cadence before the tool
 /// connection is treated as degraded and the retry loop backs off (e.g. a hung `-nodeid-base64`).
 const AGENT_ID_MAX_FAST_RETRIES: u32 = 5;
@@ -214,9 +216,12 @@ impl ToolConnectionProcessingManager {
                     if !std::path::Path::new(&command_path).exists() {
                         warn!("Executable not found at: {}", command_path);
                     }
-                    // Execute command with a 15-second timeout and capture output
-                    let command_future = Command::new(&command_path).args(&processed_args).output();
-                    let output = match timeout(Duration::from_secs(15), command_future).await {
+                    // kill_on_drop: a timed-out agent must die with the future, or it leaks and holds the tool's db open
+                    let command_future = Command::new(&command_path)
+                        .args(&processed_args)
+                        .kill_on_drop(true)
+                        .output();
+                    let output = match timeout(Duration::from_secs(AGENT_ID_COMMAND_TIMEOUT_SECONDS), command_future).await {
                         // Command finished within timeout
                         Ok(Ok(out)) => {
                             info!("Command completed successfully: {}", String::from_utf8_lossy(&out.stdout));
@@ -230,7 +235,7 @@ impl ToolConnectionProcessingManager {
                         }
                         // Timeout expired
                         Err(_) => {
-                            error!("agentId command timed out after 15 seconds – retrying");
+                            error!("agentId command timed out after {AGENT_ID_COMMAND_TIMEOUT_SECONDS} seconds – killed it, retrying");
                             backoff_agent_id_failure(&tool.tool_id, &mut agent_id_failures).await;
                             continue;
                         }
