@@ -58,7 +58,7 @@ telepresence-oss:
   image:
     registry: ghcr.io/flamingo-stack/registry/telepresenceio
     name: tel2  # not configurable
-    tag: "2.27.0"
+    tag: "2.30.1"
   podAnnotations:
     loki.grafana.com/scrape: "true"
 
