@@ -56,6 +56,7 @@ runs:
             echo "::warning::Base image ${img} could not be scanned (pull/scan error); it was NOT checked"
         done
         sort -u "$out" -o "$out"
+        find . -maxdepth 1 -name 'trivy-*.tsv' -empty -delete
 
     - name: Scan built image
       if: inputs.scan == 'image'
@@ -70,6 +71,7 @@ runs:
         out="trivy-${GITHUB_REPOSITORY##*/}-image-report-${{ inputs.image-name }}.tsv"
         trivy image --no-progress --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --input /tmp/image.tar --format json -o /tmp/t.json
         jq -r '.Results[]? as $r | $r.Vulnerabilities[]? | [.Severity, .PkgName, .InstalledVersion, (.FixedVersion // "-"), .VulnerabilityID, $r.Target] | @tsv' /tmp/t.json | sort -u > "$out"
+        find . -maxdepth 1 -name 'trivy-*.tsv' -empty -delete
 
     - name: Upload code report
       if: inputs.scan == 'code'
@@ -77,6 +79,7 @@ runs:
       with:
         name: trivy-${{ github.event.repository.name }}-code-report
         path: trivy-*-code-report.tsv
+        if-no-files-found: ignore
 
     - name: Upload docker report
       if: inputs.scan == 'code'
@@ -84,6 +87,7 @@ runs:
       with:
         name: trivy-${{ github.event.repository.name }}-docker-report
         path: trivy-*-docker-report.tsv
+        if-no-files-found: ignore
 
     - name: Upload image report
       if: inputs.scan == 'image'
@@ -91,6 +95,7 @@ runs:
       with:
         name: trivy-${{ github.event.repository.name }}-image-report-${{ inputs.image-name }}
         path: trivy-*-image-report-*.tsv
+        if-no-files-found: ignore
 
     - name: Evaluate
       shell: bash
@@ -101,6 +106,7 @@ runs:
         repo="${GITHUB_REPOSITORY##*/}"
         if [ "${{ inputs.scan }}" = "code" ]; then
           c="trivy-${repo}-code-report.tsv"; d="trivy-${repo}-docker-report.tsv"
+          [ -f "$c" ] || c=/dev/null; [ -f "$d" ] || d=/dev/null
           [ -s "$c" ] || [ -s "$d" ] || { echo "No vulnerabilities found."; exit 0; }
           cat "$c" "$d" | column -t -s "$(printf '\t')"
           echo "::error::Trivy: $(cut -f1,2,5 "$c" | sort -u | wc -l | tr -d ' ') unique HIGH/CRITICAL in dependencies, $(wc -l < "$d" | tr -d ' ') CRITICAL in Dockerfile base images (see the trivy-${repo}-code-report artifact)"
