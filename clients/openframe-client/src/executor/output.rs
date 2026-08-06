@@ -1,6 +1,33 @@
 use tokio::io::{AsyncRead, AsyncReadExt};
+use tokio::task::JoinHandle;
+use tokio::time::{timeout, Duration};
 
 pub(crate) const MAX_OUTPUT_SIZE: usize = 10 * 1024 * 1024;
+
+pub(crate) async fn join_reads(
+    mut stdout_task: JoinHandle<Vec<u8>>,
+    mut stderr_task: JoinHandle<Vec<u8>>,
+    grace: Duration,
+    kill: impl FnOnce(),
+) -> (Vec<u8>, Vec<u8>) {
+    let pair = async {
+        let out = (&mut stdout_task).await.unwrap_or_default();
+        let err = (&mut stderr_task).await.unwrap_or_default();
+        (out, err)
+    };
+    tokio::pin!(pair);
+
+    match timeout(grace, &mut pair).await {
+        Ok(result) => result,
+        Err(_) => {
+            tracing::warn!(
+                "output streams still open after exit (backgrounded child?), killing process tree"
+            );
+            kill();
+            timeout(grace, &mut pair).await.unwrap_or_default()
+        }
+    }
+}
 
 pub(crate) async fn read_capped<R>(reader: Option<R>) -> Vec<u8>
 where
