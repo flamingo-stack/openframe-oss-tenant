@@ -7,10 +7,11 @@ use tokio::time::{timeout, Duration};
 use super::job::JobHandle;
 use super::Interpreter;
 use crate::executor::env::apply_env_vars;
-use crate::executor::output::{clean_string, read_capped};
+use crate::executor::output::{clean_string, join_reads, read_capped};
 use crate::executor::{ExecResult, ScriptParams};
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+const READ_GRACE: Duration = Duration::from_secs(5);
 
 pub(super) async fn run_normal(
     interpreter: &Interpreter,
@@ -53,8 +54,8 @@ pub(super) async fn run_normal(
     .await
     {
         Ok(Ok(status)) => {
-            let out = stdout_task.await.unwrap_or_default();
-            let err = stderr_task.await.unwrap_or_default();
+            let (out, err) =
+                join_reads(stdout_task, stderr_task, READ_GRACE, || job.terminate()).await;
             ExecResult {
                 stdout: clean_string(&out),
                 stderr: clean_string(&err),
@@ -63,8 +64,8 @@ pub(super) async fn run_normal(
             }
         }
         Ok(Err(e)) => {
-            let out = stdout_task.await.unwrap_or_default();
-            let err = stderr_task.await.unwrap_or_default();
+            let (out, err) =
+                join_reads(stdout_task, stderr_task, READ_GRACE, || job.terminate()).await;
             ExecResult {
                 stdout: clean_string(&out),
                 stderr: format!("{}\n{}", clean_string(&err), e),
@@ -75,8 +76,8 @@ pub(super) async fn run_normal(
         Err(_) => {
             job.terminate();
             let _ = child.start_kill();
-            let out = stdout_task.await.unwrap_or_default();
-            let err = stderr_task.await.unwrap_or_default();
+            let (out, err) =
+                join_reads(stdout_task, stderr_task, READ_GRACE, || job.terminate()).await;
             let _ = child.wait().await;
             ExecResult {
                 stdout: clean_string(&out),
@@ -91,3 +92,4 @@ pub(super) async fn run_normal(
         }
     }
 }
+
