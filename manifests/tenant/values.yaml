@@ -104,6 +104,15 @@ fleet:
 meshcentral:
   enabled: true
   restartPod: "2"  # Bump to rollout (any string works)
+  podSecurityContext:
+    fsGroup: 1000
+    runAsNonRoot: null
+    runAsUser: null
+    runAsGroup: null
+    seccompProfile: null
+  securityContext: null
+  initImage:
+    securityContext: null
   image:
     registry: ghcr.io/flamingo-stack/meshcentral
     repository: meshcentral
