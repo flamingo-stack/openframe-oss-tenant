@@ -396,12 +396,6 @@ export function ChatView() {
   const handleRequestTechnician = useCallback(async () => {
     try {
       await requestEscalation();
-      toast({
-        title: 'Technician requested',
-        // The offer is deferred to the end of the turn while Fae is streaming,
-        // so "in a moment" is the honest wording, not "below".
-        description: 'Confirm the handoff in the chat when the request appears.',
-      });
     } catch (error) {
       toast({
         title: 'Could not request a technician',
