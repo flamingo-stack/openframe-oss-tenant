@@ -2,10 +2,9 @@ use std::os::unix::process::ExitStatusExt;
 use std::process::Stdio;
 
 use tokio::process::Command;
-use tokio::task::JoinHandle;
 use tokio::time::{timeout, Duration};
 
-use crate::executor::output::{clean_string, read_capped};
+use crate::executor::output::{clean_string, join_reads, read_capped};
 use crate::executor::ExecResult;
 
 const READ_GRACE: Duration = Duration::from_secs(5);
@@ -32,7 +31,9 @@ pub(crate) async fn execute_with_timeout(mut cmd: Command, timeout_secs: u32) ->
 
     match timeout(Duration::from_secs(timeout_secs as u64), child.wait()).await {
         Ok(Ok(status)) => {
-            let (out, err) = join_reads(stdout_task, stderr_task, pid).await;
+            let (out, err) =
+                join_reads(stdout_task, stderr_task, READ_GRACE, || kill_process_tree(pid))
+                    .await;
             let retcode = status
                 .code()
                 .unwrap_or_else(|| status.signal().map(|s| 128 + s).unwrap_or(1));
@@ -44,7 +45,9 @@ pub(crate) async fn execute_with_timeout(mut cmd: Command, timeout_secs: u32) ->
             }
         }
         Ok(Err(e)) => {
-            let (out, err) = join_reads(stdout_task, stderr_task, pid).await;
+            let (out, err) =
+                join_reads(stdout_task, stderr_task, READ_GRACE, || kill_process_tree(pid))
+                    .await;
             ExecResult {
                 stdout: clean_string(&out),
                 stderr: format!("{}\n{}", clean_string(&err), e),
@@ -54,7 +57,9 @@ pub(crate) async fn execute_with_timeout(mut cmd: Command, timeout_secs: u32) ->
         }
         Err(_) => {
             kill_process_tree(pid);
-            let (out, err) = join_reads(stdout_task, stderr_task, pid).await;
+            let (out, err) =
+                join_reads(stdout_task, stderr_task, READ_GRACE, || kill_process_tree(pid))
+                    .await;
             let _ = timeout(READ_GRACE, child.wait()).await;
             ExecResult {
                 stdout: clean_string(&out),
@@ -94,31 +99,6 @@ async fn spawn_with_retry(
         }
     }
     Err(last_err.unwrap())
-}
-
-async fn join_reads(
-    mut stdout_task: JoinHandle<Vec<u8>>,
-    mut stderr_task: JoinHandle<Vec<u8>>,
-    pid: u32,
-) -> (Vec<u8>, Vec<u8>) {
-    let pair = async {
-        let out = (&mut stdout_task).await.unwrap_or_default();
-        let err = (&mut stderr_task).await.unwrap_or_default();
-        (out, err)
-    };
-    tokio::pin!(pair);
-
-    match timeout(READ_GRACE, &mut pair).await {
-        Ok(result) => result,
-        Err(_) => {
-            tracing::warn!(
-                pid,
-                "output streams still open after exit (backgrounded child?), killing process group"
-            );
-            kill_process_tree(pid);
-            timeout(READ_GRACE, &mut pair).await.unwrap_or_default()
-        }
-    }
 }
 
 fn kill_process_tree(pid: u32) {
