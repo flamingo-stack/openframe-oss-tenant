@@ -18,7 +18,12 @@ import {
   QuickActionWall,
   type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
-import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Ellipsis01Icon,
+  PlusCircleIcon,
+  TagIcon,
+  UserCheckIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
@@ -28,6 +33,7 @@ import { ChatDialogScreen } from '../components/ChatDialogScreen';
 import { ChatInitialScreen } from '../components/ChatInitialScreen';
 import { NewTicketModal } from '../components/NewTicketModal';
 import { WelcomeScreen } from '../components/WelcomeScreen';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useApplyAiAppearance } from '../hooks/useApplyAiAppearance';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useChat } from '../hooks/useChat';
@@ -53,6 +59,19 @@ function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsag
 
 const STATUS_POLL_INTERVAL_MS = 15_000;
 
+/**
+ * Identity used to drop a block rendered twice (history page + realtime
+ * synthetic). `ticket_escalated` is deliberately absent: its only id is the
+ * dialog-scoped ticketId, so a dialog escalated more than once would have its
+ * second receipt silently swallowed.
+ */
+function dedupeId(segment: MessageSegment): string | undefined {
+  if (segment.type === 'approval_request') return segment.data?.requestId;
+  if (segment.type === 'approval_batch') return segment.data?.approvalRequestId;
+  if (segment.type === 'escalation_offer') return segment.data?.offerId;
+  return undefined;
+}
+
 const isTerminalTicket = (t: { status?: string; statusKind?: string; dialogStatus?: string }) =>
   t.status === 'RESOLVED' ||
   t.statusKind === 'RESOLVED' ||
@@ -62,6 +81,7 @@ const isTerminalTicket = (t: { status?: string; statusKind?: string; dialogStatu
 
 export function ChatView() {
   const queryClient = useQueryClient();
+  const { flags } = useFeatureFlags();
 
   const [currentModel, setCurrentModel] = useState<{
     modelName: string;
@@ -85,6 +105,15 @@ export function ChatView() {
   const [quickActionPreview, setQuickActionPreview] = useState<string | null>(null);
   const activeTicketIdRef = useRef<string | null>(null);
   activeTicketIdRef.current = activeTicketId;
+  const { toast } = useToast();
+
+  const handleEscalationError = useCallback(
+    (description: string) => {
+      toast({ title: 'Could not update the technician request', description, variant: 'destructive' });
+    },
+    [toast],
+  );
+
   const { showWelcome, completeWelcome } = useWelcomeScreen();
   const { assistantName, assistantAvatar, isLoading: isAssistantLoading } = useAssistantBranding();
   useApplyAiAppearance();
@@ -119,6 +148,26 @@ export function ChatView() {
     );
   }, [queryClient]);
 
+  // Optimistic handoff: `approveTicketEscalation` moves the ticket to
+  // TECH_REQUIRED transactionally before it returns, so the ticket-state poll
+  // would confirm this — up to 15s later. Writing it now is what flips the
+  // composer to "Waiting for Technician Response" and the header chip on the
+  // same render as the card. The stale name/colour are cleared rather than
+  // kept, or the chip reads "Active" next to a TECH_REQUIRED kind until the
+  // refetch lands.
+  const handleEscalated = useCallback(() => {
+    const id = activeTicketIdRef.current;
+    if (!id) return;
+    queryClient.setQueryData<TicketDetails | null>(['active-ticket-state', id], prev =>
+      prev ? { ...prev, statusKind: 'TECH_REQUIRED', statusName: undefined, statusColor: undefined } : prev,
+    );
+    // Deliberately NOT invalidating this key here: the write happens before the
+    // escalation mutation is awaited, so an immediate refetch would race it and
+    // restore the pre-escalation status. The 15s poll and the resolved chunk
+    // both reconcile it. The board list is a different key and cannot race.
+    queryClient.invalidateQueries({ queryKey: ['tickets'] });
+  }, [queryClient]);
+
   const handleMetadataUpdate = useCallback(
     (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
       setCurrentModel({
@@ -149,6 +198,9 @@ export function ChatView() {
     awaitingTechnicianResponse,
     isLoadingHistory,
     dialogId,
+    ticketId: chatTicketId,
+    requestEscalation,
+    hasPendingEscalationOffer,
     hasNextPage,
     isFetchingNextPage,
     loadMoreMessages,
@@ -159,9 +211,19 @@ export function ChatView() {
     onTokenUsage: handleTokenUsage,
     onDialogClosed: handleDialogClosed,
     onDirectModeDetected: handleDirectModeDetected,
+    onEscalated: handleEscalated,
+    onEscalationError: handleEscalationError,
   });
 
-  const { toast } = useToast();
+  // A chat started in this session has no ticket selection behind it, but the
+  // backend links one at dialog creation. Adopting it switches on the
+  // ticket-state query that drives the header chip and the escalation gating.
+  // Adopts on CHANGE, not just when unset: a dialog-targeted notification can
+  // resume a different conversation while another ticket is still selected, and
+  // the gating, header chip and optimistic write all key off this.
+  useEffect(() => {
+    if (chatTicketId && chatTicketId !== activeTicketIdRef.current) setActiveTicketId(chatTicketId);
+  }, [chatTicketId]);
 
   const { status, isFullyLoaded } = useConnectionStatus();
   const { defaultModel } = useChatConfig();
@@ -198,13 +260,12 @@ export function ChatView() {
     [sendMessage, isDisconnected, toast],
   );
 
-  // Pre-process messages for rendering: filter pending approvals (they
-  // render in the sticky footer), dedupe approval_request/approval_batch
-  // segments across bubbles by requestId (first occurrence wins — agent
-  // retries reuse the same id), and drop empty assistant bubbles that
-  // held only filtered/deduped segments.
+  // Pre-process messages for rendering: filter pending approvals (they render
+  // in the sticky footer), dedupe id-bearing blocks across bubbles via
+  // `dedupeId` (first occurrence wins — agent retries reuse the same id), and
+  // drop empty assistant bubbles left holding only filtered/deduped segments.
   const processedMessages = useMemo<Message[]>(() => {
-    const seenApprovalIds = new Set<string>();
+    const seenSegmentIds = new Set<string>();
     const out: Message[] = [];
     for (const msg of messages) {
       if (!Array.isArray(msg.content)) {
@@ -212,21 +273,15 @@ export function ChatView() {
         continue;
       }
       const filtered = (msg.content as MessageSegment[]).filter(segment => {
+        // Pending command approvals render in the sticky footer instead. Pending
+        // escalation offers deliberately stay inline — the offer belongs in the
+        // thread where it was posted.
         if (segment.type === 'approval_request' && segment.status === 'pending') return false;
 
-        if (segment.type === 'approval_request') {
-          const id = segment.data?.requestId;
-          if (id) {
-            if (seenApprovalIds.has(id)) return false;
-            seenApprovalIds.add(id);
-          }
-        } else if (segment.type === 'approval_batch') {
-          const id = segment.data?.approvalRequestId;
-          if (id) {
-            if (seenApprovalIds.has(id)) return false;
-            seenApprovalIds.add(id);
-          }
-        }
+        const id = dedupeId(segment);
+        if (!id) return true;
+        if (seenSegmentIds.has(id)) return false;
+        seenSegmentIds.add(id);
         return true;
       });
 
@@ -331,6 +386,31 @@ export function ChatView() {
     activeTicket.statusKind !== 'AI_ASSISTANCE' &&
     activeTicket.dialogMode !== 'DIRECT';
 
+  // Offering a handoff only makes sense while Fae still owns the ticket and
+  // no offer is already on screen — the backend rejects both cases anyway
+  // (TICKET_AI_DISABLED / idempotent no-op), so this is about not showing a
+  // control that cannot do anything.
+  const canRequestTechnician =
+    !!chatTicketId && hasMessages && !isChatClosed && !isAwaitingTechnician && !hasPendingEscalationOffer;
+
+  const handleRequestTechnician = useCallback(async () => {
+    try {
+      await requestEscalation();
+      toast({
+        title: 'Technician requested',
+        // The offer is deferred to the end of the turn while Fae is streaming,
+        // so "in a moment" is the honest wording, not "below".
+        description: 'Confirm the handoff in the chat when the request appears.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Could not request a technician',
+        description: error instanceof Error ? error.message : 'Please try again shortly.',
+        variant: 'destructive',
+      });
+    }
+  }, [requestEscalation, toast]);
+
   const ticketInfo = useMemo<ChatHeaderTicketInfo | undefined>(() => {
     if (!activeTicket?.title || !hasMessages) return undefined;
     const metaParts = [activeTicket.ticketNumber, activeTicket.category, activeTicket.timeAgo].filter(Boolean);
@@ -415,7 +495,8 @@ export function ChatView() {
       } else if (kind === 'dialog') {
         const { resumeDialog, dialogId } = notificationClickRef.current;
         // Already viewing this dialog — the live subscription has the message.
-        if (id !== dialogId) void resumeDialog(id);
+        if (id === dialogId) return;
+        void resumeDialog(id);
       }
     };
     const unlistenPromise = listen<NotificationClickPayload>('notification:click', event => handleClick(event.payload));
@@ -503,6 +584,17 @@ export function ChatView() {
                           disabled: !hasMessages,
                           onClick: handleNewChat,
                         },
+                        ...(flags['ai-escalation']
+                          ? [
+                              {
+                                id: 'request-technician',
+                                label: 'Request a Technician',
+                                icon: <UserCheckIcon className="w-6 h-6" color="var(--color-text-secondary)" />,
+                                disabled: !canRequestTechnician,
+                                onClick: handleRequestTechnician,
+                              },
+                            ]
+                          : []),
                       ],
                     },
                   ]}
@@ -576,6 +668,18 @@ export function ChatView() {
                   onHoverEnd: () => setQuickActionPreview(null),
                 }))}
               />
+            )}
+            {/* Handed-off chats stay open but Fae no longer answers, so point
+                the user at a fresh chat above the waiting state (Figma: fae
+                chat › "escalation to admin"). */}
+            {isAwaitingTechnician && (
+              <p className="text-h6 text-ods-text-secondary text-center mb-[var(--spacing-system-xsf)]">
+                If you need help with something else, feel free to start a{' '}
+                <button type="button" onClick={handleNewChat} className="text-ods-accent underline">
+                  New Chat
+                </button>
+                .
+              </p>
             )}
             <ChatInput
               onSend={handleSend}
