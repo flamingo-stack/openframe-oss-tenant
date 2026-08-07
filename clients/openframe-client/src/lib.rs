@@ -80,7 +80,6 @@ use crate::logging::nats_streaming::LogStreamingRunManager;
 use crate::config::update_config::{
     HTTP_CLIENT_TIMEOUT_SECS,
     DOWNLOAD_CLIENT_TIMEOUT_SECS,
-    EXECUTION_MIN_CONCURRENCY,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -477,11 +476,6 @@ impl Client {
         );
 
         let execution_service = ExecutionService::new();
-        let execution_concurrency = std::thread::available_parallelism()
-            .map(|n| n.get())
-            .unwrap_or(EXECUTION_MIN_CONCURRENCY)
-            .max(EXECUTION_MIN_CONCURRENCY);
-        let execution_semaphore = Arc::new(tokio::sync::Semaphore::new(execution_concurrency));
 
         let result_store = Arc::new(ResultStore::open_or_degrade(
             directory_manager.secured_dir().join("scheduled_outbox.redb"),
@@ -499,7 +493,6 @@ impl Client {
             nats_message_publisher.clone(),
             execution_service.clone(),
             config_service.clone(),
-            execution_semaphore.clone(),
             result_store.clone(),
             flush_notify.clone(),
         );
@@ -508,7 +501,6 @@ impl Client {
             nats_message_publisher.clone(),
             execution_service.clone(),
             config_service.clone(),
-            execution_semaphore.clone(),
             result_store.clone(),
             flush_notify.clone(),
         );
@@ -518,7 +510,6 @@ impl Client {
                 nats_message_publisher.clone(),
                 execution_service,
                 config_service.clone(),
-                execution_semaphore,
                 result_store.clone(),
                 flush_notify.clone(),
             );

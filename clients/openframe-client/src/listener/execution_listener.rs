@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, Result};
 use async_nats::Message;
 use futures::StreamExt;
-use tokio::sync::{Notify, Semaphore};
+use tokio::sync::Notify;
 use tokio::time::Duration;
 use tracing::{error, info, warn};
 
@@ -21,7 +21,6 @@ pub struct ExecutionListener<M> {
     nats_message_publisher: NatsMessagePublisher,
     execution_service: ExecutionService,
     config_service: AgentConfigurationService,
-    semaphore: Arc<Semaphore>,
     result_store: Arc<ResultStore>,
     flush_notify: Arc<Notify>,
     _marker: PhantomData<fn() -> M>,
@@ -34,7 +33,6 @@ impl<M> Clone for ExecutionListener<M> {
             nats_message_publisher: self.nats_message_publisher.clone(),
             execution_service: self.execution_service.clone(),
             config_service: self.config_service.clone(),
-            semaphore: self.semaphore.clone(),
             result_store: self.result_store.clone(),
             flush_notify: self.flush_notify.clone(),
             _marker: PhantomData,
@@ -48,7 +46,6 @@ impl<M: ExecutionMessage + 'static> ExecutionListener<M> {
         nats_message_publisher: NatsMessagePublisher,
         execution_service: ExecutionService,
         config_service: AgentConfigurationService,
-        semaphore: Arc<Semaphore>,
         result_store: Arc<ResultStore>,
         flush_notify: Arc<Notify>,
     ) -> Self {
@@ -57,7 +54,6 @@ impl<M: ExecutionMessage + 'static> ExecutionListener<M> {
             nats_message_publisher,
             execution_service,
             config_service,
-            semaphore,
             result_store,
             flush_notify,
             _marker: PhantomData,
@@ -99,15 +95,10 @@ impl<M: ExecutionMessage + 'static> ExecutionListener<M> {
 
         info!(subject = %subject, "Execution listener active");
 
-        let queued = subscriber.inspect(|_| {
-            info!(
-                kind = M::KIND,
-                "Execution message received, waiting for an execution slot"
-            )
-        });
+        let queued = subscriber.inspect(|_| info!(kind = M::KIND, "Execution message received"));
 
         let listener = self.clone();
-        run_bounded(queued, self.semaphore.clone(), move |message| {
+        run_unbounded(queued, move |message| {
             let listener = listener.clone();
             let machine_id = machine_id.clone();
             async move {
@@ -261,7 +252,7 @@ fn log_finished(execution_id: &str, schedule_id: &str, script_id: &str, result: 
     );
 }
 
-async fn run_bounded<T, F, Fut>(stream: impl futures::Stream<Item = T>, semaphore: Arc<Semaphore>, handler: F)
+async fn run_unbounded<T, F, Fut>(stream: impl futures::Stream<Item = T>, handler: F)
 where
     T: Send + 'static,
     F: Fn(T) -> Fut + Clone + Send + 'static,
@@ -269,15 +260,7 @@ where
 {
     tokio::pin!(stream);
     while let Some(item) = stream.next().await {
-        let permit = match semaphore.clone().acquire_owned().await {
-            Ok(permit) => permit,
-            Err(_) => break,
-        };
-        let handler = handler.clone();
-        tokio::spawn(async move {
-            let _permit = permit;
-            handler(item).await;
-        });
+        tokio::spawn(handler.clone()(item));
     }
 }
 
