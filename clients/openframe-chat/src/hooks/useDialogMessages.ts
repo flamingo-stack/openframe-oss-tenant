@@ -20,19 +20,46 @@ interface UseDialogMessagesOptions {
    *  onto approval segments in historical bubbles so the status pill reads
    *  "Approved by {name}" without waiting for a refetch. */
   resolvedByNames?: Record<string, string>;
+  /** Terminal escalation-offer states seen live, overlaid the same way. */
+  escalationOfferStates?: Record<string, ChatApprovalStatus>;
+  onEscalationApprove?: (offerId?: string) => Promise<void> | void;
+  onEscalationReject?: (offerId?: string) => Promise<void> | void;
 }
 
 export function useDialogMessages(dialogId: string | null, options: UseDialogMessagesOptions = {}) {
   const queryClient = useQueryClient();
   const { flags } = useFeatureFlags();
+  const escalationEnabled = flags['ai-escalation'];
   const { assistantName, assistantAvatar } = useAssistantBranding();
-  const { onApprove, onReject, approvalStatuses, resolvedByNames } = options;
+  const {
+    onApprove,
+    onReject,
+    approvalStatuses,
+    resolvedByNames,
+    escalationOfferStates,
+    onEscalationApprove,
+    onEscalationReject,
+  } = options;
 
   const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage, dataUpdatedAt } =
     useInfiniteQuery({
+      // The escalation flag deliberately stays OUT of the key even though it
+      // changes the selection set. Flags start at their defaults and flip once
+      // loaded (right after a reload), and a key change spawns a fresh query
+      // whose `isFetched` is false — which drops `isInitialOptStartSeqReady`
+      // in `useChat`, tears the JetStream subscription down mid-resume, and can
+      // leave `waitForNatsSubscription` hanging to its timeout. The cost of
+      // keeping it out is that a history page fetched inside that sub-second
+      // window omits escalation blocks until the next refetch; the cost of
+      // putting it in is a broken dialog resume.
       queryKey: ['dialog-messages', dialogId],
       queryFn: async ({ pageParam }) => {
-        const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50);
+        const connection = await dialogGraphQlService.getDialogMessagesPage(
+          dialogId!,
+          pageParam,
+          50,
+          escalationEnabled,
+        );
         if (!connection || !connection.edges) {
           return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
         }
@@ -115,6 +142,9 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
       onApprove,
       onReject,
       approvalStatuses,
+      escalationOfferStates,
+      onEscalationApprove,
+      onEscalationReject,
       assistantName: assistantName ?? 'Fae',
       assistantAvatar,
       displayApprovalTypes: ['CLIENT'],
@@ -152,7 +182,19 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
           });
 
     return { historicalMessages: messagesWithNames, escalatedApprovals: result.escalatedApprovals };
-  }, [data?.pages, onApprove, onReject, approvalStatuses, resolvedByNames, flags, assistantName, assistantAvatar]);
+  }, [
+    data?.pages,
+    onApprove,
+    onReject,
+    approvalStatuses,
+    resolvedByNames,
+    escalationOfferStates,
+    onEscalationApprove,
+    onEscalationReject,
+    flags,
+    assistantName,
+    assistantAvatar,
+  ]);
 
   const reset = useCallback(() => {
     queryClient.removeQueries({ queryKey: ['dialog-messages'] });

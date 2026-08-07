@@ -53,11 +53,16 @@ export interface RealtimeChunkCallbacks {
   onEscalatedApproval?: (...args: never[]) => void;
   onEscalatedApprovalResult?: (...args: never[]) => void;
   onApprovalResolved?: (...args: never[]) => void;
+  onEscalationOfferResolved?: (...args: never[]) => void;
   onToolExecuted?: (...args: never[]) => void;
   onAgentBusy?: () => void;
   onDialogClosed?: (...args: never[]) => void;
   onApprove?: (requestId?: string) => Promise<void> | void;
   onReject?: (requestId?: string) => Promise<void> | void;
+  /** Escalation offers resolve through the ticket mutations, not the
+   *  approval endpoint — hence their own pair. */
+  onEscalationApprove?: (offerId?: string) => Promise<void> | void;
+  onEscalationReject?: (offerId?: string) => Promise<void> | void;
 }
 
 export interface UseRealtimeChunkProcessorOptions {
@@ -110,6 +115,8 @@ export function useRealtimeChunkProcessor({
         callbacks: {
           onApprove: requestId => callbacksRef.current.onApprove?.(requestId),
           onReject: requestId => callbacksRef.current.onReject?.(requestId),
+          onEscalationApprove: offerId => callbacksRef.current.onEscalationApprove?.(offerId),
+          onEscalationReject: offerId => callbacksRef.current.onEscalationReject?.(offerId),
         },
         onEffect: (effect: ChatReducerEffect) => {
           const handler = callbacksRef.current[effect.name as keyof RealtimeChunkCallbacks] as

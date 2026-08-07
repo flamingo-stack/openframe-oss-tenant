@@ -1,7 +1,9 @@
 import {
   type ApprovalBatchExecutionState,
   type ApprovalBatchSegment,
+  type ChatApprovalStatus,
   createMessageSegmentAccumulator,
+  type EscalationOfferSegment,
   type Message,
   type MessageSegment,
   type ToolExecutionSegment,
@@ -14,12 +16,21 @@ const GENERIC_SEND_ERROR = 'Something went wrong. Please try again.';
 interface UseChatMessagesOptions {
   onApprove?: (requestId?: string) => Promise<void> | void;
   onReject?: (requestId?: string) => Promise<void> | void;
+  onEscalationApprove?: (offerId?: string) => Promise<void> | void;
+  onEscalationReject?: (offerId?: string) => Promise<void> | void;
 }
 
-export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions = {}) {
+export function useChatMessages({
+  onApprove,
+  onReject,
+  onEscalationApprove,
+  onEscalationReject,
+}: UseChatMessagesOptions = {}) {
   const { assistantName, assistantAvatar } = useAssistantBranding();
   const [messages, setMessages] = useState<Message[]>([]);
-  const segmentAccumulator = useRef(createMessageSegmentAccumulator({ onApprove, onReject })).current;
+  const segmentAccumulator = useRef(
+    createMessageSegmentAccumulator({ onApprove, onReject, onEscalationApprove, onEscalationReject }),
+  ).current;
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message]);
@@ -191,7 +202,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
   // `resolvedByName` (from the APPROVAL_RESULT chunk) feeds the status pill
   // ("Approved by {name}").
   const updateApprovalStatusById = useCallback(
-    (requestId: string, status: 'approved' | 'rejected', resolvedByName?: string | null) => {
+    (requestId: string, status: ChatApprovalStatus, resolvedByName?: string | null) => {
       setMessages(prev =>
         prev.map(message => {
           if (message.role !== 'assistant' || !Array.isArray(message.content)) return message;
@@ -205,6 +216,15 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
                 status,
                 resolvedByName: resolvedByName ?? segment.resolvedByName,
               } as ApprovalBatchSegment;
+            }
+            // Escalation offers ride the same id space (both are backed by
+            // `ToolApprovalRequest` documents), so one updater covers them.
+            if (segment.type === 'escalation_offer' && segment.data?.offerId === requestId) {
+              return {
+                ...segment,
+                status,
+                resolvedByName: resolvedByName ?? segment.resolvedByName,
+              } as EscalationOfferSegment;
             }
             return segment;
           });
