@@ -5,8 +5,9 @@ import { tokenService } from '../services/tokenService';
  * The chat backend serves the Fae avatar behind a Bearer-protected endpoint
  * (`www-authenticate: Bearer`). A plain `<img src>` can't carry the
  * `Authorization` header, so the image 401s. This hook fetches the bytes with
- * the Bearer token, wraps them in an `object URL`, and returns that — safe to
- * feed straight into an `<img src>` (no auth needed on a blob URL).
+ * the Bearer token and returns them as a `data:` URI — safe to feed straight
+ * into an `<img src>` (no auth needed), and persistable as-is by the branding
+ * pre-paint cache so the next cold start paints the real image immediately.
  *
  * `url` is `undefined` until the image resolves (or on error). `isLoading`
  * stays `true` while the fetch is in flight so callers can keep showing a
@@ -21,21 +22,29 @@ export interface AuthenticatedImage {
   isLoading: boolean;
 }
 
+function blobToDataUri(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 export function useAuthenticatedImage(url: string | null | undefined): AuthenticatedImage {
-  const [objectUrl, setObjectUrl] = useState<string | undefined>(undefined);
+  const [dataUri, setDataUri] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!url) {
-      setObjectUrl(undefined);
+      setDataUri(undefined);
       setIsLoading(false);
       return;
     }
 
     let cancelled = false;
-    let createdUrl: string | undefined;
     setIsLoading(true);
-    setObjectUrl(undefined);
+    setDataUri(undefined);
 
     (async () => {
       try {
@@ -47,12 +56,10 @@ export function useAuthenticatedImage(url: string | null | undefined): Authentic
         if (!response.ok) {
           throw new Error(`Avatar fetch failed (${response.status})`);
         }
-        const blob = await response.blob();
-        if (cancelled) return;
-        createdUrl = URL.createObjectURL(blob);
-        setObjectUrl(createdUrl);
+        const uri = await blobToDataUri(await response.blob());
+        if (!cancelled) setDataUri(uri);
       } catch (_error) {
-        if (!cancelled) setObjectUrl(undefined);
+        if (!cancelled) setDataUri(undefined);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -60,9 +67,8 @@ export function useAuthenticatedImage(url: string | null | undefined): Authentic
 
     return () => {
       cancelled = true;
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
   }, [url]);
 
-  return { url: objectUrl, isLoading };
+  return { url: dataUri, isLoading };
 }

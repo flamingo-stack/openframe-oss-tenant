@@ -59,15 +59,21 @@ const ACCENT_VAR_SHADES = {
  * Everything is reverted when settings are missing (defaults win).
  */
 export function useApplyAiAppearance() {
-  const { aiSettings, isSettingsLoading } = useChatConfig();
+  const { aiSettings, isSettingsLoading, settingsUnavailable } = useChatConfig();
   const theme = aiSettings?.applicationTheme;
   const accentColor = aiSettings?.accentColor;
+  // Only a successfully resolved "no customization" answer may revert to the
+  // ODS defaults AND wipe the persisted pre-paint values. While loading, or
+  // when the real state is unknowable (flags fallback / settings error), keep
+  // whatever the pre-paint script applied — wiping here would make the NEXT
+  // cold start flash default branding too.
+  const keepPrePaint = isSettingsLoading || settingsUnavailable;
 
   useEffect(() => {
     const root = document.documentElement;
 
-    // Still loading: keep the pre-paint theme so we don't re-flash on reload.
-    if (isSettingsLoading) return;
+    // Still loading or state unknown: keep the pre-paint theme.
+    if (keepPrePaint) return;
 
     if (!theme) {
       // No configured theme -> ODS default (dark); clear the persisted value.
@@ -91,7 +97,7 @@ export function useApplyAiAppearance() {
 
     root.setAttribute('data-theme', theme === 'LIGHT' ? 'light' : 'dark');
     return () => root.removeAttribute('data-theme');
-  }, [theme, isSettingsLoading]);
+  }, [theme, keepPrePaint]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -101,8 +107,8 @@ export function useApplyAiAppearance() {
       root.style.removeProperty('--ods-avatar-initials');
     };
 
-    // Still loading: keep the pre-paint accent so we don't re-flash on reload.
-    if (isSettingsLoading) return;
+    // Still loading or state unknown: keep the pre-paint accent.
+    if (keepPrePaint) return;
 
     if (!accentColor) {
       // No custom accent -> ODS default; drop the vars and persisted values.
@@ -128,5 +134,5 @@ export function useApplyAiAppearance() {
     persistAccent(vars);
 
     return clear;
-  }, [accentColor, isSettingsLoading]);
+  }, [accentColor, keepPrePaint]);
 }

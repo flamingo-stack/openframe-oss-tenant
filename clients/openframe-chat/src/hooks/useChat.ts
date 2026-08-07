@@ -121,7 +121,7 @@ export function useChat({
   >(new Map());
 
   const { debugMode } = useDebugMode();
-  const { quickActions, isSettingsLoading } = useChatConfig();
+  const { quickActions, isQuickActionsLoading } = useChatConfig();
   const { assistantName, assistantAvatar } = useAssistantBranding();
 
   const apiServiceRef = useRef<ChatApiService | null>(null);
@@ -971,7 +971,7 @@ export function useChat({
     resumeDialog,
     showTicketPreview,
     quickActions,
-    isSettingsLoading,
+    isQuickActionsLoading,
     hasMessages: allMessages.length > 0,
     isTicketPreview,
     /** Ticket linked to the open dialog — escalation is keyed on it. */
