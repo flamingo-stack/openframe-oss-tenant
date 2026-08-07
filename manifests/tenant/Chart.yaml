@@ -11,6 +11,6 @@ dependencies:
     repository: "oci://ghcr.io/flamingo-stack/fleetmdm/helm-charts"
     condition: fleet.enabled
   - name: meshcentral
-    version: "0.0.22"
+    version: "0.0.26"
     repository: "oci://ghcr.io/flamingo-stack/meshcentral/helm-charts"
     condition: meshcentral.enabled
