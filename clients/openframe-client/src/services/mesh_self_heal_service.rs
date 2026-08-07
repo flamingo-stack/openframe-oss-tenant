@@ -172,38 +172,38 @@ impl MeshSelfHealService {
             let silent = last_activity.elapsed() >= SILENCE_DURATION;
             let msh_missing_serverid = self.current_msh_missing_serverid().await;
 
-            if msh_missing_serverid || stuck {
-                let reason = if msh_missing_serverid {
-                    "current .msh is missing or has no ServerID (agent cannot authenticate the server)".to_string()
-                } else {
-                    format!("no successful connect within {}s", STUCK_DURATION.as_secs())
-                };
-                warn!("meshcentral-agent unhealthy: {reason} — refreshing .msh and restarting the agent");
+            let reason = if msh_missing_serverid {
+                Some("current .msh is missing or has no ServerID (agent cannot authenticate the server)".to_string())
+            } else if stuck {
+                Some(format!("no successful connect within {}s", STUCK_DURATION.as_secs()))
+            } else if silent {
+                Some(format!(
+                    "silent for {}s (last_marker_healthy={last_marker_healthy})",
+                    last_activity.elapsed().as_secs()
+                ))
+            } else {
+                None
+            };
 
+            if let Some(reason) = reason {
                 // Arm the cooldown before acting so no outcome (busy, error, no-op) can spin the loop.
                 last_action = Some(Instant::now());
-                match self.try_refresh_msh().await {
-                    Ok(true) => info!("mesh self-heal: refreshed .msh (NodeID preserved)"),
-                    Ok(false) => debug!("mesh self-heal: .msh already current"),
-                    Err(e) => error!("mesh self-heal: .msh refresh failed (restarting anyway): {e:#}"),
-                }
-                self.restart_agent().await;
-
-                stuck_since = None;
-                last_activity = Instant::now();
-            } else if silent {
-                warn!(
-                    "meshcentral-agent silent for {}s (last_marker_healthy={last_marker_healthy}) — restarting the agent",
-                    last_activity.elapsed().as_secs()
-                );
-
-                last_action = Some(Instant::now());
-                self.restart_agent().await;
-
+                self.heal(&reason).await;
                 stuck_since = None;
                 last_activity = Instant::now();
             }
         }
+    }
+
+    /// Single heal path for every unhealthy branch: refresh the .msh, then restart so the agent re-imports it.
+    async fn heal(&self, reason: &str) {
+        warn!("meshcentral-agent unhealthy: {reason} — refreshing .msh and restarting the agent");
+        match self.try_refresh_msh().await {
+            Ok(true) => info!("mesh self-heal: refreshed .msh (NodeID preserved)"),
+            Ok(false) => debug!("mesh self-heal: .msh already current"),
+            Err(e) => error!("mesh self-heal: .msh refresh failed (restarting anyway): {e:#}"),
+        }
+        self.restart_agent().await;
     }
 
     /// Restart through the shared guarded flow; a missing registry entry degrades to a process kill so the OS supervisor can relaunch.
@@ -223,6 +223,9 @@ impl MeshSelfHealService {
 
     /// Refresh the .msh from /generate-msh; returns true when it was rewritten.
     async fn try_refresh_msh(&self) -> Result<bool> {
+        // Resolve the target path first: it fails fast when the tool isn't installed, before any network call.
+        let msh_path = self.mesh_msh_path().await?;
+
         let host = self.initial_config.get_server_url()?;
         let url = format!("https://{host}/tools/agent/meshcentral-server/generate-msh?host={host}");
 
@@ -243,7 +246,6 @@ impl MeshSelfHealService {
             return Err(anyhow!("/generate-msh response has neither MeshID nor ServerID"));
         }
 
-        let msh_path = self.mesh_msh_path().await?;
         let current = tokio::fs::read_to_string(&msh_path).await.ok();
         let cur_mesh = current.as_deref().and_then(|s| parse_msh_field(s, "MeshID"));
         let cur_server = current.as_deref().and_then(|s| parse_msh_field(s, "ServerID"));
