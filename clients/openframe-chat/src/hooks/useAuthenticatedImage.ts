@@ -32,19 +32,18 @@ function blobToDataUri(blob: Blob): Promise<string> {
 }
 
 export function useAuthenticatedImage(url: string | null | undefined): AuthenticatedImage {
-  const [dataUri, setDataUri] = useState<string | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
+  // The settled request is stored together with the URL it answered, and
+  // `isLoading` is DERIVED from the mismatch instead of flipped in the effect:
+  // on the very first render after `url` appears (or changes) the hook already
+  // reports loading, so callers never see a "settled with nothing" frame that
+  // would flash their fallback before the effect below has even committed.
+  const [settled, setSettled] = useState<{ url: string; dataUri: string | undefined } | null>(null);
+  const isLoading = Boolean(url) && settled?.url !== url;
 
   useEffect(() => {
-    if (!url) {
-      setDataUri(undefined);
-      setIsLoading(false);
-      return;
-    }
+    if (!url) return;
 
     let cancelled = false;
-    setIsLoading(true);
-    setDataUri(undefined);
 
     (async () => {
       try {
@@ -56,12 +55,10 @@ export function useAuthenticatedImage(url: string | null | undefined): Authentic
         if (!response.ok) {
           throw new Error(`Avatar fetch failed (${response.status})`);
         }
-        const uri = await blobToDataUri(await response.blob());
-        if (!cancelled) setDataUri(uri);
+        const dataUri = await blobToDataUri(await response.blob());
+        if (!cancelled) setSettled({ url, dataUri });
       } catch (_error) {
-        if (!cancelled) setDataUri(undefined);
-      } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) setSettled({ url, dataUri: undefined });
       }
     })();
 
@@ -70,5 +67,5 @@ export function useAuthenticatedImage(url: string | null | undefined): Authentic
     };
   }, [url]);
 
-  return { url: dataUri, isLoading };
+  return { url: url && settled?.url === url ? settled.dataUri : undefined, isLoading };
 }

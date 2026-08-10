@@ -75,11 +75,13 @@ export function useChatConfig() {
   const settingsUnavailable = flagsUnavailable || (customizationEnabled && query.isError);
 
   // Persist only authoritative resolutions - never the flags-fallback or
-  // error paths, which would poison the next start's first paint.
+  // error paths, which would poison the next start's first paint. A disabled
+  // flag merely HIDES customization, it doesn't say the tenant has none - so
+  // it must not overwrite a previously resolved entry either.
   useEffect(() => {
-    if (!apiBaseUrl || settingsUnavailable || resolvedActions === null) return;
+    if (!apiBaseUrl || !customizationEnabled || settingsUnavailable || resolvedActions === null) return;
     updateBrandingCache(apiBaseUrl, { quickActions: resolvedActions });
-  }, [apiBaseUrl, settingsUnavailable, resolvedActions]);
+  }, [apiBaseUrl, customizationEnabled, settingsUnavailable, resolvedActions]);
 
   const quickActions = resolvedActions ?? cachedActions ?? [];
 
@@ -95,6 +97,9 @@ export function useChatConfig() {
 
   return {
     quickActions,
+    // Exposed so branding consumers can skip cache writes while the feature
+    // is hidden (a disabled flag is not a "no customization" answer).
+    customizationEnabled,
     // Customization consumers (appearance, branding, welcome screen) only see
     // settings when the flag is on - same behavior as when the query itself
     // was flag-disabled.

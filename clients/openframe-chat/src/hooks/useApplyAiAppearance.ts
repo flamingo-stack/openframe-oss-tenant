@@ -84,19 +84,21 @@ export function useApplyAiAppearance() {
 
     persistTheme(theme);
 
+    // Cleanups must NOT undo the applied theme: when `keepPrePaint` flips to
+    // true (settings error, connection change resetting the query) React runs
+    // the previous cleanup BEFORE the next run early-returns - removing the
+    // attribute here would wipe the very appearance we intend to keep. State
+    // transitions are handled explicitly by the branches above instead; only
+    // the media listener needs releasing.
     if (theme === 'SYSTEM') {
       const media = window.matchMedia('(prefers-color-scheme: light)');
       const applySystemTheme = () => root.setAttribute('data-theme', media.matches ? 'light' : 'dark');
       applySystemTheme();
       media.addEventListener('change', applySystemTheme);
-      return () => {
-        media.removeEventListener('change', applySystemTheme);
-        root.removeAttribute('data-theme');
-      };
+      return () => media.removeEventListener('change', applySystemTheme);
     }
 
     root.setAttribute('data-theme', theme === 'LIGHT' ? 'light' : 'dark');
-    return () => root.removeAttribute('data-theme');
   }, [theme, keepPrePaint]);
 
   useEffect(() => {
@@ -133,6 +135,8 @@ export function useApplyAiAppearance() {
     for (const [key, value] of Object.entries(vars)) root.style.setProperty(key, value);
     persistAccent(vars);
 
-    return clear;
+    // No cleanup on purpose - same reasoning as the theme effect above: a
+    // keepPrePaint transition must not clear the applied accent. Reverting to
+    // the ODS default happens only through the explicit `clear()` branch.
   }, [accentColor, keepPrePaint]);
 }

@@ -25,7 +25,7 @@ export interface AssistantBranding {
 
 /** Assistant identity from AiSettings. */
 export function useAssistantBranding(): AssistantBranding {
-  const { aiSettings, isSettingsLoading, settingsUnavailable } = useChatConfig();
+  const { aiSettings, isSettingsLoading, settingsUnavailable, customizationEnabled } = useChatConfig();
   const configuredName = aiSettings?.assistantName?.trim();
   const avatar = aiSettings?.assistantAvatar;
 
@@ -62,9 +62,11 @@ export function useAssistantBranding(): AssistantBranding {
     (isSettingsLoading || settingsUnavailable ? (cachedName ?? (isSettingsLoading ? undefined : 'Fae')) : 'Fae');
 
   // Persist the resolved identity for the next cold start. Only authoritative
-  // resolutions are written - never the flags-fallback or query-error paths.
+  // resolutions are written - never the flags-fallback or query-error paths,
+  // and never while the feature is flag-hidden (a disabled flag is not a
+  // "no customization" answer, so it must not overwrite a resolved entry).
   useEffect(() => {
-    if (!apiBaseUrl || isSettingsLoading || settingsUnavailable || isAvatarLoading) return;
+    if (!apiBaseUrl || !customizationEnabled || isSettingsLoading || settingsUnavailable || isAvatarLoading) return;
     // A configured avatar whose fetch failed is a transient error, not a
     // "not customized" answer - don't overwrite the cached image with null.
     if (rawAvatarUrl && !customAvatarUrl) return;
@@ -74,6 +76,7 @@ export function useAssistantBranding(): AssistantBranding {
     });
   }, [
     apiBaseUrl,
+    customizationEnabled,
     isSettingsLoading,
     settingsUnavailable,
     isAvatarLoading,

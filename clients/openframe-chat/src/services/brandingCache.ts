@@ -29,13 +29,35 @@ export interface CachedBranding {
   quickActions?: QuickAction[] | null;
 }
 
+function isNullableString(value: unknown): value is string | null | undefined {
+  return value === null || value === undefined || typeof value === 'string';
+}
+
+function isQuickAction(value: unknown): value is QuickAction {
+  if (typeof value !== 'object' || value === null) return false;
+  const action = value as Record<string, unknown>;
+  return typeof action.id === 'string' && typeof action.name === 'string' && typeof action.instructions === 'string';
+}
+
+/** Runtime shape check - localStorage can hold anything (older versions,
+ *  manual edits); a malformed entry must read as "no cache", not crash or
+ *  leak wrong types into consumers. */
+function isCachedBranding(value: unknown): value is CachedBranding {
+  if (typeof value !== 'object' || value === null) return false;
+  const entry = value as Record<string, unknown>;
+  if (typeof entry.apiBaseUrl !== 'string') return false;
+  if (!isNullableString(entry.assistantName) || !isNullableString(entry.assistantAvatar)) return false;
+  if (entry.quickActions === null || entry.quickActions === undefined) return true;
+  return Array.isArray(entry.quickActions) && entry.quickActions.every(isQuickAction);
+}
+
 export function readBrandingCache(apiBaseUrl: string | null): CachedBranding | null {
   if (!apiBaseUrl) return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as CachedBranding;
-    return parsed && parsed.apiBaseUrl === apiBaseUrl ? parsed : null;
+    const parsed: unknown = JSON.parse(raw);
+    return isCachedBranding(parsed) && parsed.apiBaseUrl === apiBaseUrl ? parsed : null;
   } catch {
     // Storage may be unavailable in some webview contexts.
     return null;
