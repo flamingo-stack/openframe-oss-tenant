@@ -73,7 +73,9 @@ export class ChatApiService {
     const response = await fetch(url, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify({}),
+      // `{}` gives Cloud Armor no args to parse, so it scores the raw body and trips CRS
+      // 942432 on the braces. CLIENT is the server-side default — behaviourally a no-op.
+      body: JSON.stringify({ agentType: 'CLIENT' }),
     }).catch(err => {
       if (this.debugMode) {
         throw new Error(`Network error creating dialog: ${err.message}\nURL: ${url}`);
