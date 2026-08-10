@@ -189,7 +189,7 @@ export function ChatView() {
     stopGeneration,
     handleQuickAction,
     quickActions,
-    isSettingsLoading,
+    isQuickActionsLoading,
     hasMessages,
     clearMessages,
     resumeDialog,
@@ -633,10 +633,10 @@ export function ChatView() {
                 `agentSlug="fae"` caps the brick stack at 2 rows. Product Hub
                 defaults carry a glyph (iconName/iconUrl/iconProps) → rendered on
                 the chip; tenant customs have none. */}
-            {!isDialogActive && !isDisconnected && (isSettingsLoading || quickActions.length > 0) && (
+            {!isDialogActive && !isDisconnected && (isQuickActionsLoading || quickActions.length > 0) && (
               <QuickActionWall
                 className="mb-[var(--spacing-system-s)] max-h-44 shrink-0"
-                loading={isSettingsLoading}
+                loading={isQuickActionsLoading}
                 agentSlug="fae"
                 rows={4}
                 pauseOnHover
