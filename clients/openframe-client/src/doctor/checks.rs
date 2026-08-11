@@ -281,7 +281,37 @@ pub async fn check_websocket_upgrade(server_url: &str) -> CheckResult {
 // Detect the Edge WebView2 Runtime (required by the Tauri chat window) via its EdgeUpdate registry version.
 #[cfg(windows)]
 pub fn check_webview2_runtime() -> Option<CheckResult> {
-    use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ};
+    use super::Remediation;
+    use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+
+    Some(match (webview2_version(HKEY_LOCAL_MACHINE), webview2_version(HKEY_CURRENT_USER)) {
+        (Some(v), _) => CheckResult::pass(
+            CheckCategory::Runtime,
+            &format!("Runtime: WebView2 Runtime {} installed machine-wide", v),
+        ),
+        (None, Some(v)) => CheckResult::warn(
+            CheckCategory::Runtime,
+            &format!("Runtime: WebView2 Runtime {} installed per-user only", v),
+            "A per-user WebView2 install is unavailable to other accounts on this machine and cannot be \
+             verified by the OpenFrame agent, so the chat window may fail to launch. \
+             A machine-wide install is required.",
+        )
+        .with_remediation(Remediation::InstallWebview2),
+        (None, None) => CheckResult::warn(
+            CheckCategory::Runtime,
+            "Runtime: WebView2 Runtime not installed",
+            "The OpenFrame chat window requires the Microsoft Edge WebView2 Runtime and will not launch without it. \
+             Install the Evergreen WebView2 Runtime from \
+             https://developer.microsoft.com/microsoft-edge/webview2/.",
+        )
+        .with_remediation(Remediation::InstallWebview2),
+    })
+}
+
+/// Reads the WebView2 EdgeUpdate client version ("pv") from the given registry hive.
+#[cfg(windows)]
+fn webview2_version(hive: winreg::HKEY) -> Option<String> {
+    use winreg::enums::KEY_READ;
     use winreg::RegKey;
 
     const CLIENT: &str =
@@ -289,33 +319,13 @@ pub fn check_webview2_runtime() -> Option<CheckResult> {
     const CLIENT_WOW: &str =
         r"SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
 
-    let candidates = [
-        (HKEY_LOCAL_MACHINE, CLIENT_WOW),
-        (HKEY_LOCAL_MACHINE, CLIENT),
-        (HKEY_CURRENT_USER, CLIENT),
-        (HKEY_CURRENT_USER, CLIENT_WOW),
-    ];
-
-    let version = candidates.iter().find_map(|(hive, path)| {
-        RegKey::predef(*hive)
+    [CLIENT_WOW, CLIENT].iter().find_map(|path| {
+        RegKey::predef(hive)
             .open_subkey_with_flags(path, KEY_READ)
             .ok()
             .and_then(|k| k.get_value::<String, _>("pv").ok())
-            .filter(|v| !v.trim().is_empty() && v.trim() != "0.0.0.0")
-    });
-
-    Some(match version {
-        Some(v) => CheckResult::pass(
-            CheckCategory::Runtime,
-            &format!("Runtime: WebView2 Runtime {} installed", v.trim()),
-        ),
-        None => CheckResult::warn(
-            CheckCategory::Runtime,
-            "Runtime: WebView2 Runtime not installed",
-            "The OpenFrame chat window requires the Microsoft Edge WebView2 Runtime and will not launch without it. \
-             Install the Evergreen WebView2 Runtime from \
-             https://developer.microsoft.com/microsoft-edge/webview2/.",
-        ),
+            .map(|v| v.trim().to_string())
+            .filter(|v| !v.is_empty() && v != "0.0.0.0")
     })
 }
 

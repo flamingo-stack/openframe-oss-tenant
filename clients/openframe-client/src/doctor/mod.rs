@@ -1,4 +1,5 @@
 pub mod checks;
+pub mod healing;
 
 use crate::installation_initial_config_service::InstallConfigParams;
 use crate::platform::DirectoryManager;
@@ -22,29 +23,41 @@ pub enum CheckStatus {
     Info,
 }
 
+/// Automatic fix the healing submodule can run when a check flags it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Remediation {
+    InstallWebview2,
+}
+
 #[derive(Debug)]
 pub struct CheckResult {
     pub category: CheckCategory,
     pub status: CheckStatus,
     pub name: String,
     pub hint: Option<String>,
+    pub remediation: Option<Remediation>,
 }
 
 impl CheckResult {
     pub fn pass(category: CheckCategory, name: &str) -> Self {
-        Self { category, status: CheckStatus::Pass, name: name.to_string(), hint: None }
+        Self { category, status: CheckStatus::Pass, name: name.to_string(), hint: None, remediation: None }
     }
 
     pub fn fail(category: CheckCategory, name: &str, hint: impl Into<String>) -> Self {
-        Self { category, status: CheckStatus::Fail, name: name.to_string(), hint: Some(hint.into()) }
+        Self { category, status: CheckStatus::Fail, name: name.to_string(), hint: Some(hint.into()), remediation: None }
     }
 
     pub fn warn(category: CheckCategory, name: &str, hint: impl Into<String>) -> Self {
-        Self { category, status: CheckStatus::Warn, name: name.to_string(), hint: Some(hint.into()) }
+        Self { category, status: CheckStatus::Warn, name: name.to_string(), hint: Some(hint.into()), remediation: None }
     }
 
     pub fn info(category: CheckCategory, name: &str) -> Self {
-        Self { category, status: CheckStatus::Info, name: name.to_string(), hint: None }
+        Self { category, status: CheckStatus::Info, name: name.to_string(), hint: None, remediation: None }
+    }
+
+    pub fn with_remediation(mut self, remediation: Remediation) -> Self {
+        self.remediation = Some(remediation);
+        self
     }
 }
 

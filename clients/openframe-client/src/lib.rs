@@ -70,6 +70,7 @@ use crate::services::result_store::ResultStore;
 use crate::services::result_outbox_run_manager::ResultOutboxRunManager;
 use crate::services::token_refresh_run_manager::TokenRefreshRunManager;
 use crate::services::mesh_self_heal_service::MeshSelfHealService;
+use crate::services::doctor_healing_service::DoctorHealingService;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
 use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, LastKnownGoodService, InitialKeyService};
 use crate::services::execution_service::ExecutionService;
@@ -159,6 +160,7 @@ pub struct Client {
     tool_run_manager: ToolRunManager,
     token_refresh_run_manager: TokenRefreshRunManager,
     mesh_self_heal_service: MeshSelfHealService,
+    doctor_healing_service: DoctorHealingService,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
     result_outbox_run_manager: ResultOutboxRunManager<NatsMessagePublisher>,
@@ -363,6 +365,12 @@ impl Client {
             deactivation_service.clone(),
         );
 
+        // Initialize doctor healing service
+        let doctor_healing_service = DoctorHealingService::new(
+            tool_restart_service.clone(),
+            deactivation_service.clone(),
+        );
+
         // Initialize tool connection service
         let tool_connection_service = ToolConnectionService::new(directory_manager.clone())
             .context("Failed to initialize tool connection service")?;
@@ -548,6 +556,7 @@ impl Client {
             tool_run_manager,
             token_refresh_run_manager,
             mesh_self_heal_service,
+            doctor_healing_service,
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
             result_outbox_run_manager,
@@ -653,6 +662,9 @@ impl Client {
 
         // Start mesh self-heal watcher (re-fetch .msh + bounce agent if held on a stale MeshID).
         self.mesh_self_heal_service.run().await?;
+
+        // One-shot doctor healing (e.g. install missing WebView2 machine-wide, then bounce chat).
+        self.doctor_healing_service.start();
 
         // Start tool connection processing manager
         self.tool_connection_processing_manager.run().await?;
