@@ -59,11 +59,16 @@ export function useAiSettingsQuery({ enabled }: { enabled: boolean }) {
     queryFn: () => aiSettingsService.fetchAiSettings(),
     enabled: enabled && connection.isReady,
     retry: 1,
-    // Appearance changes rarely but should land without a restart. No polling;
-    // instead refetch when the user refocuses the window or the app reconnects,
-    // with a short staleTime so that refocus actually picks up admin edits.
+    // Admin edits must land in running sessions without a restart. There is no
+    // server push for configuration changes (and no server-side cache - every
+    // read returns fresh values), so the client polls: refetch on refocus and
+    // reconnect for immediacy, plus a background interval so an idle, unfocused
+    // chat window also converges within a minute. Background refetches keep the
+    // previous data, so the UI never flickers while polling.
     staleTime: 60 * 1000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchInterval: 60 * 1000,
+    refetchIntervalInBackground: true,
   });
 }
