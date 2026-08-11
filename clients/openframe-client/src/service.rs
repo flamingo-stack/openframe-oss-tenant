@@ -177,9 +177,8 @@ impl Service {
         }
     }
 
-    /// Install the service on the current platform
-    pub async fn install(params: InstallConfigParams) -> Result<()> {
-
+    /// Removes an existing installation (backfilling machine info first) so a fresh install can proceed.
+    pub async fn uninstall_existing() -> Result<()> {
         if Self::is_installed() {
             info!("Existing Installation Detected\n");
             info!("An existing OpenFrame installation was found\n");
@@ -251,6 +250,13 @@ impl Service {
 
             info!("Continuing with new installation...\n");
         }
+
+        Ok(())
+    }
+
+    /// Install the service on the current platform
+    pub async fn install(params: InstallConfigParams) -> Result<()> {
+        Self::uninstall_existing().await?;
 
         info!("Installing OpenFrame service");
         let dir_manager = DirectoryManager::new();
