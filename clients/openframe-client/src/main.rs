@@ -60,7 +60,11 @@ enum Commands {
     #[command(hide = true)]
     CheckPermissions,
     /// Run environment health check (reads config from installed agent)
-    Doctor,
+    Doctor {
+        /// Apply automatic fixes for flagged issues (requires admin)
+        #[arg(long = "fix", default_value_t = false)]
+        fix: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -90,6 +94,12 @@ fn main() -> Result<()> {
                 println!("\n{} warning(s). Installation will proceed, but the agent may have connectivity issues.", warns);
             }
 
+            if !openframe::doctor::healing::pending(&report.results).is_empty() {
+                println!("\nAttempting automatic fixes (this may take a few minutes)...");
+                let heals = rt.block_on(openframe::doctor::healing::heal(&report.results));
+                print_heal_outcomes(&heals);
+            }
+
             println!("\nStarting installation...\n");
 
             if let Err(e) = openframe::logging::init_file_only(None, None) {
@@ -111,9 +121,23 @@ fn main() -> Result<()> {
                 }
             });
         }
-        Some(Commands::Doctor) => {
-            let report = rt.block_on(openframe::doctor::run_healthcheck());
+        Some(Commands::Doctor { fix }) => {
+            if fix {
+                PermissionUtils::require_admin();
+            }
+
+            let mut report = rt.block_on(openframe::doctor::run_healthcheck());
             report.print();
+
+            if fix && !openframe::doctor::healing::pending(&report.results).is_empty() {
+                println!("\nAttempting automatic fixes (this may take a few minutes)...");
+                let heals = rt.block_on(openframe::doctor::healing::heal(&report.results));
+                print_heal_outcomes(&heals);
+
+                println!("\nRe-running checks after fixes...");
+                report = rt.block_on(openframe::doctor::run_healthcheck());
+                report.print();
+            }
 
             if report.has_failures() {
                 println!(
@@ -214,5 +238,15 @@ fn init_logging() {
     if let Err(e) = openframe::logging::init(None, None) {
         eprintln!("Failed to initialize logging: {}", e);
         process::exit(1);
+    }
+}
+
+fn print_heal_outcomes(heals: &[openframe::doctor::healing::HealResult]) {
+    use openframe::doctor::healing::HealOutcome;
+    for heal in heals {
+        match &heal.outcome {
+            HealOutcome::Healed => println!("  [+] {:?} fixed", heal.remediation),
+            HealOutcome::Failed(e) => println!("  [x] {:?} failed: {}", heal.remediation, e),
+        }
     }
 }

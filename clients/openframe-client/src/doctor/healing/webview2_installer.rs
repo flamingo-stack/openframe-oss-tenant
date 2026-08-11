@@ -49,6 +49,11 @@ async fn try_install() -> anyhow::Result<()> {
         "MicrosoftEdgeWebView2Setup-{}.exe",
         uuid::Uuid::new_v4()
     ));
+    if let Some(parent) = installer_path.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .with_context(|| format!("Failed to create {}", parent.display()))?;
+    }
 
     info!("Downloading WebView2 bootstrapper from {}", BOOTSTRAPPER_URL);
     let bytes = reqwest::Client::builder()
