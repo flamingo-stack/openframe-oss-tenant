@@ -11,6 +11,10 @@ const INSTALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(600)
 #[cfg(windows)]
 const DOWNLOAD_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
 
+/// The bootstrapper is ~2 MB; anything larger is not the bootstrapper.
+#[cfg(windows)]
+const MAX_BOOTSTRAPPER_BYTES: u64 = 32 * 1024 * 1024;
+
 /// Guards the PowerShell signature probe against hanging.
 #[cfg(windows)]
 const SIGNATURE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
@@ -56,22 +60,10 @@ async fn try_install() -> anyhow::Result<()> {
     }
 
     info!("Downloading WebView2 bootstrapper from {}", BOOTSTRAPPER_URL);
-    let bytes = reqwest::Client::builder()
-        .timeout(DOWNLOAD_TIMEOUT)
-        .build()
-        .context("Failed to create HTTP client")?
-        .get(BOOTSTRAPPER_URL)
-        .send()
-        .await
-        .context("Failed to download WebView2 bootstrapper")?
-        .error_for_status()
-        .context("WebView2 bootstrapper download failed")?
-        .bytes()
-        .await
-        .context("Failed to read WebView2 bootstrapper body")?;
-    tokio::fs::write(&installer_path, &bytes)
-        .await
-        .with_context(|| format!("Failed to write {}", installer_path.display()))?;
+    if let Err(e) = download_bootstrapper(&installer_path).await {
+        let _ = tokio::fs::remove_file(&installer_path).await;
+        return Err(e);
+    }
 
     if let Err(e) = verify_microsoft_signature(&installer_path).await {
         let _ = tokio::fs::remove_file(&installer_path).await;
@@ -104,6 +96,48 @@ async fn try_install() -> anyhow::Result<()> {
         bail!("WebView2 installer exited with {}", status);
     }
     bail!("Installer succeeded but machine-wide WebView2 runtime still not detected")
+}
+
+/// Streams the download to disk, capped so an oversized response cannot exhaust agent memory.
+#[cfg(windows)]
+async fn download_bootstrapper(path: &std::path::Path) -> anyhow::Result<()> {
+    use anyhow::{bail, Context};
+    use tokio::io::AsyncWriteExt;
+
+    let mut response = reqwest::Client::builder()
+        .timeout(DOWNLOAD_TIMEOUT)
+        .build()
+        .context("Failed to create HTTP client")?
+        .get(BOOTSTRAPPER_URL)
+        .send()
+        .await
+        .context("Failed to download WebView2 bootstrapper")?
+        .error_for_status()
+        .context("WebView2 bootstrapper download failed")?;
+
+    let mut file = tokio::fs::File::create(path)
+        .await
+        .with_context(|| format!("Failed to create {}", path.display()))?;
+    let mut written: u64 = 0;
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .context("Failed to read WebView2 bootstrapper body")?
+    {
+        written += chunk.len() as u64;
+        if written > MAX_BOOTSTRAPPER_BYTES {
+            bail!(
+                "WebView2 bootstrapper download exceeded {} MB",
+                MAX_BOOTSTRAPPER_BYTES / (1024 * 1024)
+            );
+        }
+        file.write_all(&chunk)
+            .await
+            .with_context(|| format!("Failed to write {}", path.display()))?;
+    }
+    file.flush()
+        .await
+        .with_context(|| format!("Failed to flush {}", path.display()))
 }
 
 /// Rejects the download unless it carries a valid Microsoft Authenticode signature.

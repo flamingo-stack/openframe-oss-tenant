@@ -318,8 +318,9 @@ Health check (post-install):
   Runtime   — WebView2 Runtime installed machine-wide (Windows)
   Network   — same DNS/TCP/TLS checks against persisted server_host
 
-Checks flagged with a remediation are fixed automatically by `install`, `doctor --fix`,
-and once at agent startup (which also restarts the chat window after a WebView2 install).
+Remediations flagged by checks are attempted automatically by `install`, `doctor --fix`,
+and once at agent startup (which also restarts the chat window after a successful
+WebView2 install); failed attempts are reported.
 ```
 
 ### Install Flags
