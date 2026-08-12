@@ -68,7 +68,76 @@ const DIALOG_TOKEN_USAGE_QUERY = `
   }
 `;
 
-function getDialogMessagesQuery() {
+const DIALOG_TICKET_ID_QUERY = `
+  query GetDialogTicketId($id: ID!) {
+    dialog(id: $id) {
+      id
+      ticketId
+    }
+  }
+`;
+
+/**
+ * Response keys the escalation bodies are aliased to. Both types declare
+ * `text` as nullable, so both need an alias — see the note on the query below.
+ */
+const OFFER_TEXT_ALIAS = 'offerText';
+const ESCALATED_TEXT_ALIAS = 'escalatedText';
+const ESCALATION_TEXT_ALIASES = [OFFER_TEXT_ALIAS, ESCALATED_TEXT_ALIAS] as const;
+
+/**
+ * Restores an aliased body onto the `text` field the shared decoder expects,
+ * keeping the alias a detail of THIS transport rather than something the core
+ * library's persisted-row contract has to know about.
+ */
+function normalizeEscalationText(connection: MessagesConnection): MessagesConnection {
+  for (const edge of connection.edges) {
+    const messageData = edge.node.messageData;
+    if (!messageData) continue;
+    for (const data of Array.isArray(messageData) ? messageData : [messageData]) {
+      const row = data as unknown as Record<string, unknown>;
+      for (const alias of ESCALATION_TEXT_ALIASES) {
+        if (typeof row[alias] === 'string') row.text = row[alias];
+      }
+    }
+  }
+  return connection;
+}
+
+/**
+ * `includeEscalationOffers` gates the ESCALATION_OFFER selection on the
+ * `ai-escalation` flag — the same switch that gates the backend half. Without
+ * the gate, an inline fragment on a type the server's schema doesn't declare
+ * fails validation for the WHOLE query, and the caller turns that into an empty
+ * page — blanking every conversation on tenants without the escalation build.
+ *
+ * Both escalation bodies MUST stay aliased. Every other `*Data.text` here is
+ * `String!` while `EscalationOfferData.text` and `TicketEscalatedData.text` are
+ * nullable, and GraphQL's SameResponseShape rule compares response keys across
+ * the whole selection set — non-overlapping types included — so sharing the key
+ * `text` is a FieldsConflict that invalidates the entire query.
+ */
+function getDialogMessagesQuery(includeEscalationOffers: boolean) {
+  const escalationOfferFragment = includeEscalationOffers
+    ? `
+            ... on EscalationOfferData {
+              type
+              offerId
+              state
+              ${OFFER_TEXT_ALIAS}: text
+              origin
+              resolvedByName
+            }
+
+            ... on TicketEscalatedData {
+              type
+              ticketId
+              ticketNumber
+              reason
+              ${ESCALATED_TEXT_ALIAS}: text
+            }
+`
+    : '';
   return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -165,6 +234,7 @@ function getDialogMessagesQuery() {
               resolvedByName
             }
 
+${escalationOfferFragment}
             ... on ContextCompactionStartData {
               type
             }
@@ -238,24 +308,47 @@ export class DialogGraphQlService {
     dialogId: string,
     cursor?: string | null,
     limit: number = 50,
+    includeEscalationOffers: boolean = false,
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady();
 
-      const data = await this.request<{ messages: MessagesConnection }>(getDialogMessagesQuery(), {
-        dialogId,
-        chatType: 'CLIENT_CHAT',
-        cursor,
-        limit,
-        sortField: 'createdAt',
-        sortDirection: 'DESC',
-      });
+      const data = await this.request<{ messages: MessagesConnection }>(
+        getDialogMessagesQuery(includeEscalationOffers),
+        {
+          dialogId,
+          chatType: 'CLIENT_CHAT',
+          cursor,
+          limit,
+          sortField: 'createdAt',
+          sortDirection: 'DESC',
+        },
+      );
 
-      return data.messages || null;
+      if (!data.messages) return null;
+      return includeEscalationOffers ? normalizeEscalationText(data.messages) : data.messages;
     } catch (error) {
       console.error('Failed to fetch dialog messages page:', error);
       return null;
     }
+  }
+
+  /**
+   * The dialog's linked ticket (1:1). Needed because escalation is a
+   * ticket-domain operation while a chat started this session only knows its
+   * dialog id.
+   *
+   * `null` means the dialog carries no ticket. Transport and GraphQL failures
+   * PROPAGATE so the caller's query can retry — folding them into `null` made a
+   * transient blip indistinguishable from "no ticket" and permanently disabled
+   * escalation for the dialog.
+   */
+  async getDialogTicketId(dialogId: string): Promise<string | null> {
+    await tokenService.ensureTokenReady();
+    const data = await this.request<{ dialog: { ticketId: string | null } | null }>(DIALOG_TICKET_ID_QUERY, {
+      id: dialogId,
+    });
+    return data.dialog?.ticketId ?? null;
   }
 
   async getDialogTokenUsage(dialogId: string): Promise<DialogTokenUsage | null> {

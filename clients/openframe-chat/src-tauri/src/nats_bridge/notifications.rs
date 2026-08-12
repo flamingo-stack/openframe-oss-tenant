@@ -285,6 +285,14 @@ fn parse_target(context: &serde_json::Value) -> Option<NotificationTarget> {
     match string_field(context, "type").as_deref() {
         Some("CLIENT_AI_MESSAGE") => dialog(),
         Some("ADMIN_MESSAGE_PUBLISHED") | Some("TICKET_STATUS_CHANGED") => ticket(),
+        // The ONLY machine-bound context carrying BOTH ids, so it is also the
+        // only one the ticket-first fallback would route wrong. A ticket target
+        // makes the WebView resolve the dialog from the loaded tickets pages,
+        // which on a cold start (the app launched BY this notification) are
+        // empty — the user lands on the "we will contact you shortly" preview
+        // instead of the conversation they just escalated, until the 5s preview
+        // poll rescues them. The payload already carries the dialog id.
+        Some("TICKET_ESCALATED_BY_USER") => dialog().or_else(ticket),
         _ => ticket().or_else(dialog),
     }
 }
@@ -407,6 +415,60 @@ mod tests {
         let payload = parse_click_payload(&click_uri(Some(&target))).unwrap();
         assert_eq!(payload["kind"], "dialog");
         assert_eq!(payload["id"], "abc/д ф");
+    }
+
+    /// One case per context that actually reaches `machine.<id>.notification`
+    /// — the agent audience is exactly these four (`machineAudience(..)` on the
+    /// backend dispatchers). Everything else is admin-only and never arrives.
+    #[test]
+    fn agent_bound_contexts_route_to_their_surface() {
+        let target = |ctx: serde_json::Value| parse_target(&ctx);
+
+        assert_eq!(
+            target(serde_json::json!({ "type": "CLIENT_AI_MESSAGE", "dialogId": "d1" })),
+            Some(NotificationTarget::Dialog {
+                dialog_id: "d1".into()
+            })
+        );
+        assert_eq!(
+            target(serde_json::json!({ "type": "ADMIN_MESSAGE_PUBLISHED", "ticketId": "t1" })),
+            Some(NotificationTarget::Ticket {
+                ticket_id: "t1".into()
+            })
+        );
+        assert_eq!(
+            target(serde_json::json!({ "type": "TICKET_STATUS_CHANGED", "ticketId": "t2" })),
+            Some(NotificationTarget::Ticket {
+                ticket_id: "t2".into()
+            })
+        );
+        // Carries both ids; the dialog wins so the click opens the conversation.
+        assert_eq!(
+            target(serde_json::json!({
+                "type": "TICKET_ESCALATED_BY_USER",
+                "ticketId": "t3",
+                "dialogId": "d3",
+            })),
+            Some(NotificationTarget::Dialog {
+                dialog_id: "d3".into()
+            })
+        );
+        // Auto-escalation reuses the same context; a dialog-less ticket (no
+        // linked conversation) still has somewhere to land.
+        assert_eq!(
+            target(serde_json::json!({ "type": "TICKET_ESCALATED_BY_USER", "ticketId": "t4" })),
+            Some(NotificationTarget::Ticket {
+                ticket_id: "t4".into()
+            })
+        );
+        // A context the backend adds later still routes rather than dropping.
+        assert_eq!(
+            target(serde_json::json!({ "type": "SOMETHING_NEW", "ticketId": "t5" })),
+            Some(NotificationTarget::Ticket {
+                ticket_id: "t5".into()
+            })
+        );
+        assert_eq!(target(serde_json::json!({ "type": "SOMETHING_NEW" })), None);
     }
 
     #[test]

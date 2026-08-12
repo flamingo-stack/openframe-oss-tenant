@@ -24,7 +24,7 @@ export function ChatDialogScreen({
       messages={messages}
       dialogId={dialogId}
       isTyping={isTyping}
-      isLoading={isLoadingHistory}
+      isLoading={isLoadingHistory && messages.length === 0}
       autoScroll={true}
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}

@@ -10,13 +10,13 @@ import {
   type TokenUsageData,
   type ToolExecutionSegment,
   useJetStreamDialogSubscription,
-  useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebugMode } from '../contexts/DebugModeContext';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { ChatApiService } from '../services/chatApiService';
+import { dialogGraphQlService } from '../services/dialogGraphQLService';
 import { useTauriBridgeLiveness, useTauriDialogSubscription } from '../services/natsTauri';
 import { tokenService } from '../services/tokenService';
 import { overrideToolTitle } from '../utils/applyToolTitle';
@@ -25,9 +25,11 @@ import { isTauri } from '../utils/runtime';
 import { useAssistantBranding } from './useAssistantBranding';
 import { useChatApprovals } from './useChatApprovals';
 import { useChatConfig } from './useChatConfig';
+import { useChatEscalation } from './useChatEscalation';
 import { useChatMessages } from './useChatMessages';
 import { CHAT_NATS_CLIENT_CONFIG, useChatNatsConfig } from './useChatNatsConfig';
 import { useDialogMessages } from './useDialogMessages';
+import { useRealtimeChunkProcessor } from './useRealtimeChunkProcessor';
 
 const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
 
@@ -35,26 +37,34 @@ const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
 // switch); the send flow treats it as a silent stop, not an error.
 const SUBSCRIPTION_WAIT_CANCELLED = 'Subscription wait cancelled';
 
-// Scan messages newest-to-oldest for the most recent pending approval
-// (single or batch). Returns its requestId / approvalRequestId, or
-// undefined if none. Used by sendMessage to optimistically cancel the
-// active gate when the user interrupts with a new message.
-function findLatestPendingApprovalId(msgs: Message[]): string | undefined {
+// Scan messages newest-to-oldest for the most recent UNRESOLVED gate, where
+// `pickId` decides which segment kinds count and where their id lives. Used by
+// sendMessage to optimistically settle the active gate when the user
+// interrupts with a new message. Approvals and escalation offers are scanned
+// SEPARATELY on purpose: a thread can hold one of each, and both must settle.
+function findLatestPendingId(msgs: Message[], pickId: (seg: MessageSegment) => string | undefined): string | undefined {
   for (let i = msgs.length - 1; i >= 0; i--) {
     const msg = msgs[i];
     if (!Array.isArray(msg.content)) continue;
     for (let j = msg.content.length - 1; j >= 0; j--) {
-      const seg = msg.content[j];
-      if (seg.type === 'approval_request' && (!seg.status || seg.status === 'pending')) {
-        return seg.data?.requestId;
-      }
-      if (seg.type === 'approval_batch' && (!seg.status || seg.status === 'pending')) {
-        return seg.data?.approvalRequestId;
-      }
+      const id = pickId(msg.content[j]);
+      if (id) return id;
     }
   }
   return undefined;
 }
+
+const isUnresolved = (status?: string): boolean => !status || status === 'pending';
+
+const pickApprovalId = (seg: MessageSegment): string | undefined => {
+  if (seg.type === 'approval_request' && isUnresolved(seg.status)) return seg.data?.requestId;
+  if (seg.type === 'approval_batch' && isUnresolved(seg.status)) return seg.data?.approvalRequestId;
+  return undefined;
+};
+
+/** An escalation offer is SUPERSEDED by a new message, not rejected. */
+const pickOfferId = (seg: MessageSegment): string | undefined =>
+  seg.type === 'escalation_offer' && isUnresolved(seg.status) ? seg.data?.offerId : undefined;
 
 interface UseChatOptions {
   useApi?: boolean;
@@ -65,6 +75,10 @@ interface UseChatOptions {
   onTokenUsage?: (data: TokenUsageData) => void;
   onDialogClosed?: () => void;
   onDirectModeDetected?: () => void;
+  /** The client approved a handoff — the ticket is now with a technician. */
+  onEscalated?: () => void;
+  /** An escalation approve/decline failed after its optimistic flip was rolled back. */
+  onEscalationError?: (message: string) => void;
 }
 
 export function useChat({
@@ -74,6 +88,8 @@ export function useChat({
   onTokenUsage,
   onDialogClosed,
   onDirectModeDetected,
+  onEscalated,
+  onEscalationError,
 }: UseChatOptions = {}) {
   const { flags } = useFeatureFlags();
 
@@ -83,13 +99,14 @@ export function useChat({
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isResumedDialog, setIsResumedDialog] = useState(false);
-  // Flipped on the first NATS reconnect. History normally loads only for
-  // RESUMED dialogs (`enabled: isResumedDialog`), so for a dialog created
-  // this session the reconnect back-fill had no enabled query to refetch —
-  // an outage longer than the JetStream retention (~10 min) left a permanent
-  // hole. Enabling the query after a reconnect routes recovery through the
-  // standard history+merge path.
-  const [hasReconnected, setHasReconnected] = useState(false);
+  // Dialog that was open across a NATS reconnect. History normally loads only
+  // for RESUMED dialogs (`enabled: isResumedDialog`), so a dialog created this
+  // session had no enabled query to refetch — an outage longer than the
+  // JetStream retention (~10 min) left a permanent hole. Scoped to the id
+  // rather than a sticky flag: a dialog created AFTER the reconnect has nothing
+  // to back-fill, and enabling its query only fires a first fetch whose pending
+  // state blanks the thread with a skeleton.
+  const [backfillDialogId, setBackfillDialogId] = useState<string | null>(null);
   const [isTicketPreview, setIsTicketPreview] = useState(false);
   const { getWsUrl, onBeforeReconnect } = useChatNatsConfig();
 
@@ -104,7 +121,7 @@ export function useChat({
   >(new Map());
 
   const { debugMode } = useDebugMode();
-  const { quickActions, isSettingsLoading } = useChatConfig();
+  const { quickActions, isQuickActionsLoading } = useChatConfig();
   const { assistantName, assistantAvatar } = useAssistantBranding();
 
   const apiServiceRef = useRef<ChatApiService | null>(null);
@@ -122,9 +139,65 @@ export function useChat({
   }, [debugMode]);
 
   const approvals = useChatApprovals();
+
+  // Escalation is ticket-keyed while a chat started this session knows only
+  // its dialog, so resolve the 1:1 link once per dialog. Also feeds the host's
+  // ticket-state query, which is what flips the composer to "waiting for
+  // technician" without waiting on its poll.
+  // Gated on the flag because `Dialog.ticketId` ships with the escalation
+  // backend; querying it against a tenant without that build is a guaranteed
+  // validation error.
+  const escalationEnabled = flags['ai-escalation'];
+  // Keyed by dialog, so switching dialogs drops the previous ticket rather than
+  // aiming escalation at it while the new one resolves.
+  const { data: dialogTicketId = null } = useQuery({
+    queryKey: ['dialog-ticket-id', natsDialogId],
+    queryFn: ({ queryKey: [, id] }) => dialogGraphQlService.getDialogTicketId(id as string),
+    enabled: !!natsDialogId && escalationEnabled,
+    // Finite on purpose: the link is immutable, but an infinite stale time plus
+    // no invalidation site would make three exhausted retries disable
+    // escalation for the rest of the dialog's life.
+    staleTime: 5 * 60_000,
+    retry: 2,
+  });
+
+  const escalation = useChatEscalation({ ticketId: dialogTicketId, onEscalated });
+
+  // Read late: `resolveOfferLocally` is created once, so it cannot close over
+  // the render's callback.
+  const onEscalationErrorRef = useRef(onEscalationError);
+  onEscalationErrorRef.current = onEscalationError;
+
+  // Optimistic flip BEFORE the mutation, for the same reason command
+  // approvals do it: the card must resolve on the click. `escalationOfferStates`
+  // alone only reaches historical bubbles — a card in the live thread needs
+  // the message-store updater too. Stable identity (refs) so the accumulator
+  // that stamps these onto segments is created once.
+  const resolveOfferLocally = useRef(async (offerId: string | undefined, approve: boolean) => {
+    if (!offerId) return;
+    messagesRef.current.updateApprovalStatusById(offerId, approve ? 'approved' : 'rejected');
+    try {
+      await escalationRef.current.resolveOffer(offerId, approve);
+    } catch (error) {
+      messagesRef.current.updateApprovalStatusById(offerId, 'pending');
+      onEscalationErrorRef.current?.(error instanceof Error ? error.message : 'Please try again shortly.');
+    }
+  }).current;
+
+  const handleEscalationApprove = useCallback(
+    (offerId?: string) => resolveOfferLocally(offerId, true),
+    [resolveOfferLocally],
+  );
+  const handleEscalationReject = useCallback(
+    (offerId?: string) => resolveOfferLocally(offerId, false),
+    [resolveOfferLocally],
+  );
+
   const messages = useChatMessages({
     onApprove: approvals.handleApproveRequest,
     onReject: approvals.handleRejectRequest,
+    onEscalationApprove: handleEscalationApprove,
+    onEscalationReject: handleEscalationReject,
   });
 
   const {
@@ -141,11 +214,14 @@ export function useChat({
     escalatedApprovals,
     reset: resetDialogMessages,
   } = useDialogMessages(natsDialogId, {
-    enabled: isResumedDialog || hasReconnected,
+    enabled: isResumedDialog || (!!natsDialogId && natsDialogId === backfillDialogId),
     onApprove: approvals.handleApproveRequest,
     onReject: approvals.handleRejectRequest,
     approvalStatuses: approvals.approvalStatuses,
     resolvedByNames: approvals.resolvedByNames,
+    escalationOfferStates: escalation.escalationOfferStates,
+    onEscalationApprove: handleEscalationApprove,
+    onEscalationReject: handleEscalationReject,
   });
 
   useEffect(() => {
@@ -180,8 +256,11 @@ export function useChat({
     [historicalMessages, messages.messages, streamingMessageId, historyFetchedAt, initialOptStartSeq, rawHistoryIds],
   );
 
+  const hasPendingEscalationOffer = useMemo(() => !!findLatestPendingId(allMessages, pickOfferId), [allMessages]);
+
   const messagesRef = useRef(messages);
   const approvalsRef = useRef(approvals);
+  const escalationRef = useRef(escalation);
   const allMessagesRef = useRef(allMessages);
 
   useEffect(() => {
@@ -191,6 +270,10 @@ export function useChat({
   useEffect(() => {
     approvalsRef.current = approvals;
   }, [approvals]);
+
+  useEffect(() => {
+    escalationRef.current = escalation;
+  }, [escalation]);
 
   useEffect(() => {
     allMessagesRef.current = allMessages;
@@ -250,6 +333,19 @@ export function useChat({
       },
       onApprove: (requestId?: string) => approvalsRef.current.handleApproveRequest(requestId),
       onReject: (requestId?: string) => approvalsRef.current.handleRejectRequest(requestId),
+      onEscalationApprove: handleEscalationApprove,
+      onEscalationReject: handleEscalationReject,
+      // Same two-container problem as `onApprovalResolved`: the live thread
+      // and the resumed-dialog bubbles owned by React Query are separate
+      // stores, so the flip has to be applied to both.
+      onEscalationOfferResolved: (offerId: string, status: ChatApprovalStatus, resolvedByName?: string | null) => {
+        messagesRef.current.updateApprovalStatusById(offerId, status, resolvedByName);
+        escalationRef.current.applyOfferState(offerId, status);
+        // Also fires for an offer approved on another surface, where this
+        // client never ran the mutation and has nothing else to tell it the
+        // ticket left AI assistance.
+        if (status === 'approved') onEscalated?.();
+      },
       onApprovalResolved: (
         requestId: string,
         status: ChatApprovalStatus,
@@ -324,7 +420,15 @@ export function useChat({
         messagesRef.current.addMessage(systemMessage);
       },
     }),
-    [onMetadataUpdate, onTokenUsage, onDialogClosed, onDirectModeDetected],
+    [
+      onMetadataUpdate,
+      onTokenUsage,
+      onDialogClosed,
+      onDirectModeDetected,
+      onEscalated,
+      handleEscalationApprove,
+      handleEscalationReject,
+    ],
   );
 
   const incompleteState = useMemo(() => {
@@ -388,6 +492,81 @@ export function useChat({
     };
   }, [incompleteState]);
 
+  /**
+   * ADOPTION ANCHOR for a resumed dialog.
+   *
+   * History lives in React Query and the live tail in `useChatMessages`, so on
+   * re-entry the live array starts EMPTY while the turn's bubble sits in
+   * history. A continuation chunk then reaches `appendSegmentsToLastAssistant`,
+   * finds no assistant row to append to, and opens a SECOND bubble beside the
+   * persisted one — the split turn seen after leaving and re-entering a dialog.
+   *
+   * The merge layer is built for the opposite: `mergeHistoryWithRealtime`
+   * expects the processor to ADOPT the persisted row — keep its id while
+   * accumulating more than history has — and collapses the pair by that id.
+   * So seed the live array with a copy of the trailing assistant bubble,
+   * carrying its persisted id. Continuations then land IN it, and the merge
+   * keeps the richer live copy instead of rendering both.
+   */
+  const resumedAnchor = useMemo(() => {
+    if (!isResumedDialog || !incompleteState) return null;
+    // Backwards scan, not `[...allMessages].reverse().find()`: this memo
+    // recomputes whenever `allMessages` changes, which during a stream is every
+    // chunk, and the spread cloned the whole thread each time just to read its
+    // last assistant row.
+    let trailing: Message | undefined;
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      if (allMessages[i].role === 'assistant') {
+        trailing = allMessages[i];
+        break;
+      }
+    }
+    if (!trailing || !Array.isArray(trailing.content)) return null;
+    // COPY, not the object itself. When the trailing bubble comes from history
+    // it belongs to the React Query cache, and handing that reference to live
+    // state aliases the two: the live thread is then one accumulator bug away
+    // from mutating cached data, and a refetch would resurrect the mutation.
+    // The `content` array is cloned for the same reason — the segment
+    // accumulator is handed it directly.
+    return { ...trailing, content: [...trailing.content] };
+  }, [isResumedDialog, incompleteState, allMessages]);
+
+  // ONE-SHOT PER BUBBLE: keyed on the anchor's id, not a boolean, because the
+  // hook is not remounted on dialog switch — a latched flag would leave every
+  // later resumed dialog unanchored. Skipped once the live array already holds
+  // an assistant row (a fresh send, or a previous anchor still in place).
+  const anchoredIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!resumedAnchor || anchoredIdRef.current === resumedAnchor.id) return;
+    if (messagesRef.current.messages.some(m => m.role === 'assistant')) return;
+    anchoredIdRef.current = resumedAnchor.id;
+    messagesRef.current.addMessage(resumedAnchor);
+  }, [resumedAnchor]);
+
+  /**
+   * Emptying the live thread MUST drop the anchor guard with it — always, not
+   * only on the path that happens to remember to.
+   *
+   * The guard holds the bubble id it seeded, and that id does not change when
+   * the user leaves a dialog and comes back. So a clear that leaves it set
+   * makes the next anchor attempt for the SAME dialog a no-op: the live array
+   * stays empty, and the first continuation chunk opens the second bubble this
+   * whole mechanism exists to prevent. Three call sites empty the thread
+   * (`clearMessages`, `showTicketPreview`, `resumeDialog`) and only one used to
+   * clear the guard, so leaving dialog A through `resumeDialog` and returning
+   * reproduced the split turn exactly.
+   */
+  const clearLiveThread = useCallback(() => {
+    messages.clearMessages();
+    anchoredIdRef.current = null;
+  }, [messages]);
+
+  // Offer states deliberately do NOT feed this map. `mergeApprovalStatuses` is
+  // monotonic (a resolution is never downgraded back to pending), so an
+  // optimistic flip that later fails would stick there and a replayed PENDING
+  // offer would render as resolved. Known gap: an offer resolved mid-stream can
+  // still be replayed as pending by the next cumulative emit — fixing that
+  // needs an explicit un-resolve command on the reducer.
   const { processChunk: processRealtimeChunk, reset: resetChunkProcessor } = useRealtimeChunkProcessor({
     callbacks: realtimeCallbacks,
     displayApprovalTypes: ['CLIENT'],
@@ -483,12 +662,10 @@ export function useChat({
   useEffect(() => {
     if (reconnectionCount <= lastHandledReconnectRef.current) return;
     lastHandledReconnectRef.current = reconnectionCount;
-    // Enable the history query for session-created dialogs (see
-    // `hasReconnected`) — invalidating a disabled query is a no-op.
-    setHasReconnected(true);
-    if (natsDialogId) {
-      void queryClient.invalidateQueries({ queryKey: ['dialog-messages', natsDialogId] });
-    }
+    if (!natsDialogId) return;
+    // Arm the history query for session-created dialogs (see `backfillDialogId`).
+    setBackfillDialogId(natsDialogId);
+    void queryClient.invalidateQueries({ queryKey: ['dialog-messages', natsDialogId] });
   }, [reconnectionCount, natsDialogId, queryClient]);
 
   // Stall watchdog: while streaming and visible, surface `isStalled` if no
@@ -572,10 +749,19 @@ export function useChat({
       // a moment later. Flip the latest pending one optimistically so the
       // card resolves at the same instant the user-message bubble appears,
       // avoiding a layout jump between the two updates.
-      const pendingId = findLatestPendingApprovalId(allMessagesRef.current);
+      const pendingId = findLatestPendingId(allMessagesRef.current, pickApprovalId);
       if (pendingId) {
         messagesRef.current.updateApprovalStatusById(pendingId, 'rejected');
         approvalsRef.current.applyResolvedStatus(pendingId, 'rejected');
+      }
+
+      // Typing over a pending escalation offer supersedes it — the backend
+      // publishes the SUPERSEDED block a moment later, so flip now for the
+      // same no-layout-jump reason as the approval interrupt above.
+      const pendingOfferId = findLatestPendingId(allMessagesRef.current, pickOfferId);
+      if (pendingOfferId) {
+        messagesRef.current.updateApprovalStatusById(pendingOfferId, 'cancelled');
+        escalationRef.current.applyOfferState(pendingOfferId, 'cancelled');
       }
 
       const userMessage: Message = {
@@ -665,7 +851,7 @@ export function useChat({
   }, []);
 
   const clearMessages = useCallback(() => {
-    messages.clearMessages();
+    clearLiveThread();
     setIsTyping(false);
     setNatsStreaming(false);
     setError(null);
@@ -674,15 +860,16 @@ export function useChat({
     setIsTicketPreview(false);
     escalatedApprovalsRef.current.clear();
     approvals.clearApprovals();
+    escalation.clearEscalation();
     resetChunkProcessor();
     resetDialogMessages();
     apiServiceRef.current?.reset();
     cancelSubscriptionWait();
-  }, [messages, approvals, resetChunkProcessor, resetDialogMessages, cancelSubscriptionWait]);
+  }, [clearLiveThread, approvals, escalation, resetChunkProcessor, resetDialogMessages, cancelSubscriptionWait]);
 
   const showTicketPreview = useCallback(
     (ticket: { title: string; description?: string }) => {
-      messages.clearMessages();
+      clearLiveThread();
       setIsTyping(false);
       setNatsStreaming(false);
       setError(null);
@@ -691,6 +878,7 @@ export function useChat({
       setIsTicketPreview(true);
       escalatedApprovalsRef.current.clear();
       approvals.clearApprovals();
+      escalation.clearEscalation();
       resetChunkProcessor();
       resetDialogMessages();
       apiServiceRef.current?.reset();
@@ -719,7 +907,9 @@ export function useChat({
     },
     [
       messages,
+      clearLiveThread,
       approvals,
+      escalation,
       resetChunkProcessor,
       resetDialogMessages,
       assistantName,
@@ -733,11 +923,12 @@ export function useChat({
       try {
         cancelSubscriptionWait();
         setError(null);
-        messages.clearMessages();
+        clearLiveThread();
         setIsTyping(false);
         setNatsStreaming(false);
         setIsTicketPreview(false);
         approvals.clearApprovals();
+        escalation.clearEscalation();
         setIsResumedDialog(true);
 
         setNatsDialogId(dialogId);
@@ -761,7 +952,7 @@ export function useChat({
         return false;
       }
     },
-    [messages, approvals, waitForNatsSubscription, cancelSubscriptionWait],
+    [clearLiveThread, approvals, escalation, waitForNatsSubscription, cancelSubscriptionWait],
   );
 
   return {
@@ -780,9 +971,16 @@ export function useChat({
     resumeDialog,
     showTicketPreview,
     quickActions,
-    isSettingsLoading,
+    isQuickActionsLoading,
     hasMessages: allMessages.length > 0,
     isTicketPreview,
+    /** Ticket linked to the open dialog — escalation is keyed on it. */
+    ticketId: dialogTicketId,
+    requestEscalation: escalation.requestEscalation,
+    // Derived from the thread rather than tracked separately: the offer can
+    // arrive from Fae's tool call, a trigger, or the header button, and the
+    // rendered card is the one state all of them share.
+    hasPendingEscalationOffer,
     awaitingTechnicianResponse: approvals.awaitingTechnicianResponse,
     isLoadingHistory: isLoadingHistoricalMessages,
     isResumedDialog,

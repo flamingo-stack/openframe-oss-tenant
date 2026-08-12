@@ -23,9 +23,18 @@ spec:
         prometheus.io/path: "/management/{{ default $saas.image.tag $svc.image.tag }}/prometheus"
 
     spec:
+      {{- with $saas.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
       initContainers:
         - name: wait-for-config-server
           image: "{{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
+          {{- with .Values.initImage.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           command: ["sh", "-c", "until curl -f $SPRING_CONFIG_URL/xml/shared-logback-spring.xml; do sleep 1; done"]
           env:
             - name: SPRING_CONFIG_URL
@@ -37,6 +46,10 @@ spec:
       containers:
         - name: openframe-management
           image: "{{ default $saas.image.registry $svc.image.registry }}/{{ $svc.image.repository }}:{{ default $saas.image.tag $svc.image.tag }}"
+          {{- with $saas.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - containerPort: 8095
               name: http
@@ -56,6 +69,12 @@ spec:
             - name: TENANT_HOST_URL
               value: "https://localhost"
             {{- end }}
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: logs
+              mountPath: /app/logs
 
           resources:
             {{- toYaml $svc.resources | nindent 12 }}
@@ -83,4 +102,10 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
 {{- end }}

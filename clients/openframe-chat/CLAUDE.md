@@ -132,6 +132,11 @@ The chat client talks to the AI chat backend (saas-ai-agent) through the gateway
 
 Do not add a parallel token store — extend `tokenService`.
 
+**The gateway CORS whitelist is exact — don't change the dev port.** Only `http://127.0.0.1:3003`
+(the Vite dev server) and `tauri://localhost` (the bundled app) survive preflight; `localhost:3003`
+and any other port get a 403 on `OPTIONS`, which surfaces as a fully rendered UI with no data. That
+is why `vite.config.ts` pins `port: 3003`, `strictPort: true`, `host: '127.0.0.1'`.
+
 **Realtime is NATS only (SSE removed).** In the Tauri shell, Rust owns the NATS WebSocket connection (`src-tauri/src/nats_bridge/`) — JetStream OrderedConsumers on stream `CHAT_CHUNKS`, subject `chat.<dialogId>.message`, plus OS notifications from `machine.<machineId>.notification`; the webview consumes via Tauri IPC (`src/services/natsTauri.ts`). Under `npm run frontend:dev` (no Tauri), the core-lib browser WS hooks (`useJetStreamDialogSubscription`) take over — keep both paths behaviorally aligned.
 
 ## What NOT to do

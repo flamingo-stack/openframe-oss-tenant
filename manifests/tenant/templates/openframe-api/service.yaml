@@ -12,10 +12,10 @@ spec:
     app: openframe-api
   ports:
     - port: 8090
-      targetPort: 8090
+      targetPort: http
       name: http
     - port: 8091
-      targetPort: 8091
+      targetPort: management
       name: management
   type: ClusterIP
 {{- end }}

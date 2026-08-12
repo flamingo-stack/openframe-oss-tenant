@@ -46,3 +46,24 @@ openframe:
         outbound:
           openframe-events: openframe.events
           devices-topic: devices-topic
+
+# NATS connection for the spring-cloud-stream nats binder (lib >= 6.16 binds
+# it at startup; without server properties the binder fails and the context
+# dies with "required a bean of type '...stream.binder.Binder'"). Mirrors the
+# nats block the api/client configs already carry.
+nats:
+  spring:
+    server: nats://nats.datasources.svc.cluster.local:4222
+    username: service
+    password: service_pass
+    connection-timeout: 30s
+
+# Knowledge-base attachments (lib >= 6.16): KnowledgeBaseAttachmentService
+# constructor-requires GcsPresignedUrlService, which only registers when
+# storage.s3.disabled=false is EXPLICITLY set — without these keys the service
+# fails startup. The GCS client is lazy, so boot succeeds without cloud
+# credentials; the attachments feature itself needs a real bucket + GCP creds.
+storage:
+  s3:
+    disabled: false
+    bucket: local-dev-bucket

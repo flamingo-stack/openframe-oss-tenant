@@ -180,6 +180,50 @@ const GET_TICKET_QUERY = gql`
   }
 `;
 
+// Escalation is ticket-keyed on the backend (the dialog is resolved from the
+// ticket), and all three resolvers require an AGENT principal — which is what
+// this client's machine token is.
+const REQUEST_TICKET_ESCALATION = gql`
+  mutation RequestTicketEscalation($input: TicketIdInput!) {
+    requestTicketEscalation(input: $input) {
+      ticketId
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const APPROVE_TICKET_ESCALATION = gql`
+  mutation ApproveTicketEscalation($input: TicketIdInput!) {
+    approveTicketEscalation(input: $input) {
+      ticketId
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const DECLINE_TICKET_ESCALATION = gql`
+  mutation DeclineTicketEscalation($input: TicketIdInput!) {
+    declineTicketEscalation(input: $input) {
+      ticketId
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+interface TicketEscalationPayload {
+  ticketId: string | null;
+  userErrors: UserError[];
+}
+
 // --- Service ---
 
 class TicketGraphQlService {
@@ -263,6 +307,42 @@ class TicketGraphQlService {
     } catch (error) {
       console.error('Failed to fetch ticket:', error);
       return null;
+    }
+  }
+
+  /**
+   * Ask for a handoff to a human technician. This does NOT escalate: the
+   * backend posts an escalation offer into the chat (deferring it to the end
+   * of the turn when Fae is mid-stream) and the handoff runs only once the
+   * client approves. Idempotent while an offer is already pending.
+   */
+  async requestTicketEscalation(ticketId: string): Promise<void> {
+    await this.runEscalationMutation(REQUEST_TICKET_ESCALATION, ticketId, 'requestTicketEscalation');
+  }
+
+  /** Resolve the pending offer: approve performs the handoff, decline records the choice. */
+  async approveTicketEscalation(ticketId: string): Promise<void> {
+    await this.runEscalationMutation(APPROVE_TICKET_ESCALATION, ticketId, 'approveTicketEscalation');
+  }
+
+  async declineTicketEscalation(ticketId: string): Promise<void> {
+    await this.runEscalationMutation(DECLINE_TICKET_ESCALATION, ticketId, 'declineTicketEscalation');
+  }
+
+  private async runEscalationMutation(
+    document: RequestDocument,
+    ticketId: string,
+    field: 'requestTicketEscalation' | 'approveTicketEscalation' | 'declineTicketEscalation',
+  ): Promise<void> {
+    await tokenService.ensureTokenReady();
+
+    const data = await this.request<Record<string, TicketEscalationPayload>>(document, {
+      input: { id: ticketId },
+    });
+
+    const payload = data[field];
+    if (payload?.userErrors?.length) {
+      throw new Error(payload.userErrors[0].message);
     }
   }
 

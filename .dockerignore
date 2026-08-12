@@ -1,0 +1,11 @@
+# ignore all default
+*
+
+# keep for build
+!pom.xml
+!openframe
+!.mvn
+
+# drop local build output
+openframe/**/target
+**/*.jar

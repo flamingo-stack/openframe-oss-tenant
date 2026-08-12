@@ -1,6 +1,33 @@
 use tokio::io::{AsyncRead, AsyncReadExt};
+use tokio::task::JoinHandle;
+use tokio::time::{timeout, Duration};
 
 pub(crate) const MAX_OUTPUT_SIZE: usize = 10 * 1024 * 1024;
+
+pub(crate) async fn join_reads(
+    mut stdout_task: JoinHandle<Vec<u8>>,
+    mut stderr_task: JoinHandle<Vec<u8>>,
+    grace: Duration,
+    kill: impl FnOnce(),
+) -> (Vec<u8>, Vec<u8>) {
+    let pair = async {
+        let out = (&mut stdout_task).await.unwrap_or_default();
+        let err = (&mut stderr_task).await.unwrap_or_default();
+        (out, err)
+    };
+    tokio::pin!(pair);
+
+    match timeout(grace, &mut pair).await {
+        Ok(result) => result,
+        Err(_) => {
+            tracing::warn!(
+                "output streams still open after exit (backgrounded child?), killing process tree"
+            );
+            kill();
+            timeout(grace, &mut pair).await.unwrap_or_default()
+        }
+    }
+}
 
 pub(crate) async fn read_capped<R>(reader: Option<R>) -> Vec<u8>
 where
@@ -63,25 +90,6 @@ pub(crate) fn clean_string(bytes: &[u8]) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+#[path = "output_tests.rs"]
+mod tests;
 
-    #[test]
-    fn strips_nulls() {
-        assert_eq!(clean_string(b"a\x00b\x00c"), "abc");
-    }
-
-    #[test]
-    fn drops_invalid_keeps_replacement_char() {
-        let mut bytes = b"ok".to_vec();
-        bytes.push(0xFF);
-        bytes.extend_from_slice(b"end");
-        assert_eq!(clean_string(&bytes), "okend");
-        assert_eq!(clean_string("a\u{FFFD}b".as_bytes()), "a\u{FFFD}b");
-    }
-
-    #[test]
-    fn passes_valid_utf8_through() {
-        assert_eq!(clean_string("héllo\nworld".as_bytes()), "héllo\nworld");
-    }
-}

@@ -12,7 +12,7 @@ spec:
     app: openframe-frontend
   ports:
     - port: 3000
-      targetPort: 3000
+      targetPort: http
       name: http
   type: ClusterIP
 {{- end }}

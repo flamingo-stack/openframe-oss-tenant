@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
 use std::fs;
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::models::tool_connection::ToolConnection;
 use crate::platform::directories::DirectoryManager;
@@ -8,6 +10,7 @@ use crate::platform::directories::DirectoryManager;
 #[derive(Clone)]
 pub struct ToolConnectionService {
     file_path: PathBuf,
+    writer: Arc<Mutex<()>>,
 }
 
 impl ToolConnectionService {
@@ -17,11 +20,12 @@ impl ToolConnectionService {
         directory_manager
             .ensure_directories()
             .with_context(|| "Failed to ensure secured directory exists")?;
-        Ok(Self { file_path: path })
+        Ok(Self { file_path: path, writer: Arc::new(Mutex::new(())) })
     }
 
     /// Save (upsert) connection
     pub async fn save(&self, connection: ToolConnection) -> Result<()> {
+        let _guard = self.writer.lock().await;
         let mut list = self.get_all().await?;
 
         if let Some(existing) = list.iter_mut().find(|c| c.tool_agent_id == connection.tool_agent_id) {
@@ -31,12 +35,6 @@ impl ToolConnectionService {
         }
 
         self.persist(&list).await
-    }
-
-    /// Check if a connection exists for given tool_agent_id
-    pub async fn exists_by_tool_agent_id(&self, id: &str) -> Result<bool> {
-        let list = self.get_all().await?;
-        Ok(list.iter().any(|c| c.tool_agent_id == id))
     }
 
     pub async fn get_all(&self) -> Result<Vec<ToolConnection>> {
@@ -52,6 +50,7 @@ impl ToolConnectionService {
 
     /// Delete a tool connection by its tool_agent_id
     pub async fn delete_by_tool_agent_id(&self, tool_agent_id: &str) -> Result<bool> {
+        let _guard = self.writer.lock().await;
         let mut list = self.get_all().await?;
         let initial_len = list.len();
         list.retain(|c| c.tool_agent_id != tool_agent_id);

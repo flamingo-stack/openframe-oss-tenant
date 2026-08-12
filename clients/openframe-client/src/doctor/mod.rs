@@ -9,6 +9,7 @@ use checks::*;
 pub enum CheckCategory {
     Command,
     Admin,
+    Runtime,
     Disk,
     Network,
 }
@@ -96,6 +97,10 @@ pub async fn run_preinstall(params: &InstallConfigParams) -> DoctorReport {
         return DoctorReport { results, title: "pre-install diagnostics" };
     }
 
+    if let Some(webview2) = check_webview2_runtime() {
+        results.push(webview2);
+    }
+
     let dir_manager = DirectoryManager::new();
     let disk_targets: Vec<(&std::path::Path, &str)> = vec![
         (dir_manager.app_support_dir(), dir_manager.app_support_dir().to_str().unwrap_or("app support")),
@@ -127,6 +132,10 @@ pub async fn run_healthcheck() -> DoctorReport {
     results.push(check_admin_privileges());
     if results.last().unwrap().status == CheckStatus::Fail {
         return DoctorReport { results, title: "health check" };
+    }
+
+    if let Some(webview2) = check_webview2_runtime() {
+        results.push(webview2);
     }
 
     let dir_manager = DirectoryManager::new();

@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
 use futures::FutureExt;
 use std::panic::AssertUnwindSafe;
+use std::time::Duration;
 use tracing::{info, warn};
+use crate::config::service_stop::TOOL_RESTART_TIMEOUT_SECS;
 use crate::models::{InstalledTool, Installation};
 use crate::services::InstalledToolsService;
 use crate::services::ToolKillService;
@@ -68,12 +70,20 @@ impl ToolRestartService {
             tool_agent_id: tool_agent_id.to_string(),
             lock_guard: Some(lock_guard),
         };
-        let outcome = AssertUnwindSafe(self.restart_by_tool_agent_id(tool_agent_id))
-            .catch_unwind()
-            .await;
+        // Hard cap so a wedged OS call can't hold the flag/lock forever and freeze callers (e.g. mesh self-heal).
+        let outcome = tokio::time::timeout(
+            Duration::from_secs(TOOL_RESTART_TIMEOUT_SECS),
+            AssertUnwindSafe(self.restart_by_tool_agent_id(tool_agent_id)).catch_unwind(),
+        )
+        .await;
         match outcome {
-            Ok(result) => result,
-            Err(_) => Err(anyhow::anyhow!("Restart panicked for tool {}", tool_agent_id)),
+            // May leave the tool stopped; self-heal or server-sent restarts recover it on their next cycle.
+            Err(_elapsed) => Err(anyhow::anyhow!(
+                "Restart of tool {} timed out after {}s",
+                tool_agent_id, TOOL_RESTART_TIMEOUT_SECS
+            )),
+            Ok(Err(_panic)) => Err(anyhow::anyhow!("Restart panicked for tool {}", tool_agent_id)),
+            Ok(Ok(result)) => result,
         }
     }
 

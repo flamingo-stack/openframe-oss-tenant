@@ -16,9 +16,6 @@ pub const CONSUMER_CYCLE_PAUSE_MS: u64 = 30000; // 30 seconds pause between retr
 // Reconnection
 pub const RECONNECTION_DELAY_MS: u64 = 5000; // 5 seconds
 
-// Execution concurrency
-pub const EXECUTION_MIN_CONCURRENCY: usize = 4;
-
 // Durable result outbox
 pub const OUTBOX_MAX_ENTRIES: usize = 500;
 pub const OUTBOX_FLUSH_INTERVAL_SECS: u64 = 30;

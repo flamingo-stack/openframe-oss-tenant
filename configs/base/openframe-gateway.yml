@@ -138,6 +138,10 @@ openframe:
       secure: true   # true for HTTPS, false for HTTP
     jwt:
       allowed-issuer-base: http://openframe-authorization-server.tenant.svc.cluster.local:9005/sas
+      # Required placeholder since lib >= 6.16 (SaaS super-tenant concept); the
+      # gateway fails startup without it. OSS is single-tenant, so any stable
+      # identifier works — no cross-tenant tokens exist here.
+      super-tenant-id: oss-super-tenant
       cache:
         expire-after: PT30M
         refresh-after: PT10M

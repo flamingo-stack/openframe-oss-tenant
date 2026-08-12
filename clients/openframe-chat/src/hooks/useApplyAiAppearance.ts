@@ -59,15 +59,21 @@ const ACCENT_VAR_SHADES = {
  * Everything is reverted when settings are missing (defaults win).
  */
 export function useApplyAiAppearance() {
-  const { aiSettings, isSettingsLoading } = useChatConfig();
+  const { aiSettings, isSettingsLoading, settingsUnavailable } = useChatConfig();
   const theme = aiSettings?.applicationTheme;
   const accentColor = aiSettings?.accentColor;
+  // Only a successfully resolved "no customization" answer may revert to the
+  // ODS defaults AND wipe the persisted pre-paint values. While loading, or
+  // when the real state is unknowable (flags fallback / settings error), keep
+  // whatever the pre-paint script applied — wiping here would make the NEXT
+  // cold start flash default branding too.
+  const keepPrePaint = isSettingsLoading || settingsUnavailable;
 
   useEffect(() => {
     const root = document.documentElement;
 
-    // Still loading: keep the pre-paint theme so we don't re-flash on reload.
-    if (isSettingsLoading) return;
+    // Still loading or state unknown: keep the pre-paint theme.
+    if (keepPrePaint) return;
 
     if (!theme) {
       // No configured theme -> ODS default (dark); clear the persisted value.
@@ -78,20 +84,22 @@ export function useApplyAiAppearance() {
 
     persistTheme(theme);
 
+    // Cleanups must NOT undo the applied theme: when `keepPrePaint` flips to
+    // true (settings error, connection change resetting the query) React runs
+    // the previous cleanup BEFORE the next run early-returns - removing the
+    // attribute here would wipe the very appearance we intend to keep. State
+    // transitions are handled explicitly by the branches above instead; only
+    // the media listener needs releasing.
     if (theme === 'SYSTEM') {
       const media = window.matchMedia('(prefers-color-scheme: light)');
       const applySystemTheme = () => root.setAttribute('data-theme', media.matches ? 'light' : 'dark');
       applySystemTheme();
       media.addEventListener('change', applySystemTheme);
-      return () => {
-        media.removeEventListener('change', applySystemTheme);
-        root.removeAttribute('data-theme');
-      };
+      return () => media.removeEventListener('change', applySystemTheme);
     }
 
     root.setAttribute('data-theme', theme === 'LIGHT' ? 'light' : 'dark');
-    return () => root.removeAttribute('data-theme');
-  }, [theme, isSettingsLoading]);
+  }, [theme, keepPrePaint]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -101,8 +109,8 @@ export function useApplyAiAppearance() {
       root.style.removeProperty('--ods-avatar-initials');
     };
 
-    // Still loading: keep the pre-paint accent so we don't re-flash on reload.
-    if (isSettingsLoading) return;
+    // Still loading or state unknown: keep the pre-paint accent.
+    if (keepPrePaint) return;
 
     if (!accentColor) {
       // No custom accent -> ODS default; drop the vars and persisted values.
@@ -127,6 +135,8 @@ export function useApplyAiAppearance() {
     for (const [key, value] of Object.entries(vars)) root.style.setProperty(key, value);
     persistAccent(vars);
 
-    return clear;
-  }, [accentColor, isSettingsLoading]);
+    // No cleanup on purpose - same reasoning as the theme effect above: a
+    // keepPrePaint transition must not clear the applied accent. Reverting to
+    // the ODS default happens only through the explicit `clear()` branch.
+  }, [accentColor, keepPrePaint]);
 }

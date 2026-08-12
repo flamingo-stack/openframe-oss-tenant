@@ -1,11 +1,18 @@
 use anyhow::{Context, Result};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use tracing::{info, warn};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
+
+/// Path of the `.old` rename-aside `write_executable` creates when the target binary is locked.
+pub fn aside_path(path: &Path) -> PathBuf {
+    let mut aside = path.as_os_str().to_os_string();
+    aside.push(".old");
+    PathBuf::from(aside)
+}
 
 pub async fn write_executable(bytes: &[u8], path: &Path) -> Result<()> {
     if let Some(parent) = path.parent() {
@@ -21,9 +28,7 @@ pub async fn write_executable(bytes: &[u8], path: &Path) -> Result<()> {
 
             #[cfg(target_os = "windows")]
             {
-                let mut aside = path.as_os_str().to_os_string();
-                aside.push(".old");
-                let aside = std::path::PathBuf::from(aside);
+                let aside = aside_path(path);
                 let _ = fs::remove_file(&aside).await;
                 match fs::rename(path, &aside).await {
                     Ok(()) => info!("Moved locked file {} aside to {}", path.display(), aside.display()),
@@ -67,3 +72,8 @@ pub async fn set_executable_permissions(path: &Path) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "binary_writer_tests.rs"]
+mod tests;
+
