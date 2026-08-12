@@ -78,20 +78,6 @@ fn main() -> Result<()> {
             openframe::banner::print();
             let params = args.to_params();
 
-            // Remove the old client first so nothing (agent, chat) runs or launches during doctor + healing.
-            if Service::is_installed() {
-                println!("Existing installation detected. Removing it before diagnostics...\n");
-                if let Err(e) = openframe::logging::init_file_only(None, None) {
-                    eprintln!("Failed to initialize logging: {}", e);
-                    process::exit(1);
-                }
-                if let Err(e) = rt.block_on(Service::uninstall_existing()) {
-                    eprintln!("Failed to remove existing installation: {:#}", e);
-                    process::exit(1);
-                }
-                println!("Existing installation removed.\n");
-            }
-
             let report = rt.block_on(openframe::doctor::run_preinstall(&params));
             report.print();
 
