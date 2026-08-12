@@ -338,7 +338,7 @@ impl MeshSelfHealService {
     }
 }
 
-pub(crate) fn panic_message(payload: &(dyn std::any::Any + Send)) -> &str {
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> &str {
     payload
         .downcast_ref::<&str>()
         .copied()

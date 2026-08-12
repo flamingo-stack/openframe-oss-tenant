@@ -298,7 +298,6 @@ openframe-client doctor
 | `run-as-service` | — | Hidden; invoked by the OS service manager (launchd / systemd / SCM) |
 | `check-permissions` | — | Hidden; verifies admin capability for the current process |
 | `doctor` | ✅ | Reads installed config, checks connectivity and disk, prints `[+]`/`[x]`/`[!]` report |
-| `doctor --fix` | ✅ | Same checks, then applies automatic remediations (e.g. machine-wide WebView2 install on Windows) and re-runs the checks |
 
 ### Doctor Check Categories
 
@@ -318,9 +317,9 @@ Health check (post-install):
   Runtime   — WebView2 Runtime installed machine-wide (Windows)
   Network   — same DNS/TCP/TLS checks against persisted server_host
 
-Remediations flagged by checks are attempted automatically by `install`, `doctor --fix`,
-and once at agent startup (which also restarts the chat window after a successful
-WebView2 install); failed attempts are reported.
+Remediations flagged by checks (e.g. machine-wide WebView2 install on Windows) are
+attempted automatically during a fresh `install` only — reinstalls over an existing
+client skip healing — and failed attempts are reported.
 ```
 
 ### Install Flags

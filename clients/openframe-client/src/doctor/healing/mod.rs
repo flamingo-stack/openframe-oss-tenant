@@ -18,12 +18,6 @@ pub struct HealResult {
     pub outcome: HealOutcome,
 }
 
-impl HealResult {
-    pub fn healed(&self) -> bool {
-        self.outcome == HealOutcome::Healed
-    }
-}
-
 /// Checks whose failures healing can fix automatically; cheap and local only.
 pub fn healable_checks() -> Vec<CheckResult> {
     super::checks::check_webview2_runtime().into_iter().collect()
