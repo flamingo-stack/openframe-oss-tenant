@@ -1,11 +1,11 @@
-pub mod webview2_installer;
+mod webview2_installer;
 
 use tracing::{info, warn};
 
 use super::{CheckResult, Remediation};
 
 /// Outcome of a single healing action.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum HealOutcome {
     Healed,
     Failed(String),
@@ -16,11 +16,6 @@ pub enum HealOutcome {
 pub struct HealResult {
     pub remediation: Remediation,
     pub outcome: HealOutcome,
-}
-
-/// Checks whose failures healing can fix automatically; cheap and local only.
-pub fn healable_checks() -> Vec<CheckResult> {
-    super::checks::check_webview2_runtime().into_iter().collect()
 }
 
 /// Remediations flagged in `results`, deduplicated in first-seen order.

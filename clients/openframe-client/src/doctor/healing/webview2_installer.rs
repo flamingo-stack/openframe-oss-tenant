@@ -48,7 +48,7 @@ async fn try_install() -> anyhow::Result<()> {
     use anyhow::{bail, Context};
     use tracing::info;
 
-    // Staged in the ACL-restricted secured dir under an unguessable name so no other local user can swap the bytes.
+    // Staged under the admin-owned secured dir with an unguessable name; the signature check below guards what we execute.
     let installer_path = crate::platform::DirectoryManager::new().secured_dir().join(format!(
         "MicrosoftEdgeWebView2Setup-{}.exe",
         uuid::Uuid::new_v4()
@@ -180,7 +180,7 @@ async fn wait_for_machine_wide() -> bool {
     use crate::doctor::{checks::check_webview2_runtime, CheckStatus};
 
     for attempt in 0..VERIFY_ATTEMPTS {
-        if check_webview2_runtime().map_or(false, |r| r.status == CheckStatus::Pass) {
+        if check_webview2_runtime().is_some_and(|r| r.status == CheckStatus::Pass) {
             return true;
         }
         if attempt + 1 < VERIFY_ATTEMPTS {

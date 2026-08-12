@@ -90,6 +90,11 @@ fn main() -> Result<()> {
                 println!("\n{} warning(s). Installation will proceed, but the agent may have connectivity issues.", warns);
             }
 
+            if let Err(e) = openframe::logging::init_file_only(None, None) {
+                eprintln!("Failed to initialize logging: {}", e);
+                process::exit(1);
+            }
+
             // Healing runs only on a fresh install; a reinstall (existing client present) skips it.
             if !Service::is_installed() && !openframe::doctor::healing::pending(&report.results).is_empty() {
                 println!("\nAttempting automatic fixes (this may take a few minutes)...");
@@ -98,11 +103,6 @@ fn main() -> Result<()> {
             }
 
             println!("\nStarting installation...\n");
-
-            if let Err(e) = openframe::logging::init_file_only(None, None) {
-                eprintln!("Failed to initialize logging: {}", e);
-                process::exit(1);
-            }
 
             rt.block_on(async {
                 match Service::install(params).await {
@@ -226,10 +226,14 @@ fn init_logging() {
 
 fn print_heal_outcomes(heals: &[openframe::doctor::healing::HealResult]) {
     use openframe::doctor::healing::HealOutcome;
+    use openframe::doctor::Remediation;
     for heal in heals {
+        let label = match heal.remediation {
+            Remediation::InstallWebview2 => "WebView2 Runtime install",
+        };
         match &heal.outcome {
-            HealOutcome::Healed => println!("  [+] {:?} fixed", heal.remediation),
-            HealOutcome::Failed(e) => println!("  [x] {:?} failed: {}", heal.remediation, e),
+            HealOutcome::Healed => println!("  [+] {} fixed", label),
+            HealOutcome::Failed(e) => println!("  [x] {} failed: {}", label, e),
         }
     }
 }
