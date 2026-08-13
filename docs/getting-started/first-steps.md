@@ -49,7 +49,7 @@ After building the `openframe-client` Rust agent, run the built-in diagnostics t
 
 ```bash
 cd clients/openframe-client
-cargo build
+OPENFRAME_VERSION=0.0.0-dev cargo build
 ./target/debug/openframe-client doctor
 ```
 
@@ -86,15 +86,14 @@ The repository includes initialization scripts for development infrastructure:
 
 | Script | Purpose |
 |---|---|
-| `clients/openframe-client/scripts/setup_dev_init_config.sh` | Sets up development initialization config for the Rust agent |
+| `setup_dev_init_config.sh` (in openframe-oss-lib, under `clients/openframe-client/scripts/`) | Sets up development initialization config for the Rust agent |
 | `manifests/datasources/mongodb/scripts/readiness-command.sh` | MongoDB readiness probe |
 | `manifests/datasources/mongodb-meshcentral/scripts/meshcentral-mongodb-init.sh` | Initializes MongoDB for MeshCentral integration |
 
-To set up the Rust agent for local development:
+To set up the Rust agent for local development (the script moved to openframe-oss-lib with the agent sources):
 
 ```bash
-cd clients/openframe-client
-bash scripts/setup_dev_init_config.sh
+bash <openframe-oss-lib>/clients/openframe-client/scripts/setup_dev_init_config.sh
 ```
 
 ---

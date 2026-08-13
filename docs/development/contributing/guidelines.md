@@ -50,10 +50,10 @@ Follow standard Rust conventions as enforced by `rustfmt` and `clippy`.
 cargo fmt
 
 # Lint
-cargo clippy -- -D warnings
+OPENFRAME_VERSION=0.0.0-dev cargo clippy -- -D warnings
 
 # Both before committing
-cargo fmt && cargo clippy -- -D warnings
+cargo fmt && OPENFRAME_VERSION=0.0.0-dev cargo clippy -- -D warnings
 ```
 
 **Naming conventions:**
@@ -179,9 +179,9 @@ chore(deps): upgrade openframe-libs to 5.65.0
 
 ### Before Opening a PR
 
-1. **Build successfully:** `mvn clean install -DskipTests` (for Java) or `cargo build` (for Rust) or `npm run build` (for TypeScript)
-2. **Run tests:** `mvn test` or `cargo test` or `npx tsc --noEmit`
-3. **Lint/format:** `cargo fmt && cargo clippy` (Rust) or `npx biome check --write .` (TypeScript)
+1. **Build successfully:** `mvn clean install -DskipTests` (for Java) or `OPENFRAME_VERSION=0.0.0-dev cargo build` (for Rust) or `npm run build` (for TypeScript)
+2. **Run tests:** `mvn test` or `OPENFRAME_VERSION=0.0.0-dev cargo test` or `npx tsc --noEmit`
+3. **Lint/format:** `cargo fmt && OPENFRAME_VERSION=0.0.0-dev cargo clippy` (Rust) or `npx biome check --write .` (TypeScript)
 4. **Test your changes manually** against a running instance if possible
 
 ### PR Description
@@ -254,7 +254,7 @@ Use this checklist when reviewing PRs:
 - [ ] New Mongock migrations (`@ChangeUnit`) follow the naming convention
 
 ### Rust Specific
-- [ ] `cargo clippy -- -D warnings` passes with no warnings
+- [ ] `OPENFRAME_VERSION=0.0.0-dev cargo clippy -- -D warnings` passes with no warnings
 - [ ] Error handling uses `anyhow::Result` or `thiserror` appropriately
 - [ ] `Arc`/`Mutex` usage is minimal and necessary
 

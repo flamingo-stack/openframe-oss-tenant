@@ -204,19 +204,19 @@ sequenceDiagram
 
 | File | Purpose |
 |---|---|
-| [`clients/openframe-client/src/main.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/main.rs) | CLI entry point: `install`, `uninstall`, `run`, `doctor` subcommands |
-| [`clients/openframe-client/src/lib.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/lib.rs) | Agent core: wires all services (NATS, auth, registration, execution, update, logging) |
-| [`clients/openframe-client/src/service.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/service.rs) | Cross-platform service lifecycle (install/uninstall/run); Windows SCM integration |
-| [`clients/openframe-client/src/service_adapter.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/service_adapter.rs) | `CrossPlatformServiceManager`: macOS launchd, Linux systemd, Windows SCM |
-| [`clients/openframe-client/src/installation_initial_config_service.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/installation_initial_config_service.rs) | Builds and persists `InitialConfiguration`; resolves mkcert CA in local mode |
-| [`clients/openframe-client/src/doctor/mod.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/doctor/mod.rs) | Pre-install + post-install health check runner (`DoctorReport`) |
-| [`clients/openframe-client/src/executor/mod.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/executor/mod.rs) | Cross-platform script execution engine (bash, powershell, python, nushell) |
-| [`clients/openframe-client/src/listener/execution_listener.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/listener/execution_listener.rs) | Generic NATS core subscription; bounded concurrency, durable result outbox |
-| [`clients/openframe-client/src/listener/tool_installation_message_listener.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/listener/tool_installation_message_listener.rs) | JetStream consumer for tool install messages; parks during client update |
-| [`clients/openframe-client/src/clients/auth_client.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/clients/auth_client.rs) | OAuth2 `client_credentials` and `refresh_token` flows against the auth server |
-| [`clients/openframe-client/src/clients/registration_client.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/clients/registration_client.rs) | `/register` + `/reinstall` with `CLIENT_SECRET_*` error detection |
-| [`clients/openframe-client/src/updater.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/updater.rs) | Velopack-based self-update: check → download → apply + restart |
-| [`clients/openframe-client/src/logging/nats_streaming.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/logging/nats_streaming.rs) | Batched log shipping to NATS `agents.logs` subject (60s intervals) |
+| [`clients/openframe-client/src/main.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/main.rs) | Thin agent entry point — calls `openframe::run()` from openframe-agent-lib |
+| [`clients/openframe-client/src/lib.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/lib.rs) | Agent core: wires all services (NATS, auth, registration, execution, update, logging) |
+| [`clients/openframe-client/src/service.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/service.rs) | Cross-platform service lifecycle (install/uninstall/run); Windows SCM integration |
+| [`clients/openframe-client/src/service_adapter.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/service_adapter.rs) | `CrossPlatformServiceManager`: macOS launchd, Linux systemd, Windows SCM |
+| [`clients/openframe-client/src/installation_initial_config_service.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/installation_initial_config_service.rs) | Builds and persists `InitialConfiguration`; resolves mkcert CA in local mode |
+| [`clients/openframe-client/src/doctor/mod.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/doctor/mod.rs) | Pre-install + post-install health check runner (`DoctorReport`) |
+| [`clients/openframe-client/src/executor/mod.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/executor/mod.rs) | Cross-platform script execution engine (bash, powershell, python, nushell) |
+| [`clients/openframe-client/src/listener/execution_listener.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/listener/execution_listener.rs) | Generic NATS core subscription; bounded concurrency, durable result outbox |
+| [`clients/openframe-client/src/listener/tool_installation_message_listener.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/listener/tool_installation_message_listener.rs) | JetStream consumer for tool install messages; parks during client update |
+| [`clients/openframe-client/src/clients/auth_client.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/clients/auth_client.rs) | OAuth2 `client_credentials` and `refresh_token` flows against the auth server |
+| [`clients/openframe-client/src/clients/registration_client.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/clients/registration_client.rs) | `/register` + `/reinstall` with `CLIENT_SECRET_*` error detection |
+| [`clients/openframe-client/src/updater.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/updater.rs) | Velopack-based self-update: check → download → apply + restart |
+| [`clients/openframe-client/src/logging/nats_streaming.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/logging/nats_streaming.rs) | Batched log shipping to NATS `agents.logs` subject (60s intervals) |
 | [`clients/openframe-chat/src/App.tsx`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/App.tsx) | Root React component; QueryClient, FeatureFlags, DebugMode providers |
 | [`clients/openframe-chat/src/views/ChatView.tsx`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/views/ChatView.tsx) | Main chat view: ticket list, dialog screen, quick actions, model display, approval handling |
 | [`clients/openframe-chat/src/hooks/useChat.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/hooks/useChat.ts) | Core chat state machine: NATS streaming, history merge, approval flow, send/stop |
@@ -229,8 +229,8 @@ sequenceDiagram
 | [`clients/openframe-chat/src/hooks/useChatNatsConfig.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/hooks/useChatNatsConfig.ts) | Single source of truth for NATS WS URL builder and pre-reconnect token refresh |
 | [`clients/openframe-chat/src/hooks/useApplyAiAppearance.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/hooks/useApplyAiAppearance.ts) | Applies AiSettings theme (DARK/LIGHT/SYSTEM) and accent color CSS vars to `<html>` |
 | [`clients/openframe-chat/src/services/aiSettingsService.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/services/aiSettingsService.ts) | GraphQL `ChatAiSettings` query: assistant branding, theme, quick actions, effective LLM |
-| [`clients/openframe-client/src/config/update_config.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/config/update_config.rs) | All timing/retry/concurrency constants for updates, NATS, and execution |
-| [`clients/openframe-client/src/models/mod.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/models/mod.rs) | Central re-export of all domain models (registration, tools, execution, updates) |
+| [`clients/openframe-client/src/config/update_config.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/config/update_config.rs) | All timing/retry/concurrency constants for updates, NATS, and execution |
+| [`clients/openframe-client/src/models/mod.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/models/mod.rs) | Central re-export of all domain models (registration, tools, execution, updates) |
 
 ---
 
@@ -259,7 +259,7 @@ The library ships two tsup build configurations: a **server-safe** entry (pure t
 
 ### `openframe-client` in `../deps/openframe-oss-lib/clients/openframe-client`
 
-The agent source in deps mirrors the main `clients/openframe-client` — both share the same `build.rs` environment variable forwarding pattern (`OPENFRAME_VERSION`, optional tool/agent version env vars injected at compile time).
+The agent implementation lives there as the `openframe-agent-lib` crate; the in-repo `clients/openframe-client` is a thin binary that depends on it via a pinned git tag and calls `openframe::run()`. The library's `build.rs` requires `OPENFRAME_VERSION` at build time (optional tool/agent version env vars can be injected at compile time).
 
 ---
 

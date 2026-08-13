@@ -93,16 +93,16 @@ mvn test -pl openframe/services/openframe-api \
 cd clients/openframe-client
 
 # Run all tests
-cargo test
+OPENFRAME_VERSION=0.0.0-dev cargo test
 
 # Run tests with output (useful for debugging)
-cargo test -- --nocapture
+OPENFRAME_VERSION=0.0.0-dev cargo test -- --nocapture
 
 # Run a specific test
-cargo test test_name
+OPENFRAME_VERSION=0.0.0-dev cargo test test_name
 
 # Run tests matching a pattern
-cargo test service
+OPENFRAME_VERSION=0.0.0-dev cargo test service
 ```
 
 ### openframe-chat (TypeScript)
