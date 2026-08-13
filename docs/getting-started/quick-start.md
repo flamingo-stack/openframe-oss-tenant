@@ -22,7 +22,7 @@ npm install
 
 # 4. Build the Rust agent
 cd ../openframe-client
-cargo build
+OPENFRAME_VERSION=0.0.0-dev cargo build
 
 # 5. Return to root
 cd ../..
@@ -87,13 +87,13 @@ mvn clean install -pl openframe/services/openframe-api -am -DskipTests
 
 ```bash
 cd clients/openframe-client
-cargo build
+OPENFRAME_VERSION=0.0.0-dev cargo build
 ```
 
 For a release build:
 
 ```bash
-cargo build --release
+OPENFRAME_VERSION=0.0.0-dev cargo build --release
 ```
 
 The compiled binary will be at `target/debug/openframe-client` (or `target/release/openframe-client` for release builds).

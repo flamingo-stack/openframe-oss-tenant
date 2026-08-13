@@ -130,7 +130,7 @@ npm install
 
 # 4. Build the Rust agent
 cd ../openframe-client
-cargo build
+OPENFRAME_VERSION=0.0.0-dev cargo build
 
 # 5. Return to root
 cd ../..

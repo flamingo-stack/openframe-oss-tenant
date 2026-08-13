@@ -94,7 +94,7 @@ To run the full stack locally, start services in this order (infrastructure firs
 cd clients/openframe-client
 
 # Development build
-cargo build
+OPENFRAME_VERSION=0.0.0-dev cargo build
 
 # Enable dev mode for local directories and relaxed TLS
 export OPENFRAME_DEV_MODE=1
@@ -115,7 +115,7 @@ Rust does not have built-in hot reload, but `cargo-watch` provides file-watching
 cargo install cargo-watch
 
 # Watch and rebuild on changes
-cargo watch -x build
+OPENFRAME_VERSION=0.0.0-dev cargo watch -x build
 ```
 
 ---
@@ -162,11 +162,10 @@ npx biome check --write .
 
 ## Setting Up the Rust Agent Dev Config
 
-The repository includes a script to set up the development initialization configuration for the Rust agent:
+The setup script moved to openframe-oss-lib with the agent sources; run it from a side-by-side checkout:
 
 ```bash
-cd clients/openframe-client
-bash scripts/setup_dev_init_config.sh
+bash <openframe-oss-lib>/clients/openframe-client/scripts/setup_dev_init_config.sh
 ```
 
 This script creates the necessary configuration files in the development directory layout used when `OPENFRAME_DEV_MODE=1` is set.
@@ -274,7 +273,7 @@ curl http://localhost:8081/actuator/health
 |---|---|
 | Build all backend services | `mvn clean install -DskipTests` |
 | Run API service | `mvn spring-boot:run -pl openframe/services/openframe-api` |
-| Build Rust agent | `cd clients/openframe-client && cargo build` |
+| Build Rust agent | `cd clients/openframe-client && OPENFRAME_VERSION=0.0.0-dev cargo build` |
 | Run Rust agent (dev) | `OPENFRAME_DEV_MODE=1 ./target/debug/openframe-client run` |
 | Run desktop app | `cd clients/openframe-chat && npm run tauri dev` |
 | Frontend-only dev | `cd clients/openframe-chat && npm run dev` |
