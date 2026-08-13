@@ -20,7 +20,7 @@ inputs:
     description: 'Client name (e.g. "openframe-client"). Used for binary path and DMG naming.'
     required: true
   target_path:
-    description: 'Cargo target directory (e.g. ./clients/openframe-chat/src-tauri/target)'
+    description: 'Cargo target directory (e.g. ./clients/openframe-client/target)'
     required: true
 
 runs:

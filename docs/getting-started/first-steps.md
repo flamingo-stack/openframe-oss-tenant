@@ -19,8 +19,7 @@ openframe-oss-tenant/
 │   ├── openframe-stream/        # Kafka Streams (port 8085)
 │   └── openframe-management/    # Platform management service
 ├── clients/
-│   ├── openframe-client/        # Rust endpoint agent
-│   └── openframe-chat/          # Tauri + React desktop app (Fae)
+│   └── openframe-client/        # Rust endpoint agent
 ├── manifests/                   # Kubernetes manifests for infrastructure
 └── pom.xml                      # Root Maven POM
 ```
@@ -57,30 +56,7 @@ The `doctor` command runs environment health checks against the agent configurat
 
 ---
 
-## 4. Explore the openframe-chat Desktop App
-
-The `openframe-chat` Tauri application is the end-client AI interface (Fae). To run it in development mode:
-
-```bash
-cd clients/openframe-chat
-npm install
-npm run tauri dev
-```
-
-Key areas to explore in the codebase:
-
-| Path | Purpose |
-|---|---|
-| `src/App.tsx` | Root React component — provider tree setup |
-| `src/views/ChatView.tsx` | Main chat interface |
-| `src/hooks/` | React Query hooks for API interactions |
-| `src/services/` | GraphQL and REST API service clients |
-| `src-tauri/src/nats_bridge/` | Rust NATS bridge for streaming AI responses |
-| `src-tauri/src/token_decryption_service.rs` | AES-256-GCM token decryption |
-
----
-
-## 5. Review the Configuration Scripts
+## 4. Review the Configuration Scripts
 
 The repository includes initialization scripts for development infrastructure:
 
@@ -156,7 +132,6 @@ Once running, key features to explore:
 | Feature | How to Access |
 |---|---|
 | **GraphQL API** | API Service at port 8080 — use a GraphQL client like GraphiQL or Insomnia |
-| **AI Chat (Fae)** | Run `openframe-chat` via `npm run tauri dev` |
 | **Agent Registration** | Use `openframe-client install` with a valid initial key |
 | **OAuth2 Login** | Authorization Server at port 8082 handles tenant-scoped login |
 | **Multi-Tenant Isolation** | All API queries are automatically scoped by JWT `tenant_id` claim |
