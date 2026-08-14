@@ -63,6 +63,7 @@ jobs:
             { "name": "openframe-stream" }
           ]'
 
+          # openframe-chat moved to openframe-saas-tenant and is no longer built here.
           CLIENTS='[
             {
               "id": "client",
