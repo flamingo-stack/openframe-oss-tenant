@@ -162,7 +162,7 @@ jobs:
         with:
           path: ${{ matrix.path }}
           toolchain: stable
-          targets: ${{ matrix.archs || matrix.target }}
+          targets: ${{ matrix.target }}
           components: clippy, rustfmt
           shared-key: ${{ runner.os }}-${{ runner.arch }}
 
@@ -232,7 +232,6 @@ jobs:
           apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
           name: ${{ matrix.name }}
-          target_path: ${{ matrix.target_path }}
 
       - name: Upload macOS client artifact
         if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
@@ -294,20 +293,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e && mkdir -p final-artifacts/clients
-          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --pattern "*.dmg" --dir final-artifacts/clients || true
-          # openframe-chat moved to openframe-saas-tenant — don't carry its artifacts forward
-          rm -f final-artifacts/clients/openframe-chat*
+          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true
           for client in $(echo '${{ needs.changes.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
-              if ls release-artifacts/${client}-macos/*.dmg 1>/dev/null 2>&1; then
-                # Tauri app - copy .dmg directly
-                cp release-artifacts/${client}-macos/*.dmg final-artifacts/clients/
-              else
-                # Regular binary - create tar.gz
-                tar -czvf "final-artifacts/clients/${client}_macos.tar.gz" \
-                  -C "release-artifacts/${client}-macos" .
-              fi
+              tar -czvf "final-artifacts/clients/${client}_macos.tar.gz" \
+                -C "release-artifacts/${client}-macos" .
             fi
             # Windows
             if [ -d "release-artifacts/${client}-windows" ]; then
@@ -352,4 +343,3 @@ jobs:
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
-            final-artifacts/clients/*.dmg
