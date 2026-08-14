@@ -39,6 +39,7 @@ data:
                   "$JS.API.CONSUMER.CREATE.CLIENT_UPDATE.*.machine.all.client-update",
                   "$JS.ACK.CLIENT_UPDATE.>",
                   "$JS.API.CONSUMER.CREATE.CLIENT_UNINSTALL.*.machine.*.client-uninstall",
+                  "$JS.API.CONSUMER.DELETE.CLIENT_UNINSTALL.*",
                   "$JS.ACK.CLIENT_UNINSTALL.>",
                   "$JS.API.CONSUMER.CREATE.TOOL_UPDATE.*.machine.all.tool.*.update",
                   "$JS.API.CONSUMER.CREATE.TOOL_UPDATE.>",
