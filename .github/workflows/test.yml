@@ -167,7 +167,7 @@ jobs:
         with:
           path: ${{ matrix.path }}
           toolchain: stable
-          targets: ${{ matrix.archs || matrix.target }}
+          targets: ${{ matrix.target }}
           components: clippy, rustfmt
           shared-key: ${{ runner.os }}-${{ runner.arch }}
 
@@ -242,7 +242,6 @@ jobs:
           apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
           name: ${{ matrix.name }}
-          target_path: ${{ matrix.target_path }}
 
       - name: Upload macOS client artifact
         if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
