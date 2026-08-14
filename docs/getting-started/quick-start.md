@@ -16,15 +16,11 @@ cd openframe-oss-tenant
 # 2. Build all backend services (Java / Spring Boot)
 mvn clean install -DskipTests
 
-# 3. Install frontend dependencies (openframe-chat desktop app)
-cd clients/openframe-chat
-npm install
-
-# 4. Build the Rust agent
-cd ../openframe-client
+# 3. Build the Rust agent
+cd clients/openframe-client
 OPENFRAME_VERSION=0.0.0-dev cargo build
 
-# 5. Return to root
+# 4. Return to root
 cd ../..
 ```
 
@@ -51,8 +47,7 @@ openframe-oss-tenant/
 │       ├── openframe-management/
 │       └── openframe-external-api/
 ├── clients/
-│   ├── openframe-client/      # Rust cross-platform agent
-│   └── openframe-chat/        # Tauri + React desktop app (Fae)
+│   └── openframe-client/      # Rust cross-platform agent
 ├── manifests/                 # Kubernetes manifests & data service configs
 └── pom.xml                    # Parent Maven POM
 ```
@@ -97,54 +92,6 @@ OPENFRAME_VERSION=0.0.0-dev cargo build --release
 ```
 
 The compiled binary will be at `target/debug/openframe-client` (or `target/release/openframe-client` for release builds).
-
----
-
-## Step 4 — Install and Run the Desktop App (openframe-chat)
-
-The `openframe-chat` desktop app uses React 19 + Vite for the frontend and Tauri 2 with a Rust backend.
-
-```bash
-cd clients/openframe-chat
-
-# Install Node.js dependencies
-npm install
-
-# Start in development mode (hot reload)
-npm run tauri dev
-```
-
-> **Tauri prerequisites** (system libraries for WebView) must be installed first. See [Prerequisites](prerequisites.md) for platform-specific instructions.
-
----
-
-## Expected Output
-
-When the Tauri development server starts successfully, you should see output similar to:
-
-```text
-   VITE v5.x.x  ready in xxx ms
-
-  ➜  Local:   http://localhost:3003/
-  ➜  Network: use --host to expose
-
-[tauri] Running application...
-```
-
-The OpenFrame Chat desktop window will launch automatically.
-
----
-
-## Frontend Build Only (No Tauri)
-
-If you only need to work on the React frontend without running the Tauri shell:
-
-```bash
-cd clients/openframe-chat
-npm run dev
-```
-
-This starts the Vite dev server at `http://localhost:3003`.
 
 ---
 

@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpenFrame OSS Tenant is the multi-service, multi-tenant open-source foundation of the OpenFrame platform — an AI-powered MSP (Managed Service Provider) platform that replaces expensive proprietary software with intelligent automation. It integrates device management, real-time messaging, AI-assisted support (Mingo AI for technicians, Fae for clients), and event-driven automation across a polyglot microservice architecture built on Spring Boot (Java), Rust, and TypeScript.
+OpenFrame OSS Tenant is the multi-service, multi-tenant open-source foundation of the OpenFrame platform — an AI-powered MSP (Managed Service Provider) platform that replaces expensive proprietary software with intelligent automation. It integrates device management, real-time messaging, AI-assisted support (Mingo AI for technicians, Fae for clients), and event-driven automation across a polyglot microservice architecture built on Spring Boot (Java) and Rust.
 
 ---
 
@@ -15,7 +15,6 @@ OpenFrame OSS Tenant is the multi-service, multi-tenant open-source foundation o
 ```mermaid
 graph TB
     subgraph Clients["Client Layer"]
-        ChatApp["openframe-chat\n(Tauri Desktop App)"]
         FrontendUI["openframe-frontend\n(Web UI)"]
     end
 
@@ -44,7 +43,6 @@ graph TB
         NATS[("NATS/JetStream\nAgent Messaging")]
     end
 
-    ChatApp --> GW
     FrontendUI --> GW
     GW --> API
     GW --> AuthServer
@@ -75,7 +73,6 @@ graph TB
 | **Stream Service** | Java / Kafka Streams | 8085 | Real-time event normalization, enrichment, Cassandra/Pinot write |
 | **Client Service** | Java / Spring Boot + NATS | 8084 | Agent lifecycle management, tool orchestration |
 | **openframe-client** | Rust | — | Cross-platform system agent; device registration, tool management, script execution, NATS messaging |
-| **openframe-chat** | TypeScript / Tauri + React | 3003 (dev) | Desktop AI chat client (Fae) for end clients; AES-256-GCM token decryption, NATS bridge |
 | **openframe-frontend** | TypeScript / Node.js | 3000 | Web-based tenant dashboard (Mingo AI) |
 | **openframe-frontend-core** | TypeScript (lib) | — | Shared UI component library; ODS design tokens, chat components, NATS hooks |
 
@@ -88,7 +85,6 @@ graph TB
 ```mermaid
 graph LR
     subgraph FE["Frontend Clients"]
-        Chat["openframe-chat\n(Tauri)"]
         Frontend["openframe-frontend\n(Web)"]
     end
 
@@ -109,9 +105,7 @@ graph LR
         CoreLib["openframe-frontend-core\n(TypeScript npm lib)"]
     end
 
-    Chat --> CoreLib
     Frontend --> CoreLib
-    Chat --> GW
     Frontend --> GW
     GW --> Auth
     GW --> API
@@ -148,31 +142,6 @@ sequenceDiagram
     Auth-->>Agent: JWT access_token + refresh_token
     Agent->>NATS: Subscribe machine.{machineId}.* subjects
     NATS-->>Agent: Tool install / update / script execution messages
-```
-
-### Fae Client Chat Flow (openframe-chat)
-
-```mermaid
-sequenceDiagram
-    participant User as End User
-    participant Tauri as Tauri Shell
-    participant React as React UI
-    participant Rust as Rust NATS Bridge
-    participant GW as Gateway
-    participant API as API Service
-    participant NATS as NATS JetStream
-
-    Tauri->>React: AES-256-GCM decrypted JWT token
-    React->>GW: POST /chat/api/v1/dialogs (Bearer JWT)
-    GW->>API: Create dialog (tenant-scoped)
-    API-->>React: dialogId
-    React->>GW: POST /chat/api/v1/messages {dialogId, content}
-    GW->>API: Send message
-    API->>NATS: Publish to CHAT_CHUNKS stream
-    NATS-->>Rust: JetStream ordered consumer chunks
-    Rust->>React: Channel<NatsEvent> via Tauri IPC
-    React->>React: Merge realtime chunks with history
-    React-->>User: Streaming AI response (Fae)
 ```
 
 ### Multi-Tenant OAuth2 Security Flow
@@ -217,18 +186,6 @@ sequenceDiagram
 | [`clients/openframe-client/src/clients/registration_client.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/clients/registration_client.rs) | `/register` + `/reinstall` with `CLIENT_SECRET_*` error detection |
 | [`clients/openframe-client/src/updater.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/updater.rs) | Velopack-based self-update: check → download → apply + restart |
 | [`clients/openframe-client/src/logging/nats_streaming.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/logging/nats_streaming.rs) | Batched log shipping to NATS `agents.logs` subject (60s intervals) |
-| [`clients/openframe-chat/src/App.tsx`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/App.tsx) | Root React component; QueryClient, FeatureFlags, DebugMode providers |
-| [`clients/openframe-chat/src/views/ChatView.tsx`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/views/ChatView.tsx) | Main chat view: ticket list, dialog screen, quick actions, model display, approval handling |
-| [`clients/openframe-chat/src/hooks/useChat.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/hooks/useChat.ts) | Core chat state machine: NATS streaming, history merge, approval flow, send/stop |
-| [`clients/openframe-chat/src/services/tokenService.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/services/tokenService.ts) | Singleton JWT token manager; Tauri IPC bridge, rotation listener, API URL init |
-| [`clients/openframe-chat/src/services/natsTauri.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/services/natsTauri.ts) | `NatsBridgeClient`: Tauri channel fan-out, rAF coalescing, dialog sub/unsub serialization |
-| [`clients/openframe-chat/src-tauri/src/lib.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src-tauri/src/lib.rs) | Tauri app shell: tray icon, macOS activation policy, NATS bridge, token watcher wiring |
-| [`clients/openframe-chat/src-tauri/src/token_decryption_service.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src-tauri/src/token_decryption_service.rs) | AES-256-GCM decryption of daemon-written token file |
-| [`clients/openframe-chat/src-tauri/src/token_watcher.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src-tauri/src/token_watcher.rs) | Polls token file for rotation; emits `token-update` events to WebView |
-| [`clients/openframe-chat/src-tauri/src/config_reader.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src-tauri/src/config_reader.rs) | Reads startup config from macOS `defaults`, CLI args, or Windows registry |
-| [`clients/openframe-chat/src/hooks/useChatNatsConfig.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/hooks/useChatNatsConfig.ts) | Single source of truth for NATS WS URL builder and pre-reconnect token refresh |
-| [`clients/openframe-chat/src/hooks/useApplyAiAppearance.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/hooks/useApplyAiAppearance.ts) | Applies AiSettings theme (DARK/LIGHT/SYSTEM) and accent color CSS vars to `<html>` |
-| [`clients/openframe-chat/src/services/aiSettingsService.ts`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/services/aiSettingsService.ts) | GraphQL `ChatAiSettings` query: assistant branding, theme, quick actions, effective LLM |
 | [`clients/openframe-client/src/config/update_config.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/config/update_config.rs) | All timing/retry/concurrency constants for updates, NATS, and execution |
 | [`clients/openframe-client/src/models/mod.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/models/mod.rs) | Central re-export of all domain models (registration, tools, execution, updates) |
 
@@ -240,22 +197,9 @@ The repository consumes `../deps/openframe-oss-lib/` as a monorepo dependency wo
 
 ### `openframe-frontend-core` (TypeScript npm package `@flamingo-stack/openframe-frontend-core`)
 
-This is the shared UI library consumed by both `openframe-chat` and `openframe-frontend`. The main project uses it as follows:
+This is the shared UI library consumed by `openframe-frontend` (the web UI). It provides chat UI surfaces, NATS streaming hooks, ODS design tokens, and UI primitives.
 
-| Library Feature | How openframe-chat Uses It |
-|---|---|
-| **`ChatMessageList`** | Renders the Fae dialog stream with `assistantType="fae"` and `approvalVariant="client"` |
-| **`useJetStreamDialogSubscription` / `useRealtimeChunkProcessor`** | Core streaming hooks for WS-based NATS in non-Tauri mode |
-| **`processHistoricalMessages`** | Transforms raw GraphQL dialog messages into typed `Message[]` with approval callbacks |
-| **`mergeHistoryWithRealtime`** | Deduplicates historical (Mongo) messages against live NATS stream chunks |
-| **`buildNatsWsUrl`** | Constructs authenticated WebSocket URL for NATS connection |
-| **`ChatTicketList`, `MspOrganizationCard`** | Pre-built chat UI surfaces (initial screen, welcome screen) |
-| **ODS Tailwind preset** (`tailwind.config.ts`) | Design token cascade; `openframe-chat` extends it via `presets: [openframeCorePreset]` |
-| **`deriveHoverColor`, `deriveActiveColor`, `getReadableTextColor`** | Accent color math used by `useApplyAiAppearance` |
-| **Toaster, Button, Modal, Input, FileUpload, Textarea** | UI primitives used throughout chat components |
-| **`useToast`, `useLocalStorage`** | Utility hooks consumed by `useCreateTicket`, `useWelcomeScreen` |
-
-The library ships two tsup build configurations: a **server-safe** entry (pure types, configs, platform domains — no React) and a **client-side** entry (React components with `"use client"` banner). The `react-embedding-example` in deps shows the embedding pattern used by non-Next.js hosts (Vite + react-router-dom), which mirrors how `openframe-chat` embeds the library in Vite/Tauri.
+The library ships two tsup build configurations: a **server-safe** entry (pure types, configs, platform domains — no React) and a **client-side** entry (React components with `"use client"` banner).
 
 ### `openframe-client` in `../deps/openframe-oss-lib/clients/openframe-client`
 

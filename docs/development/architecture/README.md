@@ -1,6 +1,6 @@
 # Architecture Overview
 
-OpenFrame OSS Tenant is a polyglot, multi-tenant microservice platform built with Java (Spring Boot 3.3), Rust, and TypeScript. This document provides the high-level architecture, component relationships, and key data flows.
+OpenFrame OSS Tenant is a polyglot, multi-tenant microservice platform built with Java (Spring Boot 3.3) and Rust. This document provides the high-level architecture, component relationships, and key data flows.
 
 [![OpenFrame v0.5.2: Autonomous AI Agent Architecture for MSPs](https://img.youtube.com/vi/PexpoNdZtUk/maxresdefault.jpg)](https://www.youtube.com/watch?v=PexpoNdZtUk)
 
@@ -13,7 +13,6 @@ All client traffic enters through the Spring Cloud Gateway. Backend services com
 ```mermaid
 graph TB
     subgraph Clients["Client Layer"]
-        ChatApp["openframe-chat\n(Tauri Desktop App)"]
         FrontendUI["openframe-frontend\n(Web UI)"]
     end
 
@@ -42,7 +41,6 @@ graph TB
         NATS[("NATS/JetStream\nAgent Messaging")]
     end
 
-    ChatApp --> GW
     FrontendUI --> GW
     GW --> API
     GW --> AuthServer
@@ -73,7 +71,6 @@ graph TB
 | **Stream Service** | Java / Kafka Streams | 8085 | Real-time event normalization, enrichment, Cassandra/Pinot write |
 | **Client Service** | Java / Spring Boot + NATS | 8084 | Agent lifecycle management, tool orchestration |
 | **openframe-client** | Rust | — | Cross-platform system agent; device registration, tool management, script execution |
-| **openframe-chat** | TypeScript / Tauri + React | 3003 (dev) | Desktop AI chat client (Fae) for end clients |
 | **openframe-frontend-core** | TypeScript (npm library) | — | Shared UI component library; design tokens, chat components, NATS hooks |
 
 ---
@@ -101,34 +98,6 @@ sequenceDiagram
     Auth-->>Agent: JWT access_token + refresh_token
     Agent->>NATS: Subscribe machine.{machineId}.* subjects
     NATS-->>Agent: Tool install / update / script execution messages
-```
-
----
-
-## Data Flow: Fae AI Chat (openframe-chat)
-
-The Fae desktop client streams AI responses through NATS JetStream via a Rust bridge:
-
-```mermaid
-sequenceDiagram
-    participant User as End User
-    participant Tauri as Tauri Shell
-    participant React as React UI
-    participant Rust as Rust NATS Bridge
-    participant GW as Gateway
-    participant API as API Service
-    participant NATS as NATS JetStream
-
-    Tauri->>React: AES-256-GCM decrypted JWT token
-    React->>GW: POST /chat/api/v1/dialogs (Bearer JWT)
-    GW->>API: Create dialog (tenant-scoped)
-    API-->>React: dialogId
-    React->>GW: POST /chat/api/v1/messages
-    GW->>API: Send message
-    API->>NATS: Publish to CHAT_CHUNKS stream
-    NATS-->>Rust: JetStream ordered consumer chunks
-    Rust->>React: Channel via Tauri IPC
-    React-->>User: Streaming AI response (Fae)
 ```
 
 ---
@@ -173,7 +142,7 @@ Service-to-service event propagation uses Apache Kafka. The Stream Service consu
 
 ### Polyglot Architecture
 - **Java/Spring Boot** handles all multi-tenant business logic, OAuth2/OIDC, and GraphQL APIs
-- **Rust** is used where performance, memory safety, and cross-platform system integration are critical (the endpoint agent and Tauri desktop backend)
+- **Rust** is used where performance, memory safety, and cross-platform system integration are critical (the endpoint agent)
 - **TypeScript/React** provides the UI layer, consuming the same GraphQL API
 
 ### Netflix DGS for GraphQL
@@ -189,8 +158,6 @@ The API Service uses [Netflix DGS](https://netflix.github.io/dgs/) (Domain Graph
 | [`openframe/services/openframe-gateway/src/main/java/com/openframe/gateway/GatewayApplication.java`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/openframe/services/openframe-gateway/src/main/java/com/openframe/gateway/GatewayApplication.java) | Gateway entry point |
 | [`clients/openframe-client/src/main.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/main.rs) | Thin agent entry point (calls `openframe::run()`) |
 | [`clients/openframe-client/src/lib.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/lib.rs) | Agent core (openframe-agent-lib): wires all subsystems |
-| [`clients/openframe-chat/src/App.tsx`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src/App.tsx) | Desktop app root component |
-| [`clients/openframe-chat/src-tauri/src/lib.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-chat/src-tauri/src/lib.rs) | Tauri application entry point |
 
 ---
 
