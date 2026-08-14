@@ -1,5 +1,5 @@
 name: Sign MacOS package
-description: Sign and notarize a macOS binary or Tauri .app bundle. Auto-detects mode from artifacts.
+description: Sign and notarize a macOS binary.
 inputs:
   apple_certificate_p12:
     description: 'Base64 encoded Apple Developer certificate (.p12)'
@@ -17,10 +17,7 @@ inputs:
     description: 'Apple Developer Team ID'
     required: true
   name:
-    description: 'Client name (e.g. "openframe-client"). Used for binary path and DMG naming.'
-    required: true
-  target_path:
-    description: 'Cargo target directory (e.g. ./clients/openframe-chat/src-tauri/target)'
+    description: 'Client name (e.g. "openframe-client"). Used for binary path resolution.'
     required: true
 
 runs:
@@ -56,35 +53,13 @@ runs:
         echo "Found signing identity: $SIGNING_IDENTITY"
         echo "SIGNING_IDENTITY=$SIGNING_IDENTITY" >> $GITHUB_ENV
 
-    - name: Detect signing mode
+    - name: Resolve binary path
       shell: bash
       run: |
-        NAME="${{ inputs.name }}"
-        TARGET_PATH="${{ inputs.target_path }}"
-
-        # Check for Tauri .app bundle
-        BUNDLE_DIR="$TARGET_PATH/universal-apple-darwin/release/bundle/macos"
-        APP_PATH=""
-        if [[ -d "$BUNDLE_DIR" ]]; then
-          for app in "$BUNDLE_DIR"/*.app; do
-            [[ -d "$app" ]] && APP_PATH="$app" && break
-          done
-        fi
-        if [[ -n "$APP_PATH" ]]; then
-          echo "SIGN_MODE=tauri" >> $GITHUB_ENV
-          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
-          echo "DMG_NAME=${NAME}_universal.dmg" >> $GITHUB_ENV
-          echo "Detected Tauri app: $APP_PATH"
-        else
-          echo "SIGN_MODE=binary" >> $GITHUB_ENV
-          echo "BINARY_PATH=./artifacts/$NAME" >> $GITHUB_ENV
-          echo "Detected standalone binary: ./artifacts/$NAME"
-        fi
-
-    # ── Standalone binary flow ──
+        echo "BINARY_PATH=./artifacts/${{ inputs.name }}" >> $GITHUB_ENV
+        echo "Signing standalone binary: ./artifacts/${{ inputs.name }}"
 
     - name: Sign standalone binary
-      if: env.SIGN_MODE == 'binary'
       shell: bash
       run: |
         chmod +x "$BINARY_PATH"
@@ -93,7 +68,6 @@ runs:
         echo "Binary signed successfully"
 
     - name: Notarize standalone binary
-      if: env.SIGN_MODE == 'binary'
       shell: bash
       run: |
         BINARY_NAME="${{ inputs.name }}"
@@ -110,58 +84,11 @@ runs:
         echo "Notarization completed successfully"
 
     - name: Verify standalone binary
-      if: env.SIGN_MODE == 'binary'
       shell: bash
       run: |
         codesign --verify --deep --strict --verbose=2 "$BINARY_PATH"
         spctl --assess --type open --context context:primary-signature --verbose "$BINARY_PATH" || true
         echo "Binary is signed, notarized, and ready for distribution"
-
-    # ── Tauri app flow ──
-
-    - name: Sign Tauri app bundle
-      if: env.SIGN_MODE == 'tauri'
-      shell: bash
-      run: |
-        codesign --sign "$SIGNING_IDENTITY" --timestamp --options runtime --deep --force "$APP_PATH"
-        codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-        echo "App bundle signed successfully"
-
-    - name: Create and sign DMG
-      if: env.SIGN_MODE == 'tauri'
-      shell: bash
-      run: |
-        mkdir -p ./artifacts ./dmg-staging
-        cp -R "$APP_PATH" ./dmg-staging/
-        ln -s /Applications ./dmg-staging/Applications
-        hdiutil create -volname "${{ inputs.name }}" -srcfolder ./dmg-staging -ov -format UDZO "./artifacts/$DMG_NAME"
-        rm -rf ./dmg-staging
-        codesign --sign "$SIGNING_IDENTITY" --timestamp "./artifacts/$DMG_NAME"
-        echo "DMG created and signed: ./artifacts/$DMG_NAME"
-
-    - name: Notarize DMG
-      if: env.SIGN_MODE == 'tauri'
-      shell: bash
-      run: |
-        xcrun notarytool submit "./artifacts/$DMG_NAME" \
-          --apple-id "${{ inputs.apple_id_username }}" \
-          --password "${{ inputs.apple_id_password }}" \
-          --team-id "${{ inputs.apple_team_id }}" \
-          --wait \
-          --timeout 30m
-        xcrun stapler staple "./artifacts/$DMG_NAME"
-        echo "DMG notarized and stapled successfully"
-
-    - name: Verify DMG
-      if: env.SIGN_MODE == 'tauri'
-      shell: bash
-      run: |
-        codesign --verify --verbose=2 "./artifacts/$DMG_NAME"
-        spctl --assess --type open --context context:primary-signature --verbose "./artifacts/$DMG_NAME" || true
-        echo "DMG is signed, notarized, and ready for distribution"
-        ls -lh ./artifacts/
-
-    # ── Shared cleanup ──
 
     - name: Cleanup Keychain
       if: always()
