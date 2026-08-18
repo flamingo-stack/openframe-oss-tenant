@@ -57,13 +57,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/steps/yaml-lint
 
-  trivy_code:
-    name: "Trivy Code Scan"
+  scan_code:
+    name: "Scan Code"
     runs-on: ubuntu-latest
     needs: [changes]
     permissions:
       contents: read
       packages: read
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -163,20 +164,6 @@ jobs:
           context: ${{ matrix.context || matrix.path }}
 
 
-
-  trivy_report:
-    name: "Trivy Report"
-    runs-on: ubuntu-latest
-    needs: [trivy_code, build_images]
-    if: always()
-    steps:
-      - name: Merge all scan reports into one artifact
-        continue-on-error: true
-        uses: actions/upload-artifact/merge@v4
-        with:
-          name: trivy-${{ github.event.repository.name }}-report
-          pattern: trivy-*-report*
-          delete-merged: true
 
   test_clients:
     name: "Test Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
@@ -326,6 +313,28 @@ jobs:
           helm template app ./manifests/app-of-apps
           helm unittest ./manifests/app-of-apps
 
+
+  report:
+    name: "Report"
+    runs-on: ubuntu-latest
+    needs: [scan_code, build_images]
+    if: always() && github.event_name == 'pull_request'
+    steps:
+      - name: Merge code scan report
+        continue-on-error: true
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: scan_code
+          pattern: trivy-*-code-report*
+          delete-merged: true
+
+      - name: Merge image scan reports
+        continue-on-error: true
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: scan_image
+          pattern: trivy-*-image-report*
+          delete-merged: true
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
