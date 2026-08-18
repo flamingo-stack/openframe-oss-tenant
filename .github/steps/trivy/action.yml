@@ -1,4 +1,4 @@
-name: "Scan"
+name: "Vulnerability Scan"
 description: "Trivy PR security scans. scan: code = repo dependencies (HIGH/CRITICAL) + Dockerfile base images (CRITICAL), image = image built in the pipeline (HIGH/CRITICAL). Each scan uploads its TSV report as an artifact"
 
 inputs:
