@@ -100,7 +100,6 @@ fleet:
     enabled: false
 
 
-
 meshcentral:
   enabled: true
   restartPod: "2"  # Bump to rollout (any string works)
