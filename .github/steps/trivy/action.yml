@@ -82,9 +82,11 @@ runs:
 
     - name: Evaluate
       shell: bash
+      env:
+        ARTIFACT: ${{ inputs.scan == 'code' && 'scan_code' || 'scan_image' }}
       run: |
         set -euo pipefail
         files=$(ls trivy-*.tsv 2>/dev/null) || { echo "No vulnerabilities found."; exit 0; }
         column -t -s "$(printf '\t')" $files
-        echo "::error::Trivy found $(cut -f1,2,5 $files | sort -u | wc -l | tr -d ' ') unique HIGH/CRITICAL vulnerabilities ($(cat $files | wc -l | tr -d ' ') occurrences across modules) in: ${files//$'\n'/, } (full report in the run artifacts)"
+        echo "::error::Trivy found $(cut -f1,2,5 $files | sort -u | wc -l | tr -d ' ') unique HIGH/CRITICAL vulnerabilities ($(cat $files | wc -l | tr -d ' ') occurrences across modules) — full report in the ${ARTIFACT} artifact"
         exit 1
