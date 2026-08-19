@@ -17,15 +17,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
-    paths:
-      - 'openframe/**'
-      - 'integrated-tools/**'
-      - 'pom.xml'
-      - '.github/**'
-      - 'manifests/**'
-      - 'clients/**'
-      - 'configs/**'
-      - 'renovate.json'
+    # NOTE: no `paths:` filter here — "All Checks" is a REQUIRED status check in the
+    # branch ruleset, and a path-filtered workflow never reports on non-matching PRs,
+    # leaving them stuck at "Expected — waiting for status to be reported" forever.
+    # The `changes` job below does the path-based change detection instead: heavy jobs
+    # skip when nothing relevant changed, and the all-checks gate still reports green.
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
