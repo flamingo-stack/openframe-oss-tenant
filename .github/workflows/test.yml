@@ -333,20 +333,6 @@ jobs:
           helm unittest ./manifests/app-of-apps
 
 
-  report:
-    name: "Report"
-    runs-on: ubuntu-latest
-    needs: [build_images]
-    if: always() && github.event_name == 'pull_request'
-    steps:
-      - name: Merge image scan reports
-        continue-on-error: true
-        uses: actions/upload-artifact/merge@v4
-        with:
-          name: scan_image
-          pattern: scan_image-*
-          delete-merged: true
-
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
     needs: [changes, build_images, test_clients, test_helm]
