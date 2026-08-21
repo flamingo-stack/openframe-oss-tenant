@@ -10,8 +10,16 @@ inputs:
     required: false
     default: ${{ github.token }}
   image-name:
-    description: "Service name from the build matrix (scan: image)"
+    description: "Service name from the matrix; used in the artifact name"
     required: false
+  path:
+    description: "Directory to scan (scan: code), e.g. a single service; defaults to the whole repo"
+    required: false
+    default: "."
+  skip-dirs:
+    description: "Comma-separated directories to exclude from the code scan (e.g. service dirs already scanned by the matrix)"
+    required: false
+    default: ""
   dockerfile:
     description: "Path to the service Dockerfile (scan: image)"
     required: false
@@ -36,16 +44,22 @@ runs:
         GITHUB_ACTOR: ${{ github.actor }}
       run: |
         set -euo pipefail
-        if [ -f pom.xml ]; then  # warm ~/.m2 via Google's Central mirror so trivy sees parent-managed versions
+        dir="${{ inputs.path }}"
+        if [ -f "$dir/pom.xml" ]; then  # warm ~/.m2 via Google's Central mirror so trivy sees parent-managed versions
           echo '<settings><mirrors><mirror><id>google-central</id><url>https://maven-central.storage-download.googleapis.com/maven2/</url><mirrorOf>central</mirrorOf></mirror></mirrors></settings>' > /tmp/mirror.xml
-          mvn -B -q -fn -DskipTests -gs /tmp/mirror.xml $([ -f .mvn/settings.xml ] && echo '-s .mvn/settings.xml') dependency:go-offline | tee /tmp/mvn.log || true
+          mvn -B -q -fn -DskipTests -gs /tmp/mirror.xml -f "$dir/pom.xml" $([ -f .mvn/settings.xml ] && echo '-s .mvn/settings.xml') dependency:go-offline | tee /tmp/mvn.log || true
           ! grep -q '\[ERROR\]' /tmp/mvn.log || echo "::warning::Some Maven dependencies could not be resolved; scan depth may be reduced"
         fi
-        trivy fs --no-progress --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --offline-scan --format json . |
+        skip="${{ inputs.skip-dirs }}"
+        targs=(--no-progress --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --offline-scan --format json)
+        [ -n "$skip" ] && targs+=(--skip-dirs "$skip")
+        trivy fs "${targs[@]}" "$dir" |
           jq -r '.Results[]? as $r | $r.Vulnerabilities[]? | [.Severity, .PkgName, .InstalledVersion, (.FixedVersion // "-"), .VulnerabilityID, $r.Target] | @tsv' | sort -u > "trivy-${GITHUB_REPOSITORY##*/}-code-report.tsv"
 
         out="trivy-${GITHUB_REPOSITORY##*/}-docker-report.tsv"; : > "$out"
-        find . -name 'Dockerfile*' -not -path './.git/*' -not -path '*/node_modules/*' -print0 |
+        fargs=(-name 'Dockerfile*' -not -path '*/.git/*' -not -path '*/node_modules/*')
+        [ -n "$skip" ] && for d in ${skip//,/ }; do fargs+=(-not -path "*/${d}/*" -not -path "${d}/*"); done
+        find "$dir" "${fargs[@]}" -print0 |
           xargs -0 -r awk 'toupper($1)=="FROM" {i=$2; if (i ~ /^--/) i=$3; print i; if (toupper($3)=="AS") print "~"$4; if (toupper($4)=="AS") print "~"$5}' | sort -u > /tmp/from.txt
         for img in $(grep -v '^~' /tmp/from.txt); do
           [ "$img" = scratch ] && continue
@@ -76,7 +90,7 @@ runs:
     - name: Upload report
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.scan == 'code' && format('trivy-{0}-code-report', github.event.repository.name) || format('trivy-{0}-image-report-{1}', github.event.repository.name, inputs.image-name) }}
+        name: ${{ inputs.scan == 'code' && (inputs.image-name && format('scan_code-{0}', inputs.image-name) || 'scan_code') || format('scan_image-{0}', inputs.image-name) }}
         path: trivy-*.tsv
         if-no-files-found: ignore
 

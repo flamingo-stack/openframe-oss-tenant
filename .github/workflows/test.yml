@@ -57,8 +57,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/steps/yaml-lint
 
-  scan_code:
-    name: "Scan Code"
+  scan:
+    name: "Scan"
     runs-on: ubuntu-latest
     needs: [changes]
     permissions:
@@ -131,8 +131,40 @@ jobs:
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
-      - name: Build and push image
+      - name: Build image
         id: docker_build
+        if: steps.should_run.outputs.run == 'true'
+        uses: nick-fields/retry@v4
+        env:
+          LIB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          META_TAGS: ${{ steps.meta.outputs.tags }}
+          META_LABELS: ${{ steps.meta.outputs.labels }}
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 5
+          timeout_minutes: 30
+          shell: bash
+          command: |
+            args=(--platform linux/amd64,linux/arm64
+                  --secret id=GITHUB_TOKEN,env=LIB_TOKEN
+                  --build-arg GITHUB_ACTOR=${{ github.actor }}
+                  -f "${{ matrix.path }}/Dockerfile")
+            while IFS= read -r t; do [ -n "$t" ] && args+=(--tag "$t"); done <<< "$META_TAGS"
+            while IFS= read -r l; do [ -n "$l" ] && args+=(--label "$l"); done <<< "$META_LABELS"
+            docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
+
+      - name: Scan image
+        if: steps.should_run.outputs.run == 'true'
+        continue-on-error: true
+        uses: ./.github/steps/trivy
+        with:
+          scan: image
+          image-name: ${{ matrix.name }}
+          dockerfile: ${{ matrix.path }}/Dockerfile
+          context: ${{ matrix.context || matrix.path }}
+
+      - name: Push image
+        id: docker_push
         if: steps.should_run.outputs.run == 'true'
         uses: nick-fields/retry@v4
         env:
@@ -152,16 +184,6 @@ jobs:
             while IFS= read -r t; do [ -n "$t" ] && args+=(--tag "$t"); done <<< "$META_TAGS"
             while IFS= read -r l; do [ -n "$l" ] && args+=(--label "$l"); done <<< "$META_LABELS"
             docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
-
-      - name: Scan image
-        if: steps.should_run.outputs.run == 'true'
-        continue-on-error: true
-        uses: ./.github/steps/trivy
-        with:
-          scan: image
-          image-name: ${{ matrix.name }}
-          dockerfile: ${{ matrix.path }}/Dockerfile
-          context: ${{ matrix.context || matrix.path }}
 
 
 
@@ -314,23 +336,15 @@ jobs:
   report:
     name: "Report"
     runs-on: ubuntu-latest
-    needs: [scan_code, build_images]
+    needs: [build_images]
     if: always() && github.event_name == 'pull_request'
     steps:
-      - name: Merge code scan report
-        continue-on-error: true
-        uses: actions/upload-artifact/merge@v4
-        with:
-          name: scan_code
-          pattern: trivy-*-code-report*
-          delete-merged: true
-
       - name: Merge image scan reports
         continue-on-error: true
         uses: actions/upload-artifact/merge@v4
         with:
           name: scan_image
-          pattern: trivy-*-image-report*
+          pattern: scan_image-*
           delete-merged: true
 
   cleanup:
