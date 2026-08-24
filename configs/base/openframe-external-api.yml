@@ -17,7 +17,7 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration'
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration
   oss-tenant:
     kafka:
       bootstrap-servers: kafka.datasources.svc.cluster.local:9092
@@ -67,3 +67,4 @@ storage:
   s3:
     disabled: false
     bucket: local-dev-bucket
+
