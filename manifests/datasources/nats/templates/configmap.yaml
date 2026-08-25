@@ -43,7 +43,8 @@ data:
                   "$JS.ACK.TOOL_UPDATE.>",
                   "machine.*.tool-connection",
                   "machine.*.heartbeat",
-                  "machine.*.installed-agent"
+                  "machine.*.installed-agent",
+                  "machine.*.hostname"
                 ]
               },
               subscribe: {
