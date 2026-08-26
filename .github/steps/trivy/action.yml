@@ -55,6 +55,14 @@ runs:
         [ -n "$skip" ] && targs+=(--skip-dirs "$skip")
         trivy fs "${targs[@]}" "$dir" |
           jq -r '.Results[]? as $r | $r.Vulnerabilities[]? | [.Severity, .PkgName, .InstalledVersion, (.FixedVersion // "-"), .VulnerabilityID, $r.Target] | @tsv' | sort -u > "trivy-${GITHUB_REPOSITORY##*/}-code-report.tsv"
+        f="trivy-${GITHUB_REPOSITORY##*/}-code-report.tsv"
+        while IFS=$'\t' read -r sev pkg inst fixv cve tgt; do
+          o="-"
+          case "$tgt" in *pom.xml)
+            grep -q "<artifactId>${pkg##*:}</artifactId>" "$dir/$tgt" 2>/dev/null && o=direct || o=transitive ;;
+          esac
+          printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$sev" "$pkg" "$inst" "$fixv" "$cve" "$tgt" "$o"
+        done < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 
         out="trivy-${GITHUB_REPOSITORY##*/}-docker-report.tsv"; : > "$out"
         fargs=(-name 'Dockerfile*' -not -path '*/.git/*' -not -path '*/node_modules/*')
@@ -81,7 +89,7 @@ runs:
       run: |
         set -euo pipefail
         docker buildx build --platform linux/amd64 --secret id=GITHUB_TOKEN,env=GITHUB_TOKEN --build-arg GITHUB_ACTOR="$GITHUB_ACTOR" \
-          -f "${{ inputs.dockerfile }}" --output type=oci,dest=/tmp/image.tar "${{ inputs.context }}"
+          -f "${{ inputs.dockerfile }}" --output type=docker,dest=/tmp/image.tar "${{ inputs.context }}"
         out="trivy-${GITHUB_REPOSITORY##*/}-image-report-${{ inputs.image-name }}.tsv"
         trivy image --no-progress --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --input /tmp/image.tar --format json |
           jq -r '.Results[]? as $r | $r.Vulnerabilities[]? | [.Severity, .PkgName, .InstalledVersion, (.FixedVersion // "-"), .VulnerabilityID, $r.Target] | @tsv' | sort -u > "$out"
