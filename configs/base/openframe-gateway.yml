@@ -116,11 +116,14 @@ openframe:
   device:
     aspect:
       enabled: false
+  # External-API rate limits: one dial per deployment (no per-key limits); fixed calendar windows,
+  # so the worst-case burst across a minute boundary is ~2x the minute limit. Keep hour < minute*60
+  # and day < hour*24 or the wider windows are dead config.
   rate-limit:
     enabled: true
-    default-requests-per-minute: 5
-    default-requests-per-hour: 1000
-    default-requests-per-day: 10000
+    default-requests-per-minute: 100
+    default-requests-per-hour: 3000
+    default-requests-per-day: 30000
     redis-ttl: 7200        # 2 hours in seconds
     fail-open: true
     log-violations: true
