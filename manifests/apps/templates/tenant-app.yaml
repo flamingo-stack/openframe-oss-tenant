@@ -9,6 +9,9 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: tenant
+  labels:
+    # Deploy-ordering group; tenant depends on effectively everything → last.
+    openframe.io/sync-group: '{{ .Values.tenant.syncGroup | default "5" }}'
   annotations:
     argocd.argoproj.io/sync-wave: '{{ .Values.tenant.syncWave | default "2" }}'
   finalizers:
