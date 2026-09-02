@@ -82,7 +82,7 @@ runs:
         set -euo pipefail
         docker buildx build --platform linux/amd64 --secret id=GITHUB_TOKEN,env=GITHUB_TOKEN --build-arg GITHUB_ACTOR="$GITHUB_ACTOR" \
           -f "${{ inputs.dockerfile }}" --output type=docker,dest=/tmp/image.tar "${{ inputs.context }}"
-        trivy image --no-progress --scanners vuln --ignore-unfixed --format json --severity HIGH,CRITICAL --input /tmp/image.tar |
+        trivy image --no-progress --scanners vuln --ignore-unfixed --format json --severity HIGH,CRITICAL --pkg-types os --input /tmp/image.tar |
           jq -r '.Results[]? as $r | $r.Vulnerabilities[]? | [.Severity, .PkgName, .InstalledVersion, (.FixedVersion // "-"), .VulnerabilityID, $r.Target] | @tsv' |
           sort -u > "trivy-${GITHUB_REPOSITORY##*/}-image-report-${IMAGE_NAME}.tsv"
         find . -maxdepth 1 -name 'trivy-*.tsv' -empty -delete
