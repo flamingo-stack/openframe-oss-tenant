@@ -169,16 +169,6 @@ jobs:
             echo "BUILD_ARGS=${args[*]}" >> "$GITHUB_ENV"
             docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
 
-      - name: Scan image
-        if: steps.should_run.outputs.run == 'true'
-        continue-on-error: true
-        uses: ./.github/steps/trivy
-        with:
-          scan: image
-          image-name: ${{ matrix.name }}
-          dockerfile: ${{ matrix.path }}/Dockerfile
-          context: ${{ matrix.context || matrix.path }}
-
       - name: Push image
         id: docker_push
         if: steps.should_run.outputs.run == 'true'
@@ -191,6 +181,15 @@ jobs:
           timeout_minutes: 30
           shell: bash
           command: docker buildx build $BUILD_ARGS --push --provenance=false --sbom=true "${{ matrix.context || matrix.path }}"
+
+      - name: Scan image
+        if: steps.should_run.outputs.run == 'true'
+        uses: ./.github/steps/trivy
+        with:
+          scan: image
+          image-name: ${{ matrix.name }}
+          dockerfile: ${{ matrix.path }}/Dockerfile
+          context: ${{ matrix.context || matrix.path }}
 
 
 
