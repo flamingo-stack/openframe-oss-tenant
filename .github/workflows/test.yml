@@ -7,6 +7,7 @@ name: Openframe Test
 permissions:
   contents: write
   packages: write
+  statuses: write
   actions: write
   pull-requests: write
   attestations: write
