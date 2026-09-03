@@ -1616,7 +1616,7 @@ checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 [[package]]
 name = "openframe-agent-lib"
 version = "0.1.0"
-source = "git+https://github.com/flamingo-stack/openframe-oss-lib.git?tag=v0.0.5#da4cc1471a2e536c76a8280cb8101d0bb0135c50"
+source = "git+https://github.com/flamingo-stack/openframe-oss-lib.git?tag=v0.0.18#5245f35176dfc7af68b990ac75f52998210cab2c"
 dependencies = [
  "aes-gcm",
  "anyhow",
