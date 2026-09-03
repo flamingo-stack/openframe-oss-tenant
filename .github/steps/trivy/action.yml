@@ -7,6 +7,7 @@ inputs:
     required: true
   path: { default: "." }
   skip-dirs: { default: "" }
+  skip-files: { default: "" }
   image-name: { default: "" }
   dockerfile: { default: "" }
   context: { default: "." }
@@ -44,11 +45,13 @@ runs:
       env:
         SCAN_DIR: ${{ inputs.path }}
         SKIP_DIRS: ${{ inputs.skip-dirs }}
+        SKIP_FILES: ${{ inputs.skip-files }}
         ACTION_PATH: ${{ github.action_path }}
       run: |
         set -euo pipefail
         args=(--no-progress --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --offline-scan --format json)
         [ -n "$SKIP_DIRS" ] && args+=(--skip-dirs "$SKIP_DIRS")
+        [ -n "$SKIP_FILES" ] && args+=(--skip-files "$SKIP_FILES")
         report="trivy-${GITHUB_REPOSITORY##*/}-code-report.tsv"
         trivy fs "${args[@]}" "$SCAN_DIR" | jq -r --arg src "" -f "$ACTION_PATH/to-tsv.jq" | sort -u > "$report"
         while IFS=$'\t' read -r severity pkg installed fixed cve target; do

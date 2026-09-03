@@ -71,7 +71,7 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.changes.outputs.images_matrix) }}
         include:
-          - target: { name: root, path: ".", skip: openframe/services }
+          - target: { name: root, path: ".", skip: openframe/services, skip_files: pom.xml }
     steps:
       - name: Check if scan should run
         id: should_run
@@ -91,6 +91,7 @@ jobs:
           scan: code
           path: ${{ matrix.target.path }}
           skip-dirs: ${{ matrix.target.skip || '' }}
+          skip-files: ${{ matrix.target.skip_files || '' }}
           image-name: ${{ matrix.target.name }}
 
   build_images:
