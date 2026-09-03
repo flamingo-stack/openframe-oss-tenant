@@ -12,5 +12,5 @@ name = "openframe-client"
 path = "src/main.rs"
 
 [dependencies]
-openframe-agent-lib = { git = "https://github.com/flamingo-stack/openframe-oss-lib.git", tag = "v0.0.5" }
+openframe-agent-lib = { git = "https://github.com/flamingo-stack/openframe-oss-lib.git", tag = "v0.0.18" }
 anyhow = "1.0"
