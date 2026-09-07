@@ -43,6 +43,16 @@ spec:
                 configMapKeyRef:
                   name: tenant
                   key: SPRING_CONFIG_URL
+        - name: wait-for-management-server
+          image: "{{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
+          {{- with .Values.initImage.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command: ["sh", "-c", "until curl -f http://openframe-management:$MANAGEMENT_PORT/management/{{ default $saas.image.tag $mgmt.image.tag }}/health; do sleep 1; done"]
+          env:
+            - name: MANAGEMENT_PORT
+              value: "8101"
 
       containers:
         - name: openframe-gateway
@@ -110,3 +120,4 @@ spec:
         - name: logs
           emptyDir: {}
 {{- end }}
+
