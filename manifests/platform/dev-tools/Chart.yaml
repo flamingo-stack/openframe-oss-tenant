@@ -8,7 +8,8 @@ appVersion: "0.0.1"
 dependencies:
   - name: kafka-ui
     version: "~1.6.3"
-    repository: https://kafbat.github.io/helm-charts
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts
   - name: telepresence-oss
     version: "~2.30.1"
     repository: oci://ghcr.io/flamingo-stack/registry/helm-charts
+
