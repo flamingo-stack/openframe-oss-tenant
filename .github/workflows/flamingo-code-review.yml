@@ -58,6 +58,54 @@ on:
   # the incremental anchor in code-review-review.mjs.
   pull_request:
     types: [opened, ready_for_review, reopened, labeled, synchronize]
+
+  # THE PRIMARY MANUAL TRIGGER (2026-09-08). A new top-level pull-request
+  # comment beginning with '@flamingo-review' asks for another pass;
+  # '@flamingo-review full' additionally overrules the incremental anchor
+  # and re-reads the whole cumulative diff.
+  #
+  # This exists because the label could not TEACH ITSELF. The summary comment
+  # is the only surface an author reliably sees, a comment cannot link to or
+  # explain a sidebar label, and so the once-per-PR default read as "the bot
+  # only reviewed my first commit". A command can be printed in the very
+  # comment that prompts the question — see the footer in code-review-post.mjs.
+  # It is also where the market landed: CodeRabbit ('@coderabbitai review' /
+  # 'full review') and Cursor Bugbot ('cursor review' / 'bugbot run') both take
+  # a new top-level comment, and both split incremental from full.
+  #
+  # 'edited' is the CHECKBOX lane — the closest thing a GitHub comment has to a
+  # button, and the same mechanism CodeRabbit uses for its clickable actions.
+  # Checking a task-list box in the summary comment edits that comment, which
+  # fires issue_comment.edited; the boxes are the two commands, clickable.
+  #
+  # Its costs are real and accepted, not overlooked: 'edited' fires on EVERY
+  # comment edit in the repository, so an unrelated typo fix evaluates this
+  # workflow and skips (zero billable minutes, but a skipped run in the Actions
+  # list — the same trade already made for push and synchronize). And a
+  # checkbox is STATE, so resolve_command unchecks it after consuming, which is
+  # what lets it be clicked again.
+  #
+  # WRITE ACCESS IS ENFORCED BY GITHUB HERE, not by us: only a user with write
+  # permission can toggle a task list in someone else's comment, so the
+  # author_association gate that gutters the 'created' lane has no equivalent —
+  # and needs none. What IS checked is that the edited comment is the bot's own
+  # summary and that a human did the editing, so the uncheck below cannot
+  # re-trigger the workflow it just served.
+  #
+  # issue_comment fires only for top-level comments; a reply inside a review
+  # thread is pull_request_review_comment and is NOT a trigger here (the same
+  # boundary Bugbot documents). Review-thread replies stay conversation.
+  #
+  # SECURITY, and the reason for the resolve_command job below: unlike a
+  # pull_request run, an issue_comment run executes in the BASE repository with
+  # a WRITE token and full secrets. The event carries no head SHA and no head
+  # repository, so 'is this a fork?' cannot be answered in a job 'if' — and
+  # checking out refs/pull/N/head without answering it would run this workflow
+  # over fork-authored code holding that token. resolve_command answers it via
+  # the API BEFORE anything is checked out, and forks are refused there.
+  issue_comment:
+    types: [created, edited]
+
   repository_dispatch:
     types: [flamingo-code-review]
   # Lets the hub target a SETUP BRANCH before the install PR merges — the same
@@ -101,7 +149,7 @@ on:
 # are passed per-step, same as the doc workflow.
 env:
   RUN_ID: ${{ github.event.client_payload.run_id || github.event.inputs.run_id || '' }}
-  MODE: ${{ github.event.client_payload.mode || github.event.inputs.mode || (github.event_name == 'pull_request' && 'pr' || 'sweep') }}
+  MODE: ${{ github.event.client_payload.mode || github.event.inputs.mode || ((github.event_name == 'pull_request' || github.event_name == 'issue_comment') && 'pr' || 'sweep') }}
   HUB_BASE_URL: ${{ github.event.client_payload.hub_base_url || github.event.inputs.hub_base_url || vars.FLAMINGO_HUB_BASE_URL }}
   REVIEW_BUDGET_CHARS: ${{ github.event.client_payload.review_budget_chars || github.event.inputs.review_budget_chars || '' }}
 
@@ -110,7 +158,7 @@ env:
 # still fires on the cancelled run, so its row records 'cancelled' rather
 # than dangling.
 concurrency:
-  group: flamingo-code-review-${{ github.event.pull_request.number || github.run_id }}
+  group: flamingo-code-review-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -159,6 +207,185 @@ jobs:
             "https://api.github.com/repos/$REPO_FULL/issues/$PR_NUMBER/labels/flamingo-review" > /dev/null || true
           rm -f "$CURL_CFG"
 
+  # Resolves a COMMENT COMMAND into the pull-request context the review job
+  # needs, and refuses the cases the job 'if' provably cannot judge.
+  #
+  # It exists because an issue_comment event is context-poor by design: it
+  # carries the comment and the ISSUE, never the pull request. No head SHA, no
+  # head repository, no draft flag, no author type. Everything the review job's
+  # guard reads from github.event.pull_request.* is simply absent, and the two
+  # facts that gate SAFETY — is this a fork, is the author a bot — can only be
+  # answered by asking the API. A job 'if' cannot make an API call, so this job
+  # is the 'if' that could not be written as one.
+  #
+  # Ordering is the point: nothing is checked out until after the fork answer.
+  # An issue_comment run holds a WRITE token, so checking out refs/pull/N/head
+  # first and asking afterwards would have already run this workflow over
+  # fork-authored code with that token in scope.
+  #
+  # The cheap, event-local half of the gate stays in the 'if' below (a
+  # command-shaped comment, on an open pull request, from someone with write
+  # access) so an outsider's comment never starts a runner at all.
+  #
+  # 'github.event.issue.pull_request' is tested for TRUTHINESS, never against
+  # null. Comparing an object to null in an Actions expression coerces both to
+  # numbers, the object becomes NaN, and every NaN comparison is false — so the
+  # null form would have refused every real pull request while looking correct.
+  #
+  # Underscored job id ON PURPOSE: 'needs.<id>' is a context path, and a hyphen
+  # there parses as subtraction. A hyphenated id would need needs['...'] at
+  # every one of the reads below, and the first person to add a plain one would
+  # get a silently-empty value rather than an error.
+  resolve_command:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      github.event.issue.state == 'open' &&
+      ((github.event.action == 'created' &&
+        startsWith(github.event.comment.body, '@flamingo-review') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+       (github.event.action == 'edited' &&
+        github.event.comment.user.type == 'Bot' &&
+        github.event.sender.type != 'Bot' &&
+        (contains(github.event.comment.body, '[x] Review the new commits') ||
+         contains(github.event.comment.body, '[x] Review the whole diff again'))))
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    outputs:
+      # The review job reads ONLY 'proceed'. Every refusal is a false here plus
+      # an explanation posted to the pull request — never a red run, because a
+      # command this pipeline declines to serve is not a broken pipeline, and a
+      # failed check on someone's PR for asking a question is noise.
+      proceed: ${{ steps.resolve.outputs.proceed }}
+      pr_number: ${{ steps.resolve.outputs.pr_number }}
+      head_sha: ${{ steps.resolve.outputs.head_sha }}
+      full: ${{ steps.resolve.outputs.full }}
+    steps:
+      - name: Resolve the pull request behind the comment
+        id: resolve
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_FULL: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          # 'created' (a typed command) vs 'edited' (a checked box) — the two
+          # lanes read the request from different places in the same body.
+          EVENT_ACTION: ${{ github.event.action }}
+          # Read as DATA, never interpolated into the script body: a comment is
+          # attacker-authored text, and ${{ }}-ing it into 'run:' is the
+          # canonical Actions script-injection sink. The full-pass test below is
+          # a shell string comparison against this variable.
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          printf 'header = "Authorization: Bearer %s"\n' "$GITHUB_TOKEN" > "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+
+          # 'proceed' is written ONCE, at the end, and only on success. Every
+          # other exit — a refusal, or the script dying under set -e — leaves it
+          # unset, which the review job reads as an empty string and declines.
+          # Fail-closed by construction rather than by remembering to write a
+          # false on every path out.
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+          # One acknowledgement, immediately: a command that produces no visible
+          # effect for the ~40s before the review job posts anything is
+          # indistinguishable from one that was never picked up, and the second
+          # thing a human does about that is ask again.
+          curl -sS --max-time 30 -K "$CURL_CFG" -X POST \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO_FULL/issues/comments/$COMMENT_ID/reactions" \
+            -d '{"content":"eyes"}' > /dev/null || true
+
+          PR_JSON=$(curl -sS --max-time 30 -K "$CURL_CFG" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO_FULL/pulls/$PR_NUMBER") || PR_JSON=""
+
+          # Each read tolerates a body that is not JSON at all (an HTML error
+          # page from a proxy, a truncated response). Without the '|| true' set
+          # -e would kill the script mid-parse, and a script that dies here
+          # emits no 'proceed' AND no explanation — the command would look
+          # ignored, which is the exact failure this whole change exists to
+          # remove. An empty HEAD_SHA falls into the refusal below instead.
+          HEAD_SHA=$(printf '%s' "$PR_JSON" | jq -r '.head.sha // empty' 2>/dev/null || true)
+          HEAD_REPO=$(printf '%s' "$PR_JSON" | jq -r '.head.repo.full_name // empty' 2>/dev/null || true)
+          AUTHOR_TYPE=$(printf '%s' "$PR_JSON" | jq -r '.user.type // empty' 2>/dev/null || true)
+
+          refuse() {
+            # Say why, in the thread that asked. A silent no-op here is the
+            # exact failure mode the label had.
+            printf '%s' "$1" | jq -Rs '{body: .}' | \
+              curl -sS --max-time 30 -K "$CURL_CFG" -X POST \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/$REPO_FULL/issues/$PR_NUMBER/comments" \
+                -d @- > /dev/null || true
+            exit 0
+          }
+
+          if [ -z "$HEAD_SHA" ]; then
+            refuse "🦩 Could not read this pull request from the GitHub API, so the review was not started. Try the command again."
+          fi
+
+          # The SAME two exclusions the review job applies to every other
+          # event, restated here because the job 'if' had nothing to read them
+          # from. A fork additionally cannot be waived by any command: this run
+          # holds a write token.
+          if [ "$HEAD_REPO" != "$REPO_FULL" ]; then
+            refuse "🦩 This pull request comes from a fork, so it is not reviewed automatically. Dispatch it from the Flamingo hub instead."
+          fi
+          if [ "$AUTHOR_TYPE" = "Bot" ]; then
+            refuse "🦩 This pull request was opened by a bot, so it is not reviewed automatically. Dispatch it from the Flamingo hub instead."
+          fi
+
+          # DRAFTS ARE ALLOWED — same rule the on-demand label already follows:
+          # an explicit request means it whether or not the PR is finished.
+
+          # Which of the two passes was asked for, in whichever lane asked.
+          # A TYPED command is a prefix test; a CHECKED BOX is a substring test,
+          # because the box sits inside a whole rendered comment.
+          FULL=false
+          case "$EVENT_ACTION" in
+            edited)
+              case "$COMMENT_BODY" in
+                *"[x] Review the whole diff again"*) FULL=true ;;
+              esac
+              ;;
+            *)
+              case "$COMMENT_BODY" in
+                '@flamingo-review full'*) FULL=true ;;
+              esac
+              ;;
+          esac
+
+          # RE-ARM the checkbox by unchecking it. Without this the box stays
+          # checked until the next review overwrites the whole comment, so it
+          # reads as "already requested" and cannot be clicked again — and on a
+          # refused request it would stay checked forever, which is exactly the
+          # stranded-state failure the on-demand label was split into its own
+          # job to avoid.
+          #
+          # Best-effort: a review that ran is worth more than a tidy checkbox,
+          # and this edit is made by the workflow token, whose events never
+          # trigger workflows — so it cannot loop back into this job.
+          if [ "$EVENT_ACTION" = "edited" ]; then
+            printf '%s' "$COMMENT_BODY" \
+              | sed -e 's/\[x\] Review the new commits/[ ] Review the new commits/' \
+                    -e 's/\[x\] Review the whole diff again/[ ] Review the whole diff again/' \
+              | jq -Rs '{body: .}' \
+              | curl -sS --max-time 30 -K "$CURL_CFG" -X PATCH \
+                  -H "Accept: application/vnd.github+json" \
+                  "https://api.github.com/repos/$REPO_FULL/issues/comments/$COMMENT_ID" \
+                  -d @- > /dev/null || true
+          fi
+
+          {
+            echo "proceed=true"
+            echo "head_sha=$HEAD_SHA"
+            echo "full=$FULL"
+          } >> "$GITHUB_OUTPUT"
+
   review:
     # Skip actual work when triggered by push (push only registers the
     # workflow with GitHub, which is what lets workflow_dispatch target a
@@ -179,9 +406,21 @@ jobs:
     # per-repo enabled dial already covers it and answers 409 REVIEW_DISABLED,
     # which produces a recorded run. A second switch living in GitHub would be
     # invisible to the admin screen and would produce no callback at all.
+    #
+    # A COMMENT COMMAND arrives here already judged: resolve_command made the
+    # API calls this expression cannot, and its 'proceed' carries the same two
+    # exclusions (fork, bot) plus the "is it really a pull request" answer.
+    #
+    # 'needs' therefore requires always(): on every OTHER event resolve_command
+    # is skipped, and a skipped dependency would otherwise skip this job too —
+    # i.e. adding the comment trigger would have silently disabled every
+    # existing trigger. always() re-admits them; the clauses below still decide.
+    needs: [resolve_command]
     if: >-
+      always() &&
       github.event_name != 'push' &&
       (github.event_name == 'repository_dispatch' ||
+       needs.resolve_command.outputs.proceed == 'true' ||
        github.event_name == 'workflow_dispatch' ||
        (github.event.pull_request.user.type != 'Bot' &&
         github.event.pull_request.head.repo.full_name == github.repository &&
@@ -270,10 +509,10 @@ jobs:
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha || github.sha }}
           WF_RUN_ID: ${{ github.run_id }}
           REPO_FULL: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
         run: /tmp/code-review-report.sh --started
 
       # v5 = the Node 24 drop-in (v4 targets EOL Node 20 and warns on every run).
@@ -281,6 +520,21 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          # A pull_request run is already checked out at the right ref, and a
+          # dispatch wants the branch it targeted — both leave this EMPTY,
+          # which is checkout's own "use the triggering ref" default.
+          #
+          # An issue_comment run is the exception and the reason this line
+          # exists: that event's ref is the DEFAULT BRANCH, not the pull
+          # request. Without an explicit ref the command would cheerfully
+          # review main and report the result onto someone's PR.
+          #
+          # Pinned to the SHA resolve_command read, not to refs/pull/N/head:
+          # the sha is what the run reports on, what the incremental anchor is
+          # compared against, and what the check lands on. Resolving the ref a
+          # second time here could pick up a push that landed in between and
+          # review a different commit than the one recorded.
+          ref: ${{ needs.resolve_command.outputs.head_sha }}
           # The review job must never hold a push credential.
           persist-credentials: false
 
@@ -312,12 +566,12 @@ jobs:
       - name: Download and verify scripts
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
-          HASH_FETCH_RULES: "a3adb1976b782a6bfe405b68c7adc52f6650535e0d9fbc2ea427c3567f2c9943"
+          HASH_FETCH_RULES: "d4608b1ec02d429ef958c6b65d174e80ec51c2073f26a99ea0bbf58a57eb8b43"
           HASH_RUN: "e4ebfe017a09ed3f783c8aea995a079be46b4add3b3f92db1918291d1b3e7412"
           HASH_MINE: "c12e6fd532bab44c95e855046efef3b45940fbde87d449d5577d198a0d3c4f62"
           HASH_REVIEW: "edb42c89fb9199b99e0405c71ee78520a00bc17a928bb28978ae68734f764fde"
           HASH_LIB: "6575dd2e94e2d81822a0415247ad243fb03b0029aea206bbf6519f08e3d54e1f"
-          HASH_POST: "75404d6cf735f9a9f1332e65efb6e055ccaf18fe678b1fb3d74d0b0b996c6f2d"
+          HASH_POST: "d9ca4dd16fc348863c0299d1633af296375d734affc98ac7fc9d229272ca8f53"
         run: |
           set -euo pipefail
           SCRIPTS_BASE_URL="${HUB_BASE_URL}/api/doc-orchestrator/scripts"
@@ -363,7 +617,11 @@ jobs:
           # PR runs identify the pull request so the hub can answer with the
           # last successfully reviewed head SHA (X-Last-Reviewed-Sha) — the
           # incremental-review anchor persisted as .last-reviewed-sha.
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
+          # '@flamingo-review full' asks the hub to WITHHOLD that anchor,
+          # so this pass re-reads the pull request's whole cumulative diff.
+          # Empty on every other trigger, which keeps them incremental.
+          REVIEW_FULL: ${{ needs.resolve_command.outputs.full }}
         run: /tmp/code-review-fetch-rules.sh
 
       # Stage checkpoints are their OWN credentialed steps — the review step
@@ -375,7 +633,7 @@ jobs:
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           WF_RUN_ID: ${{ github.run_id }}
           REPO_FULL: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
         run: /tmp/code-review-report.sh --progress review
 
       - name: Review
@@ -406,7 +664,7 @@ jobs:
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           WF_RUN_ID: ${{ github.run_id }}
           REPO_FULL: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
         run: /tmp/code-review-report.sh --progress post
 
       - name: Post to the pull request
@@ -415,8 +673,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEGRADED: ${{ steps.review.outputs.degraded }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
         run: node /tmp/code-review-post.mjs
 
       # A crashed Review step must still leave a trace ON THE PR: default
@@ -428,7 +686,7 @@ jobs:
         if: failure() && github.event_name == 'pull_request' && steps.review.outcome == 'failure'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
           REPO_FULL: ${{ github.repository }}
           WF_RUN_ID: ${{ github.run_id }}
         run: |
@@ -462,10 +720,10 @@ jobs:
           DEGRADED: ${{ steps.rules.outputs.degraded || steps.review.outputs.degraded }}
           # Dispatch events carry no pull_request context — github.sha is the
           # tip of the checked-out ref, so sweep runs record the commit too.
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha || github.sha }}
           WF_RUN_ID: ${{ github.run_id }}
           REPO_FULL: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
         # The ONE justified inline-bash exception beyond the bootstrap: when the
         # report script itself never downloaded, no unified script exists to
         # report the failure — so a minimal guarded curl posts it. Kept tiny on
