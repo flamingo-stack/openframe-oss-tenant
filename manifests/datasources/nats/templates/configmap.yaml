@@ -38,6 +38,9 @@ data:
                   "$JS.ACK.TOOL_INSTALLATION.>",
                   "$JS.API.CONSUMER.CREATE.CLIENT_UPDATE.*.machine.all.client-update",
                   "$JS.ACK.CLIENT_UPDATE.>",
+                  "$JS.API.CONSUMER.CREATE.CLIENT_UNINSTALL.*.machine.*.client-uninstall",
+                  "$JS.API.CONSUMER.DELETE.CLIENT_UNINSTALL.*",
+                  "$JS.ACK.CLIENT_UNINSTALL.>",
                   "$JS.API.CONSUMER.CREATE.TOOL_UPDATE.*.machine.all.tool.*.update",
                   "$JS.API.CONSUMER.CREATE.TOOL_UPDATE.>",
                   "$JS.ACK.TOOL_UPDATE.>",
@@ -52,6 +55,7 @@ data:
                   "_INBOX.*.*",
                   "machine.*.tool-installation.inbox",
                   "machine.*.client-update.inbox",
+                  "machine.*.client-uninstall.inbox",
                   "machine.*.tool.update.inbox"
                 ]
               }
