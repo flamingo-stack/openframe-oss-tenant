@@ -571,7 +571,7 @@ jobs:
           HASH_MINE: "c12e6fd532bab44c95e855046efef3b45940fbde87d449d5577d198a0d3c4f62"
           HASH_REVIEW: "edb42c89fb9199b99e0405c71ee78520a00bc17a928bb28978ae68734f764fde"
           HASH_LIB: "6575dd2e94e2d81822a0415247ad243fb03b0029aea206bbf6519f08e3d54e1f"
-          HASH_POST: "d9ca4dd16fc348863c0299d1633af296375d734affc98ac7fc9d229272ca8f53"
+          HASH_POST: "2c3760a00e8c7f1f8f31c6297bf5eb5462e54134a159e6acb825a58ccc3dd17d"
         run: |
           set -euo pipefail
           SCRIPTS_BASE_URL="${HUB_BASE_URL}/api/doc-orchestrator/scripts"
