@@ -16,7 +16,7 @@
 # Installation:
 # 1. Copy this file to .github/workflows/doc-orchestrator.yml in your target repository
 # 2. Configure these GitHub Secrets in the target repository (Settings > Secrets):
-#    - ANTHROPIC_API_KEY: For AI processing (Stage 1 & 3)
+#    - ANTHROPIC_API_KEY: For the VoltAgent stages (3 & 4); Stages 1 and 2 call Claude through the hub
 #    - OPENAI_API_KEY: For CodeWiki (Stage 2)
 #    - DOC_ORCH_WEBHOOK_SECRET: For callback authentication
 #    - DOC_ORCH_GITHUB_PAT: (Optional) For private dependency access
@@ -192,10 +192,14 @@ jobs:
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
         run: |
-          SCRIPTS_BASE_URL="${HUB_BASE_URL}/api/ci/scripts"
 
           # Function to download and verify script
           SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # WEBHOOK_SECRET reaches curl through a 0600 config file, never argv — see
+          # curlAuthPreamble, which always traps the removal.
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
           # The canonical scripts surface and the pre-rename one. load_script_manifest
           # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
@@ -205,7 +209,7 @@ jobs:
           _try_manifest() {
             local base="$1" code
             code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
-              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              -K "$CURL_CFG" \
               "$base/manifest.json") || code="000"
 
             if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
@@ -283,7 +287,7 @@ jobs:
             fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
-              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              -K "$CURL_CFG" \
               -o "$output_path"
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
@@ -364,12 +368,13 @@ jobs:
         run: |
           echo "📥 Downloading workflow scripts..."
 
-          # Construct URLs from hub base URL — see /api/ci/scripts/[name] route
-          SCRIPTS_BASE_URL="${HUB_BASE_URL}/api/ci/scripts"
-          CALLBACK_URL="${HUB_BASE_URL}/api/doc-orchestrator/webhook"
-
           # Function to download and verify script
           SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # WEBHOOK_SECRET reaches curl through a 0600 config file, never argv — see
+          # curlAuthPreamble, which always traps the removal.
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
           # The canonical scripts surface and the pre-rename one. load_script_manifest
           # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
@@ -379,7 +384,7 @@ jobs:
           _try_manifest() {
             local base="$1" code
             code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
-              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              -K "$CURL_CFG" \
               "$base/manifest.json") || code="000"
 
             if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
@@ -457,7 +462,7 @@ jobs:
             fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
-              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              -K "$CURL_CFG" \
               -o "$output_path"
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
@@ -513,9 +518,10 @@ jobs:
           echo ""
           echo "📋 Downloading Flamingo Markdown Guidelines..."
           GUIDELINES_URL="${HUB_BASE_URL}/api/doc-orchestrator/guidelines"
+          # Same 0600 config file the download block above set up.
           HTTP_CODE=$(curl -fsSL -w "%{http_code}" \
             "$GUIDELINES_URL" \
-            -H "Authorization: Bearer $WEBHOOK_SECRET" \
+            -K "$CURL_CFG" \
             -o "/tmp/flamingo-markdown-guidelines.md" 2>/dev/null) || HTTP_CODE="failed"
 
           if [ "$HTTP_CODE" = "200" ]; then
@@ -1556,21 +1562,23 @@ jobs:
           # commit step below reads it to know work was already pushed.
           rm -f "$STAGE1_PUSH_MARKER"
 
-          # Run with unified timeout helper (12 hours default)
-          # Script already downloaded to /tmp/ in setup step
-          run_with_timeout "Stage 1" "$STAGE1_TIMEOUT_HOURS" node /tmp/generate-inline-docs.cjs || true
-          # Continue - don't fail the workflow, preserve partial results
+          # Script already downloaded to /tmp/ in setup step. run_stage records
+          # the outcome as stage1_status — see its note in workflow-helpers.sh.
+          run_stage "Stage 1" "$STAGE1_TIMEOUT_HOURS" stage1_status node /tmp/generate-inline-docs.cjs
 
           # Count generated files (hidden .*.md files)
           INLINE_DOCS=$(find . -name ".*.md" -newer .git -type f -not -path "./node_modules/*" -not -path "./.git/*" | wc -l)
           set_output "stage1_files" "$INLINE_DOCS"
-          set_output "stage1_status" "completed"
 
       # =========================================================================
       # COMMIT STAGE 1 RESULTS (Progressive PR)
       # =========================================================================
+      # `!= ''`, not `== 'completed'`: runs on a FAILED stage too — see run_stage
+      # in workflow-helpers.sh (partial output is worth committing; the status
+      # is what reports the truth home). The build gate holds every run_stage
+      # commit step to this predicate.
       - name: Commit and Push Stage 1 Results
-        if: always() && steps.stage1.outputs.stage1_status == 'completed'
+        if: always() && steps.stage1.outputs.stage1_status != ''
         id: commit-stage1
         env:
           BRANCH_NAME: ${{ steps.create-pr-branch.outputs.branch_name }}
@@ -1622,6 +1630,9 @@ jobs:
       # Runs immediately after Stage 1 to clean up orphaned inline docs
       # Orphan = .*.md file where source file was deleted
       # =========================================================================
+      # `== 'completed'` HERE IS DELIBERATE, unlike the commit steps: deleting
+      # "orphaned" docs after a stage that FAILED would delete docs whose
+      # sources were never re-examined.
       - name: Clean Up Orphaned Inline Documentation Files
         if: always() && steps.stage1.outputs.stage1_status == 'completed'
         id: orphan-detection-inline
@@ -2312,10 +2323,9 @@ jobs:
 
           echo "🤖 Stage 3: VoltAgent Tutorial Generator starting..."
 
-          # Run with unified timeout helper (6 hours default)
-          # Script already downloaded to /tmp/ in setup step
-          run_with_timeout "Stage 3" "$STAGE3_TIMEOUT_HOURS" node /tmp/generate-tutorials-voltagent.cjs || true
-          # Continue - don't fail the workflow, preserve partial results
+          # Script already downloaded to /tmp/ in setup step. run_stage records
+          # the outcome as stage3_status — see its note in workflow-helpers.sh.
+          run_stage "Stage 3" "$STAGE3_TIMEOUT_HOURS" stage3_status node /tmp/generate-tutorials-voltagent.cjs
 
           # Count files from both OSS Tenant Structure directories
           GETTING_STARTED_FILES=$(count_markdown_files "${GETTING_STARTED_OUTPUT_PATH}")
@@ -2325,13 +2335,13 @@ jobs:
           echo "   Development: $DEVELOPMENT_FILES files"
           echo "   Total Stage 3: $TUTORIAL_FILES files"
           set_output "stage3_files" "$TUTORIAL_FILES"
-          set_output "stage3_status" "completed"
 
       # =========================================================================
       # COMMIT STAGE 3 RESULTS (Progressive PR)
       # =========================================================================
+      # `!= ''` — the run_stage commit rule, stated once at Stage 1.
       - name: Commit and Push Stage 3 Results
-        if: always() && steps.stage3.outputs.stage3_status == 'completed'
+        if: always() && steps.stage3.outputs.stage3_status != ''
         id: commit-stage3
         env:
           BRANCH_NAME: ${{ steps.create-pr-branch.outputs.branch_name }}
@@ -2522,7 +2532,11 @@ jobs:
           echo ""
           echo "🤖 Generating repository documentation with VoltAgent..."
           # Script already downloaded to /tmp/ in Download Workflow Scripts step
-          run_with_timeout "Stage 4" "$STAGE4_TIMEOUT_HOURS" node /tmp/generate-repo-docs.cjs || true
+          # run_stage records the outcome as stage4_status — see its note in
+          # workflow-helpers.sh. The file count below is REPORTING, not a
+          # status: inferring "completed" from it meant a crashed run that left
+          # a previous commit's README standing reported success.
+          run_stage "Stage 4" "$STAGE4_TIMEOUT_HOURS" stage4_status node /tmp/generate-repo-docs.cjs
 
           # === STEP 4: Count results ===
           echo ""
@@ -2538,20 +2552,19 @@ jobs:
 
           set_output "stage4_files" "$REPO_DOCS"
           if [ "$REPO_DOCS" -gt 0 ]; then
-            set_output "stage4_status" "completed"
             echo ""
-            echo "✅ Stage 4 completed: $REPO_DOCS repository documentation files"
+            echo "✅ Stage 4 produced $REPO_DOCS repository documentation file(s)"
           else
-            set_output "stage4_status" "skipped"
             echo ""
-            echo "⚠️ Stage 4 skipped: No repository documentation files generated"
+            echo "⚠️ Stage 4 produced no repository documentation files"
           fi
 
       # =========================================================================
       # COMMIT STAGE 4 RESULTS (Progressive PR)
       # =========================================================================
+      # `!= ''` — the run_stage commit rule, stated once at Stage 1.
       - name: Commit and Push Stage 4 Results
-        if: always() && steps.stage4.outputs.stage4_status == 'completed'
+        if: always() && steps.stage4.outputs.stage4_status != ''
         id: commit-stage4
         env:
           BRANCH_NAME: ${{ steps.create-pr-branch.outputs.branch_name }}
@@ -2888,8 +2901,13 @@ jobs:
           # it so the hub's run row fails NOW instead of waiting for the reaper.
           if [ ! -f /tmp/workflow-helpers.sh ]; then
             echo "::error::workflow-helpers.sh missing — sending bootstrap-failure callback"
-            curl -sS --max-time 30 -X POST "${HUB_BASE_URL}/api/doc-orchestrator/webhook" \
-              -H "Content-Type: application/json" -H "Authorization: Bearer $WEBHOOK_SECRET" \
+            # The bearer goes through a 0600 config file, never argv — see
+            # curlAuthPreamble in lib/config/workflow-scripts-bootstrap.ts.
+            CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+            trap 'rm -f "$CURL_CFG"' EXIT
+            printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
+            curl -sS --max-time 30 -K "$CURL_CFG" -X POST "${HUB_BASE_URL}/api/doc-orchestrator/webhook" \
+              -H "Content-Type: application/json" \
               -d "{\"run_id\":\"$RUN_ID\",\"repo_id\":\"$REPO_ID\",\"status\":\"failure\",\"workflow_run_id\":$WORKFLOW_RUN_ID,\"workflow_url\":\"$WORKFLOW_URL\",\"error\":\"Script bootstrap failed: workflow-helpers.sh never downloaded from the hub.\"}" || true
             exit 1
           fi
