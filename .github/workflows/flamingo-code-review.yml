@@ -165,6 +165,11 @@ permissions:
   contents: read
   pull-requests: write
   checks: write
+  # Cache SAVE needs it. With an explicit permissions block every unlisted
+  # scope is 'none', so actions/cache could restore but not reserve a key and
+  # every run ended with "Failed to save: ... cache write denied: token has no
+  # writable scopes" — the corpus 304 path silently never worked.
+  actions: write
 
 jobs:
   # Consuming the label is its OWN job, gated on nothing but "that label was
@@ -463,16 +468,95 @@ jobs:
       - name: Download the report script
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
-          HASH_WORKFLOW_HELPERS: "3df9f07c408d987a44e9df7ba1584f01ff57502a596f013dd3218d3b4c30fd4c"
-          HASH_REPORT: "479b45311e6e91e7dc36b90d6a32db57fae25b215fdcd35c2889fb5f0618df07"
         run: |
           set -euo pipefail
-          SCRIPTS_BASE_URL="${HUB_BASE_URL}/api/doc-orchestrator/scripts"
+
+          SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # The canonical scripts surface and the pre-rename one. load_script_manifest
+          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
+          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
+
+          # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          _try_manifest() {
+            local base="$1" code
+            code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
+              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              "$base/manifest.json") || code="000"
+
+            if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
+            if [ "$code" != "200" ]; then
+              echo "❌ manifest request to $base failed (HTTP $code)"
+              rm -f "$SCRIPT_MANIFEST"
+              return 2
+            fi
+            # The digests are the TOP-LEVEL object. successResponse is the standard
+            # emitter but it does NOT add a wrapper — it is NextResponse.json(data)
+            # plus the no-store header — so there is no .data to reach through.
+            # A 200 that is not a manifest is how a hub which does not serve this path
+            # answers (the proxy rewrites unknown routes and returns HTML), so it
+            # means "wrong surface", not "corrupt".
+            if ! jq -e 'type == "object" and length > 0 and (to_entries | all(.value | type == "string"))' "$SCRIPT_MANIFEST" >/dev/null 2>&1; then
+              rm -f "$SCRIPT_MANIFEST"
+              return 1
+            fi
+            return 0
+          }
+
+          load_script_manifest() {
+            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
+            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
+            # workflow file ships in the repo and the routes ship with the deployment,
+            # so the two are one version apart in BOTH directions across the rollout.
+            # Probe the canonical surface, fall back to the legacy one, and let the
+            # winner decide SCRIPTS_BASE_URL for every download that follows.
+            # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
+            # errexit fires before rc is read and the step ends with NO output. And
+            # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
+            # the NEGATION (0), so every failure reads as success. "|| rc=$?" is the
+            # one form that both suppresses errexit and preserves the real code.
+            local rc=0
+            _try_manifest "$CI_SCRIPTS_URL" || rc=$?
+            if [ "$rc" = "0" ]; then
+              SCRIPTS_BASE_URL="$CI_SCRIPTS_URL"
+              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
+              return 0
+            fi
+            if [ "$rc" = "2" ]; then exit 1; fi
+
+            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
+            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
+
+            rc=0
+            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
+            if [ "$rc" = "0" ]; then
+              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
+              return 0
+            fi
+            if [ "$rc" = "2" ]; then exit 1; fi
+
+            # Neither surface published a manifest: a hub older than the manifest
+            # itself. Downloads proceed UNVERIFIED and say so on every file. Any
+            # OTHER failure above already exited — only a genuine "no such endpoint"
+            # reaches here, so a hijacked or failing request can never land in this
+            # branch and silently disable verification.
+            echo "::warning::no manifest endpoint on this hub — it predates the manifest; downloads run UNVERIFIED until the hub is redeployed"
+            rm -f "$SCRIPT_MANIFEST"
+          }
 
           download_and_verify() {
             local script_name="$1"
-            local expected_hash="$2"
             local output_path="/tmp/$script_name"
+
+            local expected_hash=""
+            if [ -f "$SCRIPT_MANIFEST" ]; then
+              expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+              if [ -z "$expected_hash" ]; then
+                echo "❌ $script_name is not in the server's script manifest!"
+                echo "   The hub serves no such script, or it failed to read on the server."
+                exit 1
+              fi
+            fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
               -H "Authorization: Bearer $WEBHOOK_SECRET" \
@@ -480,11 +564,13 @@ jobs:
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
 
-            if [ "$actual_hash" != "$expected_hash" ]; then
+            if [ -z "$expected_hash" ]; then
+              echo "::warning::$script_name downloaded UNVERIFIED (no manifest; hash: ${actual_hash:0:16}...)"
+            elif [ "$actual_hash" != "$expected_hash" ]; then
               echo "❌ HASH MISMATCH for $script_name!"
               echo "   Expected: $expected_hash"
               echo "   Actual:   $actual_hash"
-              echo "   This could indicate tampering or an outdated hash."
+              echo "   The download was corrupted in transit — both values come from the same deployment."
               exit 1
             fi
 
@@ -493,11 +579,14 @@ jobs:
               chmod +x "$output_path"
             fi
 
-            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
+            if [ -n "$expected_hash" ]; then
+              echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
+            fi
           }
 
-          download_and_verify "workflow-helpers.sh" "$HASH_WORKFLOW_HELPERS"
-          download_and_verify "code-review-report.sh" "$HASH_REPORT"
+          load_script_manifest
+          download_and_verify "workflow-helpers.sh"
+          download_and_verify "code-review-report.sh"
 
       # Early liveness ping — the FIRST real step after report capability is
       # secured. Stamps workflow_run_id + status 'running' on the hub's run row,
@@ -566,20 +655,95 @@ jobs:
       - name: Download and verify scripts
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
-          HASH_FETCH_RULES: "d4608b1ec02d429ef958c6b65d174e80ec51c2073f26a99ea0bbf58a57eb8b43"
-          HASH_RUN: "e4ebfe017a09ed3f783c8aea995a079be46b4add3b3f92db1918291d1b3e7412"
-          HASH_MINE: "c12e6fd532bab44c95e855046efef3b45940fbde87d449d5577d198a0d3c4f62"
-          HASH_REVIEW: "edb42c89fb9199b99e0405c71ee78520a00bc17a928bb28978ae68734f764fde"
-          HASH_LIB: "6575dd2e94e2d81822a0415247ad243fb03b0029aea206bbf6519f08e3d54e1f"
-          HASH_POST: "9d25e0ca7396a306c1dca79325aa911bd157e8bdf5449c4305e628e5c2d76eb1"
         run: |
           set -euo pipefail
-          SCRIPTS_BASE_URL="${HUB_BASE_URL}/api/doc-orchestrator/scripts"
+
+          SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # The canonical scripts surface and the pre-rename one. load_script_manifest
+          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
+          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
+
+          # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          _try_manifest() {
+            local base="$1" code
+            code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
+              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              "$base/manifest.json") || code="000"
+
+            if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
+            if [ "$code" != "200" ]; then
+              echo "❌ manifest request to $base failed (HTTP $code)"
+              rm -f "$SCRIPT_MANIFEST"
+              return 2
+            fi
+            # The digests are the TOP-LEVEL object. successResponse is the standard
+            # emitter but it does NOT add a wrapper — it is NextResponse.json(data)
+            # plus the no-store header — so there is no .data to reach through.
+            # A 200 that is not a manifest is how a hub which does not serve this path
+            # answers (the proxy rewrites unknown routes and returns HTML), so it
+            # means "wrong surface", not "corrupt".
+            if ! jq -e 'type == "object" and length > 0 and (to_entries | all(.value | type == "string"))' "$SCRIPT_MANIFEST" >/dev/null 2>&1; then
+              rm -f "$SCRIPT_MANIFEST"
+              return 1
+            fi
+            return 0
+          }
+
+          load_script_manifest() {
+            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
+            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
+            # workflow file ships in the repo and the routes ship with the deployment,
+            # so the two are one version apart in BOTH directions across the rollout.
+            # Probe the canonical surface, fall back to the legacy one, and let the
+            # winner decide SCRIPTS_BASE_URL for every download that follows.
+            # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
+            # errexit fires before rc is read and the step ends with NO output. And
+            # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
+            # the NEGATION (0), so every failure reads as success. "|| rc=$?" is the
+            # one form that both suppresses errexit and preserves the real code.
+            local rc=0
+            _try_manifest "$CI_SCRIPTS_URL" || rc=$?
+            if [ "$rc" = "0" ]; then
+              SCRIPTS_BASE_URL="$CI_SCRIPTS_URL"
+              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
+              return 0
+            fi
+            if [ "$rc" = "2" ]; then exit 1; fi
+
+            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
+            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
+
+            rc=0
+            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
+            if [ "$rc" = "0" ]; then
+              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
+              return 0
+            fi
+            if [ "$rc" = "2" ]; then exit 1; fi
+
+            # Neither surface published a manifest: a hub older than the manifest
+            # itself. Downloads proceed UNVERIFIED and say so on every file. Any
+            # OTHER failure above already exited — only a genuine "no such endpoint"
+            # reaches here, so a hijacked or failing request can never land in this
+            # branch and silently disable verification.
+            echo "::warning::no manifest endpoint on this hub — it predates the manifest; downloads run UNVERIFIED until the hub is redeployed"
+            rm -f "$SCRIPT_MANIFEST"
+          }
 
           download_and_verify() {
             local script_name="$1"
-            local expected_hash="$2"
             local output_path="/tmp/$script_name"
+
+            local expected_hash=""
+            if [ -f "$SCRIPT_MANIFEST" ]; then
+              expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+              if [ -z "$expected_hash" ]; then
+                echo "❌ $script_name is not in the server's script manifest!"
+                echo "   The hub serves no such script, or it failed to read on the server."
+                exit 1
+              fi
+            fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
               -H "Authorization: Bearer $WEBHOOK_SECRET" \
@@ -587,11 +751,13 @@ jobs:
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
 
-            if [ "$actual_hash" != "$expected_hash" ]; then
+            if [ -z "$expected_hash" ]; then
+              echo "::warning::$script_name downloaded UNVERIFIED (no manifest; hash: ${actual_hash:0:16}...)"
+            elif [ "$actual_hash" != "$expected_hash" ]; then
               echo "❌ HASH MISMATCH for $script_name!"
               echo "   Expected: $expected_hash"
               echo "   Actual:   $actual_hash"
-              echo "   This could indicate tampering or an outdated hash."
+              echo "   The download was corrupted in transit — both values come from the same deployment."
               exit 1
             fi
 
@@ -600,15 +766,23 @@ jobs:
               chmod +x "$output_path"
             fi
 
-            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
+            if [ -n "$expected_hash" ]; then
+              echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
+            fi
           }
 
-          download_and_verify "code-review-fetch-rules.sh" "$HASH_FETCH_RULES"
-          download_and_verify "code-review-run.sh" "$HASH_RUN"
-          download_and_verify "code-review-mine.mjs" "$HASH_MINE"
-          download_and_verify "code-review-review.mjs" "$HASH_REVIEW"
-          download_and_verify "code-review-lib.mjs" "$HASH_LIB"
-          download_and_verify "code-review-post.mjs" "$HASH_POST"
+          # Digests come from the deployment that serves the bytes, never from
+          # this file: a pinned hash here would be the PR head ref's while the
+          # scripts are main's, which is exactly how a PR used to brick its own
+          # review. See workflow-scripts-bootstrap.ts.
+          load_script_manifest
+
+          download_and_verify "code-review-fetch-rules.sh"
+          download_and_verify "code-review-run.sh"
+          download_and_verify "code-review-mine.mjs"
+          download_and_verify "code-review-review.mjs"
+          download_and_verify "code-review-lib.mjs"
+          download_and_verify "code-review-post.mjs"
 
       - name: Fetch the rule corpus
         id: rules
@@ -627,6 +801,31 @@ jobs:
       # Stage checkpoints are their OWN credentialed steps — the review step
       # deliberately never holds the webhook secret or run token (it processes
       # untrusted PR content), so pings happen at step boundaries, not inside.
+      # Say so ON THE PULL REQUEST before spending minutes in the model. Placed
+      # AFTER the rules step on purpose: the skip decision is known here, so a run that
+      # reviews nothing never leaves a placeholder to strand. The comment
+      # carries the summary marker, so the final "Post to the pull request"
+      # step UPDATES this exact comment into the verdict rather than adding a
+      # second one, and it is re-created (not edited) each run so the live
+      # review sits at the BOTTOM of the timeline instead of scrolling away
+      # under later discussion. Best-effort: never fails the review.
+      - name: Say the review is running
+        if: steps.rules.outputs.skip != 'true'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
+        # Feature-DETECTED, not assumed: across a deploy boundary this workflow
+        # can be handed a post.mjs that predates --running, which would ignore
+        # the flag and run the full post pass with no findings.json — posting a
+        # bogus verdict mid-review. Grep first; skip quietly if unsupported.
+        run: |
+          if grep -q -- '--running' /tmp/code-review-post.mjs; then
+            node /tmp/code-review-post.mjs --running
+          else
+            echo "the hub's post.mjs predates --running — skipping the placeholder"
+          fi
+
       - name: Report progress — reviewing
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
@@ -643,7 +842,19 @@ jobs:
         if: steps.rules.outputs.skip != 'true'
         # MODE / RUN_ID arrive via the generated workflow-level env; only the
         # secret is scoped to the step (doc-workflow security discipline).
+        # The reviewer calls Claude THROUGH THE HUB (/api/ci/claude, the
+        # unified caller), so the step carries the hub's workflow secret and
+        # the target repo needs no ANTHROPIC_API_KEY of its own.
+        #
+        # ANTHROPIC_API_KEY is still passed as a TRANSITION SHIM. The scripts
+        # are served by the deployed hub while this workflow file ships in the
+        # repo, so across a deploy boundary a NEW workflow runs OLD scripts —
+        # and the old ones call Anthropic directly. Withdrawing the key the
+        # same day the proxy landed would kill every review until the hub went
+        # live, including the review of the pull request that moved it. Drop
+        # this line once the fleet is on scripts that no longer read it.
         env:
+          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: /tmp/code-review-run.sh
 
