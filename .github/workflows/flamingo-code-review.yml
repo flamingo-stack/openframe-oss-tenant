@@ -265,6 +265,7 @@ jobs:
       proceed: ${{ steps.resolve.outputs.proceed }}
       pr_number: ${{ steps.resolve.outputs.pr_number }}
       head_sha: ${{ steps.resolve.outputs.head_sha }}
+      base_ref: ${{ steps.resolve.outputs.base_ref }}
       full: ${{ steps.resolve.outputs.full }}
     steps:
       - name: Resolve the pull request behind the comment
@@ -316,6 +317,13 @@ jobs:
           # remove. An empty HEAD_SHA falls into the refusal below instead.
           HEAD_SHA=$(printf '%s' "$PR_JSON" | jq -r '.head.sha // empty' 2>/dev/null || true)
           HEAD_REPO=$(printf '%s' "$PR_JSON" | jq -r '.head.repo.full_name // empty' 2>/dev/null || true)
+          # The BASE the review must diff against. An issue_comment carries no
+          # GITHUB_BASE_REF (that variable exists only on pull_request events),
+          # and the reviewer's remaining fallbacks all need origin/HEAD or an
+          # authenticated 'git remote show' — neither of which a runner has. So
+          # every commanded review died as 'pr_base_unresolvable' while the
+          # answer was sitting in the pull request payload we already fetched.
+          BASE_REF=$(printf '%s' "$PR_JSON" | jq -r '.base.ref // empty' 2>/dev/null || true)
           AUTHOR_TYPE=$(printf '%s' "$PR_JSON" | jq -r '.user.type // empty' 2>/dev/null || true)
 
           refuse() {
@@ -388,6 +396,7 @@ jobs:
           {
             echo "proceed=true"
             echo "head_sha=$HEAD_SHA"
+            echo "base_ref=$BASE_REF"
             echo "full=$FULL"
           } >> "$GITHUB_OUTPUT"
 
@@ -815,6 +824,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
+          WF_RUN_ID: ${{ github.run_id }}
         # Feature-DETECTED, not assumed: across a deploy boundary this workflow
         # can be handed a post.mjs that predates --running, which would ignore
         # the flag and run the full post pass with no findings.json — posting a
@@ -856,6 +866,7 @@ jobs:
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_BASE_REF: ${{ github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref }}
         run: /tmp/code-review-run.sh
 
       # Post the findings to the PULL REQUEST itself and publish the
@@ -886,28 +897,44 @@ jobs:
           DEGRADED: ${{ steps.review.outputs.degraded }}
           PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
+          WF_RUN_ID: ${{ github.run_id }}
         run: node /tmp/code-review-post.mjs
 
-      # A crashed Review step must still leave a trace ON THE PR: default
-      # step-skip semantics silently skip the post step on failure, so the
-      # developer saw no signal at all that a review was attempted — the
-      # failure lived only on the hub's internal dashboard. Best-effort (|| 
-      # true): a failed courtesy comment must not mask the real failure state.
-      - name: Post crash notice to the pull request
-        if: failure() && github.event_name == 'pull_request' && steps.review.outcome == 'failure'
+      # THE placeholder is never orphaned.
+      #
+      # "Say the review is running" posts a comment claiming a review is in
+      # flight; only "Post to the pull request" turns it into the verdict. Any
+      # path between the two — a crashed Review step, a concurrency
+      # cancellation, a runner that goes away — used to leave that comment
+      # saying "Running…" on the pull request forever, indistinguishable from a
+      # review that really is still going. (The previous version posted a
+      # SEPARATE crash comment and left the placeholder untouched, so a crash
+      # produced both a failure notice AND a permanent "Running…".)
+      #
+      # So: one step, always(), that resolves the placeholder in place
+      # whenever the post step did not succeed — failure and cancellation
+      # alike. It patches ONLY a comment still shaped like a placeholder, so a
+      # verdict already written is never overwritten. Best-effort (|| true): a
+      # failed courtesy annotation must not mask the real failure state.
+      - name: Resolve the running comment
+        if: always() && github.event_name == 'pull_request' && steps.rules.outputs.skip != 'true' && steps.post.outcome != 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
-          REPO_FULL: ${{ github.repository }}
           WF_RUN_ID: ${{ github.run_id }}
+          # job.status, not cancelled(): status functions are only valid in an
+          # an if: condition, never in env:. The cancellation case is the one that
+          # matters most — a concurrency supersede reports no step failure at
+          # all, which is the orphan source seen in production.
+          JOB_STATUS: ${{ job.status }}
         run: |
-          BODY="🦩 **Flamingo Code Review crashed on this push.** No findings were posted — this is an infrastructure failure, not a clean review. See the [workflow run](https://github.com/$REPO_FULL/actions/runs/$WF_RUN_ID)."
-          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
-          printf 'header = "Authorization: Bearer %s"\n' "$GITHUB_TOKEN" > "$CURL_CFG"
-          curl -s -K "$CURL_CFG" -X POST "https://api.github.com/repos/$REPO_FULL/issues/$PR_NUMBER/comments" \
-            -H "Content-Type: application/json" \
-            --data "$(printf '%s' "$BODY" | jq -Rs '{body: .}')" > /dev/null || true
-          rm -f "$CURL_CFG"
+          REASON=crashed
+          if [ "$JOB_STATUS" = "cancelled" ]; then REASON=cancelled; fi
+          if grep -q -- '--resolve' /tmp/code-review-post.mjs; then
+            node /tmp/code-review-post.mjs --resolve "$REASON" || true
+          else
+            echo "the hub's post.mjs predates --resolve — leaving the placeholder"
+          fi
 
       # The report script downloads FIRST (dedicated step above), so a missing
       # /tmp/code-review-report.sh here means the report-capability bootstrap
