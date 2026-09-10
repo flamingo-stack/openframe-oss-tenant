@@ -170,6 +170,9 @@ permissions:
   # writable scopes" — the corpus 304 path silently never worked. The path
   # is reachable only from a corpus-only fetch (see the cache step), so this
   # scope buys a rehearsal-lane saving and nothing on a production trigger.
+  # NECESSARY, NOT SUFFICIENT: an untrusted trigger (issue_comment) gets a
+  # read-only cache token whatever this block grants, which is why the save
+  # step below runs on workflow_dispatch only.
   actions: write
 
 jobs:
@@ -655,9 +658,17 @@ jobs:
       # spares no transfer on a production trigger. Kept for the rehearsal
       # lane; the reason is stated here so nobody expects a saving it never
       # made.
+      # RESTORE and SAVE are separate steps, not the combined actions/cache
+      # whose post-step saves at job end: since GitHub's 2026-06-26 change an
+      # UNTRUSTED trigger on the default-branch scope (issue_comment here —
+      # anyone who can comment can fire it) gets a READ-ONLY cache token, so
+      # that post-step ended every commanded review with "Failed to save …
+      # cache write denied: token has no writable scopes" (run 34519652342),
+      # a warning no permissions block can lift. The save is done only where
+      # it can succeed AND serves the one lane that reads it — see below.
       # v5 = the Node 24 drop-in (v4 targets EOL Node 20 and warns on every run).
       - name: Restore the last corpus hash
-        uses: actions/cache@v5
+        uses: actions/cache/restore@v5
         with:
           # BOTH files. Caching only the hash meant a 304 left rules.json
           # truncated to zero bytes while the run continued as if it had a
@@ -827,6 +838,23 @@ jobs:
           # Empty on every other trigger, which keeps them incremental.
           REVIEW_FULL: ${{ needs.resolve_command.outputs.full }}
         run: /tmp/code-review-fetch-rules.sh
+
+      # The save half of the corpus cache (see the restore step for why the
+      # two are split). workflow_dispatch ONLY: it is the sole trigger that is
+      # both trusted (keeps a read-write cache token on the default-branch
+      # scope) and served by the 304 path the cache exists for. A pull_request
+      # run could write, but into its own branch scope, which the rehearsal
+      # lane never reads. Guarded on the files existing so a fetch that
+      # skipped (corpus unavailable, review disabled) does not fail the job on
+      # a missing path.
+      - name: Save the corpus hash for the next rehearsal
+        if: github.event_name == 'workflow_dispatch' && hashFiles('.rules-hash', 'rules.json') != ''
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            .rules-hash
+            rules.json
+          key: flamingo-rules-hash-${{ github.repository }}-${{ github.run_id }}
 
       # Stage checkpoints are their OWN credentialed steps. The review step
       # holds the shared webhook secret — unavoidably, since the reviewer's
