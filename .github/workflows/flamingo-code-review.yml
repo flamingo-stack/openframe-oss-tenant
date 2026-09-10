@@ -134,7 +134,7 @@ on:
         required: false
         default: ''
       review_budget_chars:
-        description: 'Sweep corpus budget in characters for this run (review_config.sweep_budget_chars). Empty = UNCAPPED — the whole eligible corpus is reviewed in ~80K batches. The local twin defaults to 80000 instead; set the per-repo value to cap CI spend.'
+        description: 'Sweep corpus budget in characters for this run (review_config.sweep_budget_chars). Empty = UNCAPPED — the whole eligible corpus is reviewed in 80000-char batches. The local twin defaults to 80000 instead; set the per-repo value to cap CI spend.'
         required: false
         default: ''
     # ═══════════════════════════════════════════════════════════════════════════
@@ -153,13 +153,12 @@ env:
   HUB_BASE_URL: ${{ github.event.client_payload.hub_base_url || github.event.inputs.hub_base_url || vars.FLAMINGO_HUB_BASE_URL }}
   REVIEW_BUDGET_CHARS: ${{ github.event.client_payload.review_budget_chars || github.event.inputs.review_budget_chars || '' }}
 
-# Superseding a PR cancels the in-flight review of the stale head SHA; the
-# fresh run reviews (and reports on) the new one. The always() report step
-# still fires on the cancelled run, so its row records 'cancelled' rather
-# than dangling.
-concurrency:
-  group: flamingo-code-review-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
-  cancel-in-progress: true
+# Concurrency sits on the REVIEW JOB (below), not the workflow: a
+# workflow-level group is joined when the RUN is queued, before any job if:,
+# so a human replying to the "Running…" placeholder (issue_comment.created,
+# same PR number) or any label event cancelled the in-flight review and then
+# skipped every job — nothing re-reviewed. A skipped job never joins a
+# job-level group.
 
 permissions:
   contents: read
@@ -168,7 +167,9 @@ permissions:
   # Cache SAVE needs it. With an explicit permissions block every unlisted
   # scope is 'none', so actions/cache could restore but not reserve a key and
   # every run ended with "Failed to save: ... cache write denied: token has no
-  # writable scopes" — the corpus 304 path silently never worked.
+  # writable scopes" — the corpus 304 path silently never worked. The path
+  # is reachable only from a corpus-only fetch (see the cache step), so this
+  # scope buys a rehearsal-lane saving and nothing on a production trigger.
   actions: write
 
 jobs:
@@ -191,8 +192,7 @@ jobs:
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      ((github.event.action == 'labeled' &&
-        github.event.label.name == 'flamingo-review') ||
+      ((github.event.action == 'labeled' && github.event.label.name == 'flamingo-review') ||
        (github.event.action == 'synchronize' &&
         contains(github.event.pull_request.labels.*.name, 'flamingo-review')))
     runs-on: ubuntu-latest
@@ -207,10 +207,10 @@ jobs:
         # Best-effort: losing this race must never fail anything.
         run: |
           CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
           printf 'header = "Authorization: Bearer %s"\n' "$GITHUB_TOKEN" > "$CURL_CFG"
           curl -sS --max-time 30 -K "$CURL_CFG" -X DELETE \
-            "https://api.github.com/repos/$REPO_FULL/issues/$PR_NUMBER/labels/flamingo-review" > /dev/null || true
-          rm -f "$CURL_CFG"
+            "${GITHUB_API_URL:-https://api.github.com}/repos/$REPO_FULL/issues/$PR_NUMBER/labels/flamingo-review" > /dev/null || true
 
   # Resolves a COMMENT COMMAND into the pull-request context the review job
   # needs, and refuses the cases the job 'if' provably cannot judge.
@@ -286,8 +286,8 @@ jobs:
         run: |
           set -euo pipefail
           CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
-          printf 'header = "Authorization: Bearer %s"\n' "$GITHUB_TOKEN" > "$CURL_CFG"
           trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$GITHUB_TOKEN" > "$CURL_CFG"
 
           # 'proceed' is written ONCE, at the end, and only on success. Every
           # other exit — a refusal, or the script dying under set -e — leaves it
@@ -302,12 +302,12 @@ jobs:
           # thing a human does about that is ask again.
           curl -sS --max-time 30 -K "$CURL_CFG" -X POST \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/$REPO_FULL/issues/comments/$COMMENT_ID/reactions" \
+            "${GITHUB_API_URL:-https://api.github.com}/repos/$REPO_FULL/issues/comments/$COMMENT_ID/reactions" \
             -d '{"content":"eyes"}' > /dev/null || true
 
           PR_JSON=$(curl -sS --max-time 30 -K "$CURL_CFG" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/$REPO_FULL/pulls/$PR_NUMBER") || PR_JSON=""
+            "${GITHUB_API_URL:-https://api.github.com}/repos/$REPO_FULL/pulls/$PR_NUMBER") || PR_JSON=""
 
           # Each read tolerates a body that is not JSON at all (an HTML error
           # page from a proxy, a truncated response). Without the '|| true' set
@@ -332,7 +332,7 @@ jobs:
             printf '%s' "$1" | jq -Rs '{body: .}' | \
               curl -sS --max-time 30 -K "$CURL_CFG" -X POST \
                 -H "Accept: application/vnd.github+json" \
-                "https://api.github.com/repos/$REPO_FULL/issues/$PR_NUMBER/comments" \
+                "${GITHUB_API_URL:-https://api.github.com}/repos/$REPO_FULL/issues/$PR_NUMBER/comments" \
                 -d @- > /dev/null || true
             exit 0
           }
@@ -389,7 +389,7 @@ jobs:
               | jq -Rs '{body: .}' \
               | curl -sS --max-time 30 -K "$CURL_CFG" -X PATCH \
                   -H "Accept: application/vnd.github+json" \
-                  "https://api.github.com/repos/$REPO_FULL/issues/comments/$COMMENT_ID" \
+                  "${GITHUB_API_URL:-https://api.github.com}/repos/$REPO_FULL/issues/comments/$COMMENT_ID" \
                   -d @- > /dev/null || true
           fi
 
@@ -401,6 +401,13 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   review:
+    # Superseding a PR cancels the in-flight review of the stale head SHA; the
+    # fresh run reviews (and reports on) the new one. The always() report step
+    # still fires on the cancelled job, so its row records 'cancelled' rather
+    # than dangling. Job-level on purpose — see the note above permissions.
+    concurrency:
+      group: flamingo-code-review-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+      cancel-in-progress: true
     # Skip actual work when triggered by push (push only registers the
     # workflow with GitHub, which is what lets workflow_dispatch target a
     # setup branch before the install PR merges).
@@ -438,8 +445,7 @@ jobs:
        github.event_name == 'workflow_dispatch' ||
        (github.event.pull_request.user.type != 'Bot' &&
         github.event.pull_request.head.repo.full_name == github.repository &&
-        ((github.event.action == 'labeled' &&
-          github.event.label.name == 'flamingo-review') ||
+        ((github.event.action == 'labeled' && github.event.label.name == 'flamingo-review') ||
          (github.event.action == 'synchronize' &&
           (contains(github.event.pull_request.labels.*.name, 'flamingo-review') ||
            (github.event.pull_request.draft == false &&
@@ -481,6 +487,11 @@ jobs:
           set -euo pipefail
 
           SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # WEBHOOK_SECRET reaches curl through a 0600 config file, never argv — see
+          # curlAuthPreamble, which always traps the removal.
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
           # The canonical scripts surface and the pre-rename one. load_script_manifest
           # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
@@ -490,7 +501,7 @@ jobs:
           _try_manifest() {
             local base="$1" code
             code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
-              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              -K "$CURL_CFG" \
               "$base/manifest.json") || code="000"
 
             if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
@@ -568,7 +579,7 @@ jobs:
             fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
-              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              -K "$CURL_CFG" \
               -o "$output_path"
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
@@ -637,8 +648,13 @@ jobs:
           persist-credentials: false
 
       # The corpus hash has to SURVIVE between runs, or the hash param is empty
-      # and the 304 path the hub implements is unreachable — the corpus would be
-      # transferred in full on every run in both modes.
+      # and the hub's 304 path is unreachable. That path serves ONLY a
+      # corpus-only fetch (a workflow_dispatch rehearsal with no PR number):
+      # the pr, sweep and mine fetches each carry a per-request rider, which a
+      # 304 cannot, so the hub answers them in full by design and this cache
+      # spares no transfer on a production trigger. Kept for the rehearsal
+      # lane; the reason is stated here so nobody expects a saving it never
+      # made.
       # v5 = the Node 24 drop-in (v4 targets EOL Node 20 and warns on every run).
       - name: Restore the last corpus hash
         uses: actions/cache@v5
@@ -668,6 +684,11 @@ jobs:
           set -euo pipefail
 
           SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # WEBHOOK_SECRET reaches curl through a 0600 config file, never argv — see
+          # curlAuthPreamble, which always traps the removal.
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
           # The canonical scripts surface and the pre-rename one. load_script_manifest
           # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
@@ -677,7 +698,7 @@ jobs:
           _try_manifest() {
             local base="$1" code
             code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
-              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              -K "$CURL_CFG" \
               "$base/manifest.json") || code="000"
 
             if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
@@ -755,7 +776,7 @@ jobs:
             fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
-              -H "Authorization: Bearer $WEBHOOK_SECRET" \
+              -K "$CURL_CFG" \
               -o "$output_path"
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
@@ -807,9 +828,12 @@ jobs:
           REVIEW_FULL: ${{ needs.resolve_command.outputs.full }}
         run: /tmp/code-review-fetch-rules.sh
 
-      # Stage checkpoints are their OWN credentialed steps — the review step
-      # deliberately never holds the webhook secret or run token (it processes
-      # untrusted PR content), so pings happen at step boundaries, not inside.
+      # Stage checkpoints are their OWN credentialed steps. The review step
+      # holds the shared webhook secret — unavoidably, since the reviewer's
+      # Claude calls go through the hub's secret-gated proxy rather than
+      # straight to Anthropic — but NOT the run token, which is the credential
+      # that can close out a run row. So a checkpoint ping happens at a step
+      # boundary, not inside the step that reads untrusted PR content.
       # Say so ON THE PULL REQUEST before spending minutes in the model. Placed
       # AFTER the rules step on purpose: the skip decision is known here, so a run that
       # reviews nothing never leaves a placeholder to strand. The comment
@@ -819,7 +843,7 @@ jobs:
       # review sits at the BOTTOM of the timeline instead of scrolling away
       # under later discussion. Best-effort: never fails the review.
       - name: Say the review is running
-        if: steps.rules.outputs.skip != 'true'
+        if: (github.event_name == 'pull_request' || needs.resolve_command.outputs.pr_number != '') && steps.rules.outputs.skip != 'true'
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -830,10 +854,33 @@ jobs:
         # the flag and run the full post pass with no findings.json — posting a
         # bogus verdict mid-review. Grep first; skip quietly if unsupported.
         run: |
-          if grep -q -- '--running' /tmp/code-review-post.mjs; then
+          if grep -aq -- "argv.includes('--running')" /tmp/code-review-post.mjs; then
             node /tmp/code-review-post.mjs --running
           else
             echo "the hub's post.mjs predates --running — skipping the placeholder"
+          fi
+
+      # An INFRASTRUCTURE skip owes the pull request a word; an opt-out does
+      # not. Every PR-facing step above and below is gated on
+      # steps.rules.outputs.skip != 'true', so when the hub's rule endpoint is
+      # down the pull request got a green completed run and NO comment at all —
+      # indistinguishable from a reviewer that never triggered, which is the
+      # exact state the placeholder machinery exists to eliminate.
+      # Gated on the STABLE skip_kind token, not on 'degraded' (which carries
+      # the HTTP code and would need copy per code). review_disabled never
+      # reaches here: silence is the right answer to opting out.
+      - name: Say the corpus could not be fetched
+        if: (github.event_name == 'pull_request' || needs.resolve_command.outputs.pr_number != '') && steps.rules.outputs.skip_kind == 'corpus_unavailable'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
+          WF_RUN_ID: ${{ github.run_id }}
+        run: |
+          if grep -aq -- "argv.includes('--resolve')" /tmp/code-review-post.mjs; then
+            node /tmp/code-review-post.mjs --resolve corpus_unavailable || true
+          else
+            echo "the hub's post.mjs predates --resolve — the pull request gets no notice"
           fi
 
       - name: Report progress — reviewing
@@ -856,17 +903,28 @@ jobs:
         # unified caller), so the step carries the hub's workflow secret and
         # the target repo needs no ANTHROPIC_API_KEY of its own.
         #
-        # ANTHROPIC_API_KEY is still passed as a TRANSITION SHIM. The scripts
-        # are served by the deployed hub while this workflow file ships in the
-        # repo, so across a deploy boundary a NEW workflow runs OLD scripts —
-        # and the old ones call Anthropic directly. Withdrawing the key the
-        # same day the proxy landed would kill every review until the hub went
-        # live, including the review of the pull request that moved it. Drop
-        # this line once the fleet is on scripts that no longer read it.
+        # ANTHROPIC_API_KEY is NOT passed, and must not come back. It was a
+        # transition shim for the deploy boundary — the scripts come from the
+        # hub while this file ships in the repo, so a NEW workflow could run an
+        # OLD script that still called Anthropic directly. That window is shut:
+        # no shipped code-review script reads the variable — on main as well
+        # as on this branch, which is what matters for the hub's OWN pull
+        # requests, whose workflow runs from the PR head against scripts main
+        # serves. A build gate asserts the two halves stay in agreement, so the key
+        # cannot drift back into the one step that runs node over untrusted
+        # pull-request content.
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           REVIEW_BASE_REF: ${{ github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref }}
+          # The RUN STAMP. The reviewer and the miner write .review-run-id from
+          # this value and the report step discards every artifact not stamped
+          # with ITS run id — so this step MUST carry it. It did not, for one
+          # commit in this branch's history: the stamp would have been written
+          # empty on every CI run, the report step would have deleted the run's
+          # own findings, and every review, sweep and mine would have reported
+          # zero findings under a green status while the pull request showed
+          # them. A build gate now asserts the writer's step has it.
+          WF_RUN_ID: ${{ github.run_id }}
         run: /tmp/code-review-run.sh
 
       # Post the findings to the PULL REQUEST itself and publish the
@@ -891,7 +949,7 @@ jobs:
 
       - name: Post to the pull request
         id: post
-        if: github.event_name == 'pull_request' && steps.rules.outputs.skip != 'true'
+        if: (github.event_name == 'pull_request' || needs.resolve_command.outputs.pr_number != '') && steps.rules.outputs.skip != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEGRADED: ${{ steps.review.outputs.degraded }}
@@ -900,40 +958,52 @@ jobs:
           WF_RUN_ID: ${{ github.run_id }}
         run: node /tmp/code-review-post.mjs
 
-      # THE placeholder is never orphaned.
+      # TWO steps, one per outcome, because the reason has to be EXACT and a
+      # status function (cancelled()) is only valid in an if: condition, never
+      # in an env: block where it would be read as a literal. Reading
+      # job.status from env instead was close but not guaranteed to say
+      # 'cancelled' during a concurrency supersede — and getting it wrong means
+      # telling the author a superseded run CRASHED. Cancellation is the case
+      # that matters most: it reports no step failure at all, which is the
+      # orphan source seen in production.
       #
-      # "Say the review is running" posts a comment claiming a review is in
-      # flight; only "Post to the pull request" turns it into the verdict. Any
-      # path between the two — a crashed Review step, a concurrency
-      # cancellation, a runner that goes away — used to leave that comment
-      # saying "Running…" on the pull request forever, indistinguishable from a
-      # review that really is still going. (The previous version posted a
-      # SEPARATE crash comment and left the placeholder untouched, so a crash
-      # produced both a failure notice AND a permanent "Running…".)
-      #
-      # So: one step, always(), that resolves the placeholder in place
-      # whenever the post step did not succeed — failure and cancellation
-      # alike. It patches ONLY a comment still shaped like a placeholder, so a
-      # verdict already written is never overwritten. Best-effort (|| true): a
-      # failed courtesy annotation must not mask the real failure state.
-      - name: Resolve the running comment
-        if: always() && github.event_name == 'pull_request' && steps.rules.outputs.skip != 'true' && steps.post.outcome != 'success'
+      # ONE renderer, so the outcome is rendered from ONE value per step: the
+      # fallback branch reports $OUTCOME while the flag carries its own copy,
+      # and two hand-kept spellings would eventually name different outcomes in
+      # the same comment.
+      - name: Close out the running comment (cancelled)
+        if: cancelled() && (github.event_name == 'pull_request' || needs.resolve_command.outputs.pr_number != '') && steps.rules.outputs.skip != 'true' && steps.post.outcome != 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
           WF_RUN_ID: ${{ github.run_id }}
-          # job.status, not cancelled(): status functions are only valid in an
-          # an if: condition, never in env:. The cancellation case is the one that
-          # matters most — a concurrency supersede reports no step failure at
-          # all, which is the orphan source seen in production.
-          JOB_STATUS: ${{ job.status }}
         run: |
-          REASON=crashed
-          if [ "$JOB_STATUS" = "cancelled" ]; then REASON=cancelled; fi
-          if grep -q -- '--resolve' /tmp/code-review-post.mjs; then
-            node /tmp/code-review-post.mjs --resolve "$REASON" || true
+          if grep -aq -- "argv.includes('--resolve')" /tmp/code-review-post.mjs; then
+            node /tmp/code-review-post.mjs --resolve cancelled || true
           else
-            echo "the hub's post.mjs predates --resolve — leaving the placeholder"
+            echo "the hub's post.mjs predates --resolve — leaving it to the run that superseded this one"
+          fi
+
+      - name: Close out the running comment (crashed)
+        if: failure() && (github.event_name == 'pull_request' || needs.resolve_command.outputs.pr_number != '') && steps.rules.outputs.skip != 'true' && steps.post.outcome != 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
+          WF_RUN_ID: ${{ github.run_id }}
+          REPO_FULL: ${{ github.repository }}
+          OUTCOME: crashed
+        run: |
+          if grep -aq -- "argv.includes('--resolve')" /tmp/code-review-post.mjs; then
+            node /tmp/code-review-post.mjs --resolve crashed || true
+          else
+            echo "the hub's post.mjs predates --resolve — posting a standalone notice instead"
+            BODY=$(printf '%s\n%s\n%s\n\n%s' '<!-- flamingo-code-review -->' '<!-- flamingo-code-review no-verdict -->' '## 🦩 Flamingo Code Review' "**Did not finish on this push** ($OUTCOME). No findings were posted: this is an infrastructure state, not a clean review. See the [workflow run](${GITHUB_SERVER_URL:-https://github.com}/$REPO_FULL/actions/runs/$WF_RUN_ID).")
+            CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+            trap 'rm -f "$CURL_CFG"' EXIT
+            printf 'header = "Authorization: Bearer %s"\n' "$GITHUB_TOKEN" > "$CURL_CFG"
+            curl -s -K "$CURL_CFG" -X POST "${GITHUB_API_URL:-https://api.github.com}/repos/$REPO_FULL/issues/$PR_NUMBER/comments" \
+              -H "Content-Type: application/json" \
+              --data "$(printf '%s' "$BODY" | jq -Rs '{body: .}')" > /dev/null || true
           fi
 
       # The report script downloads FIRST (dedicated step above), so a missing
@@ -969,10 +1039,10 @@ jobs:
         run: |
           if [ ! -x /tmp/code-review-report.sh ]; then
             echo "::error::code-review-report.sh missing — sending bootstrap-failure callback"
-            # Secrets NEVER ride argv (ps-visible): the bearer goes through a
-            # 0600 curl config file and RUN_TOKEN through jq's env — the same
-            # transport rule the report script itself follows.
+            # RUN_TOKEN rides jq's env for the same reason the bearer rides a
+            # curl config file — see curlAuthPreamble.
             CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+            trap 'rm -f "$CURL_CFG"' EXIT
             printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
             jq -n --arg run_id "${RUN_ID:-}" \
               --arg wf "$WF_RUN_ID" --arg repo "$REPO_FULL" --arg mode "$MODE" \
@@ -982,7 +1052,6 @@ jobs:
                 error_message: "Script bootstrap failed: the report script never downloaded from the hub."}' |
               curl -sS --max-time 30 -K "$CURL_CFG" -X POST "$HUB_BASE_URL/api/code-review/webhook" \
                 -H "Content-Type: application/json" -d @- || true
-            rm -f "$CURL_CFG"
             exit 1
           fi
           /tmp/code-review-report.sh
