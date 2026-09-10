@@ -866,7 +866,7 @@ jobs:
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GITHUB_BASE_REF: ${{ github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref }}
+          REVIEW_BASE_REF: ${{ github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref }}
         run: /tmp/code-review-run.sh
 
       # Post the findings to the PULL REQUEST itself and publish the
