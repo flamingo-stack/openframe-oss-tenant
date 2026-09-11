@@ -107,7 +107,7 @@ oauth:
   client:
     default:
       id: openframe_web_dashboard
-      secret: prod_secret
+      secret: ${OAUTH_CLIENT_DEFAULT_SECRET:changeme}
 
 fleet:
   api:
@@ -122,3 +122,4 @@ storage:
   s3:
     disabled: false
     bucket: local-dev-bucket
+
