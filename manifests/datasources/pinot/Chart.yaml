@@ -8,4 +8,6 @@ appVersion: "0.0.1"
 dependencies:
   - name: pinot
     version: "~0.3.5"
-    repository: https://raw.githubusercontent.com/apache/pinot/master/helm
+    repository: https://raw.githubusercontent.com/apache/pinot/release-0.3.5/helm
+
+CURRENT>>>
