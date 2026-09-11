@@ -36,7 +36,8 @@ spec:
             - |
               VERSION={{ .Values.metrics.jmx.version }}
               wget -O /jmx/jmx_prometheus_javaagent.jar \
-                https://github.com/prometheus/jmx_exporter/releases/download/${VERSION}/jmx_prometheus_javaagent-${VERSION}.jar \
+                {{ .Values.metrics.jmx.jarMirror.baseUrl }}/jmx_prometheus_javaagent-${VERSION}.jar \
+              && echo "{{ .Values.metrics.jmx.jarMirror.sha256 }}  /jmx/jmx_prometheus_javaagent.jar" | sha256sum -c - \
               && cp /jmx-config/config.yaml /jmx/config.yaml
           volumeMounts:
             - name: jmx-exporter
@@ -109,3 +110,4 @@ spec:
           configMap:
             name: debezium-connect-jmx
         {{- end }}
+
