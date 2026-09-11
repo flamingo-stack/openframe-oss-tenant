@@ -8,4 +8,5 @@ appVersion: "0.0.1"
 dependencies:
   - name: nats
     version: "~2.12.2"
-    repository: https://nats-io.github.io/k8s/helm/charts/
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts
+
