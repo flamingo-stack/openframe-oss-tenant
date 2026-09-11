@@ -50,9 +50,11 @@ spring:
       httpclient:
         connect-timeout: 3000
         # NOTE: gateway closes SSE connections at response-timeout (default 30s). This was
-        # previously raised to 5m to keep SSE streams open, but is intentionally set to 20s.
+        # previously raised to 5m to keep SSE streams open. Restored to 5m here because a
+        # blanket short timeout would prematurely terminate long-lived SSE streams (e.g. AI
+        # chat streaming, OPENFRAM-007-8/020).
         # TODO: find better solution how to handle it. It should be possible to configure for only SSE routings.
-        response-timeout: 20s
+        response-timeout: 5m
         ssl:
           useInsecureTrustManager: true
         websocket:

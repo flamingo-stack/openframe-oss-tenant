@@ -30,7 +30,7 @@ data:
         users: [
           {
             user: $DEVICE_USER,
-            password: "",
+            password: $DEVICE_PASS,
             permissions: {
               publish: {
                 allow: [
@@ -93,3 +93,4 @@ data:
     }
 
     system_account: SYS
+
