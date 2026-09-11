@@ -41,15 +41,15 @@ spring:
       enabled: true
       bindings:
         machineConnectedConsumer-in-0:
-          destination: $SYS.ACCOUNT.DEVICES.CONNECT
+          destination: ${openframe.oss-tenant.kafka.topics.inbound.machine-connected.name}
           group: client-service-machine-connected
           content-type: application/json
         machineDisconnectionConsumer-in-0:
-          destination: $SYS.ACCOUNT.DEVICES.DISCONNECT
+          destination: ${openframe.oss-tenant.kafka.topics.inbound.machine-disconnected.name}
           group: client-service-machine-disconnected
           content-type: application/json
         toolConnectionConsumer-in-0:
-          destination: machine.*.tool-connection
+          destination: ${openframe.oss-tenant.kafka.topics.inbound.tool-connection.name}
           group: client-service-machine-tool-connection
           content-type: application/json
       binders:
@@ -129,6 +129,13 @@ openframe:
   oss-tenant:
     kafka:
       topics:
+        inbound:
+          machine-connected:
+            name: $SYS.ACCOUNT.DEVICES.CONNECT
+          machine-disconnected:
+            name: $SYS.ACCOUNT.DEVICES.DISCONNECT
+          tool-connection:
+            name: machine.*.tool-connection
         outbound:
           devices-topic: devices-topic
           logs-events: logs.events
