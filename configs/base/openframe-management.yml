@@ -46,12 +46,13 @@ openframe:
     kafka:
       topics:
         outbound:
-          devices-topic: devices-topic
+          devices-topic:
+            name: devices-topic
 
   gateway:
     oauth:
       client-id: ${OPENFRAME_AUTH_CLIENT_ID:openframe-gateway}
-      client-secret: ${OPENFRAME_AUTH_SECRET:openframe-gateway-secret}
+      client-secret: ${OPENFRAME_AUTH_SECRET:}
       redirect-uri: ${TENANT_HOST_URL:https://localhost}/oauth/callback
 
   debezium:
@@ -85,9 +86,9 @@ security:
 
 nats:
   spring:
-    server: nats://nats.datasources.svc.cluster.local:4222
-    username: service
-    password: service_pass
+    server: ${NATS_SERVER:nats://nats.datasources.svc.cluster.local:4222}
+    username: ${NATS_USERNAME:service}
+    password: ${NATS_PASSWORD:}
     connection-timeout: 30s
     max-reconnect: 10
     reconnect-wait: 5s
