@@ -25,14 +25,24 @@
 name: 🦩 Flamingo Code Documentation
 
 on:
-  # Push trigger - registers workflow with GitHub Actions (required for workflow_dispatch API)
-  # Only triggers when the workflow file itself is modified (runs once on initial setup)
+  # Push trigger — two things ride it. It registers the workflow with GitHub
+  # Actions (required for the workflow_dispatch API), and on the repository's
+  # DEFAULT branch it runs the `code-graph` job below, which re-indexes the
+  # code graph the hub serves to the code reviewer and to the documentation
+  # stages. The documentation pipeline itself NEVER runs on push (see its
+  # `if:`). Documentation and markdown are ignored on purpose: a docs PR
+  # merging must not rebuild a graph that only source files can change.
   push:
-    paths:
-      - '.github/workflows/doc-orchestrator.yml'
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
 
   repository_dispatch:
-    types: [doc-orchestrator]
+    # `doc-orchestrator` runs the documentation pipeline. `flamingo-code-graph`
+    # (CODE_GRAPH_DISPATCH_EVENT_TYPE in lib/config/code-graph-workflow.ts)
+    # runs ONLY the graph job — the hub's reconcile job sends it when a repo's
+    # graph is missing or stale.
+    types: [doc-orchestrator, flamingo-code-graph]
 
   workflow_dispatch:
     # ═══════════════════════════════════════════════════════════════════════════
@@ -93,6 +103,10 @@ on:
         description: 'Total number of pipeline stages'
         required: false
         default: '4'
+      graph_only:
+        description: 'true = run only the code-graph job (no documentation run)'
+        required: false
+        default: 'false'
     # ═══════════════════════════════════════════════════════════════════════════
     # END GENERATED SECTION
     # ═══════════════════════════════════════════════════════════════════════════
@@ -103,7 +117,12 @@ env:
   # Run configuration (non-sensitive)
   RUN_ID: ${{ github.event.client_payload.run_id || github.event.inputs.run_id || github.run_id }}
   REPO_ID: ${{ github.event.client_payload.repo_id || github.event.inputs.repo_id || '' }}
-  HUB_BASE_URL: ${{ github.event.client_payload.hub_base_url || github.event.inputs.hub_base_url || '' }}
+  # A push event carries no payload, so the graph job falls back to the org
+  # Actions variable — the same fallback the code-review workflow uses.
+  HUB_BASE_URL: ${{ github.event.client_payload.hub_base_url || github.event.inputs.hub_base_url || vars.FLAMINGO_HUB_BASE_URL || '' }}
+  # 'true' = run only the code-graph job (a manual workflow_dispatch; the hub's
+  # own documentation dispatches always send 'false').
+  GRAPH_ONLY: ${{ github.event.client_payload.graph_only || github.event.inputs.graph_only || 'false' }}
   # No literal fallback: the four-stage list lives in DOC_ORCHESTRATOR_STAGES on the
   # hub and is lifted into the payload per repo. A literal here would silently
   # restore all four stages on a payload gap — and Clean Slate would still have
@@ -169,26 +188,50 @@ env:
   GITHUB_SERVER_URL: ${{ github.server_url }}              # e.g., "https://github.com"
   # Analysis Exclusions - Complete array of glob patterns to exclude from repository analysis
   # Prevents analyzing orchestrator frontend, build artifacts, dependencies, generated docs
-  EXCLUDED_PATHS: '**/node_modules/**,**/multi-platform-hub/**,**/deps-*/**,**/target/**,**/dist/**,**/build/**,**/.next/**'
+  EXCLUDED_PATHS: '**/node_modules/**,**/.git/**,**/target/**,**/dist/**,**/build/**,**/.next/**,**/out/**,**/coverage/**,**/vendor/**,**/.yalc/**,**/.turbo/**,**/.gradle/**,**/__pycache__/**,**/.terraform/**,**/.venv/**,**/venv/**,**/multi-platform-hub/**,**/deps-*/**'
   README_LOGO_ALT: 'OpenFrame Logo'
 
 jobs:
-  doc-pipeline:
+  # ===========================================================================
+  # CODE GRAPH — deterministic, no model call. Tags every public symbol,
+  # import and manifest of the checkout (code-graph-build.mjs) and uploads the
+  # result to the hub, which promotes a default-branch snapshot to `live` and
+  # serves it to the code reviewer (consumers of a symbol a PR removes) and to
+  # the documentation stages (the derived ecosystem.md). Runs on every push to
+  # the default branch, on the hub's `flamingo-code-graph` re-dispatch, and on
+  # a manual workflow_dispatch with graph_only=true. There is no webhook
+  # callback: the upload IS the report. The same build also runs as stage 0 of
+  # a full documentation run (inside doc-pipeline, below).
+  # ===========================================================================
+  code-graph:
     runs-on: ubuntu-latest
-    timeout-minutes: 720  # 12 hours for large repositories with many files
-    # Skip actual work when triggered by push (push trigger only registers workflow with GitHub)
-    # This allows workflow_dispatch API calls to work on feature branches
-    if: github.event_name != 'push'
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    concurrency:
+      group: flamingo-code-graph-${{ github.repository }}
+      cancel-in-progress: true
+    if: >-
+      (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+      || github.event.action == 'flamingo-code-graph'
+      || (github.event_name == 'workflow_dispatch' && github.event.inputs.graph_only == 'true')
 
     steps:
-      # =========================================================================
-      # REPORT CAPABILITY FIRST (shared failure-net standard with the code-review
-      # workflow): workflow-helpers.sh — which carries send_webhook and the
-      # report/stage-callback helpers — downloads in its OWN step before anything
-      # else, so a failure in the main script download below can still be pinged
-      # and reported home instead of leaving a phantom pending/running row.
-      # =========================================================================
-      - name: Download Report Helpers
+      # Fail LOUD, not silent: a push on a repo whose org never set
+      # FLAMINGO_HUB_BASE_URL would otherwise curl an empty origin and die with
+      # an unrelated error. Also normalizes a trailing slash ONCE.
+      - name: Validate configuration
+        run: |
+          if [ -z "$HUB_BASE_URL" ]; then
+            echo "::error::HUB_BASE_URL is empty — set the org Actions variable FLAMINGO_HUB_BASE_URL (or pass hub_base_url in the dispatch payload)."
+            exit 1
+          fi
+          echo "HUB_BASE_URL=${HUB_BASE_URL%/}" >> "$GITHUB_ENV"
+
+      # The shared script bootstrap (byte-mirrored from workflow-scripts-bootstrap.ts,
+      # asserted by the build gate). BOTH graph scripts are downloaded: the builder
+      # imports ./code-graph-lib.mjs from its own directory.
+      - name: Download graph scripts
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
         run: |
@@ -206,11 +249,12 @@ jobs:
           LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          # The manifest is asked for ONE group: its keys are the files to download.
           _try_manifest() {
             local base="$1" code
             code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
               -K "$CURL_CFG" \
-              "$base/manifest.json") || code="000"
+              "$base/manifest.json?group=$SCRIPT_GROUP") || code="000"
 
             if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
             if [ "$code" != "200" ]; then
@@ -231,7 +275,9 @@ jobs:
             return 0
           }
 
+          # load_script_manifest <group>
           load_script_manifest() {
+            SCRIPT_GROUP="$1"
             # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
             # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
             # workflow file ships in the repo and the routes ship with the deployment,
@@ -264,26 +310,36 @@ jobs:
             if [ "$rc" = "2" ]; then exit 1; fi
 
             # Neither surface published a manifest: a hub older than the manifest
-            # itself. Downloads proceed UNVERIFIED and say so on every file. Any
-            # OTHER failure above already exited — only a genuine "no such endpoint"
-            # reaches here, so a hijacked or failing request can never land in this
-            # branch and silently disable verification.
-            echo "::warning::no manifest endpoint on this hub — it predates the manifest; downloads run UNVERIFIED until the hub is redeployed"
-            rm -f "$SCRIPT_MANIFEST"
+            # itself. The manifest is the file list, so there is nothing to download.
+            echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
+            exit 1
+          }
+
+          # download_script_group <group> — the hub names the files, this workflow
+          # names only the group. Downloads every script of the group, in served order.
+          download_script_group() {
+            load_script_manifest "$1"
+            local name
+            # The loop runs in THIS shell (no pipe), so a failed download exits the step.
+            while IFS= read -r name; do
+              download_and_verify "$name"
+            done < <(jq -r 'keys_unsorted[]' "$SCRIPT_MANIFEST")
           }
 
           download_and_verify() {
             local script_name="$1"
             local output_path="/tmp/$script_name"
 
-            local expected_hash=""
-            if [ -f "$SCRIPT_MANIFEST" ]; then
-              expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
-              if [ -z "$expected_hash" ]; then
-                echo "❌ $script_name is not in the server's script manifest!"
-                echo "   The hub serves no such script, or it failed to read on the server."
-                exit 1
-              fi
+            local expected_hash
+            expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+            if [ -z "$expected_hash" ]; then
+              echo "❌ $script_name is not in the server's script manifest!"
+              echo "   The hub serves no such script, or it failed to read on the server."
+              exit 1
+            fi
+            if ! printf '%s' "$expected_hash" | grep -Eq '^[0-9a-f]{64}$'; then
+              echo "❌ the manifest entry for $script_name is not a SHA-256 digest — refusing to run it."
+              exit 1
             fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
@@ -292,9 +348,7 @@ jobs:
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
 
-            if [ -z "$expected_hash" ]; then
-              echo "::warning::$script_name downloaded UNVERIFIED (no manifest; hash: ${actual_hash:0:16}...)"
-            elif [ "$actual_hash" != "$expected_hash" ]; then
+            if [ "$actual_hash" != "$expected_hash" ]; then
               echo "❌ HASH MISMATCH for $script_name!"
               echo "   Expected: $expected_hash"
               echo "   Actual:   $actual_hash"
@@ -307,14 +361,190 @@ jobs:
               chmod +x "$output_path"
             fi
 
-            if [ -n "$expected_hash" ]; then
-              echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
-            fi
+            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
           }
 
-          # Digests come from the deployment serving the bytes, not from this file.
-          load_script_manifest
-          download_and_verify "workflow-helpers.sh"
+          # Digests AND the file list come from the deployment serving the bytes,
+          # not from this file: the step names a group (SCRIPT_GROUPS in the hub's
+          # lib/config/ci-script-catalog.ts) and downloads what the hub lists for it.
+          download_script_group "code-graph"
+
+      - name: Checkout Repository (graph)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node.js (graph)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The command is CODE_GRAPH_INSTALL_COMMAND (lib/config/code-graph-workflow.ts),
+      # the one spelling both workflows use: pinned wasm tree-sitter + grammars +
+      # yaml into an isolated tree under RUNNER_TEMP, exported as CODE_GRAPH_DEPS_DIR.
+      - name: Install graph dependencies
+        run: mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund && echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV" || { echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; }
+
+      - name: Build and upload the code graph
+        id: graph
+        env:
+          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          CODE_GRAPH_DEPS_DIR: ${{ env.CODE_GRAPH_DEPS_DIR }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node /tmp/code-graph-build.mjs
+
+  doc-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 720  # 12 hours for large repositories with many files
+    # Never on push (a push registers the workflow and runs the code-graph job
+    # only), never on the graph-only re-dispatch, never on a graph-only manual
+    # run. This is what lets workflow_dispatch API calls work on feature branches.
+    if: github.event_name != 'push' && github.event.action != 'flamingo-code-graph' && github.event.inputs.graph_only != 'true'
+
+    steps:
+      # =========================================================================
+      # REPORT CAPABILITY FIRST (shared failure-net standard with the code-review
+      # workflow): workflow-helpers.sh — which carries send_webhook and the
+      # report/stage-callback helpers — downloads in its OWN step before anything
+      # else, so a failure in the main script download below can still be pinged
+      # and reported home instead of leaving a phantom pending/running row.
+      # =========================================================================
+      - name: Download Report Helpers
+        env:
+          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+        run: |
+
+          # Function to download and verify script
+          SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # WEBHOOK_SECRET reaches curl through a 0600 config file, never argv — see
+          # curlAuthPreamble, which always traps the removal.
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
+          # The canonical scripts surface and the pre-rename one. load_script_manifest
+          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
+          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
+
+          # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          # The manifest is asked for ONE group: its keys are the files to download.
+          _try_manifest() {
+            local base="$1" code
+            code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
+              -K "$CURL_CFG" \
+              "$base/manifest.json?group=$SCRIPT_GROUP") || code="000"
+
+            if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
+            if [ "$code" != "200" ]; then
+              echo "❌ manifest request to $base failed (HTTP $code)"
+              rm -f "$SCRIPT_MANIFEST"
+              return 2
+            fi
+            # The digests are the TOP-LEVEL object. successResponse is the standard
+            # emitter but it does NOT add a wrapper — it is NextResponse.json(data)
+            # plus the no-store header — so there is no .data to reach through.
+            # A 200 that is not a manifest is how a hub which does not serve this path
+            # answers (the proxy rewrites unknown routes and returns HTML), so it
+            # means "wrong surface", not "corrupt".
+            if ! jq -e 'type == "object" and length > 0 and (to_entries | all(.value | type == "string"))' "$SCRIPT_MANIFEST" >/dev/null 2>&1; then
+              rm -f "$SCRIPT_MANIFEST"
+              return 1
+            fi
+            return 0
+          }
+
+          # load_script_manifest <group>
+          load_script_manifest() {
+            SCRIPT_GROUP="$1"
+            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
+            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
+            # workflow file ships in the repo and the routes ship with the deployment,
+            # so the two are one version apart in BOTH directions across the rollout.
+            # Probe the canonical surface, fall back to the legacy one, and let the
+            # winner decide SCRIPTS_BASE_URL for every download that follows.
+            # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
+            # errexit fires before rc is read and the step ends with NO output. And
+            # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
+            # the NEGATION (0), so every failure reads as success. "|| rc=$?" is the
+            # one form that both suppresses errexit and preserves the real code.
+            local rc=0
+            _try_manifest "$CI_SCRIPTS_URL" || rc=$?
+            if [ "$rc" = "0" ]; then
+              SCRIPTS_BASE_URL="$CI_SCRIPTS_URL"
+              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
+              return 0
+            fi
+            if [ "$rc" = "2" ]; then exit 1; fi
+
+            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
+            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
+
+            rc=0
+            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
+            if [ "$rc" = "0" ]; then
+              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
+              return 0
+            fi
+            if [ "$rc" = "2" ]; then exit 1; fi
+
+            # Neither surface published a manifest: a hub older than the manifest
+            # itself. The manifest is the file list, so there is nothing to download.
+            echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
+            exit 1
+          }
+
+          # download_script_group <group> — the hub names the files, this workflow
+          # names only the group. Downloads every script of the group, in served order.
+          download_script_group() {
+            load_script_manifest "$1"
+            local name
+            # The loop runs in THIS shell (no pipe), so a failed download exits the step.
+            while IFS= read -r name; do
+              download_and_verify "$name"
+            done < <(jq -r 'keys_unsorted[]' "$SCRIPT_MANIFEST")
+          }
+
+          download_and_verify() {
+            local script_name="$1"
+            local output_path="/tmp/$script_name"
+
+            local expected_hash
+            expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+            if [ -z "$expected_hash" ]; then
+              echo "❌ $script_name is not in the server's script manifest!"
+              echo "   The hub serves no such script, or it failed to read on the server."
+              exit 1
+            fi
+            if ! printf '%s' "$expected_hash" | grep -Eq '^[0-9a-f]{64}$'; then
+              echo "❌ the manifest entry for $script_name is not a SHA-256 digest — refusing to run it."
+              exit 1
+            fi
+
+            curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
+              -K "$CURL_CFG" \
+              -o "$output_path"
+
+            local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
+
+            if [ "$actual_hash" != "$expected_hash" ]; then
+              echo "❌ HASH MISMATCH for $script_name!"
+              echo "   Expected: $expected_hash"
+              echo "   Actual:   $actual_hash"
+              echo "   The download was corrupted in transit — both values come from the same deployment."
+              exit 1
+            fi
+
+            # Make shell scripts executable
+            if [[ "$script_name" == *.sh ]]; then
+              chmod +x "$output_path"
+            fi
+
+            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
+          }
+
+          # Digests AND the file list come from the deployment serving the bytes, not from this file.
+          download_script_group "doc-helpers"
 
       # =========================================================================
       # SEND START NOTIFICATION — the early "the workflow actually started" ping.
@@ -381,11 +611,12 @@ jobs:
           LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          # The manifest is asked for ONE group: its keys are the files to download.
           _try_manifest() {
             local base="$1" code
             code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
               -K "$CURL_CFG" \
-              "$base/manifest.json") || code="000"
+              "$base/manifest.json?group=$SCRIPT_GROUP") || code="000"
 
             if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
             if [ "$code" != "200" ]; then
@@ -406,7 +637,9 @@ jobs:
             return 0
           }
 
+          # load_script_manifest <group>
           load_script_manifest() {
+            SCRIPT_GROUP="$1"
             # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
             # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
             # workflow file ships in the repo and the routes ship with the deployment,
@@ -439,26 +672,36 @@ jobs:
             if [ "$rc" = "2" ]; then exit 1; fi
 
             # Neither surface published a manifest: a hub older than the manifest
-            # itself. Downloads proceed UNVERIFIED and say so on every file. Any
-            # OTHER failure above already exited — only a genuine "no such endpoint"
-            # reaches here, so a hijacked or failing request can never land in this
-            # branch and silently disable verification.
-            echo "::warning::no manifest endpoint on this hub — it predates the manifest; downloads run UNVERIFIED until the hub is redeployed"
-            rm -f "$SCRIPT_MANIFEST"
+            # itself. The manifest is the file list, so there is nothing to download.
+            echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
+            exit 1
+          }
+
+          # download_script_group <group> — the hub names the files, this workflow
+          # names only the group. Downloads every script of the group, in served order.
+          download_script_group() {
+            load_script_manifest "$1"
+            local name
+            # The loop runs in THIS shell (no pipe), so a failed download exits the step.
+            while IFS= read -r name; do
+              download_and_verify "$name"
+            done < <(jq -r 'keys_unsorted[]' "$SCRIPT_MANIFEST")
           }
 
           download_and_verify() {
             local script_name="$1"
             local output_path="/tmp/$script_name"
 
-            local expected_hash=""
-            if [ -f "$SCRIPT_MANIFEST" ]; then
-              expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
-              if [ -z "$expected_hash" ]; then
-                echo "❌ $script_name is not in the server's script manifest!"
-                echo "   The hub serves no such script, or it failed to read on the server."
-                exit 1
-              fi
+            local expected_hash
+            expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+            if [ -z "$expected_hash" ]; then
+              echo "❌ $script_name is not in the server's script manifest!"
+              echo "   The hub serves no such script, or it failed to read on the server."
+              exit 1
+            fi
+            if ! printf '%s' "$expected_hash" | grep -Eq '^[0-9a-f]{64}$'; then
+              echo "❌ the manifest entry for $script_name is not a SHA-256 digest — refusing to run it."
+              exit 1
             fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
@@ -467,9 +710,7 @@ jobs:
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
 
-            if [ -z "$expected_hash" ]; then
-              echo "::warning::$script_name downloaded UNVERIFIED (no manifest; hash: ${actual_hash:0:16}...)"
-            elif [ "$actual_hash" != "$expected_hash" ]; then
+            if [ "$actual_hash" != "$expected_hash" ]; then
               echo "❌ HASH MISMATCH for $script_name!"
               echo "   Expected: $expected_hash"
               echo "   Actual:   $actual_hash"
@@ -482,29 +723,22 @@ jobs:
               chmod +x "$output_path"
             fi
 
-            if [ -n "$expected_hash" ]; then
-              echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
-            fi
+            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
           }
 
-          # Download and verify all scripts (v2)
-          # Shared helpers download FIRST so the generators that `require()` them
-          # at /tmp/* can find them when Node parses the files.
-          # Digests come from the deployment serving the bytes, not from this file.
-          load_script_manifest
-          download_and_verify "prompt-context-loader.cjs"
-          download_and_verify "youtube-search-tool.cjs"
-          download_and_verify "run-codewiki-analysis.sh"
-          download_and_verify "run-claude-architecture-analysis.sh"
-          # v2: generate-inline-docs is now .cjs (converted from .js) so it can require() the loader.
-          download_and_verify "generate-inline-docs.cjs"
-          download_and_verify "generate-tutorials-voltagent.cjs"
-          download_and_verify "generate-repo-docs.cjs"
-          download_and_verify "validate-markdown.js"
-          download_and_verify "markdown-validation-rules.md"
-          download_and_verify "detect-orphans.sh"
+          # Every script a documentation run uses, stage 0 (the code graph) included.
+          # Digests AND the file list come from the deployment serving the bytes,
+          # not from this file: the hub lists the group in download order (a helper
+          # a generator require()s at load comes before it).
+          download_script_group "doc-pipeline"
 
-          echo "📦 All 10 workflow files downloaded and verified (9 scripts + 1 ruleset; helpers verified earlier)"
+          # ONE vocabulary read for the whole run: every later step (language
+          # detection, source discovery, the generators, the graph build) reads this
+          # file, so none of them needs the secret for it.
+          node /tmp/ci-source.mjs vocabulary /tmp/ci-vocabulary.json || { echo "❌ could not read the source vocabulary from the hub"; exit 1; }
+          echo "CODE_GRAPH_VOCABULARY_FILE=/tmp/ci-vocabulary.json" >> $GITHUB_ENV
+
+          echo "📦 All 13 workflow files downloaded and verified (12 scripts + 1 ruleset; helpers verified earlier)"
 
           # Export paths for all stages (use os.tmpdir() compatible paths)
           echo "VALIDATION_RULES_PATH=/tmp/markdown-validation-rules.md" >> $GITHUB_ENV
@@ -552,6 +786,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ env.SOURCE_BRANCH }}
 
+      # The SOURCE head, before the PR branch and the Clean Slate commit move
+      # HEAD: the stage-0 graph build tags this commit (the code being
+      # documented), never the docs branch it is sitting on.
+      - name: Record source head
+        run: echo "SOURCE_HEAD_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
       # =========================================================================
       # SETUP: Clone Dependency Repos (if configured)
       # =========================================================================
@@ -586,7 +826,7 @@ jobs:
             echo ""
             echo "  📁 Cloning: $dep → ../deps/$repo_name"
             if git clone --depth 1 "https://github.com/$dep.git" "../deps/$repo_name" 2>&1; then
-              file_count=$(find "../deps/$repo_name" -type f \( -name "*.java" -o -name "*.ts" -o -name "*.py" -o -name "*.rs" \) 2>/dev/null | wc -l | tr -d ' ')
+              file_count=$(node /tmp/ci-source.mjs count "../deps/$repo_name" 2>/dev/null || echo "?")
               echo "     ✅ Cloned successfully ($file_count source files)"
             else
               echo "     ⚠️ Failed to clone $dep"
@@ -599,7 +839,7 @@ jobs:
           ls -la ../deps/ 2>/dev/null || echo "   No dependencies cloned"
           echo ""
           echo "📊 Total dependency source files available for documentation:"
-          find ../deps -type f \( -name "*.java" -o -name "*.ts" -o -name "*.py" -o -name "*.rs" \) 2>/dev/null | wc -l | xargs echo "  "
+          echo "   $(node /tmp/ci-source.mjs count ../deps 2>/dev/null || echo '?')"
 
       # =========================================================================
       # LANGUAGE DETECTION (runs before all stages for consistency)
@@ -621,65 +861,24 @@ jobs:
           echo "🔍 Detecting repository primary language..."
           echo "   Scanning main repo (.) and dependency repos (../deps/)"
 
-          # Count source files by extension (main repo + dependencies)
-          # Uses same exclusions as Stage 1 and Stage 2 for consistency
-          GO_COUNT=$(find . ../deps 2>/dev/null -name "*.go" -type f \
-            -not -path "*/node_modules/*" -not -path "*/vendor/*" \
-            -not -path "*/.git/*" -not -path "*/target/*" \
-            -not -name "*_test.go" | wc -l | tr -d ' ')
-          RUST_COUNT=$(find . ../deps 2>/dev/null -name "*.rs" -type f \
-            -not -path "*/target/*" -not -path "*/.git/*" | wc -l | tr -d ' ')
-          PY_COUNT=$(find . ../deps 2>/dev/null -name "*.py" -type f \
-            -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.git/*" | wc -l | tr -d ' ')
-          JAVA_COUNT=$(find . ../deps 2>/dev/null -name "*.java" -type f \
-            -not -path "*/.git/*" | wc -l | tr -d ' ')
-          TS_COUNT=$(find . ../deps 2>/dev/null \( -name "*.ts" -o -name "*.tsx" \) -type f \
-            -not -path "*/node_modules/*" -not -path "*/.git/*" \
-            -not -name "*.test.*" -not -name "*.spec.*" | wc -l | tr -d ' ')
-          JS_COUNT=$(find . ../deps 2>/dev/null \( -name "*.js" -o -name "*.jsx" \) -type f \
-            -not -path "*/node_modules/*" -not -path "*/.git/*" \
-            -not -name "*.test.*" -not -name "*.spec.*" | wc -l | tr -d ' ')
-          C_COUNT=$(find . ../deps 2>/dev/null \( -name "*.c" -o -name "*.cpp" -o -name "*.h" \) -type f \
-            -not -path "*/.git/*" | wc -l | tr -d ' ')
-          CS_COUNT=$(find . ../deps 2>/dev/null -name "*.cs" -type f \
-            -not -path "*/.git/*" | wc -l | tr -d ' ')
-          HCL_COUNT=$(find . ../deps 2>/dev/null -name "*.tf" -type f \
-            -not -path "*/.terraform/*" -not -path "*/.git/*" | wc -l | tr -d ' ')
+          # ONE detection, from the vocabulary the hub serves (ci-source.mjs): which
+          # languages are source, their extensions, and which of them CodeWiki can
+          # parse are rows in the hub's language table. This step used to carry nine
+          # hand-typed `find` counts, a positional helper and a six-way threshold
+          # test, each with its own idea of the extensions and the exclusions.
+          DETECTION=$(node /tmp/ci-source.mjs detect) || { echo "❌ language detection failed"; exit 1; }
+          PRIMARY_LANG=$(echo "$DETECTION" | jq -r '.primary')
+          MAX_COUNT=$(echo "$DETECTION" | jq -r '.max')
+          CODEWIKI_SUPPORTED=$(echo "$DETECTION" | jq -r '.codewiki_supported')
 
           echo ""
-          echo "📊 File counts (excluding tests and generated files):"
-          echo "  Go: $GO_COUNT"
-          echo "  Rust: $RUST_COUNT"
-          echo "  Python: $PY_COUNT"
-          echo "  Java: $JAVA_COUNT"
-          echo "  TypeScript: $TS_COUNT"
-          echo "  JavaScript: $JS_COUNT"
-          echo "  C/C++: $C_COUNT"
-          echo "  C#: $CS_COUNT"
-          echo "  HCL/Terraform: $HCL_COUNT"
-
-          # Determine primary language using helper function
-          RESULT=$(find_primary_language "$GO_COUNT" "$RUST_COUNT" "$PY_COUNT" "$JAVA_COUNT" "$TS_COUNT" "$JS_COUNT" "$C_COUNT" "$CS_COUNT" "$HCL_COUNT")
-          PRIMARY_LANG="${RESULT%:*}"
-          MAX_COUNT="${RESULT#*:}"
-
-          # Determine if CodeWiki supports this language
-          MIN_FILES_THRESHOLD=10
-
-          if [ "$JAVA_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
-             [ "$TS_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
-             [ "$JS_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
-             [ "$PY_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
-             [ "$C_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
-             [ "$CS_COUNT" -ge "$MIN_FILES_THRESHOLD" ]; then
-            CODEWIKI_SUPPORTED="true"
-            echo ""
-            echo "✅ Primary language: $PRIMARY_LANG ($MAX_COUNT files)"
+          echo "📊 Source files by language (tests and never-source directories excluded):"
+          echo "$DETECTION" | jq -r '.counts | to_entries[] | select(.value > 0) | "  \(.key): \(.value)"'
+          echo ""
+          echo "✅ Primary language: $PRIMARY_LANG ($MAX_COUNT files)"
+          if [ "$CODEWIKI_SUPPORTED" = "true" ]; then
             echo "   CodeWiki supported: YES"
           else
-            CODEWIKI_SUPPORTED="false"
-            echo ""
-            echo "✅ Primary language: $PRIMARY_LANG ($MAX_COUNT files)"
             echo "   CodeWiki supported: NO (will use Claude Architecture Analysis)"
           fi
 
@@ -1092,38 +1291,10 @@ jobs:
           # it would be enumerated here, then deleted, then Stage 1 hits
           # ENOENT trying to read it. This is the source-discovery /
           # Clean-Slate / Stage-1 ordering bug — exclusion is the targeted fix.
-          find . ../deps 2>/dev/null -type f \( \
-            -name "*.ts" -o -name "*.tsx" \
-            -o -name "*.js" -o -name "*.jsx" \
-            -o -name "*.java" \
-            -o -name "*.py" \
-            -o -name "*.go" \
-            -o -name "*.rs" \
-            -o -name "*.c" -o -name "*.cpp" -o -name "*.h" \
-            -o -name "*.cs" -o -name "*.tf" \
-          \) \
-            -not -path "./$DOCS_OUTPUT_PATH/*" \
-            -not -path "*/node_modules/*" \
-            -not -path "*/vendor/*" \
-            -not -path "*/target/*" \
-            -not -path "*/.git/*" \
-            -not -path "*/dist/*" \
-            -not -path "*/.next/*" \
-            -not -path "*/build/*" \
-            -not -path "*/__pycache__/*" \
-            -not -path "*/.venv/*" \
-            -not -path "*/venv/*" \
-            -not -path "*/coverage/*" \
-            -not -name "*_test.go" \
-            -not -name "*.test.*" \
-            -not -name "*.spec.*" \
-            -not -name "*_test.ts" \
-            -not -name "*_test.js" \
-            -not -name "*.test.ts" \
-            -not -name "*.test.js" \
-            -not -name "*.spec.ts" \
-            -not -name "*.spec.js" \
-          | sort > "$ALL_SOURCE_TEMP"
+          # The list comes from ci-source.mjs: the served source extensions, the
+          # served never-source directories, tests skipped by name — the same rule
+          # the language detection above counted with.
+          node /tmp/ci-source.mjs list "$ALL_SOURCE_TEMP" --exclude "./$DOCS_OUTPUT_PATH" > /dev/null || { echo "❌ source discovery failed"; exit 1; }
 
           TOTAL_SOURCE=$(wc -l < "$ALL_SOURCE_TEMP" | tr -d ' ')
           FILE_LIMIT="${SOURCE_FILES_LIMIT:-0}"
@@ -1234,12 +1405,7 @@ jobs:
           # Show breakdown by language
           echo ""
           echo "📋 By language:"
-          for ext in ts tsx js jsx java py go rs c cpp h cs tf; do
-            EXT_COUNT=$(count_by_extension "$SOURCE_FILES_LIST" "$ext")
-            if [ "$EXT_COUNT" -gt 0 ]; then
-              echo "   .$ext: $EXT_COUNT files"
-            fi
-          done
+          node /tmp/ci-source.mjs breakdown "$SOURCE_FILES_LIST" | sed 's/^/   /'
 
           # Show first 20 files for debugging
           echo ""
@@ -1513,6 +1679,29 @@ jobs:
         with:
           node-version: '22'
 
+      # =========================================================================
+      # STAGE 0: CODE GRAPH (same build as the standalone code-graph job above)
+      # Tags the SOURCE branch head so the hub can render this run's
+      # ecosystem.md from the snapshot of the commit being documented. The hub
+      # promotes to `live` only when the source branch is the default branch.
+      # Never fatal: a graph failure costs cross-repo facts, not the docs run.
+      # =========================================================================
+      # The command is CODE_GRAPH_INSTALL_COMMAND (lib/config/code-graph-workflow.ts).
+      - name: Install graph dependencies
+        continue-on-error: true
+        run: mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund && echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV" || { echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; }
+
+      - name: Build and upload the code graph
+        id: graph
+        continue-on-error: true
+        env:
+          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          CODE_GRAPH_DEPS_DIR: ${{ env.CODE_GRAPH_DEPS_DIR }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CODE_GRAPH_BRANCH: ${{ env.SOURCE_BRANCH }}
+          CODE_GRAPH_COMMIT_SHA: ${{ env.SOURCE_HEAD_SHA }}
+        run: node /tmp/code-graph-build.mjs
+
       - name: Install Stage 1 Dependencies
         if: contains(env.STAGES, 'inline-docs')
         # Install generator deps in an ISOLATED tree under RUNNER_TEMP, NOT the target
@@ -1730,6 +1919,53 @@ jobs:
             "$WORKFLOW_RUN_ID" "$WORKFLOW_URL" "codewiki" \
             "$STAGE1_STATUS" "$STAGE1_FILES" "" "0" "" "0" "" "0" \
             "$PR_URL" "$PR_NUMBER"
+
+      # =========================================================================
+      # ECOSYSTEM FACTS — derived by the hub from the code graph, never written
+      # by a model. Two renderings of the same live snapshot: ecosystem.md
+      # (committed under the reference tree and fed to the Stage 2/3/4 prompts
+      # as ground truth for the Dependencies sections) and the marker-delimited
+      # AGENTS.md block (upserted in place, idempotent). A repo with no graph
+      # yet is a notice, not a failure.
+      # =========================================================================
+      - name: Fetch ecosystem facts
+        continue-on-error: true
+        env:
+          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          REFERENCE_OUTPUT_PATH: ${{ env.REFERENCE_OUTPUT_PATH }}
+        run: |
+          source /tmp/workflow-helpers.sh
+
+          # Through ci-hub.mjs, the shell's way into the ONE hub transport
+          # (code-review-lib.mjs): it checks the destination before the secret
+          # leaves, keeps the secret in a header, and writes the body only on a
+          # 2xx. It prints the status and exits 0 whenever the hub ANSWERED — a 404
+          # is an answer ("no graph yet"), not a failure.
+          REPO_PARAM=$(printf '%s' "$GITHUB_REPOSITORY" | sed 's|/|%2F|g')
+          ECOSYSTEM_PATH="/api/ci/code-graph/ecosystem.md?repo=${REPO_PARAM}"
+
+          HTTP_CODE=$(node /tmp/ci-hub.mjs get "$ECOSYSTEM_PATH" /tmp/ecosystem.md) || HTTP_CODE="000"
+          if [ "$HTTP_CODE" = "404" ]; then
+            echo "::notice::no code graph yet for $GITHUB_REPOSITORY — skipping ecosystem facts"
+            rm -f /tmp/ecosystem.md
+            exit 0
+          fi
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::warning::ecosystem facts request failed (HTTP $HTTP_CODE) — the Dependencies sections run without cross-repo facts"
+            rm -f /tmp/ecosystem.md
+            exit 0
+          fi
+          mkdir -p "$REFERENCE_OUTPUT_PATH"
+          cp /tmp/ecosystem.md "$REFERENCE_OUTPUT_PATH/ecosystem.md"
+          echo "✅ ecosystem.md ($(wc -c < /tmp/ecosystem.md | tr -d ' ') bytes) → $REFERENCE_OUTPUT_PATH/ecosystem.md"
+
+          HTTP_CODE=$(node /tmp/ci-hub.mjs get "${ECOSYSTEM_PATH}&format=agents" /tmp/ecosystem-agents.md) || HTTP_CODE="000"
+          if [ "$HTTP_CODE" = "200" ]; then
+            upsert_marker_block AGENTS.md /tmp/ecosystem-agents.md
+          else
+            echo "::warning::AGENTS.md block request failed (HTTP $HTTP_CODE) — AGENTS.md left untouched"
+            rm -f /tmp/ecosystem-agents.md
+          fi
 
       # =========================================================================
       # STAGE 2: CODEWIKI ANALYSIS
