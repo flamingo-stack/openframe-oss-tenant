@@ -501,11 +501,12 @@ jobs:
           LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          # The manifest is asked for ONE group: its keys are the files to download.
           _try_manifest() {
             local base="$1" code
             code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
               -K "$CURL_CFG" \
-              "$base/manifest.json") || code="000"
+              "$base/manifest.json?group=$SCRIPT_GROUP") || code="000"
 
             if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
             if [ "$code" != "200" ]; then
@@ -526,7 +527,9 @@ jobs:
             return 0
           }
 
+          # load_script_manifest <group>
           load_script_manifest() {
+            SCRIPT_GROUP="$1"
             # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
             # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
             # workflow file ships in the repo and the routes ship with the deployment,
@@ -559,26 +562,36 @@ jobs:
             if [ "$rc" = "2" ]; then exit 1; fi
 
             # Neither surface published a manifest: a hub older than the manifest
-            # itself. Downloads proceed UNVERIFIED and say so on every file. Any
-            # OTHER failure above already exited — only a genuine "no such endpoint"
-            # reaches here, so a hijacked or failing request can never land in this
-            # branch and silently disable verification.
-            echo "::warning::no manifest endpoint on this hub — it predates the manifest; downloads run UNVERIFIED until the hub is redeployed"
-            rm -f "$SCRIPT_MANIFEST"
+            # itself. The manifest is the file list, so there is nothing to download.
+            echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
+            exit 1
+          }
+
+          # download_script_group <group> — the hub names the files, this workflow
+          # names only the group. Downloads every script of the group, in served order.
+          download_script_group() {
+            load_script_manifest "$1"
+            local name
+            # The loop runs in THIS shell (no pipe), so a failed download exits the step.
+            while IFS= read -r name; do
+              download_and_verify "$name"
+            done < <(jq -r 'keys_unsorted[]' "$SCRIPT_MANIFEST")
           }
 
           download_and_verify() {
             local script_name="$1"
             local output_path="/tmp/$script_name"
 
-            local expected_hash=""
-            if [ -f "$SCRIPT_MANIFEST" ]; then
-              expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
-              if [ -z "$expected_hash" ]; then
-                echo "❌ $script_name is not in the server's script manifest!"
-                echo "   The hub serves no such script, or it failed to read on the server."
-                exit 1
-              fi
+            local expected_hash
+            expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+            if [ -z "$expected_hash" ]; then
+              echo "❌ $script_name is not in the server's script manifest!"
+              echo "   The hub serves no such script, or it failed to read on the server."
+              exit 1
+            fi
+            if ! printf '%s' "$expected_hash" | grep -Eq '^[0-9a-f]{64}$'; then
+              echo "❌ the manifest entry for $script_name is not a SHA-256 digest — refusing to run it."
+              exit 1
             fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
@@ -587,9 +600,7 @@ jobs:
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
 
-            if [ -z "$expected_hash" ]; then
-              echo "::warning::$script_name downloaded UNVERIFIED (no manifest; hash: ${actual_hash:0:16}...)"
-            elif [ "$actual_hash" != "$expected_hash" ]; then
+            if [ "$actual_hash" != "$expected_hash" ]; then
               echo "❌ HASH MISMATCH for $script_name!"
               echo "   Expected: $expected_hash"
               echo "   Actual:   $actual_hash"
@@ -602,14 +613,10 @@ jobs:
               chmod +x "$output_path"
             fi
 
-            if [ -n "$expected_hash" ]; then
-              echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
-            fi
+            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
           }
 
-          load_script_manifest
-          download_and_verify "workflow-helpers.sh"
-          download_and_verify "code-review-report.sh"
+          download_script_group "review-report"
 
       # Early liveness ping — the FIRST real step after report capability is
       # secured. Stamps workflow_run_id + status 'running' on the hub's run row,
@@ -689,6 +696,7 @@ jobs:
       # without touching this caller. Helpers + report already downloaded above;
       # this step fetches the rest, and its failure is REPORTABLE.
       - name: Download and verify scripts
+        id: scripts
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
         run: |
@@ -706,11 +714,12 @@ jobs:
           LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          # The manifest is asked for ONE group: its keys are the files to download.
           _try_manifest() {
             local base="$1" code
             code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
               -K "$CURL_CFG" \
-              "$base/manifest.json") || code="000"
+              "$base/manifest.json?group=$SCRIPT_GROUP") || code="000"
 
             if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
             if [ "$code" != "200" ]; then
@@ -731,7 +740,9 @@ jobs:
             return 0
           }
 
+          # load_script_manifest <group>
           load_script_manifest() {
+            SCRIPT_GROUP="$1"
             # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
             # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
             # workflow file ships in the repo and the routes ship with the deployment,
@@ -764,26 +775,36 @@ jobs:
             if [ "$rc" = "2" ]; then exit 1; fi
 
             # Neither surface published a manifest: a hub older than the manifest
-            # itself. Downloads proceed UNVERIFIED and say so on every file. Any
-            # OTHER failure above already exited — only a genuine "no such endpoint"
-            # reaches here, so a hijacked or failing request can never land in this
-            # branch and silently disable verification.
-            echo "::warning::no manifest endpoint on this hub — it predates the manifest; downloads run UNVERIFIED until the hub is redeployed"
-            rm -f "$SCRIPT_MANIFEST"
+            # itself. The manifest is the file list, so there is nothing to download.
+            echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
+            exit 1
+          }
+
+          # download_script_group <group> — the hub names the files, this workflow
+          # names only the group. Downloads every script of the group, in served order.
+          download_script_group() {
+            load_script_manifest "$1"
+            local name
+            # The loop runs in THIS shell (no pipe), so a failed download exits the step.
+            while IFS= read -r name; do
+              download_and_verify "$name"
+            done < <(jq -r 'keys_unsorted[]' "$SCRIPT_MANIFEST")
           }
 
           download_and_verify() {
             local script_name="$1"
             local output_path="/tmp/$script_name"
 
-            local expected_hash=""
-            if [ -f "$SCRIPT_MANIFEST" ]; then
-              expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
-              if [ -z "$expected_hash" ]; then
-                echo "❌ $script_name is not in the server's script manifest!"
-                echo "   The hub serves no such script, or it failed to read on the server."
-                exit 1
-              fi
+            local expected_hash
+            expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+            if [ -z "$expected_hash" ]; then
+              echo "❌ $script_name is not in the server's script manifest!"
+              echo "   The hub serves no such script, or it failed to read on the server."
+              exit 1
+            fi
+            if ! printf '%s' "$expected_hash" | grep -Eq '^[0-9a-f]{64}$'; then
+              echo "❌ the manifest entry for $script_name is not a SHA-256 digest — refusing to run it."
+              exit 1
             fi
 
             curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
@@ -792,9 +813,7 @@ jobs:
 
             local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
 
-            if [ -z "$expected_hash" ]; then
-              echo "::warning::$script_name downloaded UNVERIFIED (no manifest; hash: ${actual_hash:0:16}...)"
-            elif [ "$actual_hash" != "$expected_hash" ]; then
+            if [ "$actual_hash" != "$expected_hash" ]; then
               echo "❌ HASH MISMATCH for $script_name!"
               echo "   Expected: $expected_hash"
               echo "   Actual:   $actual_hash"
@@ -807,23 +826,32 @@ jobs:
               chmod +x "$output_path"
             fi
 
-            if [ -n "$expected_hash" ]; then
-              echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
-            fi
+            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
           }
 
           # Digests come from the deployment that serves the bytes, never from
           # this file: a pinned hash here would be the PR head ref's while the
           # scripts are main's, which is exactly how a PR used to brick its own
           # review. See workflow-scripts-bootstrap.ts.
-          load_script_manifest
+          #
+          # The FILE LIST is the hub's too: this step names a group and downloads
+          # every script the manifest lists for it (SCRIPT_GROUPS in
+          # lib/config/ci-script-catalog.ts), so a module added to the group
+          # reaches this repo on its next run with no workflow re-push.
+          download_script_group "review"
 
-          download_and_verify "code-review-fetch-rules.sh"
-          download_and_verify "code-review-run.sh"
-          download_and_verify "code-review-mine.mjs"
-          download_and_verify "code-review-review.mjs"
-          download_and_verify "code-review-lib.mjs"
-          download_and_verify "code-review-post.mjs"
+          # The graph library rides in the same group, and is OPTIONAL: the
+          # reviewer imports it dynamically and reviews without cross-repo facts
+          # when it is absent. Whether it came is read from the manifest that
+          # was just served (never from /tmp, which a self-hosted runner keeps
+          # between jobs). The graph_lib output gates the dependency
+          # install below, so a review without the library installs nothing.
+          if jq -e 'has("code-graph-lib.mjs")' "$SCRIPT_MANIFEST" >/dev/null 2>&1; then
+            echo "graph_lib=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::this hub does not serve the code-graph library; reviewing without cross-repo facts"
+            echo "graph_lib=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Fetch the rule corpus
         id: rules
@@ -920,6 +948,20 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
         run: /tmp/code-review-report.sh --progress review
 
+      # The graph library's runtime (wasm tree-sitter + grammars + yaml), pinned
+      # and installed into an isolated tree under RUNNER_TEMP; the reviewer
+      # reaches it through CODE_GRAPH_DEPS_DIR. continue-on-error: a registry
+      # outage degrades the review to "no cross-repo facts" (the reviewer
+      # treats an unset CODE_GRAPH_DEPS_DIR as "no graph"), it never fails it.
+      # The command is CODE_GRAPH_INSTALL_COMMAND — one spelling for both workflows.
+      # Gated on the library having been downloaded: without it nothing can
+      # import this runtime, so installing it would be wasted work and would
+      # export a CODE_GRAPH_DEPS_DIR no script reads.
+      - name: Install graph dependencies
+        if: steps.rules.outputs.skip != 'true' && steps.scripts.outputs.graph_lib == 'true'
+        continue-on-error: true
+        run: mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund && echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV" || { echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; }
+
       - name: Review
         # The id lets the report step read the reviewer's own degraded output
         # (e.g. skipped_trivial_diff) alongside the rules step's.
@@ -953,6 +995,9 @@ jobs:
           # zero findings under a green status while the pull request showed
           # them. A build gate now asserts the writer's step has it.
           WF_RUN_ID: ${{ github.run_id }}
+          # Where "Install graph dependencies" put the graph library's runtime;
+          # empty when that step failed, which the reviewer reads as "no graph".
+          CODE_GRAPH_DEPS_DIR: ${{ env.CODE_GRAPH_DEPS_DIR }}
         run: /tmp/code-review-run.sh
 
       # Post the findings to the PULL REQUEST itself and publish the
