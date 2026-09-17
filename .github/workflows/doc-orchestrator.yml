@@ -2411,6 +2411,16 @@ jobs:
             echo "   Added .md/.mmd/.gitignore/*-schema.json/*-config.json from $DIAGRAMS_OUTPUT_PATH/"
           fi
 
+          # AGENTS.md carries the hub-rendered ecosystem block ("Fetch ecosystem
+          # facts" upserts it just before this stage). It sits at the repository
+          # root, outside every output directory staged above, so it is staged by
+          # name: the first production run wrote the block and no commit ever
+          # picked the file up (openframe-cli#383).
+          if [ -f AGENTS.md ]; then
+            git add -f AGENTS.md
+            echo "   Added AGENTS.md (ecosystem block)"
+          fi
+
           # Check if there are changes
           STAGED_COUNT=$(git diff --cached --name-only | wc -l)
           echo "   Staged $STAGED_COUNT files"
@@ -2828,7 +2838,8 @@ jobs:
           done
 
           # Stage repository documentation files
-          for f in README.md CONTRIBUTING.md LICENSE.md SECURITY.md; do
+          # AGENTS.md is here as the backstop for a run whose Stage 2 commit did not happen.
+          for f in README.md CONTRIBUTING.md LICENSE.md SECURITY.md AGENTS.md; do
             if [ -f "$f" ]; then
               git add -f "$f"
             fi
