@@ -1,6 +1,6 @@
 apiVersion: v2
 name: cassandra-wrapper
-description: Wrapper chart for Сassandra
+description: Wrapper chart for Cassandra
 type: application
 version: 0.0.1
 appVersion: "0.0.1"
@@ -9,3 +9,4 @@ dependencies:
   - name: cassandra
     version: "~12.3.9"
     repository: oci://ghcr.io/flamingo-stack/registry/helm-charts
+
