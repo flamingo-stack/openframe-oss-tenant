@@ -1955,9 +1955,13 @@ jobs:
             rm -f /tmp/ecosystem.md
             exit 0
           fi
-          mkdir -p "$REFERENCE_OUTPUT_PATH"
-          cp /tmp/ecosystem.md "$REFERENCE_OUTPUT_PATH/ecosystem.md"
-          echo "✅ ecosystem.md ($(wc -c < /tmp/ecosystem.md | tr -d ' ') bytes) → $REFERENCE_OUTPUT_PATH/ecosystem.md"
+          # Kept in /tmp ONLY until Stage 2 has run. The reference directory is
+          # CodeWiki's output directory, and CodeWiki asks "already contains
+          # documentation. Overwrite?" when it finds a .md file there — a prompt
+          # a runner cannot answer, so Stage 2 aborted on every CodeWiki repo
+          # (CodeWiki run 35293807658). The Stage 2 commit step copies the file
+          # into place, after either engine has written its own output.
+          echo "✅ ecosystem.md ($(wc -c < /tmp/ecosystem.md | tr -d ' ') bytes) fetched; copied to $REFERENCE_OUTPUT_PATH after Stage 2"
 
           HTTP_CODE=$(node /tmp/ci-hub.mjs get "${ECOSYSTEM_PATH}&format=agents" /tmp/ecosystem-agents.md) || HTTP_CODE="000"
           if [ "$HTTP_CODE" = "200" ]; then
@@ -2387,6 +2391,15 @@ jobs:
             echo "   ⚠️  Directory does not exist!"
           fi
           echo ""
+
+          # The hub-rendered ecosystem.md joins the reference directory only NOW,
+          # after the engine has run: placed earlier it makes CodeWiki prompt for
+          # an overwrite (see "Fetch ecosystem facts").
+          if [ -f /tmp/ecosystem.md ]; then
+            mkdir -p "$REFERENCE_OUTPUT_PATH"
+            cp /tmp/ecosystem.md "$REFERENCE_OUTPUT_PATH/ecosystem.md"
+            echo "   Added ecosystem.md to $REFERENCE_OUTPUT_PATH/"
+          fi
 
           # Stage all .md, .mmd, and .gitignore files from Stage 2 output directories
           # CRITICAL: Use git add on full paths to preserve nested directory structure
