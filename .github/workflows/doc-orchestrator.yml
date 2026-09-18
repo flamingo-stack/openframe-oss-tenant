@@ -2528,7 +2528,12 @@ jobs:
       #                        dev/getting-started-dev, dev/architecture-overview-dev
       # =========================================================================
       - name: Install Tutorial Generator Dependencies
-        if: contains(env.STAGES, 'tutorials')
+        # Stage 3 AND Stage 4 run on VoltAgent (generate-repo-docs.cjs requires
+        # @voltagent/core too). Gated on tutorials alone, a repository configured
+        # with inline-docs + repo-docs and no tutorials (openframe-saas-mobile,
+        # openframe-saas-desktop) reached Stage 4 with no dependencies at all:
+        # "Cannot find module '@voltagent/core'", run 35302244804.
+        if: contains(env.STAGES, 'tutorials') || contains(env.STAGES, 'repo-docs')
         # Isolated deps tree (see Stage 1) - no reconciliation with the target repo, so no
         # peer-conflict band-aids. @ai-sdk/anthropic pinned to 2.x (v2 spec): 3.x uses the
         # v3 spec, incompatible with VoltAgent's ai@5.x (AI SDK 5).
@@ -3048,9 +3053,15 @@ jobs:
           echo "📋 Staged files:"
           git diff --cached --name-only | head -50
 
-          if [ "$STAGED_COUNT" -eq "0" ]; then
+          # "Changes" means the BRANCH differs from the documented source head, not
+          # that this final sweep found something left to stage: every stage commits
+          # its own output as it goes, so a run whose stages all committed (inline
+          # docs, README) left nothing here and was reported as no_changes while its
+          # pull request held twenty files (openframe-saas-mobile run 35302244804).
+          # The status file is the run's own bookkeeping, never a documentation change.
+          if [ "$STAGED_COUNT" -eq "0" ] && git diff --quiet "$SOURCE_HEAD_SHA" HEAD -- . ':!.flamingo-ai-technical-writer-status.md'; then
             echo ""
-            echo "⚠️ No documentation files to stage"
+            echo "⚠️ No documentation files to stage, and the branch holds no documentation change"
             set_output "has_changes" "false"
           else
             set_output "has_changes" "true"
