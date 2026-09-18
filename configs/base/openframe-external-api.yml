@@ -44,7 +44,8 @@ openframe:
     kafka:
       topics:
         outbound:
-          devices-topic: devices-topic
+          devices-topic:
+            name: devices-topic
 
 # NATS connection for the spring-cloud-stream nats binder (lib >= 6.16 binds
 # it at startup; without server properties the binder fails and the context
@@ -66,3 +67,4 @@ storage:
   s3:
     disabled: false
     bucket: local-dev-bucket
+
