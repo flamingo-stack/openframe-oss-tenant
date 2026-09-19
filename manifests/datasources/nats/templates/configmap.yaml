@@ -47,7 +47,8 @@ data:
                   "machine.*.tool-connection",
                   "machine.*.heartbeat",
                   "machine.*.installed-agent",
-                  "machine.*.hostname"
+                  "machine.*.hostname",
+                  "user.*.installed-agent"
                 ]
               },
               subscribe: {
