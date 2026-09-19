@@ -1,6 +1,7 @@
-# Makefile for OpenFrame OSS Rust project
+# Makefile for the OpenFrame client (thin binary over openframe-agent-lib)
 
 CARGO ?= cargo
+# Consumed by openframe-agent-lib's build script (build.rs panics if unset).
 OPENFRAME_VERSION ?= 0.0.0-dev
 
 # Optional target for cross-compilation
@@ -9,7 +10,7 @@ ifneq ($(TARGET),)
   TARGET_FLAG := --target $(TARGET)
 endif
 
-.PHONY: fmt fmt-check clippy lint build test clean crossinstall crossbuild
+.PHONY: fmt fmt-check clippy lint build test clean
 
 fmt:
 	$(CARGO) fmt --all
@@ -30,10 +31,3 @@ test: build
 
 clean:
 	$(CARGO) clean
-
-crossinstall:
-	$(CARGO) install cross --git https://github.com/cross-rs/cross
-
-crossbuild:
-	OPENFRAME_VERSION=$(OPENFRAME_VERSION) cross build --release $(TARGET_FLAG)
-

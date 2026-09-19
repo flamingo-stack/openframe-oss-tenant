@@ -1,6 +1,5 @@
 graph TB
     subgraph Clients["Client Layer"]
-        ChatApp["openframe-chat\n(Tauri Desktop App)"]
         FrontendUI["openframe-frontend\n(Web UI)"]
     end
 
@@ -29,7 +28,6 @@ graph TB
         NATS[("NATS/JetStream\nAgent Messaging")]
     end
 
-    ChatApp --> GW
     FrontendUI --> GW
     GW --> API
     GW --> AuthServer

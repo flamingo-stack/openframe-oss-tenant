@@ -33,7 +33,7 @@ IntelliJ will automatically detect all Maven modules.
 
 ### RustRover / VS Code (Recommended for Rust)
 
-For working on the Rust components (`clients/openframe-client` and `clients/openframe-chat` Tauri backend):
+For working on the Rust component (`clients/openframe-client`):
 
 - **[RustRover](https://www.jetbrains.com/rust/)** (JetBrains) — Dedicated Rust IDE, excellent for large Rust projects
 - **VS Code** with the `rust-analyzer` extension
@@ -41,22 +41,6 @@ For working on the Rust components (`clients/openframe-client` and `clients/open
 **VS Code Extensions for Rust:**
 - `rust-analyzer` — Language server for Rust
 - `Even Better TOML` — For editing `Cargo.toml` files
-- `Tauri` — Tauri-specific tooling
-
----
-
-### VS Code (Recommended for TypeScript/Frontend)
-
-For working on `clients/openframe-chat` (React + Vite):
-
-**Required Extensions:**
-- `Biome` — The project uses [Biome](https://biomejs.dev/) (`@biomejs/biome`) for formatting and linting (replaces ESLint + Prettier)
-- `TypeScript` (built-in)
-- `Tailwind CSS IntelliSense` — The project uses Tailwind CSS 3
-
-**Recommended Extensions:**
-- `GraphQL: Language Feature Support` — For editing GraphQL queries in TypeScript files
-- `Tauri` — For Tauri-specific IPC commands
 
 ---
 
@@ -94,19 +78,6 @@ source "$HOME/.cargo/env"
 # Verify
 rustc --version
 cargo --version
-```
-
-### Node.js (for openframe-chat)
-
-```bash
-# Using nvm (recommended)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-nvm install 20
-nvm use 20
-
-# Verify
-node --version
-npm --version
 ```
 
 ---
@@ -152,42 +123,6 @@ To set environment variables for a Spring Boot run configuration in IntelliJ:
 
 ---
 
-## Biome (Linting & Formatting for TypeScript)
-
-The `openframe-chat` project uses [Biome](https://biomejs.dev/) instead of ESLint/Prettier.
-
-```bash
-cd clients/openframe-chat
-
-# Check linting issues
-npx biome check .
-
-# Fix auto-fixable issues
-npx biome check --write .
-
-# Format only
-npx biome format --write .
-```
-
-Configure your editor to use Biome for format-on-save:
-
-**VS Code settings (`.vscode/settings.json`):**
-
-```json
-{
-  "editor.defaultFormatter": "biomejs.biome",
-  "editor.formatOnSave": true,
-  "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  }
-}
-```
-
----
-
 ## Git Configuration
 
 The repository uses standard Git with no special hooks pre-configured. Recommended settings:
@@ -210,7 +145,4 @@ git config --global init.defaultBranch main
 | JDK 21 installed and `JAVA_HOME` set | ✅ / ❌ |
 | Maven 3.9+ installed | ✅ / ❌ |
 | Rust stable toolchain installed | ✅ / ❌ |
-| Node.js 20 LTS installed | ✅ / ❌ |
-| Tauri system dependencies installed | ✅ / ❌ |
 | IDE configured with recommended plugins | ✅ / ❌ |
-| Biome extension installed (VS Code) | ✅ / ❌ |
