@@ -302,20 +302,12 @@ jobs:
             fi
             # Windows
             if [ -d "release-artifacts/${client}-windows" ]; then
-              rm -f "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip"
               (cd "release-artifacts/${client}-windows" && \
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
             fi
           done
-
-      - name: Publish checksums
-        working-directory: final-artifacts/clients
-        run: |
-          set -euo pipefail && shopt -s nullglob
-          archives=(*.tar.gz *.zip)
-          [ ${#archives[@]} -gt 0 ] || { echo "::error::no client archives to checksum"; exit 1; }
-          sha256sum "${archives[@]}" | tee SHA256SUMS
-          sha256sum -c SHA256SUMS
+          (cd final-artifacts/clients && sha256sum -- * > ../checksum)
+          cat final-artifacts/checksum
 
       - name: Generate release header
         run: |
@@ -346,23 +338,12 @@ jobs:
         with:
           tag_name: ${{ needs.version.outputs.version }}
           name: "🦩 ${{ needs.version.outputs.version }}"
-          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          draft: false
           prerelease: ${{ github.event_name == 'push' }}
           token: ${{ secrets.GITHUB_TOKEN }}
           body_path: RELEASE_HEADER.md
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
-            final-artifacts/clients/SHA256SUMS
+            final-artifacts/checksum
 
-      - name: Verify and publish release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          mkdir verify && cd verify
-          gh release view "$VERSION" --json assets --jq '.assets[] | "\(.apiUrl) \(.name)"' |
-            while read -r url name; do gh api -H "Accept: application/octet-stream" "$url" > "$name"; done
-          sha256sum -c SHA256SUMS
-          gh release edit "$VERSION" --draft=false
