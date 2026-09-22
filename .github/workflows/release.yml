@@ -302,10 +302,20 @@ jobs:
             fi
             # Windows
             if [ -d "release-artifacts/${client}-windows" ]; then
+              rm -f "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip"
               (cd "release-artifacts/${client}-windows" && \
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
             fi
           done
+
+      - name: Publish checksums
+        working-directory: final-artifacts/clients
+        run: |
+          set -euo pipefail && shopt -s nullglob
+          archives=(*.tar.gz *.zip)
+          [ ${#archives[@]} -gt 0 ] || { echo "::error::no client archives to checksum"; exit 1; }
+          sha256sum "${archives[@]}" | tee SHA256SUMS
+          sha256sum -c SHA256SUMS
 
       - name: Generate release header
         run: |
@@ -343,3 +353,12 @@ jobs:
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
+            final-artifacts/clients/SHA256SUMS
+
+      - name: Verify published checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release download "${{ needs.version.outputs.version }}" -D verify -p "SHA256SUMS" -p "*.tar.gz" -p "*.zip"
+          cd verify && sha256sum -c SHA256SUMS
