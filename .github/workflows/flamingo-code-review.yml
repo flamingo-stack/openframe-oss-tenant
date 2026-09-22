@@ -164,16 +164,6 @@ permissions:
   contents: read
   pull-requests: write
   checks: write
-  # Cache SAVE needs it. With an explicit permissions block every unlisted
-  # scope is 'none', so actions/cache could restore but not reserve a key and
-  # every run ended with "Failed to save: ... cache write denied: token has no
-  # writable scopes" — the corpus 304 path silently never worked. The path
-  # is reachable only from a corpus-only fetch (see the cache step), so this
-  # scope buys a rehearsal-lane saving and nothing on a production trigger.
-  # NECESSARY, NOT SUFFICIENT: an untrusted trigger (issue_comment) gets a
-  # read-only cache token whatever this block grants, which is why the save
-  # step below runs on workflow_dispatch only.
-  actions: write
 
 jobs:
   # Consuming the label is its OWN job, gated on nothing but "that label was
@@ -657,36 +647,6 @@ jobs:
           # The review job must never hold a push credential.
           persist-credentials: false
 
-      # The corpus hash has to SURVIVE between runs, or the hash param is empty
-      # and the hub's 304 path is unreachable. That path serves ONLY a
-      # corpus-only fetch (a workflow_dispatch rehearsal with no PR number):
-      # the pr, sweep and mine fetches each carry a per-request rider, which a
-      # 304 cannot, so the hub answers them in full by design and this cache
-      # spares no transfer on a production trigger. Kept for the rehearsal
-      # lane; the reason is stated here so nobody expects a saving it never
-      # made.
-      # RESTORE and SAVE are separate steps, not the combined actions/cache
-      # whose post-step saves at job end: since GitHub's 2026-06-26 change an
-      # UNTRUSTED trigger on the default-branch scope (issue_comment here —
-      # anyone who can comment can fire it) gets a READ-ONLY cache token, so
-      # that post-step ended every commanded review with "Failed to save …
-      # cache write denied: token has no writable scopes" (run 34519652342),
-      # a warning no permissions block can lift. The save is done only where
-      # it can succeed AND serves the one lane that reads it — see below.
-      # v5 = the Node 24 drop-in (v4 targets EOL Node 20 and warns on every run).
-      - name: Restore the last corpus hash
-        uses: actions/cache/restore@v5
-        with:
-          # BOTH files. Caching only the hash meant a 304 left rules.json
-          # truncated to zero bytes while the run continued as if it had a
-          # corpus.
-          path: |
-            .rules-hash
-            rules.json
-          key: flamingo-rules-hash-${{ github.repository }}-${{ github.run_id }}
-          restore-keys: |
-            flamingo-rules-hash-${{ github.repository }}-
-
       # The SAME download_and_verify function as the doc-orchestrator workflow
       # (single source: lib/config/workflow-scripts-bootstrap.ts, parity with
       # the doc template asserted at build time), fetching from the SAME
@@ -695,7 +655,7 @@ jobs:
       # runs a verified unified script, so a script change ships from the hub
       # without touching this caller. Helpers + report already downloaded above;
       # this step fetches the rest, and its failure is REPORTABLE.
-      - name: Download and verify scripts
+      - name: Download the review scripts from the hub
         id: scripts
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
@@ -853,7 +813,15 @@ jobs:
             echo "graph_lib=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Fetch the rule corpus
+      # ONE hub call answers how this repository is reviewed: the settings
+      # (mode, models, locale, whether the hub's TOOLS are on), the hash that
+      # anchors incremental review, and the rule INDEX. Where the tools are on,
+      # that is all the review step is handed: it reads rule text and the code
+      # graph through the hub's tools (get_code_rules, get_code_rule,
+      # get_repo_ecosystem, find_code_consumers, …) as it reviews. Where they
+      # are off, the same call carries the full rule text. Nothing is cached
+      # between runs: every review asks the hub afresh.
+      - name: Ask the hub how to review this repository
         id: rules
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
@@ -866,23 +834,6 @@ jobs:
           # Empty on every other trigger, which keeps them incremental.
           REVIEW_FULL: ${{ needs.resolve_command.outputs.full }}
         run: /tmp/code-review-fetch-rules.sh
-
-      # The save half of the corpus cache (see the restore step for why the
-      # two are split). workflow_dispatch ONLY: it is the sole trigger that is
-      # both trusted (keeps a read-write cache token on the default-branch
-      # scope) and served by the 304 path the cache exists for. A pull_request
-      # run could write, but into its own branch scope, which the rehearsal
-      # lane never reads. Guarded on the files existing so a fetch that
-      # skipped (corpus unavailable, review disabled) does not fail the job on
-      # a missing path.
-      - name: Save the corpus hash for the next rehearsal
-        if: github.event_name == 'workflow_dispatch' && hashFiles('.rules-hash', 'rules.json') != ''
-        uses: actions/cache/save@v5
-        with:
-          path: |
-            .rules-hash
-            rules.json
-          key: flamingo-rules-hash-${{ github.repository }}-${{ github.run_id }}
 
       # Stage checkpoints are their OWN credentialed steps. The review step
       # holds the shared webhook secret — unavoidably, since the reviewer's
@@ -925,7 +876,7 @@ jobs:
       # Gated on the STABLE skip_kind token, not on 'degraded' (which carries
       # the HTTP code and would need copy per code). review_disabled never
       # reaches here: silence is the right answer to opting out.
-      - name: Say the corpus could not be fetched
+      - name: Say the hub could not be reached
         if: (github.event_name == 'pull_request' || needs.resolve_command.outputs.pr_number != '') && steps.rules.outputs.skip_kind == 'corpus_unavailable'
         continue-on-error: true
         env:
@@ -957,12 +908,18 @@ jobs:
       # Gated on the library having been downloaded: without it nothing can
       # import this runtime, so installing it would be wasted work and would
       # export a CODE_GRAPH_DEPS_DIR no script reads.
-      - name: Install graph dependencies
+      - name: Install the code-graph parsers for the deletion gate
         if: steps.rules.outputs.skip != 'true' && steps.scripts.outputs.graph_lib == 'true'
         continue-on-error: true
         run: mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund && echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV" || { echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; }
 
-      - name: Review
+      # Reviews the change against the hub's rules and code graph. With the
+      # tools on, the reviewer calls the hub for rule text and graph facts as
+      # it works (its log prints every call under "Tool use"); with them off,
+      # it works from the text the previous step fetched. Either way the
+      # deterministic deletion gate asks the hub who consumes what a finding
+      # would remove.
+      - name: Review with the rules and code graph from the hub
         # The id lets the report step read the reviewer's own degraded output
         # (e.g. skipped_trivial_diff) alongside the rules step's.
         id: review
