@@ -292,7 +292,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e && mkdir -p final-artifacts/clients
+          set -e && mkdir -p final-artifacts/clients final-artifacts/checksum
           gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true
           for client in $(echo '${{ needs.changes.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
             # macOS
@@ -306,8 +306,8 @@ jobs:
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
             fi
           done
-          (cd final-artifacts/clients && sha256sum -- * > ../checksum)
-          cat final-artifacts/checksum
+          (cd final-artifacts/clients && sha256sum -- * > ../checksum/SHA256SUMS)
+          cat final-artifacts/checksum/SHA256SUMS
 
       - name: Generate release header
         run: |
@@ -345,5 +345,5 @@ jobs:
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
-            final-artifacts/checksum
+            final-artifacts/checksum/SHA256SUMS
 
