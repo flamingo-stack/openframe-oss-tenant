@@ -306,8 +306,7 @@ jobs:
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
             fi
           done
-          (cd final-artifacts/clients && sha256sum -- * > ../checksum/SHA256SUMS)
-          (cd final-artifacts/clients && sha256sum -c ../checksum/SHA256SUMS)
+          (cd final-artifacts/clients && sha256sum -- * > ../checksum/SHA256SUMS && sha256sum -c ../checksum/SHA256SUMS)
 
       - name: Generate release header
         run: |
