@@ -307,7 +307,7 @@ jobs:
             fi
           done
           (cd final-artifacts/clients && sha256sum -- * > ../checksum/SHA256SUMS)
-          cat final-artifacts/checksum/SHA256SUMS
+          (cd final-artifacts/clients && sha256sum -c ../checksum/SHA256SUMS)
 
       - name: Generate release header
         run: |
