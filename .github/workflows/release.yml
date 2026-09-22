@@ -346,7 +346,7 @@ jobs:
         with:
           tag_name: ${{ needs.version.outputs.version }}
           name: "🦩 ${{ needs.version.outputs.version }}"
-          draft: false
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
           prerelease: ${{ github.event_name == 'push' }}
           token: ${{ secrets.GITHUB_TOKEN }}
           body_path: RELEASE_HEADER.md
@@ -355,10 +355,14 @@ jobs:
             final-artifacts/clients/*.tar.gz
             final-artifacts/clients/SHA256SUMS
 
-      - name: Verify published checksums
+      - name: Verify and publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           set -euo pipefail
-          gh release download "${{ needs.version.outputs.version }}" -D verify -p "SHA256SUMS" -p "*.tar.gz" -p "*.zip"
-          cd verify && sha256sum -c SHA256SUMS
+          mkdir verify && cd verify
+          gh release view "$VERSION" --json assets --jq '.assets[] | "\(.apiUrl) \(.name)"' |
+            while read -r url name; do gh api -H "Accept: application/octet-stream" "$url" > "$name"; done
+          sha256sum -c SHA256SUMS
+          gh release edit "$VERSION" --draft=false
