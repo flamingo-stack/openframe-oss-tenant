@@ -49,7 +49,7 @@ fleet:
   replicas: 1
   revisionHistoryLimit: 2
   imageRepository: ghcr.io/flamingo-stack/fleetmdm/fleet
-  imageTag: "latest"
+  imageTag: ""
 
   podAnnotations:
     loki.grafana.com/scrape: "true"
@@ -106,7 +106,7 @@ meshcentral:
   image:
     registry: ghcr.io/flamingo-stack/meshcentral
     repository: meshcentral
-    tag: "latest"
+    tag: ""
   revisionHistoryLimit: 2
   deploymentAnnotations:
     keel.sh/policy: force
@@ -274,3 +274,4 @@ openframe-saas:
       limits:
         cpu: "500m"
         memory: "1Gi"
+
