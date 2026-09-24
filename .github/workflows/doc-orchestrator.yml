@@ -369,10 +369,20 @@ jobs:
           # lib/config/ci-script-catalog.ts) and downloads what the hub lists for it.
           download_script_group "code-graph"
 
+      # FULL history, blobless. `collectFileFacts` derives per-file ownership
+      # (last commit, recent commits, commits in the window) from one
+      # `git log --no-merges --no-renames` walk, which a depth-1 checkout
+      # cannot answer — it would report every file as owned by one commit.
+      # `filter: blob:none` keeps the clone cheap: the walk reads commit
+      # metadata and name-only paths, never file contents, which is also why
+      # the walk passes `--no-renames` (rename detection would fetch blobs).
+      # A shallow checkout still degrades gracefully: ownership is omitted and
+      # `coverage.ownership` is false rather than the job failing.
       - name: Checkout Repository (graph)
         uses: actions/checkout@v5
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+          filter: blob:none
           persist-credentials: false
 
       - name: Setup Node.js (graph)
