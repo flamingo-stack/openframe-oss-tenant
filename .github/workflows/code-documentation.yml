@@ -26,16 +26,15 @@
 # document is written.
 #
 # Fleet contracts (renaming any of these needs a fleet-wide re-push): the
-# installed path .github/workflows/doc-orchestrator.yml, the
-# repository_dispatch type `doc-orchestrator`, the secrets below, and the
-# script file names the hub serves.
+# installed path .github/workflows/code-documentation.yml (the setup PR
+# hard-deletes the old doc-orchestrator.yml), the repository_dispatch type
+# `code-documentation`, the secrets below, and the script file names the hub serves.
 #
 # Repository secrets (Settings > Secrets and variables > Actions)
-#   DOC_ORCH_WEBHOOK_SECRET  Required. Authenticates every hub call.
+#   FLAMINGO_HUB_SECRET      Required. Authenticates every hub call.
 #   ANTHROPIC_API_KEY        CodeWiki (stage 2) only; every other stage calls
 #                            Claude through the hub.
 #   OPENAI_API_KEY           CodeWiki (stage 2).
-#   DOC_ORCH_GITHUB_PAT      Optional. Clones private dependency repositories.
 #   YOUTUBE_API_KEY          Optional. YouTube embeds in stages 3 and 4.
 
 name: 🦩 Flamingo Code Documentation
@@ -53,13 +52,21 @@ on:
       - 'docs/**'
       - '**.md'
 
+  # Multi-repo change sets, LIVE: every pull request event (a `Depends-On:` line
+  # added, a push, a merge) asks the hub to refresh its change sets at once, and
+  # the same run builds the PR's overlay when the hub says it is a member whose
+  # overlay is missing or stale. ONLY the code-graph job runs on this event (see
+  # both jobs' `if:`); no path filter, because a description edit is the event.
+  pull_request:
+    types: [opened, reopened, edited, synchronize, ready_for_review, closed]
+
   repository_dispatch:
-    # `doc-orchestrator` runs the documentation pipeline (the type keeps its
-    # pre-rename spelling: it is a fleet contract). `flamingo-code-graph`
+    # `code-documentation` (CODE_DOCUMENTATION_DISPATCH_EVENT_TYPE) runs the
+    # documentation pipeline. `flamingo-code-graph`
     # (CODE_GRAPH_DISPATCH_EVENT_TYPE in lib/config/code-graph-workflow.ts)
     # runs ONLY the graph job; the hub's reconcile job sends it when a
     # repository's graph is missing or stale.
-    types: [doc-orchestrator, flamingo-code-graph]
+    types: [code-documentation, flamingo-code-graph]
 
   workflow_dispatch:
     # ═══════════════════════════════════════════════════════════════════════════
@@ -225,19 +232,52 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+    # THREE groups, so no two kinds of run ever cancel each other:
+    #  - a `pull_request` event runs in `-pr-<n>`, and NEVER cancels a running one
+    #    (`cancel-in-progress` is false for it): a newer event QUEUES behind the run
+    #    in progress (GitHub keeps one pending run per group, replacing an older
+    #    pending one, so the newest event still runs). Cancelling would kill an
+    #    overlay build the hub already recorded as this PR's own (a description
+    #    edit or the merge seconds after a push), and nothing would rebuild that
+    #    head until the retry window passed;
+    #  - an OVERLAY build the hub's `code-change-sets` job dispatches
+    #    (overlay_pr / overlay_head_sha in the payload) runs in `-overlay-<n>`: a
+    #    newer dispatch for the same PR supersedes the older one;
+    #  - everything else (the default branch's rebuild) keeps the repository group.
+    # A dispatched build and the PR's own run may build the same head at once;
+    # that is harmless: the hub upserts an overlay on (repo, pr, head, generator).
+    # A bot's own description edit (the hub writing its block) is excluded by the
+    # `if:` below, but a job may join its concurrency group before that `if:` is
+    # evaluated: it gets a group of its own (`-bot-<run id>`), so it can never
+    # cancel the PR's run that is building the overlay the same refresh asked for.
     concurrency:
-      group: flamingo-code-graph-${{ github.repository }}
-      cancel-in-progress: true
+      group: flamingo-code-graph-${{ github.repository }}${{ github.event.client_payload.overlay_pr && format('-overlay-{0}', github.event.client_payload.overlay_pr) || github.event.pull_request.number && format('-pr-{0}', github.event.pull_request.number) || '' }}${{ (github.event.action == 'edited' && github.event.sender.type == 'Bot') && format('-bot-{0}', github.run_id) || '' }}
+      cancel-in-progress: ${{ github.event_name != 'pull_request' }}
     if: >-
       (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
       || github.event.action == 'flamingo-code-graph'
       || (github.event_name == 'workflow_dispatch' && github.event.inputs.graph_only == 'true')
+      || (github.event_name == 'pull_request'
+          && github.event.pull_request.head.repo.full_name == github.repository
+          && !startsWith(github.event.pull_request.head.ref, 'ai-fix/')
+          && !startsWith(github.event.pull_request.head.ref, 'setup/')
+          && !(github.event.action == 'edited' && github.event.sender.type == 'Bot'))
+    # The overlay coordinates, spelled ONCE: the hub's dispatch payload, or this PR's own event (the steps
+    # below build only after the live refresh answered `build`). Both empty on a default-branch rebuild.
+    env:
+      OVERLAY_PR: ${{ github.event.client_payload.overlay_pr || github.event.pull_request.number || '' }}
+      OVERLAY_HEAD_SHA: ${{ github.event.client_payload.overlay_head_sha || github.event.pull_request.head.sha || '' }}
 
     steps:
       # Fail LOUD, not silent: a push on a repo whose org never set
       # FLAMINGO_HUB_BASE_URL would otherwise curl an empty origin and die with
       # an unrelated error. Also normalizes a trailing slash ONCE.
       - name: Validate configuration
+        id: config
+        # A pull_request event must never turn a PR check red: the refresh is advisory
+        # (the hub's webhook path and schedule are the net), so a missing hub URL or
+        # secret on a PR only skips it.
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         run: |
           if [ -z "$HUB_BASE_URL" ]; then
             echo "::error title=Hub URL missing::HUB_BASE_URL is empty. Set the organization Actions variable FLAMINGO_HUB_BASE_URL, or pass hub_base_url in the dispatch payload."
@@ -250,8 +290,11 @@ jobs:
       # asserted by the build gate). BOTH graph scripts are downloaded: the builder
       # imports ./code-graph-lib.mjs from its own directory.
       - name: Download graph scripts
+        id: scripts
+        if: github.event_name != 'pull_request' || steps.config.outcome == 'success'
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
         run: |
 
           # Function to download and verify script
@@ -261,10 +304,8 @@ jobs:
           CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
           trap 'rm -f "$CURL_CFG"' EXIT
           printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
-          # The canonical scripts surface and the pre-rename one. load_script_manifest
-          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
-          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
           # The manifest is asked for ONE group: its keys are the files to download.
@@ -296,12 +337,6 @@ jobs:
           # load_script_manifest <group>
           load_script_manifest() {
             SCRIPT_GROUP="$1"
-            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
-            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
-            # workflow file ships in the repo and the routes ship with the deployment,
-            # so the two are one version apart in BOTH directions across the rollout.
-            # Probe the canonical surface, fall back to the legacy one, and let the
-            # winner decide SCRIPTS_BASE_URL for every download that follows.
             # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
             # errexit fires before rc is read and the step ends with NO output. And
             # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
@@ -316,18 +351,7 @@ jobs:
             fi
             if [ "$rc" = "2" ]; then exit 1; fi
 
-            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
-            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
-
-            rc=0
-            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
-            if [ "$rc" = "0" ]; then
-              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
-              return 0
-            fi
-            if [ "$rc" = "2" ]; then exit 1; fi
-
-            # Neither surface published a manifest: a hub older than the manifest
+            # No manifest on the scripts surface: a hub older than the manifest
             # itself. The manifest is the file list, so there is nothing to download.
             echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
             exit 1
@@ -387,6 +411,29 @@ jobs:
           # lib/config/ci-script-catalog.ts) and downloads what the hub lists for it.
           download_script_group "code-graph"
 
+      # LIVE change sets (a `pull_request` event): ask the hub to refresh NOW and
+      # whether this run builds the PR's overlay (`build`). Never fails the run.
+      # A fork has no secrets and is excluded by the job's `if:`, as are the hub
+      # tools' own branches (TOOL_BRANCH_PREFIXES); a bot's own description edit
+      # (the hub writing its block) is excluded too, or every hub write would
+      # start another run.
+      - name: Refresh the change set
+        id: refresh
+        if: github.event_name == 'pull_request' && steps.scripts.outcome == 'success'
+        # A hub that cannot answer never fails the pull request's check: the schedule links the set.
+        continue-on-error: true
+        env:
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CODE_GRAPH_REFRESH_PR: ${{ github.event.pull_request.number }}
+          # The head of THIS event: the hub answers `build` only while it is still the PR's live head.
+          CODE_GRAPH_REFRESH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # The event's action: the hub runs its job only for one that can change a set (CHANGE_SET_REFRESH_ACTIONS).
+          CODE_GRAPH_REFRESH_ACTION: ${{ github.event.action }}
+          # The event's sender type: the hub refuses a bot's own description edit too, not only this job's `if:`.
+          CODE_GRAPH_REFRESH_SENDER_TYPE: ${{ github.event.sender.type }}
+        run: node /tmp/code-graph-build.mjs
+
       # FULL history, blobless. `collectFileFacts` derives per-file ownership
       # (last commit, recent commits, commits in the window) from one
       # `git log --no-merges --no-renames` walk, which a depth-1 checkout
@@ -396,14 +443,27 @@ jobs:
       # the walk passes `--no-renames` (rename detection would fetch blobs).
       # A shallow checkout still degrades gracefully: ownership is omitted and
       # `coverage.ownership` is false rather than the job failing.
+      # In overlay mode the checkout is the PR HEAD, with every blob: the
+      # overlay diffs it against the live snapshot commit with rename
+      # detection, which reads contents a blob:none clone cannot fetch here.
+      #
+      # The four build steps below share one `if:` (a PR event builds only when the refresh answered
+      # `build`) and one `continue-on-error` (a pull request's check never goes red on the overlay: the
+      # graph lane and the schedule rebuild it). Actions has no step group, so each step states both.
       - name: Check out repository
+        if: github.event_name != 'pull_request' || steps.refresh.outputs.build == 'true'
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
+          ref: ${{ env.OVERLAY_HEAD_SHA }}
           fetch-depth: 0
-          filter: blob:none
+          # `!x && 'blob:none' || ''` — never `x && '' || …`: '' is falsy in an expression, so that form always yields blob:none.
+          filter: ${{ !env.OVERLAY_PR && 'blob:none' || '' }}
           persist-credentials: false
 
       - name: Set up Node.js
+        if: github.event_name != 'pull_request' || steps.refresh.outputs.build == 'true'
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
@@ -412,14 +472,26 @@ jobs:
       # the one spelling both workflows use: pinned wasm tree-sitter + grammars +
       # yaml into an isolated tree under RUNNER_TEMP, exported as CODE_GRAPH_DEPS_DIR.
       - name: Install graph dependencies
+        if: github.event_name != 'pull_request' || steps.refresh.outputs.build == 'true'
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         run: mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund && echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV" || { echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; }
 
+      # Overlay mode posts the PR's overlay INSTEAD of a snapshot (code-graph-build.mjs `overlayMain`).
       - name: Build and upload the code graph
         id: graph
+        if: github.event_name != 'pull_request' || steps.refresh.outputs.build == 'true'
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           CODE_GRAPH_DEPS_DIR: ${{ env.CODE_GRAPH_DEPS_DIR }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          # Overlay mode: the job's overlay coordinates (empty outside it).
+          CODE_GRAPH_OVERLAY_PR: ${{ env.OVERLAY_PR }}
+          CODE_GRAPH_OVERLAY_HEAD_SHA: ${{ env.OVERLAY_HEAD_SHA }}
+          # An overlay run names a NON-default branch, so a hub or builder that predates overlay mode lands
+          # the PR head as a `branch` snapshot, never as the repository's live graph (the e2e run found an
+          # older builder promoting an unmerged PR's head live). Empty outside overlay mode.
+          CODE_GRAPH_BRANCH: ${{ env.OVERLAY_PR && format('overlay/pr-{0}', env.OVERLAY_PR) || '' }}
         run: node /tmp/code-graph-build.mjs
 
   # ===========================================================================
@@ -441,7 +513,7 @@ jobs:
     # Never on push (a push registers the workflow and runs the code-graph job
     # only), never on the graph-only re-dispatch, never on a graph-only manual
     # run. This is what lets workflow_dispatch API calls work on feature branches.
-    if: github.event_name != 'push' && github.event.action != 'flamingo-code-graph' && github.event.inputs.graph_only != 'true'
+    if: github.event_name != 'push' && github.event_name != 'pull_request' && github.event.action != 'flamingo-code-graph' && github.event.inputs.graph_only != 'true'
 
     steps:
       # =========================================================================
@@ -453,7 +525,7 @@ jobs:
       # =========================================================================
       - name: Download report helpers
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
         run: |
 
           # Function to download and verify script
@@ -463,10 +535,8 @@ jobs:
           CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
           trap 'rm -f "$CURL_CFG"' EXIT
           printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
-          # The canonical scripts surface and the pre-rename one. load_script_manifest
-          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
-          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
           # The manifest is asked for ONE group: its keys are the files to download.
@@ -498,12 +568,6 @@ jobs:
           # load_script_manifest <group>
           load_script_manifest() {
             SCRIPT_GROUP="$1"
-            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
-            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
-            # workflow file ships in the repo and the routes ship with the deployment,
-            # so the two are one version apart in BOTH directions across the rollout.
-            # Probe the canonical surface, fall back to the legacy one, and let the
-            # winner decide SCRIPTS_BASE_URL for every download that follows.
             # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
             # errexit fires before rc is read and the step ends with NO output. And
             # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
@@ -518,18 +582,7 @@ jobs:
             fi
             if [ "$rc" = "2" ]; then exit 1; fi
 
-            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
-            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
-
-            rc=0
-            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
-            if [ "$rc" = "0" ]; then
-              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
-              return 0
-            fi
-            if [ "$rc" = "2" ]; then exit 1; fi
-
-            # Neither surface published a manifest: a hub older than the manifest
+            # No manifest on the scripts surface: a hub older than the manifest
             # itself. The manifest is the file list, so there is nothing to download.
             echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
             exit 1
@@ -598,7 +651,7 @@ jobs:
         if: env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
         run: |
           source /tmp/workflow-helpers.sh
 
@@ -631,7 +684,7 @@ jobs:
       - name: Download pipeline scripts
         id: helpers
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           # No HASH_* pins: the digests come from manifest.json on the same
           # endpoint that serves the scripts, so a hash in this file can never
           # be a different ref's than the bytes it checks.
@@ -645,10 +698,8 @@ jobs:
           CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
           trap 'rm -f "$CURL_CFG"' EXIT
           printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
-          # The canonical scripts surface and the pre-rename one. load_script_manifest
-          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
-          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
           # The manifest is asked for ONE group: its keys are the files to download.
@@ -680,12 +731,6 @@ jobs:
           # load_script_manifest <group>
           load_script_manifest() {
             SCRIPT_GROUP="$1"
-            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
-            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
-            # workflow file ships in the repo and the routes ship with the deployment,
-            # so the two are one version apart in BOTH directions across the rollout.
-            # Probe the canonical surface, fall back to the legacy one, and let the
-            # winner decide SCRIPTS_BASE_URL for every download that follows.
             # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
             # errexit fires before rc is read and the step ends with NO output. And
             # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
@@ -700,18 +745,7 @@ jobs:
             fi
             if [ "$rc" = "2" ]; then exit 1; fi
 
-            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
-            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
-
-            rc=0
-            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
-            if [ "$rc" = "0" ]; then
-              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
-              return 0
-            fi
-            if [ "$rc" = "2" ]; then exit 1; fi
-
-            # Neither surface published a manifest: a hub older than the manifest
+            # No manifest on the scripts surface: a hub older than the manifest
             # itself. The manifest is the file list, so there is nothing to download.
             echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
             exit 1
@@ -836,42 +870,47 @@ jobs:
         if: env.DEPENDENCIES != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # SECURITY: Pass secret per-step with inline masking
-          GITHUB_PAT: ${{ secrets.DOC_ORCH_GITHUB_PAT }}
-          REPO_IS_PRIVATE: ${{ github.event.repository.private }}
+          # Authenticates the clone-token request to the hub (masked by the runner).
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
         run: |
           source /tmp/workflow-helpers.sh
 
           echo "Cloning dependency repositories: $DEPENDENCIES"
           ensure_directory "../deps"
 
-          # Determine which token to use. A PUBLIC repository's run NEVER uses
-          # the PAT: the hub already withholds private dependencies from it,
-          # and the PAT is what would let a private clone succeed anyway if a
-          # private slug ever reached this list (defence in depth).
-          if [ "$REPO_IS_PRIVATE" != "true" ]; then
-            echo "Credential: GITHUB_TOKEN (public repository, the PAT is never used)"
-            CLONE_TOKEN="$GH_TOKEN"
-          elif [ -n "$GITHUB_PAT" ]; then
-            echo "Credential: DOC_ORCH_GITHUB_PAT (cross-repository access)"
-            CLONE_TOKEN="$GITHUB_PAT"
+          # The clone credential is minted by the hub for THIS run: read-only,
+          # scoped to exactly this repository's dependencies, valid one hour.
+          # A stored repository secret cannot hold it (an installation token
+          # expires an hour after it is written).
+          CLONE_TOKEN=""
+          TOKEN_FILE=$(mktemp) && chmod 600 "$TOKEN_FILE"
+          HTTP_CODE=$(node /tmp/ci-hub.mjs get "/api/ci/code-documentation/clone-token?github=${GITHUB_REPOSITORY}" "$TOKEN_FILE") || HTTP_CODE="000"
+          if [ "$HTTP_CODE" = "200" ]; then
+            CLONE_TOKEN=$(jq -r '.token // empty' "$TOKEN_FILE")
+          fi
+          rm -f "$TOKEN_FILE"
+          if [ -n "$CLONE_TOKEN" ]; then
+            echo "::add-mask::$CLONE_TOKEN"
+            echo "Credential: a read-only token the hub minted for this run's dependencies"
           else
-            echo "Credential: GITHUB_TOKEN (no DOC_ORCH_GITHUB_PAT set; private dependencies may fail to clone)"
+            echo "::warning title=No clone token::The hub did not mint a clone token (HTTP $HTTP_CODE); using GITHUB_TOKEN, which reads public repositories only."
             CLONE_TOKEN="$GH_TOKEN"
           fi
 
-          # Configure git to use token for private repos
-          git config --global url."https://x-access-token:${CLONE_TOKEN}@github.com/".insteadOf "https://github.com/"
-
+          # The credential applies to THESE clones only (`git -c`), never globally:
+          # the token reads the dependencies and nothing else, so a global URL
+          # rewrite would also send this job's own pushes through it.
           IFS=',' read -ra DEPS <<< "$DEPENDENCIES"
           for dep in "${DEPS[@]}"; do
             repo_name=$(basename $dep)
             echo "::group::Clone $dep into ../deps/$repo_name"
-            if git clone --depth 1 "https://github.com/$dep.git" "../deps/$repo_name" 2>&1; then
+            if git -c "url.https://x-access-token:${CLONE_TOKEN}@github.com/.insteadOf=https://github.com/" \
+                clone --depth 1 "https://github.com/$dep.git" "../deps/$repo_name" 2>&1; then
+              git -C "../deps/$repo_name" remote set-url origin "https://github.com/$dep.git"
               file_count=$(node /tmp/ci-source.mjs count "../deps/$repo_name" 2>/dev/null || echo "?")
               echo "Cloned $dep ($file_count source files)"
             else
-              echo "::warning title=Dependency not cloned::Could not clone $dep. A private dependency needs DOC_ORCH_GITHUB_PAT with the repo scope."
+              echo "::warning title=Dependency not cloned::Could not clone $dep."
             fi
             echo "::endgroup::"
           done
@@ -1259,7 +1298,7 @@ jobs:
           echo "Discovering source files in the repository (.) and its dependencies (../deps/)"
 
           # File paths (all in /tmp to avoid accidental commits)
-          SOURCE_FILES_LIST="/tmp/.doc-orchestrator-source-files.txt"
+          SOURCE_FILES_LIST="/tmp/.code-documentation-source-files.txt"
           ALL_SOURCE_TEMP="/tmp/all_source_files_discovered.txt"
           ALL_FILES_TEMP="/tmp/all_files_in_repo.txt"
           FILES_TO_DELETE="/tmp/files_to_delete.txt"
@@ -1295,7 +1334,7 @@ jobs:
             find . ../deps 2>/dev/null -type f \
               -not -path "*/.git/*" \
               -not -path "*/.git" \
-              -not -name ".doc-orchestrator-*" \
+              -not -name ".code-documentation-*" \
               -not -name ".doc-stage*" \
             | sort > "$ALL_FILES_TEMP"
 
@@ -1303,12 +1342,12 @@ jobs:
             echo "Files in the checkout: $TOTAL_FILES"
 
             # Build delete list: ALL files EXCEPT the ones we're keeping
-            # Also preserve workflow temp files (.doc-orchestrator-*, .doc-stage*)
+            # Also preserve workflow temp files (.code-documentation-*, .doc-stage*)
             > "$FILES_TO_DELETE"
             while IFS= read -r file; do
               # Skip workflow temp files we need to preserve
               case "$file" in
-                ./.doc-orchestrator-*|./.doc-stage*) continue ;;
+                ./.code-documentation-*|./.doc-stage*) continue ;;
               esac
               # Check if this file is in our keep list
               if ! grep -qxF "$file" "$SOURCE_FILES_LIST" 2>/dev/null; then
@@ -1338,7 +1377,7 @@ jobs:
             # First, delete all dotfiles except in .git and workflow temp files (they prevent dir deletion)
             find . -type f -name ".*" \
               -not -path "*/.git/*" \
-              -not -name ".doc-orchestrator-*" \
+              -not -name ".code-documentation-*" \
               -not -name ".doc-stage*" \
               -delete 2>/dev/null || true
 
@@ -1644,7 +1683,7 @@ jobs:
         id: graph
         continue-on-error: true
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           CODE_GRAPH_DEPS_DIR: ${{ env.CODE_GRAPH_DEPS_DIR }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           CODE_GRAPH_BRANCH: ${{ env.SOURCE_BRANCH }}
@@ -1674,7 +1713,7 @@ jobs:
           # SECURITY: Pass secrets per-step with inline masking.
           # No ANTHROPIC_API_KEY — this stage calls Claude through the hub
           # (/api/ci/claude), which the WEBHOOK_SECRET below authenticates.
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           # Claude model SSOT — see workflow env CLAUDE_MODEL block
           CLAUDE_MODEL: ${{ env.CLAUDE_MODEL }}
           DOCS_OUTPUT_PATH: ${{ env.DOCS_OUTPUT_PATH }}
@@ -1847,7 +1886,7 @@ jobs:
         if: always() && contains(env.STAGES, 'inline-docs') && env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           STAGE1_STATUS: ${{ steps.stage1.outputs.stage1_status || 'skipped' }}
@@ -1875,7 +1914,7 @@ jobs:
       - name: Fetch ecosystem facts
         continue-on-error: true
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           REFERENCE_OUTPUT_PATH: ${{ env.REFERENCE_OUTPUT_PATH }}
         run: |
           source /tmp/workflow-helpers.sh
@@ -1910,6 +1949,17 @@ jobs:
           HTTP_CODE=$(node /tmp/ci-hub.mjs get "${ECOSYSTEM_PATH}&format=agents" /tmp/ecosystem-agents.md) || HTTP_CODE="000"
           if [ "$HTTP_CODE" = "200" ]; then
             upsert_marker_block AGENTS.md /tmp/ecosystem-agents.md
+            # Claude Code reads CLAUDE.md, and AGENTS.md only when a folder has NO CLAUDE.md
+            # (native fallback since 2.1.277). A repository that keeps a CLAUDE.md therefore gets
+            # ONE marker-delimited `@AGENTS.md` import, so its agents load the block above (the
+            # ecosystem facts and the multi-repo change-set rule). Skipped when CLAUDE.md already
+            # imports AGENTS.md itself; never creates a CLAUDE.md.
+            IMPORT_START='<!-- flamingo-agents-import:start -->'
+            IMPORT_END='<!-- flamingo-agents-import:end -->'
+            if [ -f CLAUDE.md ] && { grep -qF "$IMPORT_START" CLAUDE.md || ! grep -qE '(^|[[:space:]])@AGENTS\.md' CLAUDE.md; }; then
+              printf '%s\n' "$IMPORT_START" '@AGENTS.md' "$IMPORT_END" > /tmp/claude-agents-import.md
+              upsert_marker_block CLAUDE.md /tmp/claude-agents-import.md "$IMPORT_START" "$IMPORT_END"
+            fi
           else
             echo "::warning title=AGENTS.md block unavailable::The hub answered HTTP $HTTP_CODE; AGENTS.md is left untouched."
             rm -f /tmp/ecosystem-agents.md
@@ -2182,7 +2232,7 @@ jobs:
         env:
           # No ANTHROPIC_API_KEY — this stage calls Claude through the hub
           # (/api/ci/claude), which the WEBHOOK_SECRET below authenticates.
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           # SSOT — see workflow env CLAUDE_MODEL block
           CLAUDE_MODEL: ${{ env.CLAUDE_MODEL }}
           PRIMARY_LANGUAGE: ${{ steps.detect_language.outputs.primary_language }}
@@ -2370,6 +2420,11 @@ jobs:
             git add -f AGENTS.md
             echo "Staged AGENTS.md (ecosystem block)"
           fi
+          # CLAUDE.md carries the `@AGENTS.md` import the same step keeps (only when it changed).
+          if [ -f CLAUDE.md ] && ! git diff --quiet -- CLAUDE.md; then
+            git add -f CLAUDE.md
+            echo "   Added CLAUDE.md (@AGENTS.md import)"
+          fi
 
           # Check if there are changes
           STAGED_COUNT=$(git diff --cached --name-only | wc -l)
@@ -2430,7 +2485,7 @@ jobs:
         if: always() && contains(env.STAGES, 'codewiki') && env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           STAGE1_STATUS: ${{ steps.stage1.outputs.stage1_status || 'skipped' }}
@@ -2478,7 +2533,7 @@ jobs:
         env:
           # No ANTHROPIC_API_KEY — this stage calls Claude through the hub
           # (/api/ci/claude), which the WEBHOOK_SECRET below authenticates.
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           # Pass through output paths from workflow env (OSS Tenant Structure)
           DOCS_OUTPUT_PATH: ${{ env.DOCS_OUTPUT_PATH }}
           # Stage 2 outputs (for context)
@@ -2614,7 +2669,7 @@ jobs:
         if: always() && contains(env.STAGES, 'tutorials') && env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           STAGE1_STATUS: ${{ steps.stage1.outputs.stage1_status || 'skipped' }}
@@ -2646,7 +2701,7 @@ jobs:
         if: contains(env.STAGES, 'repo-docs')
         env:
           # No ANTHROPIC_API_KEY — this stage calls Claude through the hub.
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           TEMPLATE_REPO: ${{ env.TEMPLATE_REPO }}
           TEMPLATE_BRANCH: ${{ env.TEMPLATE_BRANCH }}
           DOCS_OUTPUT_PATH: ${{ env.DOCS_OUTPUT_PATH }}
@@ -2763,8 +2818,8 @@ jobs:
           done
 
           # Stage repository documentation files
-          # AGENTS.md is here as the backstop for a run whose Stage 2 commit did not happen.
-          for f in README.md CONTRIBUTING.md LICENSE.md SECURITY.md AGENTS.md; do
+          # AGENTS.md (and CLAUDE.md's @AGENTS.md import) are here as the backstop for a run whose Stage 2 commit did not happen.
+          for f in README.md CONTRIBUTING.md LICENSE.md SECURITY.md AGENTS.md CLAUDE.md; do
             if [ -f "$f" ]; then
               git add -f "$f"
             fi
@@ -2867,7 +2922,7 @@ jobs:
         if: always() && env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           STAGE1_STATUS: ${{ steps.stage1.outputs.stage1_status || 'skipped' }}
@@ -2906,7 +2961,7 @@ jobs:
           cleanup_path ".flamingo-ai-technical-writer-status.md"
           cleanup_path ".doc-pipeline-status.md"
 
-          # Note: .doc-orchestrator-source-files.txt is now in /tmp/ (auto-cleanup)
+          # Note: .code-documentation-source-files.txt is now in /tmp/ (auto-cleanup)
 
           # Remove npm artifacts (installed for scripts)
           cleanup_path "node_modules"
@@ -3039,7 +3094,7 @@ jobs:
         continue-on-error: true  # Don't fail the workflow if callback fails
         env:
           # SECURITY: Pass secret per-step with inline masking
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           HAS_CHANGES: ${{ steps.stage-docs.outputs.has_changes }}
