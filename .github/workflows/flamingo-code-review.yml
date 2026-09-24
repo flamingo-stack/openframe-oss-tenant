@@ -2,7 +2,7 @@
 # Per-repo settings live in the hub admin (/admin/code-review); this file is
 # byte-identical across every reviewed repository AND every deployment, which
 # is what makes drift detectable by comparison. The hub's address arrives in
-# the dispatch payload (doc-orchestrator style) or, for pull_request runs, the
+# the dispatch payload (Code Documentation style) or, for pull_request runs, the
 # org Actions variable FLAMINGO_HUB_BASE_URL.
 # Named like its sibling pipeline ('🦩 Flamingo Code Documentation') so both
 # read as one product family in the Actions sidebar.
@@ -11,7 +11,7 @@ name: 🦩 Flamingo Code Review
 on:
   # Push trigger - registers workflow with GitHub Actions (required for
   # workflow_dispatch API). Only fires when this file itself changes; the job
-  # skips it — same pattern as the doc-orchestrator workflow.
+  # skips it — same pattern as the Code Documentation workflow.
   push:
     paths:
       - '.github/workflows/flamingo-code-review.yml'
@@ -130,7 +130,7 @@ on:
         required: false
         default: 'sweep'
       hub_base_url:
-        description: 'Absolute hub origin. Dispatches carry it doc-orchestrator style; pull_request runs fall back to the org/repo Actions variable FLAMINGO_HUB_BASE_URL (shipped by Sync Secrets).'
+        description: 'Absolute hub origin. Dispatches carry it Code Documentation style; pull_request runs fall back to the org/repo Actions variable FLAMINGO_HUB_BASE_URL (shipped by Sync Secrets).'
         required: false
         default: ''
       review_budget_chars:
@@ -142,7 +142,7 @@ on:
     # ═══════════════════════════════════════════════════════════════════════════
 
 # GENERATED FROM SINGLE SOURCE OF TRUTH: CODE_REVIEW_PARAMS (this module)
-# The doc-orchestrator's parameter chain for EVERY dispatch param: payload
+# The Code Documentation parameter chain for EVERY dispatch param: payload
 # first, workflow_dispatch input second, then the param's runtime fallback.
 # Workflow-level, so every dispatch var reaches every step and every
 # downloaded script. SECURITY: only NON-SENSITIVE values live here — secrets
@@ -475,7 +475,7 @@ jobs:
       # rows) still has a verified report script to call home with.
       - name: Download the report script
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
         run: |
           set -euo pipefail
 
@@ -485,10 +485,8 @@ jobs:
           CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
           trap 'rm -f "$CURL_CFG"' EXIT
           printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
-          # The canonical scripts surface and the pre-rename one. load_script_manifest
-          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
-          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
           # The manifest is asked for ONE group: its keys are the files to download.
@@ -520,12 +518,6 @@ jobs:
           # load_script_manifest <group>
           load_script_manifest() {
             SCRIPT_GROUP="$1"
-            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
-            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
-            # workflow file ships in the repo and the routes ship with the deployment,
-            # so the two are one version apart in BOTH directions across the rollout.
-            # Probe the canonical surface, fall back to the legacy one, and let the
-            # winner decide SCRIPTS_BASE_URL for every download that follows.
             # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
             # errexit fires before rc is read and the step ends with NO output. And
             # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
@@ -540,18 +532,7 @@ jobs:
             fi
             if [ "$rc" = "2" ]; then exit 1; fi
 
-            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
-            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
-
-            rc=0
-            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
-            if [ "$rc" = "0" ]; then
-              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
-              return 0
-            fi
-            if [ "$rc" = "2" ]; then exit 1; fi
-
-            # Neither surface published a manifest: a hub older than the manifest
+            # No manifest on the scripts surface: a hub older than the manifest
             # itself. The manifest is the file list, so there is nothing to download.
             echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
             exit 1
@@ -616,7 +597,7 @@ jobs:
       # report below is the authoritative callback.
       - name: Tell the hub the run started
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha || github.sha }}
           WF_RUN_ID: ${{ github.run_id }}
@@ -647,7 +628,7 @@ jobs:
           # The review job must never hold a push credential.
           persist-credentials: false
 
-      # The SAME download_and_verify function as the doc-orchestrator workflow
+      # The SAME download_and_verify function as the Code Documentation workflow
       # (single source: lib/config/workflow-scripts-bootstrap.ts, parity with
       # the doc template asserted at build time), fetching from the SAME
       # scripts endpoint. This bootstrap (and the report-capability step above,
@@ -658,7 +639,7 @@ jobs:
       - name: Download the review scripts from the hub
         id: scripts
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
         run: |
           set -euo pipefail
 
@@ -668,10 +649,8 @@ jobs:
           CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
           trap 'rm -f "$CURL_CFG"' EXIT
           printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
-          # The canonical scripts surface and the pre-rename one. load_script_manifest
-          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
-          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
           # The manifest is asked for ONE group: its keys are the files to download.
@@ -703,12 +682,6 @@ jobs:
           # load_script_manifest <group>
           load_script_manifest() {
             SCRIPT_GROUP="$1"
-            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
-            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
-            # workflow file ships in the repo and the routes ship with the deployment,
-            # so the two are one version apart in BOTH directions across the rollout.
-            # Probe the canonical surface, fall back to the legacy one, and let the
-            # winner decide SCRIPTS_BASE_URL for every download that follows.
             # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
             # errexit fires before rc is read and the step ends with NO output. And
             # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
@@ -723,18 +696,7 @@ jobs:
             fi
             if [ "$rc" = "2" ]; then exit 1; fi
 
-            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
-            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
-
-            rc=0
-            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
-            if [ "$rc" = "0" ]; then
-              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
-              return 0
-            fi
-            if [ "$rc" = "2" ]; then exit 1; fi
-
-            # Neither surface published a manifest: a hub older than the manifest
+            # No manifest on the scripts surface: a hub older than the manifest
             # itself. The manifest is the file list, so there is nothing to download.
             echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
             exit 1
@@ -824,7 +786,7 @@ jobs:
       - name: Ask the hub how to review this repository
         id: rules
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           # PR runs identify the pull request so the hub can answer with the
           # last successfully reviewed head SHA (X-Last-Reviewed-Sha) — the
           # incremental-review anchor persisted as .last-reviewed-sha.
@@ -892,7 +854,7 @@ jobs:
 
       - name: Report progress — reviewing
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           WF_RUN_ID: ${{ github.run_id }}
           REPO_FULL: ${{ github.repository }}
@@ -941,7 +903,7 @@ jobs:
         # cannot drift back into the one step that runs node over untrusted
         # pull-request content.
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           REVIEW_BASE_REF: ${{ github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref }}
           # The RUN STAMP. The reviewer and the miner write .review-run-id from
           # this value and the report step discards every artifact not stamped
@@ -952,6 +914,10 @@ jobs:
           # zero findings under a green status while the pull request showed
           # them. A build gate now asserts the writer's step has it.
           WF_RUN_ID: ${{ github.run_id }}
+          # The pull request's HEAD commit, known here (the event's, or the comment
+          # command's resolved one). The change-set overlay is built at it; inferring
+          # it from the checkout's parents read main's tip when the head was itself a merge.
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
           # Where "Install graph dependencies" put the graph library's runtime;
           # empty when that step failed, which the reviewer reads as "no graph".
           CODE_GRAPH_DEPS_DIR: ${{ env.CODE_GRAPH_DEPS_DIR }}
@@ -970,7 +936,7 @@ jobs:
       # step's callback — the reaction-learning loop reads it.
       - name: Report progress — finalizing
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           WF_RUN_ID: ${{ github.run_id }}
           REPO_FULL: ${{ github.repository }}
@@ -1050,7 +1016,7 @@ jobs:
         # is the secret plus values that exist nowhere but the GitHub context —
         # which enters through env, never interpolated into a script body.
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           JOB_STATUS: ${{ job.status }}
           # Either step can degrade a run: the rules step (corpus unavailable)
