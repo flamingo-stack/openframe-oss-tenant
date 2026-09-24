@@ -1,12 +1,11 @@
 # CODEOWNERS
 # Last-match-wins: put broader patterns above more specific ones.
 # Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
-*                          @flamingo-stack/tech-leads @flamingo-stack/tech-heads-of
-/openframe/                @flamingo-stack/backend-engineers @flamingo-stack/tech-leads
-/clients/openframe-client/ @flamingo-stack/client-engineers @flamingo-stack/tech-leads
+/openframe/                @flamingo-stack/backend-engineers
+/clients/openframe-client/ @flamingo-stack/client-engineers
 
 # Spring Cloud Config — base/ requires a tech lead and a head of
-/configs/                  @flamingo-stack/backend-engineers @flamingo-stack/tech-leads
+/configs/                  @flamingo-stack/backend-engineers
 /configs/base/             @flamingo-stack/tech-leads @flamingo-stack/tech-heads-of
 
 # Kubernetes / ArgoCD manifests
