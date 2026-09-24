@@ -1,26 +1,42 @@
-# 🦩 Flamingo Code Documentation (doc-orchestrator pipeline)
-# ===========================
-# This GitHub Actions workflow is triggered by the multi-platform-hub to generate
-# comprehensive documentation for this repository and create a PR with the results.
+# Flamingo Code Documentation
+# =============================================================================
+# Installed into a target repository by the multi-platform hub ("Setup
+# Workflow"). The hub dispatches it to generate this repository's
+# documentation and open a pull request with the result.
 #
-# 4-Stage Pipeline:
-# 1. Inline Documentation - Generate .md files next to source classes
-# 2. CodeWiki Analysis - Architecture overview and Mermaid diagrams
-# 3. AI Tutorial Generator - VoltAgent-powered tutorial generation with tool-based exploration
-# 4. Repository Documentation - Generate/update README.md, CONTRIBUTING.md; copy LICENSE.md, SECURITY.md
+# Jobs
+#   code-graph    Deterministic code graph (no model call). Runs on pushes to
+#                 the default branch, on the hub's `flamingo-code-graph`
+#                 re-dispatch, and on a manual run with graph_only=true.
+#   doc-pipeline  The documentation run, dispatched by the hub:
+#                   Stage 0  code graph (same build as the code-graph job)
+#                   Stage 1  inline docs, one hidden .md beside each source file
+#                   Stage 2  reference docs: CodeWiki, or the Claude
+#                            architecture analysis where CodeWiki cannot parse
+#                            the primary language
+#                   Stage 3  tutorials (getting started, development)
+#                   Stage 4  repository docs: README, CONTRIBUTING, docs index
 #
-# NOTE: Stage 3 uses the VoltAgent framework (https://voltagent.dev/) for agentic
-# document generation with three tools: list_docs, read_doc_file, write_tutorial_doc.
-# NOTE: Stage 4 uses VoltAgent to update README with OpenFrame structure while preserving existing content.
+# Stages 2 (Claude), 3 and 4 follow the code reviewer's agentic pattern
+# (templates/scripts/code-documentation-lib.mjs): the hub serves this
+# repository's settings, the script packs the material, ONE hub call writes
+# ONE document (forced `emit_document`; the hub's read tools when the
+# repository's "Graph lookups" switch is on), a deterministic gate checks every
+# repository path it names, and the script, never the model, picks where each
+# document is written.
 #
-# Installation:
-# 1. Copy this file to .github/workflows/doc-orchestrator.yml in your target repository
-# 2. Configure these GitHub Secrets in the target repository (Settings > Secrets):
-#    - ANTHROPIC_API_KEY: For the VoltAgent stages (3 & 4); Stages 1 and 2 call Claude through the hub
-#    - OPENAI_API_KEY: For CodeWiki (Stage 2)
-#    - DOC_ORCH_WEBHOOK_SECRET: For callback authentication
-#    - DOC_ORCH_GITHUB_PAT: (Optional) For private dependency access
-#    - YOUTUBE_API_KEY: (Optional) For YouTube video embedding in Stage 3 & 4
+# Fleet contracts (renaming any of these needs a fleet-wide re-push): the
+# installed path .github/workflows/doc-orchestrator.yml, the
+# repository_dispatch type `doc-orchestrator`, the secrets below, and the
+# script file names the hub serves.
+#
+# Repository secrets (Settings > Secrets and variables > Actions)
+#   DOC_ORCH_WEBHOOK_SECRET  Required. Authenticates every hub call.
+#   ANTHROPIC_API_KEY        CodeWiki (stage 2) only; every other stage calls
+#                            Claude through the hub.
+#   OPENAI_API_KEY           CodeWiki (stage 2).
+#   DOC_ORCH_GITHUB_PAT      Optional. Clones private dependency repositories.
+#   YOUTUBE_API_KEY          Optional. YouTube embeds in stages 3 and 4.
 
 name: 🦩 Flamingo Code Documentation
 
@@ -38,15 +54,16 @@ on:
       - '**.md'
 
   repository_dispatch:
-    # `doc-orchestrator` runs the documentation pipeline. `flamingo-code-graph`
+    # `doc-orchestrator` runs the documentation pipeline (the type keeps its
+    # pre-rename spelling: it is a fleet contract). `flamingo-code-graph`
     # (CODE_GRAPH_DISPATCH_EVENT_TYPE in lib/config/code-graph-workflow.ts)
-    # runs ONLY the graph job — the hub's reconcile job sends it when a repo's
-    # graph is missing or stale.
+    # runs ONLY the graph job; the hub's reconcile job sends it when a
+    # repository's graph is missing or stale.
     types: [doc-orchestrator, flamingo-code-graph]
 
   workflow_dispatch:
     # ═══════════════════════════════════════════════════════════════════════════
-    # GENERATED FROM SINGLE SOURCE OF TRUTH: lib/config/doc-orchestrator-params.ts
+    # GENERATED FROM SINGLE SOURCE OF TRUTH: lib/config/code-documentation-params.ts
     # This section is auto-generated at runtime when creating workflow PRs
     # ═══════════════════════════════════════════════════════════════════════════
     inputs:
@@ -123,10 +140,11 @@ env:
   # 'true' = run only the code-graph job (a manual workflow_dispatch; the hub's
   # own documentation dispatches always send 'false').
   GRAPH_ONLY: ${{ github.event.client_payload.graph_only || github.event.inputs.graph_only || 'false' }}
-  # No literal fallback: the four-stage list lives in DOC_ORCHESTRATOR_STAGES on the
+  # No literal fallback: the stage list lives in CODE_DOCUMENTATION_STAGES on the
   # hub and is lifted into the payload per repo. A literal here would silently
-  # restore all four stages on a payload gap — and Clean Slate would still have
-  # wiped the docs tree first, so the run would delete docs and regenerate nothing.
+  # restore all four stages on a payload gap, and "Remove docs this run
+  # regenerates" would already have wiped the docs tree: the run would delete
+  # docs and regenerate nothing.
   STAGES: ${{ github.event.client_payload.stages || github.event.inputs.stages || '' }}
   DEPENDENCIES: ${{ github.event.client_payload.dependencies || github.event.inputs.dependencies || '' }}
   STAGE_COUNT: ${{ github.event.client_payload.stage_count || github.event.inputs.stage_count || '4' }}
@@ -135,15 +153,14 @@ env:
   # Debug/testing: limit total source files to analyze (0=unlimited)
   # Files beyond this limit are DELETED - all stages then process remaining files
   SOURCE_FILES_LIMIT: ${{ github.event.client_payload.source_files_limit || github.event.inputs.source_files_limit || '0' }}
-  # Claude model SSOT: passed in from hub's CLAUDE_MODELS.SONNET constant
-  # (see `lib/constants/ai-models.ts DOC_ORCHESTRATOR_DEFAULT_MODEL`).
-  # Stage 1/3/4 generator scripts + Stage 2 Claude-arch fallback all read
-  # this env var. NO literal model string is allowed in any shipped
-  # template script — scripts throw if CLAUDE_MODEL is empty. Re-run
-  # "Setup Workflow" after bumping the hub-side constant to propagate.
-  # There is deliberately NO companion request-shape env: Stage 1/2 call Claude
-  # through the hub (/api/ci/claude), which resolves the model's request shape
-  # itself, and Stage 3/4 (VoltAgent) run adaptive thinking by design.
+  # Claude model SSOT: the hub's CODE_DOCUMENTATION_DEFAULT_MODEL
+  # (lib/constants/ai-models.ts). The stage 1, 3 and 4 generators and the
+  # stage 2 Claude analysis all read this variable; no shipped script holds a
+  # literal model id, and every one throws if CLAUDE_MODEL is empty. Re-run
+  # "Setup Workflow" after bumping the hub-side constant to propagate it.
+  # There is deliberately NO companion request-shape variable: every stage
+  # except CodeWiki calls Claude through the hub (/api/ci/claude), which
+  # resolves the model's request shape itself.
   CLAUDE_MODEL: ${{ github.event.client_payload.claude_model || github.event.inputs.claude_model || '' }}
   # =============================================================================
   # JSON-grouped parameters to stay under GitHub Actions 25-parameter limit
@@ -187,13 +204,13 @@ env:
   GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}  # e.g., "flamingo-stack"
   GITHUB_SERVER_URL: ${{ github.server_url }}              # e.g., "https://github.com"
   # Analysis Exclusions - Complete array of glob patterns to exclude from repository analysis
-  # Prevents analyzing orchestrator frontend, build artifacts, dependencies, generated docs
+  # (build artifacts, dependencies, the hub's own checkout, cloned dependency repos)
   EXCLUDED_PATHS: '**/node_modules/**,**/.git/**,**/target/**,**/dist/**,**/build/**,**/.next/**,**/out/**,**/coverage/**,**/vendor/**,**/.yalc/**,**/.turbo/**,**/.gradle/**,**/__pycache__/**,**/.terraform/**,**/.venv/**,**/venv/**,**/multi-platform-hub/**,**/deps-*/**'
   README_LOGO_ALT: 'OpenFrame Logo'
 
 jobs:
   # ===========================================================================
-  # CODE GRAPH — deterministic, no model call. Tags every public symbol,
+  # CODE GRAPH: deterministic, no model call. Tags every public symbol,
   # import and manifest of the checkout (code-graph-build.mjs) and uploads the
   # result to the hub, which promotes a default-branch snapshot to `live` and
   # serves it to the code reviewer (consumers of a symbol a PR removes) and to
@@ -223,10 +240,11 @@ jobs:
       - name: Validate configuration
         run: |
           if [ -z "$HUB_BASE_URL" ]; then
-            echo "::error::HUB_BASE_URL is empty — set the org Actions variable FLAMINGO_HUB_BASE_URL (or pass hub_base_url in the dispatch payload)."
+            echo "::error title=Hub URL missing::HUB_BASE_URL is empty. Set the organization Actions variable FLAMINGO_HUB_BASE_URL, or pass hub_base_url in the dispatch payload."
             exit 1
           fi
           echo "HUB_BASE_URL=${HUB_BASE_URL%/}" >> "$GITHUB_ENV"
+          echo "Hub: ${HUB_BASE_URL%/}"
 
       # The shared script bootstrap (byte-mirrored from workflow-scripts-bootstrap.ts,
       # asserted by the build gate). BOTH graph scripts are downloaded: the builder
@@ -378,15 +396,15 @@ jobs:
       # the walk passes `--no-renames` (rename detection would fetch blobs).
       # A shallow checkout still degrades gracefully: ownership is omitted and
       # `coverage.ownership` is false rather than the job failing.
-      - name: Checkout Repository (graph)
-        uses: actions/checkout@v5
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
           filter: blob:none
           persist-credentials: false
 
-      - name: Setup Node.js (graph)
-        uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
 
@@ -404,9 +422,22 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node /tmp/code-graph-build.mjs
 
+  # ===========================================================================
+  # DOCUMENTATION PIPELINE: stages 0 to 4, one pull request per run. Every
+  # stage commits and pushes its own output as it finishes, so a timeout or a
+  # cancellation loses at most the stage in flight.
+  # ===========================================================================
   doc-pipeline:
     runs-on: ubuntu-latest
     timeout-minutes: 720  # 12 hours for large repositories with many files
+    # contents: push the docs branch. pull-requests: open and update the pull
+    # request. issues: `gh label create` for the documentation / automated /
+    # in-progress labels; without it a repository that lacks them answers 403
+    # on the label and then 422 on `gh pr create --label`.
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     # Never on push (a push registers the workflow and runs the code-graph job
     # only), never on the graph-only re-dispatch, never on a graph-only manual
     # run. This is what lets workflow_dispatch API calls work on feature branches.
@@ -420,7 +451,7 @@ jobs:
       # else, so a failure in the main script download below can still be pinged
       # and reported home instead of leaving a phantom pending/running row.
       # =========================================================================
-      - name: Download Report Helpers
+      - name: Download report helpers
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
         run: |
@@ -557,13 +588,13 @@ jobs:
           download_script_group "doc-helpers"
 
       # =========================================================================
-      # SEND START NOTIFICATION — the early "the workflow actually started" ping.
+      # REPORT RUN STARTED: the early "the workflow actually started" ping.
       # Deliberately BEFORE the main script download: it stamps workflow_run_id +
       # status 'running' on the hub's run row, which is what lets the hub's tiered
-      # reaper tell "dispatch accepted but nothing ran" (never pinged — failed
-      # fast) from "started and then crashed" (pinged — longer deadline).
+      # reaper tell "dispatch accepted but nothing ran" (never pinged, failed
+      # fast) from "started and then crashed" (pinged, longer deadline).
       # =========================================================================
-      - name: Send Start Notification
+      - name: Report run started
         if: env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
@@ -571,10 +602,8 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          # Construct callback URL from hub base URL
-          CALLBACK_URL="${HUB_BASE_URL}/api/doc-orchestrator/webhook"
-
-          echo "📤 Sending start notification to: $CALLBACK_URL"
+          CALLBACK_URL="${HUB_BASE_URL}/api/code-documentation/webhook"
+          echo "Reporting run start to $CALLBACK_URL"
 
           PAYLOAD="{
             \"run_id\": \"$RUN_ID\",
@@ -588,17 +617,18 @@ jobs:
           HTTP_CODE=$(send_webhook "$CALLBACK_URL" "$WEBHOOK_SECRET" "$PAYLOAD" "/tmp/webhook_start_response.txt") || HTTP_CODE="failed"
 
           if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
-            echo "✅ Start notification sent (HTTP $HTTP_CODE)"
+            echo "Hub acknowledged the run start (HTTP $HTTP_CODE)"
           else
-            echo "⚠️ Start notification returned HTTP $HTTP_CODE (non-blocking)"
+            echo "::warning title=Run start not reported::The hub answered HTTP $HTTP_CODE to the start callback. The run continues; the hub learns its status from the stage callbacks."
           fi
 
       # =========================================================================
-      # DOWNLOAD WORKFLOW SCRIPTS
-      # Downloads all reusable scripts from authenticated admin-hub endpoint
-      # (workflow-helpers.sh already downloaded by the report-capability step)
+      # DOWNLOAD PIPELINE SCRIPTS
+      # Every script a documentation run uses, from the hub's authenticated
+      # /api/ci/scripts surface (workflow-helpers.sh arrived in "Download report
+      # helpers"), plus the source vocabulary and the Markdown guidelines.
       # =========================================================================
-      - name: Download Workflow Scripts
+      - name: Download pipeline scripts
         id: helpers
         env:
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
@@ -606,7 +636,7 @@ jobs:
           # endpoint that serves the scripts, so a hash in this file can never
           # be a different ref's than the bytes it checks.
         run: |
-          echo "📥 Downloading workflow scripts..."
+          echo "::group::Download the doc-pipeline script group"
 
           # Function to download and verify script
           SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
@@ -741,14 +771,15 @@ jobs:
           # not from this file: the hub lists the group in download order (a helper
           # a generator require()s at load comes before it).
           download_script_group "doc-pipeline"
+          echo "::endgroup::"
 
           # ONE vocabulary read for the whole run: every later step (language
           # detection, source discovery, the generators, the graph build) reads this
           # file, so none of them needs the secret for it.
-          node /tmp/ci-source.mjs vocabulary /tmp/ci-vocabulary.json || { echo "❌ could not read the source vocabulary from the hub"; exit 1; }
+          node /tmp/ci-source.mjs vocabulary /tmp/ci-vocabulary.json || { echo "::error title=Source vocabulary unavailable::Could not read the source vocabulary from the hub."; exit 1; }
           echo "CODE_GRAPH_VOCABULARY_FILE=/tmp/ci-vocabulary.json" >> $GITHUB_ENV
 
-          echo "📦 All 13 workflow files downloaded and verified (12 scripts + 1 ruleset; helpers verified earlier)"
+          echo "Pipeline scripts and source vocabulary downloaded and verified"
 
           # Export paths for all stages (use os.tmpdir() compatible paths)
           echo "VALIDATION_RULES_PATH=/tmp/markdown-validation-rules.md" >> $GITHUB_ENV
@@ -757,11 +788,9 @@ jobs:
           echo "STAGE3_STATS_FILE=/tmp/.doc-stage3-stats.json" >> $GITHUB_ENV
           echo "STAGE4_FILES_TRACKER=/tmp/stage4-files.txt" >> $GITHUB_ENV
 
-          # Download Flamingo Markdown Guidelines (separate endpoint)
-          # REQUIRED: Guidelines are needed for markdown validation and CodeWiki prompts
-          echo ""
-          echo "📋 Downloading Flamingo Markdown Guidelines..."
-          GUIDELINES_URL="${HUB_BASE_URL}/api/doc-orchestrator/guidelines"
+          # Flamingo Markdown guidelines (their own endpoint). REQUIRED: the
+          # Markdown validation and the CodeWiki prompts both read them.
+          GUIDELINES_URL="${HUB_BASE_URL}/api/code-documentation/guidelines"
           # Same 0600 config file the download block above set up.
           HTTP_CODE=$(curl -fsSL -w "%{http_code}" \
             "$GUIDELINES_URL" \
@@ -771,59 +800,63 @@ jobs:
           if [ "$HTTP_CODE" = "200" ]; then
             GUIDELINES_SIZE=$(wc -c < /tmp/flamingo-markdown-guidelines.md | tr -d ' ')
             if [ "$GUIDELINES_SIZE" -lt 100 ]; then
-              echo "❌ Guidelines file too small ($GUIDELINES_SIZE bytes) - likely an error response"
+              echo "::error title=Markdown guidelines invalid::The guidelines file is $GUIDELINES_SIZE bytes, which is an error response, not guidelines. Its body follows."
               cat /tmp/flamingo-markdown-guidelines.md
               exit 1
             fi
-            echo "✅ Guidelines downloaded ($GUIDELINES_SIZE bytes)"
+            echo "Markdown guidelines downloaded ($GUIDELINES_SIZE bytes)"
           else
-            echo "❌ Guidelines download failed (HTTP $HTTP_CODE)"
-            echo "   URL: $GUIDELINES_URL"
-            echo "   Guidelines are required for markdown validation and CodeWiki prompts."
-            echo "   Check that the guidelines endpoint is deployed and working."
+            echo "::error title=Markdown guidelines unavailable::GET $GUIDELINES_URL answered HTTP $HTTP_CODE. The Markdown validation and the CodeWiki prompts require them; check that the hub serves the guidelines endpoint."
             rm -f /tmp/flamingo-markdown-guidelines.md
             exit 1
           fi
 
-      # (Send Start Notification moved ABOVE the main script download — see the
+      # (The run-started report sits ABOVE the main script download; see the
       # report-capability step ordering at the top of the job.)
 
-      - name: Checkout Repository
+      - name: Check out repository
         # v5 = the Node 24 drop-in (v4 targets EOL Node 20 and warns on every run).
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ env.SOURCE_BRANCH }}
 
-      # The SOURCE head, before the PR branch and the Clean Slate commit move
+      # The SOURCE head, before the PR branch and the docs-removal commit move
       # HEAD: the stage-0 graph build tags this commit (the code being
       # documented), never the docs branch it is sitting on.
       - name: Record source head
         run: echo "SOURCE_HEAD_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       # =========================================================================
-      # SETUP: Clone Dependency Repos (if configured)
+      # DEPENDENCY REPOSITORIES (when configured): cloned beside the checkout as
+      # context for every stage.
       # =========================================================================
-      - name: Clone Dependency Repositories
+      - name: Clone dependency repositories
         if: env.DEPENDENCIES != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # SECURITY: Pass secret per-step with inline masking
           GITHUB_PAT: ${{ secrets.DOC_ORCH_GITHUB_PAT }}
+          REPO_IS_PRIVATE: ${{ github.event.repository.private }}
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "📦 Cloning dependency repositories for documentation context..."
-          echo "   Dependencies: $DEPENDENCIES"
+          echo "Cloning dependency repositories: $DEPENDENCIES"
           ensure_directory "../deps"
 
-          # Determine which token to use (PAT preferred for cross-repo access)
-          if [ -n "$GITHUB_PAT" ]; then
-            echo "   Using provided GitHub PAT for cross-repo access"
+          # Determine which token to use. A PUBLIC repository's run NEVER uses
+          # the PAT: the hub already withholds private dependencies from it,
+          # and the PAT is what would let a private clone succeed anyway if a
+          # private slug ever reached this list (defence in depth).
+          if [ "$REPO_IS_PRIVATE" != "true" ]; then
+            echo "Credential: GITHUB_TOKEN (public repository, the PAT is never used)"
+            CLONE_TOKEN="$GH_TOKEN"
+          elif [ -n "$GITHUB_PAT" ]; then
+            echo "Credential: DOC_ORCH_GITHUB_PAT (cross-repository access)"
             CLONE_TOKEN="$GITHUB_PAT"
           else
-            echo "   Using default GITHUB_TOKEN (may not work for private cross-repo)"
+            echo "Credential: GITHUB_TOKEN (no DOC_ORCH_GITHUB_PAT set; private dependencies may fail to clone)"
             CLONE_TOKEN="$GH_TOKEN"
           fi
 
@@ -833,63 +866,58 @@ jobs:
           IFS=',' read -ra DEPS <<< "$DEPENDENCIES"
           for dep in "${DEPS[@]}"; do
             repo_name=$(basename $dep)
-            echo ""
-            echo "  📁 Cloning: $dep → ../deps/$repo_name"
+            echo "::group::Clone $dep into ../deps/$repo_name"
             if git clone --depth 1 "https://github.com/$dep.git" "../deps/$repo_name" 2>&1; then
               file_count=$(node /tmp/ci-source.mjs count "../deps/$repo_name" 2>/dev/null || echo "?")
-              echo "     ✅ Cloned successfully ($file_count source files)"
+              echo "Cloned $dep ($file_count source files)"
             else
-              echo "     ⚠️ Failed to clone $dep"
-              echo "        If private, pass github_pat with 'repo' scope"
+              echo "::warning title=Dependency not cloned::Could not clone $dep. A private dependency needs DOC_ORCH_GITHUB_PAT with the repo scope."
             fi
+            echo "::endgroup::"
           done
 
-          echo ""
-          echo "📂 Dependency directories:"
-          ls -la ../deps/ 2>/dev/null || echo "   No dependencies cloned"
-          echo ""
-          echo "📊 Total dependency source files available for documentation:"
-          echo "   $(node /tmp/ci-source.mjs count ../deps 2>/dev/null || echo '?')"
+          echo "::group::Dependency directories"
+          ls -la ../deps/ 2>/dev/null || echo "No dependencies cloned"
+          echo "::endgroup::"
+          echo "Dependency source files available as context: $(node /tmp/ci-source.mjs count ../deps 2>/dev/null || echo '?')"
 
       # =========================================================================
-      # LANGUAGE DETECTION (runs before all stages for consistency)
-      # Determines primary language for filtering in Stage 1, 2, and 3
+      # PRIMARY LANGUAGE (before every stage, so all of them agree): picks the
+      # stage 2 engine and filters stages 1 to 3.
       # =========================================================================
-      - name: Detect Repository Language
+      - name: Detect primary language
         id: detect_language
         run: |
           source /tmp/workflow-helpers.sh
 
           # This step is the FIRST reader of CODEWIKI_CONFIG_JSON — it runs before
-          # "Validate and Parse Input Parameters" — so the emptiness guard lives here,
+          # "Validate and parse run configuration", so the emptiness guard lives here,
           # ahead of the first jq, rather than in the later validation step.
           if [ -z "$CODEWIKI_CONFIG_JSON" ]; then
-            echo "❌ Missing: CODEWIKI_CONFIG_JSON (required before language detection)"
+            echo "::error title=Missing configuration::CODEWIKI_CONFIG_JSON is empty; language detection needs it."
             exit 1
           fi
 
-          echo "🔍 Detecting repository primary language..."
-          echo "   Scanning main repo (.) and dependency repos (../deps/)"
+          echo "Detecting the primary language across the repository (.) and its dependencies (../deps/)"
 
           # ONE detection, from the vocabulary the hub serves (ci-source.mjs): which
           # languages are source, their extensions, and which of them CodeWiki can
           # parse are rows in the hub's language table. This step used to carry nine
           # hand-typed `find` counts, a positional helper and a six-way threshold
           # test, each with its own idea of the extensions and the exclusions.
-          DETECTION=$(node /tmp/ci-source.mjs detect) || { echo "❌ language detection failed"; exit 1; }
+          DETECTION=$(node /tmp/ci-source.mjs detect) || { echo "::error title=Language detection failed::ci-source.mjs detect exited non-zero."; exit 1; }
           PRIMARY_LANG=$(echo "$DETECTION" | jq -r '.primary')
           MAX_COUNT=$(echo "$DETECTION" | jq -r '.max')
           CODEWIKI_SUPPORTED=$(echo "$DETECTION" | jq -r '.codewiki_supported')
 
-          echo ""
-          echo "📊 Source files by language (tests and never-source directories excluded):"
+          echo "::group::Source files by language (tests and never-source directories excluded)"
           echo "$DETECTION" | jq -r '.counts | to_entries[] | select(.value > 0) | "  \(.key): \(.value)"'
-          echo ""
-          echo "✅ Primary language: $PRIMARY_LANG ($MAX_COUNT files)"
+          echo "::endgroup::"
+          echo "Primary language: $PRIMARY_LANG ($MAX_COUNT files)"
           if [ "$CODEWIKI_SUPPORTED" = "true" ]; then
-            echo "   CodeWiki supported: YES"
+            echo "CodeWiki can parse it: yes"
           else
-            echo "   CodeWiki supported: NO (will use Claude Architecture Analysis)"
+            echo "CodeWiki can parse it: no (stage 2 uses the Claude architecture analysis)"
           fi
 
           # Per-repo engine override.
@@ -907,17 +935,17 @@ jobs:
           case "$CODEWIKI_ENGINE" in
             claude)
               CODEWIKI_SUPPORTED="false"
-              echo "   ⚙️  engine=claude — forcing Claude Architecture Analysis"
+              echo "Stage 2 engine: claude (pinned by the repository configuration)"
               ;;
             codewiki)
               CODEWIKI_SUPPORTED="true"
-              echo "   ⚙️  engine=codewiki — forcing CodeWiki"
+              echo "Stage 2 engine: codewiki (pinned by the repository configuration)"
               ;;
             auto)
-              echo "   ⚙️  engine=auto — using detected value ($CODEWIKI_SUPPORTED)"
+              echo "Stage 2 engine: auto (CodeWiki supported: $CODEWIKI_SUPPORTED)"
               ;;
             *)
-              echo "❌ Invalid engine '$CODEWIKI_ENGINE' (expected auto|codewiki|claude)"
+              echo "::error title=Invalid stage 2 engine::engine is '$CODEWIKI_ENGINE'; expected auto, codewiki or claude."
               exit 1
               ;;
           esac
@@ -928,51 +956,40 @@ jobs:
           set_output "file_count" "$MAX_COUNT"
 
       # =========================================================================
-      # VALIDATE AND PARSE ALL INPUT PARAMETERS
-      # 1. Validate all required parameters are present
-      # 2. Parse ALL JSON configurations into individual environment variables
-      # 3. Validate parsed values
-      # Required to stay under GitHub Actions 25-parameter limit
+      # VALIDATE AND PARSE THE RUN CONFIGURATION
+      # 1. Every required parameter is present
+      # 2. Each JSON configuration is parsed into individual variables (the JSON
+      #    grouping keeps the dispatch under GitHub's 25-input limit)
+      # 3. The parsed values are valid, then exported to GITHUB_ENV
       # =========================================================================
-      - name: Validate and Parse Input Parameters
+      - name: Validate and parse run configuration
         run: |
-          echo "🔍 Validating and parsing all input parameters..."
-          echo ""
-
-          # ===================================================================
-          # 1. VALIDATE REQUIRED PARAMETERS
-          # ===================================================================
-          echo "1️⃣ Validating required parameters..."
-
+          # 1. Required parameters -------------------------------------------
           VALIDATION_FAILED=0
 
           # Core parameters
-          [ -z "$RUN_ID" ] && echo "❌ Missing: RUN_ID" && VALIDATION_FAILED=1
-          [ -z "$REPO_ID" ] && echo "❌ Missing: REPO_ID" && VALIDATION_FAILED=1
-          [ -z "$HUB_BASE_URL" ] && echo "❌ Missing: HUB_BASE_URL" && VALIDATION_FAILED=1
+          [ -z "$RUN_ID" ] && echo "::error title=Missing parameter::RUN_ID" && VALIDATION_FAILED=1
+          [ -z "$REPO_ID" ] && echo "::error title=Missing parameter::REPO_ID" && VALIDATION_FAILED=1
+          [ -z "$HUB_BASE_URL" ] && echo "::error title=Missing parameter::HUB_BASE_URL" && VALIDATION_FAILED=1
 
-          [ -z "$STAGES" ] && echo "❌ Missing: STAGES" && VALIDATION_FAILED=1
-          [ -z "$CLAUDE_MODEL" ] && echo "❌ Missing: CLAUDE_MODEL" && VALIDATION_FAILED=1
+          [ -z "$STAGES" ] && echo "::error title=Missing parameter::STAGES" && VALIDATION_FAILED=1
+          [ -z "$CLAUDE_MODEL" ] && echo "::error title=Missing parameter::CLAUDE_MODEL" && VALIDATION_FAILED=1
 
           # JSON parameters
-          [ -z "$CODEWIKI_CONFIG_JSON" ] && echo "❌ Missing: CODEWIKI_CONFIG_JSON" && VALIDATION_FAILED=1
-          [ -z "$OUTPUT_PATHS_JSON" ] && echo "❌ Missing: OUTPUT_PATHS_JSON" && VALIDATION_FAILED=1
-          [ -z "$README_CONFIG_JSON" ] && echo "❌ Missing: README_CONFIG_JSON" && VALIDATION_FAILED=1
-          [ -z "$YOUTUBE_CONFIG_JSON" ] && echo "❌ Missing: YOUTUBE_CONFIG_JSON" && VALIDATION_FAILED=1
+          [ -z "$CODEWIKI_CONFIG_JSON" ] && echo "::error title=Missing parameter::CODEWIKI_CONFIG_JSON" && VALIDATION_FAILED=1
+          [ -z "$OUTPUT_PATHS_JSON" ] && echo "::error title=Missing parameter::OUTPUT_PATHS_JSON" && VALIDATION_FAILED=1
+          [ -z "$README_CONFIG_JSON" ] && echo "::error title=Missing parameter::README_CONFIG_JSON" && VALIDATION_FAILED=1
+          [ -z "$YOUTUBE_CONFIG_JSON" ] && echo "::error title=Missing parameter::YOUTUBE_CONFIG_JSON" && VALIDATION_FAILED=1
 
           if [ $VALIDATION_FAILED -eq 1 ]; then
-            echo ""
-            echo "❌ Validation failed: Missing required parameters"
+            echo "::error title=Invalid run configuration::Required parameters are missing (annotated above). The hub sends every one of them; re-run \"Setup Workflow\" if this repository's workflow is out of date."
             exit 1
           fi
 
-          echo "   ✅ All required parameters present"
-          echo ""
+          echo "Required parameters: present"
 
-          # ===================================================================
-          # 2. PARSE CODEWIKI CONFIGURATION (nested JSONB structure)
-          # ===================================================================
-          echo "2️⃣ Parsing CodeWiki configuration..."
+          # 2a. CodeWiki configuration (nested JSON) ---------------------------
+          echo "::group::CodeWiki configuration"
 
           # Only the keys with a real consumer are extracted here — the per-phase
           # base_url / api_version / temperature / temperature_supported are read
@@ -1016,18 +1033,15 @@ jobs:
           CODEWIKI_MAX_DEPTH=$(require_json_key "$CW_JSON" '.max_depth' 'max_depth') || exit 1
           CODEWIKI_REPO=$(require_json_key "$CW_JSON" '.repo' 'codewiki repo url') || exit 1
 
-          echo "   Cluster (Phase 2): $CODEWIKI_CLUSTER_PROVIDER / $CODEWIKI_CLUSTER_MODEL (${CODEWIKI_CLUSTER_MAX_TOKEN_FIELD}, ${CODEWIKI_CLUSTER_MAX_TOKENS} tokens)"
-          echo "   Generation (Phase 3+): $CODEWIKI_GENERATION_PROVIDER / $CODEWIKI_GENERATION_MODEL (${CODEWIKI_GENERATION_MAX_TOKEN_FIELD}, ${CODEWIKI_GENERATION_MAX_TOKENS} tokens)"
-          echo "   Fallback: $CODEWIKI_FALLBACK_PROVIDER / $CODEWIKI_FALLBACK_MODEL (${CODEWIKI_FALLBACK_MAX_TOKEN_FIELD}, ${CODEWIKI_FALLBACK_MAX_TOKENS} tokens)"
-          echo "   Max depth: $CODEWIKI_MAX_DEPTH"
-          echo "   Max files/module: $CODEWIKI_MAX_FILES_PER_MODULE"
-          echo "   ✅ CodeWiki parameters parsed"
-          echo ""
+          echo "Cluster (phase 2):     $CODEWIKI_CLUSTER_PROVIDER / $CODEWIKI_CLUSTER_MODEL (${CODEWIKI_CLUSTER_MAX_TOKEN_FIELD}, ${CODEWIKI_CLUSTER_MAX_TOKENS} tokens)"
+          echo "Generation (phase 3+): $CODEWIKI_GENERATION_PROVIDER / $CODEWIKI_GENERATION_MODEL (${CODEWIKI_GENERATION_MAX_TOKEN_FIELD}, ${CODEWIKI_GENERATION_MAX_TOKENS} tokens)"
+          echo "Fallback:              $CODEWIKI_FALLBACK_PROVIDER / $CODEWIKI_FALLBACK_MODEL (${CODEWIKI_FALLBACK_MAX_TOKEN_FIELD}, ${CODEWIKI_FALLBACK_MAX_TOKENS} tokens)"
+          echo "Max depth:             $CODEWIKI_MAX_DEPTH"
+          echo "Max files per module:  $CODEWIKI_MAX_FILES_PER_MODULE"
+          echo "::endgroup::"
 
-          # ===================================================================
-          # 3. PARSE YOUTUBE CONFIGURATION (JSONB structure)
-          # ===================================================================
-          echo "3️⃣ Parsing YouTube configuration..."
+          # 2b. YouTube configuration ------------------------------------------
+          echo "::group::YouTube configuration"
 
           # Parse YouTube config from JSONB (channels only - API key from secrets)
           # channels is legitimately optional: no channels == feature off
@@ -1036,32 +1050,26 @@ jobs:
           # YouTube is enabled if channels array has items
           YOUTUBE_ENABLED=$(echo "$YOUTUBE_CHANNELS" | jq -r 'if length > 0 then "true" else "false" end')
 
-          echo "   Enabled: $YOUTUBE_ENABLED (based on channels count)"
-          echo "   Channels: $YOUTUBE_CHANNELS"
-          echo "   API key source: secrets.YOUTUBE_API_KEY (SECURE - not in database)"
-          echo "   ✅ YouTube configuration parsed"
-          echo ""
+          echo "Enabled:  $YOUTUBE_ENABLED (from the channel count)"
+          echo "Channels: $YOUTUBE_CHANNELS"
+          echo "API key:  secrets.YOUTUBE_API_KEY (never stored on the hub)"
+          echo "::endgroup::"
 
-          # ===================================================================
-          # 4. PARSE README CONFIGURATION (JSONB structure)
-          # ===================================================================
-          echo "4️⃣ Parsing README logo configuration..."
+          # 2c. README logo configuration --------------------------------------
+          echo "::group::README logo configuration"
 
           # Parse README config from JSONB
           README_LOGO_DARK=$(optional_json_key "$README_CONFIG_JSON" '.logo_dark')
           README_LOGO_LIGHT=$(optional_json_key "$README_CONFIG_JSON" '.logo_light')
           README_LOGO_ALT=$(require_json_key "$README_CONFIG_JSON" '.logo_alt' 'readme logo alt') || exit 1
 
-          echo "   Dark logo: ${README_LOGO_DARK:-'(not set)'}"
-          echo "   Light logo: ${README_LOGO_LIGHT:-'(not set)'}"
-          echo "   Alt text: $README_LOGO_ALT"
-          echo "   ✅ README logo configuration parsed"
-          echo ""
+          echo "Dark logo:  ${README_LOGO_DARK:-'(not set)'}"
+          echo "Light logo: ${README_LOGO_LIGHT:-'(not set)'}"
+          echo "Alt text:   $README_LOGO_ALT"
+          echo "::endgroup::"
 
-          # ===================================================================
-          # 5. PARSE OUTPUT PATHS CONFIGURATION (5 params)
-          # ===================================================================
-          echo "5️⃣ Parsing output paths..."
+          # 2d. Output paths ---------------------------------------------------
+          echo "::group::Output paths"
 
           # Same fail-loud contract as the codewiki block. These fallbacks were the
           # last surviving copy of the five paths, and `.reference` still said
@@ -1074,22 +1082,17 @@ jobs:
           GETTING_STARTED_OUTPUT_PATH=$(require_json_key "$OP_JSON" '.getting_started' 'getting-started output path') || exit 1
           DEVELOPMENT_OUTPUT_PATH=$(require_json_key "$OP_JSON" '.development' 'development output path') || exit 1
 
-          echo "   Base docs: $DOCS_OUTPUT_PATH"
-          echo "   Reference: $REFERENCE_OUTPUT_PATH"
-          echo "   Diagrams: $DIAGRAMS_OUTPUT_PATH"
-          echo "   Getting started: $GETTING_STARTED_OUTPUT_PATH"
-          echo "   Development: $DEVELOPMENT_OUTPUT_PATH"
-          echo "   ✅ 5 output path parameters parsed"
-          echo ""
+          echo "Docs root:       $DOCS_OUTPUT_PATH"
+          echo "Reference:       $REFERENCE_OUTPUT_PATH"
+          echo "Diagrams:        $DIAGRAMS_OUTPUT_PATH"
+          echo "Getting started: $GETTING_STARTED_OUTPUT_PATH"
+          echo "Development:     $DEVELOPMENT_OUTPUT_PATH"
+          echo "::endgroup::"
 
-          # ===================================================================
-          # 6. SET CUSTOM INSTRUCTIONS & EXTERNAL REPOS (separate parameters)
-          # ===================================================================
-          echo "6️⃣ Setting custom instructions and external repos..."
+          # 2e. Custom instructions and external repositories ------------------
+          echo "::group::Custom instructions and external repositories"
 
-          # ===================================================================
-          # 6a. BUILD REPOSITORY CONTEXT (prevents AI URL hallucinations)
-          # ===================================================================
+          # Repository context (prevents invented GitHub URLs in every prompt)
           # Extract repository information from GitHub context
           GITHUB_REPO="${{ github.repository }}"
           GITHUB_OWNER="${{ github.repository_owner }}"
@@ -1125,16 +1128,10 @@ jobs:
             '' \
             '---'
 
-          echo "   Repository: $GITHUB_REPO"
-          echo "   Repository URL: $GITHUB_REPO_URL"
-          echo "   Repository context length: ${#REPOSITORY_CONTEXT} chars"
+          echo "Repository:     $GITHUB_REPO"
+          echo "Repository URL: $GITHUB_REPO_URL"
 
-          # DEBUG: Print first 200 chars of repository context to verify it's set
-          echo "   Repository context preview: ${REPOSITORY_CONTEXT:0:200}..."
-
-          # ===================================================================
-          # 6b. PREPEND REPOSITORY CONTEXT TO CUSTOM INSTRUCTIONS
-          # ===================================================================
+          # Repository context goes in front of the custom instructions
           # Custom instructions come as plain text from user
           # Read from the environment rather than interpolating into single quotes.
           # GitHub Actions expression substitution runs BEFORE bash parses the line, so a
@@ -1155,59 +1152,47 @@ jobs:
           # External repos come as separate JSON array parameter
 
           EXTERNAL_REPOS_COUNT=$(echo "$EXTERNAL_REPOS" | jq '. | length' 2>/dev/null || echo "0")
-          echo "   User instructions length: ${#USER_CUSTOM_INSTRUCTIONS} chars"
-          echo "   Repository context length: ${#REPOSITORY_CONTEXT} chars"
-          echo "   Total instructions length (with repo context): ${#CUSTOM_INSTRUCTIONS} chars"
-          echo "   External repos: $EXTERNAL_REPOS_COUNT repos"
-
-          # DEBUG: Print first 300 chars of CUSTOM_INSTRUCTIONS to verify repository context is included
-          echo "   ===== CUSTOM_INSTRUCTIONS PREVIEW ====="
+          echo "Repository context:  ${#REPOSITORY_CONTEXT} chars"
+          echo "Custom instructions: ${#USER_CUSTOM_INSTRUCTIONS} chars"
+          echo "Combined prompt block: ${#CUSTOM_INSTRUCTIONS} chars"
+          echo "External repositories: $EXTERNAL_REPOS_COUNT"
+          echo "Combined prompt block, first 300 chars:"
           echo "${CUSTOM_INSTRUCTIONS:0:300}..."
-          echo "   ========================================"
+          echo "::endgroup::"
 
-          echo "   ✅ Repository context + custom instructions + external repos set"
-          echo ""
-
-          # ===================================================================
-          # 5. VALIDATE PARSED VALUES
-          # ===================================================================
-          echo "5️⃣ Validating parsed values..."
+          # 3. Parsed values ---------------------------------------------------
 
           # Validate providers
           if [[ ! "$CODEWIKI_CLUSTER_PROVIDER" =~ ^(anthropic|openai)$ ]]; then
-            echo "❌ Invalid cluster provider: $CODEWIKI_CLUSTER_PROVIDER"
+            echo "::error title=Invalid CodeWiki configuration::cluster provider is '$CODEWIKI_CLUSTER_PROVIDER'; expected anthropic or openai."
             exit 1
           fi
 
           if [[ ! "$CODEWIKI_GENERATION_PROVIDER" =~ ^(anthropic|openai)$ ]]; then
-            echo "❌ Invalid generation provider: $CODEWIKI_GENERATION_PROVIDER"
+            echo "::error title=Invalid CodeWiki configuration::generation provider is '$CODEWIKI_GENERATION_PROVIDER'; expected anthropic or openai."
             exit 1
           fi
 
           if [[ ! "$CODEWIKI_FALLBACK_PROVIDER" =~ ^(anthropic|openai)$ ]]; then
-            echo "❌ Invalid fallback provider: $CODEWIKI_FALLBACK_PROVIDER"
+            echo "::error title=Invalid CodeWiki configuration::fallback provider is '$CODEWIKI_FALLBACK_PROVIDER'; expected anthropic or openai."
             exit 1
           fi
 
-          # Validate model names are not empty
-          [ -z "$CODEWIKI_CLUSTER_MODEL" ] && echo "❌ Empty cluster model" && exit 1
-          [ -z "$CODEWIKI_GENERATION_MODEL" ] && echo "❌ Empty generation model" && exit 1
-          [ -z "$CODEWIKI_FALLBACK_MODEL" ] && echo "❌ Empty fallback model" && exit 1
+          # Model names are not empty
+          [ -z "$CODEWIKI_CLUSTER_MODEL" ] && echo "::error title=Invalid CodeWiki configuration::cluster model is empty." && exit 1
+          [ -z "$CODEWIKI_GENERATION_MODEL" ] && echo "::error title=Invalid CodeWiki configuration::generation model is empty." && exit 1
+          [ -z "$CODEWIKI_FALLBACK_MODEL" ] && echo "::error title=Invalid CodeWiki configuration::fallback model is empty." && exit 1
 
-          # Validate numeric values
-          [[ ! "$CODEWIKI_CLUSTER_MAX_TOKENS" =~ ^[0-9]+$ ]] && echo "❌ Invalid cluster max_tokens: $CODEWIKI_CLUSTER_MAX_TOKENS" && exit 1
-          [[ ! "$CODEWIKI_GENERATION_MAX_TOKENS" =~ ^[0-9]+$ ]] && echo "❌ Invalid generation max_tokens: $CODEWIKI_GENERATION_MAX_TOKENS" && exit 1
-          [[ ! "$CODEWIKI_FALLBACK_MAX_TOKENS" =~ ^[0-9]+$ ]] && echo "❌ Invalid fallback max_tokens: $CODEWIKI_FALLBACK_MAX_TOKENS" && exit 1
-          [[ ! "$CODEWIKI_MAX_DEPTH" =~ ^[0-9]+$ ]] && echo "❌ Invalid max_depth: $CODEWIKI_MAX_DEPTH" && exit 1
-          [[ ! "$CODEWIKI_MAX_FILES_PER_MODULE" =~ ^[0-9]+$ ]] && echo "❌ Invalid max_files_per_module: $CODEWIKI_MAX_FILES_PER_MODULE" && exit 1
+          # Numeric values
+          [[ ! "$CODEWIKI_CLUSTER_MAX_TOKENS" =~ ^[0-9]+$ ]] && echo "::error title=Invalid CodeWiki configuration::cluster max_tokens is '$CODEWIKI_CLUSTER_MAX_TOKENS', not a number." && exit 1
+          [[ ! "$CODEWIKI_GENERATION_MAX_TOKENS" =~ ^[0-9]+$ ]] && echo "::error title=Invalid CodeWiki configuration::generation max_tokens is '$CODEWIKI_GENERATION_MAX_TOKENS', not a number." && exit 1
+          [[ ! "$CODEWIKI_FALLBACK_MAX_TOKENS" =~ ^[0-9]+$ ]] && echo "::error title=Invalid CodeWiki configuration::fallback max_tokens is '$CODEWIKI_FALLBACK_MAX_TOKENS', not a number." && exit 1
+          [[ ! "$CODEWIKI_MAX_DEPTH" =~ ^[0-9]+$ ]] && echo "::error title=Invalid CodeWiki configuration::max_depth is '$CODEWIKI_MAX_DEPTH', not a number." && exit 1
+          [[ ! "$CODEWIKI_MAX_FILES_PER_MODULE" =~ ^[0-9]+$ ]] && echo "::error title=Invalid CodeWiki configuration::max_files_per_module is '$CODEWIKI_MAX_FILES_PER_MODULE', not a number." && exit 1
 
-          echo "   ✅ All parsed values are valid"
-          echo ""
+          echo "Parsed values: valid"
 
-          # ===================================================================
-          # 7. EXPORT TO GITHUB_ENV (makes values available to all steps)
-          # ===================================================================
-          echo "7️⃣ Exporting to GITHUB_ENV..."
+          # 4. Export to GITHUB_ENV (every later step reads these) -------------
 
           # CodeWiki config (31 vars: cluster=9, generation=10, fallback=9, shared=3)
           echo "CODEWIKI_CLUSTER_PROVIDER=$CODEWIKI_CLUSTER_PROVIDER" >> $GITHUB_ENV
@@ -1248,35 +1233,22 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
           echo "EXTERNAL_REPOS=$EXTERNAL_REPOS" >> $GITHUB_ENV
 
-          echo "   ✅ 40 values exported to GITHUB_ENV (28 CodeWiki + 2 YouTube + 3 README + 5 output_paths + 2 custom [with repo context])"
-          echo ""
-
-          # ===================================================================
-          # 7. SUMMARY
-          # ===================================================================
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "✅ VALIDATION AND PARSING COMPLETE"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📊 Parameters validated: 5"
-          echo "📦 JSON configurations parsed: 3"
-          echo "🔢 Individual values extracted: 18"
-          echo "✅ All values exported and ready for workflow stages"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Run configuration validated and exported: 15 CodeWiki, 2 YouTube, 3 README, 5 output paths, 2 instruction values"
 
       # =========================================================================
-      # UNIFIED FILE DISCOVERY (Single Source of Truth)
+      # SOURCE FILE DISCOVERY (the one list every stage reads)
       # Discovers SOURCE CODE files and optionally DELETES everything else.
       # When SOURCE_FILES_LIMIT > 0:
       #   1. Keeps only N source files (.ts, .java, .py, etc.)
       #   2. DELETES ALL other files in the repo (aggressive cleanup)
       # Generated docs (inline .md) are created AFTER this step, so not affected.
       # =========================================================================
-      - name: Discover Source Files
+      - name: Discover source files
         id: discover_files
         env:
           SOURCE_FILES_LIMIT: ${{ env.SOURCE_FILES_LIMIT }}
           # DOCS_OUTPUT_PATH is needed below so the find can exclude the
-          # generated docs tree (deleted by the Clean Slate step that runs
+          # generated docs tree (deleted by the docs-removal step that runs
           # AFTER discovery but BEFORE Stage 1 — source-extension files
           # under docs/ would otherwise be enumerated, then deleted, then
           # cause ENOENT in Stage 1).
@@ -1284,8 +1256,7 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "🔍 Discovering source code files..."
-          echo "   Scanning main repo (.) and dependency repos (../deps/)"
+          echo "Discovering source files in the repository (.) and its dependencies (../deps/)"
 
           # File paths (all in /tmp to avoid accidental commits)
           SOURCE_FILES_LIST="/tmp/.doc-orchestrator-source-files.txt"
@@ -1294,27 +1265,27 @@ jobs:
           FILES_TO_DELETE="/tmp/files_to_delete.txt"
 
           # 1. Find SOURCE CODE files only (with standard exclusions)
-          # IMPORTANT: exclude $DOCS_OUTPUT_PATH/* — the "Clean Slate" step below
+          # IMPORTANT: exclude $DOCS_OUTPUT_PATH/* — the docs-removal step below
           # does `rm -rf $DOCS_OUTPUT_PATH` BEFORE Stage 1 reads this list. If
           # any source-extension file lives under the docs tree (Doxygen's
           # `docs/doxygen/documentation.h`, Sphinx `_extensions/*.py`, etc.),
           # it would be enumerated here, then deleted, then Stage 1 hits
           # ENOENT trying to read it. This is the source-discovery /
-          # Clean-Slate / Stage-1 ordering bug — exclusion is the targeted fix.
+          # docs-removal / Stage-1 ordering bug — exclusion is the targeted fix.
           # The list comes from ci-source.mjs: the served source extensions, the
           # served never-source directories, tests skipped by name — the same rule
           # the language detection above counted with.
-          node /tmp/ci-source.mjs list "$ALL_SOURCE_TEMP" --exclude "./$DOCS_OUTPUT_PATH" > /dev/null || { echo "❌ source discovery failed"; exit 1; }
+          node /tmp/ci-source.mjs list "$ALL_SOURCE_TEMP" --exclude "./$DOCS_OUTPUT_PATH" > /dev/null || { echo "::error title=Source discovery failed::ci-source.mjs list exited non-zero."; exit 1; }
 
           TOTAL_SOURCE=$(wc -l < "$ALL_SOURCE_TEMP" | tr -d ' ')
           FILE_LIMIT="${SOURCE_FILES_LIMIT:-0}"
 
-          echo "   Found $TOTAL_SOURCE source code files"
+          echo "Source files found: $TOTAL_SOURCE"
 
           # Apply limit: keep N source files, DELETE EVERYTHING ELSE
           if [ "$FILE_LIMIT" -gt 0 ]; then
-            echo ""
-            echo "⚡ DEBUG MODE: Keeping only $FILE_LIMIT source files, deleting EVERYTHING else"
+            echo "::warning title=Source file limit active::SOURCE_FILES_LIMIT=$FILE_LIMIT. Keeping $FILE_LIMIT source files and deleting every other file in the checkout (a debugging setting)."
+            echo "::group::Apply the source file limit"
 
             # Keep first N source files
             head -n "$FILE_LIMIT" "$ALL_SOURCE_TEMP" > "$SOURCE_FILES_LIST"
@@ -1329,7 +1300,7 @@ jobs:
             | sort > "$ALL_FILES_TEMP"
 
             TOTAL_FILES=$(wc -l < "$ALL_FILES_TEMP" | tr -d ' ')
-            echo "   Total files in repo: $TOTAL_FILES"
+            echo "Files in the checkout: $TOTAL_FILES"
 
             # Build delete list: ALL files EXCEPT the ones we're keeping
             # Also preserve workflow temp files (.doc-orchestrator-*, .doc-stage*)
@@ -1346,7 +1317,7 @@ jobs:
             done < "$ALL_FILES_TEMP"
 
             DELETE_COUNT=$(wc -l < "$FILES_TO_DELETE" | tr -d ' ')
-            echo "   Files to delete: $DELETE_COUNT"
+            echo "Files to delete: $DELETE_COUNT"
 
             # Delete all files NOT in the keep list
             DELETED_COUNT=0
@@ -1357,13 +1328,11 @@ jobs:
               fi
             done < "$FILES_TO_DELETE"
 
-            echo "   ✅ Keeping: $KEEPING source files"
-            echo "   🗑️  Deleted: $DELETED_COUNT files"
+            echo "Kept $KEEPING source files, deleted $DELETED_COUNT files"
 
             rm -f "$FILES_TO_DELETE" "$ALL_FILES_TEMP"
 
             # Aggressively prune directories (including those with only dotfiles)
-            echo "   🧹 Pruning directories..."
             PRUNED_COUNT=0
 
             # First, delete all dotfiles except in .git and workflow temp files (they prevent dir deletion)
@@ -1386,13 +1355,13 @@ jobs:
             done
 
             if [ "$PRUNED_COUNT" -gt 0 ]; then
-              echo "   🗑️  Pruned $PRUNED_COUNT empty directories"
+              echo "Pruned $PRUNED_COUNT empty directories"
             fi
 
             # Show what's left
-            echo ""
-            echo "📂 Remaining structure:"
+            echo "Remaining directories (first 20):"
             find . -type d -not -path "*/.git/*" -not -path "*/.git" | head -20
+            echo "::endgroup::"
           else
             # No limit - keep all source files
             cp "$ALL_SOURCE_TEMP" "$SOURCE_FILES_LIST"
@@ -1406,46 +1375,39 @@ jobs:
           MAIN_COUNT=$(count_main_repo_files "$SOURCE_FILES_LIST")
           DEPS_COUNT=$(count_dependency_files "$SOURCE_FILES_LIST")
 
-          echo ""
-          echo "📊 Source files to analyze:"
-          echo "   Total: $FILE_COUNT files"
-          echo "   Main repo: $MAIN_COUNT files"
-          echo "   Dependencies: $DEPS_COUNT files"
+          echo "Source files to document: $FILE_COUNT ($MAIN_COUNT in this repository, $DEPS_COUNT in dependencies)"
 
-          # Show breakdown by language
-          echo ""
-          echo "📋 By language:"
-          node /tmp/ci-source.mjs breakdown "$SOURCE_FILES_LIST" | sed 's/^/   /'
+          echo "::group::Source files by language"
+          node /tmp/ci-source.mjs breakdown "$SOURCE_FILES_LIST" | sed 's/^/  /'
+          echo "::endgroup::"
 
-          # Show first 20 files for debugging
-          echo ""
-          echo "📄 Sample files (first 20):"
-          head -20 "$SOURCE_FILES_LIST" | sed 's/^/   /'
+          echo "::group::Sample source files (first 20)"
+          head -20 "$SOURCE_FILES_LIST" | sed 's/^/  /'
+          echo "::endgroup::"
 
           # Output for use by subsequent steps
           set_output "source_file_count" "$FILE_COUNT"
           set_output "source_files_list" "$SOURCE_FILES_LIST"
 
       # =========================================================================
-      # CREATE PR BRANCH EARLY (Progressive PR Support)
-      # Creates PR branch and initial PR before any stages run, so each stage
-      # can commit its results immediately. This prevents data loss on timeouts.
+      # PULL REQUEST FIRST (progressive pull request)
+      # The branch and the pull request exist before any stage runs, so each
+      # stage commits its results the moment it finishes. A timeout loses at
+      # most the stage in flight.
       # =========================================================================
-      - name: Sanitize Branch Name for PR
+      - name: Derive branch name
         id: branch-name-early
         run: |
           source /tmp/workflow-helpers.sh
           # Replace colons and other invalid chars with hyphens for git branch name
           SAFE_RUN_ID=$(echo "$RUN_ID" | sed 's/[:]/-/g' | sed 's/[^a-zA-Z0-9._-]/-/g')
           set_output "safe_run_id" "$SAFE_RUN_ID"
-          echo "📝 Sanitized RUN_ID for branch: $SAFE_RUN_ID"
+          echo "Run ID for the branch name: $SAFE_RUN_ID"
 
-      - name: Create PR Branch
+      - name: Create docs branch
         id: create-pr-branch
         run: |
           source /tmp/workflow-helpers.sh
-
-          echo "📝 Creating PR branch early for progressive commits..."
 
           # Use sanitized run ID for branch name. Branch, PR title, status file and
           # commit messages all carry the product name: 🦩 Flamingo Code Documentation.
@@ -1467,7 +1429,7 @@ jobs:
           echo "Started: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> .flamingo-ai-technical-writer-status.md
           # -f: the status file is a hidden dot-md that many target repos' .gitignore
           # patterns (e.g. `.*` / `*status*`) cover — without -f, `git add` fails the
-          # step. It's removed again in "Cleanup Temporary Files" before the PR.
+          # step. It's removed again in "Clean up temporary files" before the PR.
           git add -f .flamingo-ai-technical-writer-status.md
           git commit -m "docs: Initialize 🦩 Flamingo Code Documentation run [skip ci]"
           git push -u origin "$BRANCH_NAME"
@@ -1475,14 +1437,12 @@ jobs:
           # Store branch name for later steps
           set_output "branch_name" "$BRANCH_NAME"
 
-          echo "✅ PR branch created: $BRANCH_NAME"
+          echo "Docs branch pushed: $BRANCH_NAME"
 
-      - name: Ensure PR Labels Exist
+      - name: Ensure pull request labels exist
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🏷️ Ensuring required PR labels exist..."
-
           # Labels used for 🦩 Flamingo Code Documentation PRs
           LABELS=(
             "documentation:A label for documentation-related PRs:#0075ca"
@@ -1497,18 +1457,16 @@ jobs:
 
             # Check if label exists
             if gh label list --json name --jq '.[].name' | grep -q "^${LABEL_NAME}$"; then
-              echo "   ✓ Label '$LABEL_NAME' already exists"
+              echo "Label exists: $LABEL_NAME"
             else
-              echo "   + Creating label '$LABEL_NAME'..."
+              echo "Creating label: $LABEL_NAME"
               gh label create "$LABEL_NAME" \
                 --description "$LABEL_DESC" \
                 --color "$LABEL_COLOR" || true
             fi
           done
 
-          echo "✅ All required labels verified"
-
-      - name: Create Initial PR
+      - name: Open pull request
         id: create-initial-pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -1518,8 +1476,6 @@ jobs:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           source /tmp/workflow-helpers.sh
-
-          echo "📝 Creating Pull Request for branch: $BRANCH_NAME"
 
           # Create PR body in a temp file (avoiding YAML parsing issues)
           {
@@ -1550,20 +1506,19 @@ jobs:
           # Extract PR number from URL
           PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
 
-          echo "✅ PR created: $PR_URL"
-          echo "   PR Number: $PR_NUMBER"
+          echo "Pull request #$PR_NUMBER opened: $PR_URL"
 
           # Set outputs for later steps
           set_output "pull-request-url" "$PR_URL"
           set_output "pull-request-number" "$PR_NUMBER"
 
       # =========================================================================
-      # CLEAN SLATE: REMOVE ENTIRE DOCS DIRECTORY
-      # Deletes ALL documentation before regeneration
-      # Ensures 100% fresh documentation with zero orphaned files
-      # All documentation will be regenerated by workflow stages
+      # REMOVE DOCS THIS RUN REGENERATES
+      # Deletes the documentation the configured stages own before they run, so
+      # the result carries no orphaned files. A subtree whose stage then
+      # produces nothing is put back by "Restore docs no stage regenerated".
       # =========================================================================
-      - name: Clean Slate - Remove Regenerated Docs
+      - name: Remove docs this run regenerates
         env:
           DOCS_OUTPUT_PATH: ${{ env.DOCS_OUTPUT_PATH }}
           REFERENCE_OUTPUT_PATH: ${{ env.REFERENCE_OUTPUT_PATH }}
@@ -1574,15 +1529,12 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "🗑️ Clean Slate: Removing documentation this run will regenerate..."
-          echo ""
-
           # Recorded so a stage that ends up producing nothing can restore what was
           # deleted on its behalf. Without it, a skipped stage turns the pull request
           # into a net DELETION of existing documentation.
           PRE_CLEAN_SHA=$(git rev-parse HEAD)
           echo "PRE_CLEAN_SHA=$PRE_CLEAN_SHA" >> $GITHUB_ENV
-          echo "   Pre-clean commit: $PRE_CLEAN_SHA"
+          echo "Commit before removal: $PRE_CLEAN_SHA"
 
           # SCOPED TO THE CONFIGURED STAGES.
           #
@@ -1622,9 +1574,9 @@ jobs:
             CLEAN_TARGETS=("$REFERENCE_OUTPUT_PATH" "$DIAGRAMS_OUTPUT_PATH" "$GETTING_STARTED_OUTPUT_PATH" "$DEVELOPMENT_OUTPUT_PATH")
           fi
 
-          echo "   Stages: $STAGES"
-          echo "   Full wipe: $FULL_WIPE"
-          echo "   Targets: ${CLEAN_TARGETS[*]:-(none)}"
+          echo "Stages:    $STAGES"
+          echo "Full wipe: $FULL_WIPE"
+          echo "Targets:   ${CLEAN_TARGETS[*]:-(none)}"
 
           # Recorded so the restore step iterates exactly what was removed — the
           # stage -> subtree map has ONE home, here.
@@ -1633,7 +1585,6 @@ jobs:
             for t in ${CLEAN_TARGETS[@]+"${CLEAN_TARGETS[@]}"}; do echo "$t"; done
             echo "__EOT__"
           } >> $GITHUB_ENV
-          echo ""
 
           # Count files before deletion (for reporting). Iterate DELETE_TARGETS —
           # the actual rm list (blanket docs/ on a full wipe, per-stage subtrees
@@ -1643,24 +1594,21 @@ jobs:
             if [ -d "$target" ]; then
               TARGET_FILES=$(find "$target" -type f | wc -l | tr -d ' ')
               DELETED_FILES=$((DELETED_FILES + TARGET_FILES))
-              echo "   🗑️  Removing $target ($TARGET_FILES files)..."
+              echo "Removing $target ($TARGET_FILES files)"
               rm -rf "$target"
             else
-              echo "   ⏭️  $target does not exist (nothing to clean)"
+              echo "Skipping $target (does not exist)"
             fi
           done
           if [ ${#DELETE_TARGETS[@]} -eq 0 ]; then
-            echo "   ⏭️  No stage owns a docs subtree — nothing to clean"
+            echo "No configured stage owns a docs subtree; nothing to remove"
           fi
 
           # Recreate base directory
           mkdir -p "$DOCS_OUTPUT_PATH"
-          echo "   📁 Recreated empty: $DOCS_OUTPUT_PATH"
 
           # Commit the deletion to git (so it shows in PR)
           if [ "$DELETED_FILES" -gt 0 ]; then
-            echo ""
-            echo "📝 Committing Clean Slate deletion..."
             git add -A
 
             # Check if there are staged changes
@@ -1669,23 +1617,14 @@ jobs:
             if [ "$STAGED_COUNT" -gt 0 ]; then
               git commit -m "chore(docs): Clean slate - remove all documentation ($DELETED_FILES files) [skip ci]"
               git push origin "$BRANCH_NAME"
-              echo "   ✅ Committed deletion of $STAGED_COUNT files"
+              echo "Committed the removal of $STAGED_COUNT files"
             else
-              echo "   ⏭️  No staged changes (docs already clean)"
+              echo "Nothing to commit (the docs were already absent)"
             fi
           fi
 
-          echo ""
-          echo "✅ Clean slate complete - ready for fresh documentation generation"
-          echo ""
-
-      # =========================================================================
-      # STAGE 1: INLINE CLASS DOCUMENTATION
-      # Generate .md files next to each source class
-      # Uses discovered files from the unified file discovery step
-      # =========================================================================
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
 
@@ -1712,7 +1651,11 @@ jobs:
           CODE_GRAPH_COMMIT_SHA: ${{ env.SOURCE_HEAD_SHA }}
         run: node /tmp/code-graph-build.mjs
 
-      - name: Install Stage 1 Dependencies
+      # =========================================================================
+      # STAGE 1: INLINE DOCS
+      # One hidden .md beside each source file, over the discovered file list.
+      # =========================================================================
+      - name: Install stage 1 dependencies
         if: contains(env.STAGES, 'inline-docs')
         # Install generator deps in an ISOLATED tree under RUNNER_TEMP, NOT the target
         # repo. npm resolves against an empty package.json here, so a target repo's own
@@ -1724,7 +1667,7 @@ jobs:
           npm init -y >/dev/null 2>&1
           npm install @anthropic-ai/sdk@0.115.0 zod@3.25.76 glob@13.0.6
 
-      - name: Generate Inline Class Documentation
+      - name: Generate inline docs (stage 1)
         id: stage1
         if: contains(env.STAGES, 'inline-docs')
         env:
@@ -1753,9 +1696,8 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "📝 Stage 1: Generating inline documentation..."
-          echo "   Using unified file list: $SOURCE_FILES_LIST ($SOURCE_FILE_COUNT files)"
-          echo "   Incremental push: every $STAGE1_PUSH_INTERVAL generated docs → $BRANCH_NAME"
+          echo "Source files: $SOURCE_FILE_COUNT (from $SOURCE_FILES_LIST)"
+          echo "Progress push: every $STAGE1_PUSH_INTERVAL generated docs, to $BRANCH_NAME"
 
           # Fresh marker: the generator appends one line per progress push, and the
           # commit step below reads it to know work was already pushed.
@@ -1770,13 +1712,13 @@ jobs:
           set_output "stage1_files" "$INLINE_DOCS"
 
       # =========================================================================
-      # COMMIT STAGE 1 RESULTS (Progressive PR)
+      # COMMIT STAGE 1 RESULTS (progressive pull request)
       # =========================================================================
       # `!= ''`, not `== 'completed'`: runs on a FAILED stage too — see run_stage
       # in workflow-helpers.sh (partial output is worth committing; the status
       # is what reports the truth home). The build gate holds every run_stage
       # commit step to this predicate.
-      - name: Commit and Push Stage 1 Results
+      - name: Commit and push stage 1 results
         if: always() && steps.stage1.outputs.stage1_status != ''
         id: commit-stage1
         env:
@@ -1786,14 +1728,12 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "📝 Committing Stage 1 (Inline Documentation) results..."
-
           # The generator already commits + pushes every N docs (STAGE1_PUSH_INTERVAL).
           # Report how much landed that way; what's left here is the final partial batch.
           if [ -s "$STAGE1_PUSH_MARKER" ]; then
             PUSHED_BATCHES=$(wc -l < "$STAGE1_PUSH_MARKER" | tr -d ' ')
             PUSHED_FILES=$(awk '{ sum += $1 } END { print sum + 0 }' "$STAGE1_PUSH_MARKER")
-            echo "   Already pushed during generation: $PUSHED_FILES files in $PUSHED_BATCHES batches"
+            echo "Already pushed during generation: $PUSHED_FILES files in $PUSHED_BATCHES batches"
           fi
 
           # Push any commits the generator made but could not push (transient push failure)
@@ -1813,26 +1753,25 @@ jobs:
             git commit -m "docs: Stage 1 - Inline documentation ($STAGE_FILES files) [skip ci]"
             git push origin "$BRANCH_NAME"
 
-            echo "✅ Committed and pushed $STAGED_COUNT files from Stage 1"
+            echo "Committed and pushed $STAGED_COUNT stage 1 files"
             set_output "committed" "true"
           elif [ -s "$STAGE1_PUSH_MARKER" ]; then
             # Everything already landed via the incremental progress pushes
-            echo "✅ Nothing left to commit: all Stage 1 files pushed during generation"
+            echo "Nothing left to commit: every stage 1 file was pushed during generation"
             set_output "committed" "true"
           else
-            echo "⚠️ No Stage 1 files to commit"
+            echo "::warning title=Stage 1 produced nothing::No inline docs to commit."
             set_output "committed" "false"
           fi
 
       # =========================================================================
-      # ORPHAN DETECTION: INLINE FILES ONLY
-      # Runs immediately after Stage 1 to clean up orphaned inline docs
-      # Orphan = .*.md file where source file was deleted
+      # ORPHANED INLINE DOCS
+      # Right after stage 1: removes each hidden .*.md whose source file is gone.
       # =========================================================================
       # `== 'completed'` HERE IS DELIBERATE, unlike the commit steps: deleting
       # "orphaned" docs after a stage that FAILED would delete docs whose
       # sources were never re-examined.
-      - name: Clean Up Orphaned Inline Documentation Files
+      - name: Remove orphaned inline docs
         if: always() && steps.stage1.outputs.stage1_status == 'completed'
         id: orphan-detection-inline
         env:
@@ -1848,8 +1787,7 @@ jobs:
 
           if [ -f "$DELETED_FILES_LIST" ] && [ -s "$DELETED_FILES_LIST" ]; then
             DELETED_COUNT=$(wc -l < "$DELETED_FILES_LIST" | tr -d ' ')
-            echo ""
-            echo "📝 Committing $DELETED_COUNT orphan deletions..."
+            echo "Orphaned inline docs removed: $DELETED_COUNT"
 
             # Only add the specific files that were deleted by the script
             while IFS= read -r deleted_file; do
@@ -1862,18 +1800,18 @@ jobs:
             if [ "$STAGED_COUNT" -gt 0 ]; then
               git commit -m "chore(docs): Remove $DELETED_COUNT orphaned inline files [skip ci]"
               git push origin "$BRANCH_NAME"
-              echo "✅ Committed $STAGED_COUNT orphan deletions"
+              echo "Committed $STAGED_COUNT orphan removals"
               set_output "orphans_deleted" "$STAGED_COUNT"
             else
-              echo "⚠️  No changes to commit (files may have been already removed)"
+              echo "Nothing to commit (the files were already absent)"
               set_output "orphans_deleted" "0"
             fi
           else
-            echo "✅ No orphaned inline files detected"
+            echo "No orphaned inline docs"
             set_output "orphans_deleted" "0"
           fi
 
-      - name: Update PR with Stage 1 Progress
+      - name: Update pull request with stage 1 progress
         if: always() && steps.commit-stage1.outputs.committed == 'true' && steps.create-initial-pr.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -1883,8 +1821,6 @@ jobs:
           REPO_NAME: ${{ github.repository }}
         run: |
           source /tmp/workflow-helpers.sh
-
-          echo "📝 Updating PR description with Stage 1 results..."
 
           # Update PR body
           PR_BODY="## 🦩 Flamingo Code Documentation: In Progress
@@ -1905,9 +1841,9 @@ jobs:
 
           gh pr edit "$PR_NUMBER" --body "$PR_BODY"
 
-          echo "✅ PR #$PR_NUMBER updated with Stage 1 progress"
+          echo "Pull request #$PR_NUMBER updated with stage 1 progress"
 
-      - name: Report Stage 1 Progress
+      - name: Report stage 1 progress
         if: always() && contains(env.STAGES, 'inline-docs') && env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
@@ -1921,10 +1857,8 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          # Construct callback URL from hub base URL
-          CALLBACK_URL="${HUB_BASE_URL}/api/doc-orchestrator/webhook"
-
-          echo "📤 Reporting Stage 1 (Inline Docs) completion with PR URL..."
+          CALLBACK_URL="${HUB_BASE_URL}/api/code-documentation/webhook"
+          echo "Reporting stage 1 (inline docs): $STAGE1_STATUS, $STAGE1_FILES files"
           report_stage_progress "$CALLBACK_URL" "$WEBHOOK_SECRET" "$RUN_ID" "$REPO_ID" \
             "$WORKFLOW_RUN_ID" "$WORKFLOW_URL" "codewiki" \
             "$STAGE1_STATUS" "$STAGE1_FILES" "" "0" "" "0" "" "0" \
@@ -1956,12 +1890,12 @@ jobs:
 
           HTTP_CODE=$(node /tmp/ci-hub.mjs get "$ECOSYSTEM_PATH" /tmp/ecosystem.md) || HTTP_CODE="000"
           if [ "$HTTP_CODE" = "404" ]; then
-            echo "::notice::no code graph yet for $GITHUB_REPOSITORY — skipping ecosystem facts"
+            echo "::notice title=No code graph yet::The hub has no code graph for $GITHUB_REPOSITORY yet; the docs are written without ecosystem facts."
             rm -f /tmp/ecosystem.md
             exit 0
           fi
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "::warning::ecosystem facts request failed (HTTP $HTTP_CODE) — the Dependencies sections run without cross-repo facts"
+            echo "::warning title=Ecosystem facts unavailable::The hub answered HTTP $HTTP_CODE; the Dependencies sections are written without cross-repository facts."
             rm -f /tmp/ecosystem.md
             exit 0
           fi
@@ -1971,25 +1905,26 @@ jobs:
           # a runner cannot answer, so Stage 2 aborted on every CodeWiki repo
           # (CodeWiki run 35293807658). The Stage 2 commit step copies the file
           # into place, after either engine has written its own output.
-          echo "✅ ecosystem.md ($(wc -c < /tmp/ecosystem.md | tr -d ' ') bytes) fetched; copied to $REFERENCE_OUTPUT_PATH after Stage 2"
+          echo "Fetched ecosystem.md ($(wc -c < /tmp/ecosystem.md | tr -d ' ') bytes); it is copied to $REFERENCE_OUTPUT_PATH after stage 2"
 
           HTTP_CODE=$(node /tmp/ci-hub.mjs get "${ECOSYSTEM_PATH}&format=agents" /tmp/ecosystem-agents.md) || HTTP_CODE="000"
           if [ "$HTTP_CODE" = "200" ]; then
             upsert_marker_block AGENTS.md /tmp/ecosystem-agents.md
           else
-            echo "::warning::AGENTS.md block request failed (HTTP $HTTP_CODE) — AGENTS.md left untouched"
+            echo "::warning title=AGENTS.md block unavailable::The hub answered HTTP $HTTP_CODE; AGENTS.md is left untouched."
             rm -f /tmp/ecosystem-agents.md
           fi
 
       # =========================================================================
-      # STAGE 2: CODEWIKI ANALYSIS
-      # Generate architecture overview and module tree
-      # Language detection already ran before Stage 1 (uses steps.detect_language outputs)
+      # STAGE 2: REFERENCE DOCS
+      # Architecture overview, module tree and diagrams. CodeWiki where it can
+      # parse the primary language ("Detect primary language" decided, before
+      # stage 1), otherwise the Claude architecture analysis.
       # =========================================================================
 
-      - name: Setup Python 3.12
+      - name: Set up Python 3.12
         if: contains(env.STAGES, 'codewiki') && steps.detect_language.outputs.codewiki_supported == 'true'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
 
@@ -2149,7 +2084,7 @@ jobs:
           echo ""
           set_output "codewiki_configured" "true"
 
-      - name: Run CodeWiki Analysis
+      - name: Generate reference docs with CodeWiki (stage 2)
         id: stage2
         if: contains(env.STAGES, 'codewiki') && steps.detect_language.outputs.codewiki_supported == 'true' && steps.codewiki_config.outputs.codewiki_configured == 'true'
         continue-on-error: false
@@ -2240,8 +2175,8 @@ jobs:
           # Run externalized CodeWiki analysis script
           /tmp/run-codewiki-analysis.sh
 
-      # Alternative: Claude Architecture Analysis for ALL languages (when CodeWiki is not supported)
-      - name: Run Claude Architecture Analysis (All Languages)
+      # The alternative for any language CodeWiki cannot parse.
+      - name: Generate reference docs with Claude (stage 2)
         id: stage2_alt
         if: contains(env.STAGES, 'codewiki') && steps.detect_language.outputs.codewiki_supported == 'false'
         env:
@@ -2268,14 +2203,14 @@ jobs:
           /tmp/run-claude-architecture-analysis.sh
 
       # =========================================================================
-      # RESTORE STAGE 2 DOCS WHEN STAGE 2 PRODUCED NOTHING
-      # Clean Slate removed the reference/diagrams trees because `codewiki` was in
+      # RESTORE DOCS NO STAGE REGENERATED
+      # The docs removal took the reference/diagrams trees because `codewiki` was in
       # STAGES. If neither Stage-2 variant then completed — a repo with no
       # discoverable source, an install failure, a skip — the deletion would be the
       # only Stage-2 change in the pull request, i.e. a net removal of documentation
       # nobody asked to remove. Put it back.
       # =========================================================================
-      - name: Restore Docs That No Stage Regenerated
+      - name: Restore docs no stage regenerated
         if: always()
         env:
           BRANCH_NAME: ${{ steps.create-pr-branch.outputs.branch_name }}
@@ -2283,13 +2218,13 @@ jobs:
           STAGE2_STATUS: ${{ steps.stage2.outputs.stage2_status }}
           STAGE2_ALT_STATUS: ${{ steps.stage2_alt.outputs.stage2_status }}
         run: |
-          # Clean Slate deleted whatever the configured stages own, and committed that
+          # The docs removal deleted whatever the configured stages own, and committed that
           # deletion. Any owned subtree whose stage then produced nothing must be put
           # back — otherwise the pull request is a net REMOVAL of documentation nobody
-          # asked to remove. Iterates the exact list Clean Slate recorded, so the
+          # asked to remove. Iterates the exact list the removal recorded, so the
           # stage -> subtree map has one home.
           if [ -z "$CLEAN_TARGETS_RECORD" ]; then
-            echo "⏭️  Clean Slate removed nothing — no restore needed"
+            echo "Nothing was removed; nothing to restore"
             exit 0
           fi
 
@@ -2318,7 +2253,7 @@ jobs:
                 fi ;;
             esac
             if git checkout "$PRE_CLEAN_SHA" -- "$target" 2>/dev/null; then
-              echo "   ↩️  Restored $target (no stage regenerated it)"
+              echo "::notice title=Docs restored::$target restored from $PRE_CLEAN_SHA; no stage regenerated it."
               RESTORED=1
             fi
           done <<< "$CLEAN_TARGETS_RECORD"
@@ -2329,15 +2264,15 @@ jobs:
           if [ "$RESTORED" -eq 1 ] && [ -n "$(git diff --cached --name-only)" ]; then
             git commit -m "chore(docs): restore documentation no stage regenerated [skip ci]"
             git push origin "$BRANCH_NAME"
-            echo "   ✅ Restore committed"
+            echo "Restore committed and pushed"
           else
-            echo "   ⏭️  Nothing to restore"
+            echo "Nothing to restore"
           fi
 
       # =========================================================================
-      # COMMIT STAGE 2 RESULTS (Progressive PR)
+      # COMMIT STAGE 2 RESULTS (progressive pull request)
       # =========================================================================
-      - name: Commit and Push Stage 2 Results
+      - name: Commit and push stage 2 results
         if: always() && (steps.stage2.outputs.stage2_status == 'completed' || steps.stage2_alt.outputs.stage2_status == 'completed')
         id: commit-stage2
         env:
@@ -2348,22 +2283,18 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "📝 Committing Stage 2 (Architecture Analysis) results..."
-
-          # Clean up CodeWiki temp files from all output directories
-          echo "🧹 Cleaning up temporary files..."
-          rm -rf "$REFERENCE_OUTPUT_PATH/temp" 2>/dev/null || echo "⚠️  Warning: Could not remove $REFERENCE_OUTPUT_PATH/temp"
-          rm -rf "$DIAGRAMS_OUTPUT_PATH/temp" 2>/dev/null || echo "⚠️  Warning: Could not remove $DIAGRAMS_OUTPUT_PATH/temp"
+          # Remove CodeWiki scratch from every output directory
+          rm -rf "$REFERENCE_OUTPUT_PATH/temp" 2>/dev/null || echo "::warning::Could not remove $REFERENCE_OUTPUT_PATH/temp"
+          rm -rf "$DIAGRAMS_OUTPUT_PATH/temp" 2>/dev/null || echo "::warning::Could not remove $DIAGRAMS_OUTPUT_PATH/temp"
 
           # Verify cleanup
           if [ -d "$REFERENCE_OUTPUT_PATH/temp" ]; then
-            echo "❌ ERROR: Failed to cleanup temp files in $REFERENCE_OUTPUT_PATH/temp"
+            echo "::error title=Scratch not removed::$REFERENCE_OUTPUT_PATH/temp is still present; refusing to commit it."
             ls -la "$REFERENCE_OUTPUT_PATH/temp"
             exit 1
           fi
 
-          # Create .gitignore in CodeWiki output directories to prevent temp files from being committed
-          echo "📝 Creating .gitignore files in output directories..."
+          # .gitignore in each output directory keeps CodeWiki scratch out of commits
           for output_dir in "$REFERENCE_OUTPUT_PATH" "$DIAGRAMS_OUTPUT_PATH"; do
             if [ -d "$output_dir" ]; then
               {
@@ -2376,31 +2307,28 @@ jobs:
                 echo "!*-schema.json"
                 echo "!*-config.json"
               } > "$output_dir/.gitignore"
-              echo "   ✅ Created $output_dir/.gitignore"
+              echo "Wrote $output_dir/.gitignore"
             fi
           done
 
-          # Debug: Show what files exist before staging
-          echo ""
-          echo "🔍 Debug: Files in Stage 2 output directories BEFORE staging:"
-          echo "   Reference directory ($REFERENCE_OUTPUT_PATH):"
+          echo "::group::Stage 2 output before staging"
+          echo "Reference directory ($REFERENCE_OUTPUT_PATH):"
           if [ -d "$REFERENCE_OUTPUT_PATH" ]; then
             find "$REFERENCE_OUTPUT_PATH" -type f \( -name "*.md" -o -name "*.mmd" -o -name ".gitignore" \) | head -20
             FILE_COUNT=$(find "$REFERENCE_OUTPUT_PATH" -type f \( -name "*.md" -o -name "*.mmd" \) | wc -l | tr -d ' ')
-            echo "   Total .md/.mmd files: $FILE_COUNT"
+            echo ".md/.mmd files: $FILE_COUNT"
           else
-            echo "   ⚠️  Directory does not exist!"
+            echo "(directory does not exist)"
           fi
-          echo ""
-          echo "   Diagrams directory ($DIAGRAMS_OUTPUT_PATH):"
+          echo "Diagrams directory ($DIAGRAMS_OUTPUT_PATH):"
           if [ -d "$DIAGRAMS_OUTPUT_PATH" ]; then
             find "$DIAGRAMS_OUTPUT_PATH" -type f \( -name "*.md" -o -name "*.mmd" -o -name ".gitignore" \) | head -20
             FILE_COUNT=$(find "$DIAGRAMS_OUTPUT_PATH" -type f \( -name "*.md" -o -name "*.mmd" \) | wc -l | tr -d ' ')
-            echo "   Total .md/.mmd files: $FILE_COUNT"
+            echo ".md/.mmd files: $FILE_COUNT"
           else
-            echo "   ⚠️  Directory does not exist!"
+            echo "(directory does not exist)"
           fi
-          echo ""
+          echo "::endgroup::"
 
           # The hub-rendered ecosystem.md joins the reference directory only NOW,
           # after the engine has run: placed earlier it makes CodeWiki prompt for
@@ -2408,13 +2336,12 @@ jobs:
           if [ -f /tmp/ecosystem.md ]; then
             mkdir -p "$REFERENCE_OUTPUT_PATH"
             cp /tmp/ecosystem.md "$REFERENCE_OUTPUT_PATH/ecosystem.md"
-            echo "   Added ecosystem.md to $REFERENCE_OUTPUT_PATH/"
+            echo "Added ecosystem.md to $REFERENCE_OUTPUT_PATH/"
           fi
 
           # Stage all .md, .mmd, and .gitignore files from Stage 2 output directories
           # CRITICAL: Use git add on full paths to preserve nested directory structure
           # This ensures Backend/Authentication/JWT/JWT.md keeps its full path in git
-          echo "📁 Staging Stage 2 files (excluding JSON/temp files)..."
 
           # Add only .md, .mmd, .gitignore, and allowed JSON files (*-schema.json, *-config.json)
           # This excludes CodeWiki intermediate files: module_tree.json, first_module_tree.json, metadata.json
@@ -2423,7 +2350,7 @@ jobs:
               -name "*.md" -o -name "*.mmd" -o -name ".gitignore" \
               -o -name "*-schema.json" -o -name "*-config.json" \
             \) -exec git add {} \; 2>/dev/null || true
-            echo "   Added .md/.mmd/.gitignore/*-schema.json/*-config.json from $REFERENCE_OUTPUT_PATH/"
+            echo "Staged .md/.mmd/.gitignore/*-schema.json/*-config.json under $REFERENCE_OUTPUT_PATH/"
           fi
 
           if [ -d "$DIAGRAMS_OUTPUT_PATH" ]; then
@@ -2431,7 +2358,7 @@ jobs:
               -name "*.md" -o -name "*.mmd" -o -name ".gitignore" \
               -o -name "*-schema.json" -o -name "*-config.json" \
             \) -exec git add {} \; 2>/dev/null || true
-            echo "   Added .md/.mmd/.gitignore/*-schema.json/*-config.json from $DIAGRAMS_OUTPUT_PATH/"
+            echo "Staged .md/.mmd/.gitignore/*-schema.json/*-config.json under $DIAGRAMS_OUTPUT_PATH/"
           fi
 
           # AGENTS.md carries the hub-rendered ecosystem block ("Fetch ecosystem
@@ -2441,36 +2368,32 @@ jobs:
           # picked the file up (openframe-cli#383).
           if [ -f AGENTS.md ]; then
             git add -f AGENTS.md
-            echo "   Added AGENTS.md (ecosystem block)"
+            echo "Staged AGENTS.md (ecosystem block)"
           fi
 
           # Check if there are changes
           STAGED_COUNT=$(git diff --cached --name-only | wc -l)
-          echo "   Staged $STAGED_COUNT files"
+          echo "Staged files: $STAGED_COUNT"
 
-          # Debug: Show what was actually staged
           if [ "$STAGED_COUNT" -gt 0 ]; then
-            echo ""
-            echo "🔍 Debug: Files STAGED by git:"
+            echo "::group::Staged stage 2 files (first 30)"
             git diff --cached --name-only | head -30
+            echo "::endgroup::"
           fi
-          echo ""
 
           if [ "$STAGED_COUNT" -gt 0 ]; then
             # Commit and push
             git commit -m "docs: Stage 2 - Architecture analysis ($STAGE2_FILES files) [skip ci]"
             git push origin "$BRANCH_NAME"
 
-            echo "✅ Committed and pushed $STAGED_COUNT files from Stage 2"
+            echo "Committed and pushed $STAGED_COUNT stage 2 files"
             set_output "committed" "true"
           else
-            echo "❌ ERROR: No Stage 2 files staged for commit!"
-            echo "   Expected $STAGE2_FILES files but staged 0"
-            echo "   This indicates files were generated but not properly staged"
+            echo "::error title=Stage 2 output not staged::Stage 2 reported $STAGE2_FILES files but none were staged; the files were generated outside the reference and diagrams directories, or not at all."
             set_output "committed" "false"
           fi
 
-      - name: Update PR with Stage 2 Progress
+      - name: Update pull request with stage 2 progress
         if: always() && steps.commit-stage2.outputs.committed == 'true' && steps.create-initial-pr.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -2481,8 +2404,6 @@ jobs:
           REPO_NAME: ${{ github.repository }}
         run: |
           source /tmp/workflow-helpers.sh
-
-          echo "📝 Updating PR description with Stage 2 results..."
 
           # Update PR body
           PR_BODY="## 🦩 Flamingo Code Documentation: In Progress
@@ -2503,9 +2424,9 @@ jobs:
 
           gh pr edit "$PR_NUMBER" --body "$PR_BODY"
 
-          echo "✅ PR #$PR_NUMBER updated with Stage 2 progress"
+          echo "Pull request #$PR_NUMBER updated with stage 2 progress"
 
-      - name: Report Stage 2 Progress
+      - name: Report stage 2 progress
         if: always() && contains(env.STAGES, 'codewiki') && env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
@@ -2522,42 +2443,41 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          # Construct callback URL from hub base URL
-          CALLBACK_URL="${HUB_BASE_URL}/api/doc-orchestrator/webhook"
-          echo "📤 Reporting Stage 2 (Architecture Analysis) completion with PR URL..."
+          CALLBACK_URL="${HUB_BASE_URL}/api/code-documentation/webhook"
+          echo "Reporting stage 2 (reference docs): $STAGE2_STATUS, $STAGE2_FILES files"
           report_stage_progress "$CALLBACK_URL" "$WEBHOOK_SECRET" "$RUN_ID" "$REPO_ID" \
             "$WORKFLOW_RUN_ID" "$WORKFLOW_URL" "tutorials" \
             "$STAGE1_STATUS" "$STAGE1_FILES" "$STAGE2_STATUS" "$STAGE2_FILES" "" "0" "" "0" \
             "$PR_URL" "$PR_NUMBER"
 
       # =========================================================================
-      # STAGE 3: AI TUTORIAL GENERATOR (VoltAgent-powered)
-      # Generate getting started guides and how-to tutorials
-      # Uses VoltAgent framework with tool-based document generation
+      # STAGE 3: TUTORIALS
+      # Getting-started guides and how-to tutorials, written by the Code
+      # Documentation lane (code-documentation-lib.mjs): one hub call per
+      # tutorial with the forced `emit_document` tool and, when the repository's
+      # "Graph lookups" switch is on, the hub's read tools (the code graph and
+      # the rules, scoped to what THIS repository may see). No model key here.
       # Generates 4 tutorials: user/getting-started, user/common-use-cases,
       #                        dev/getting-started-dev, dev/architecture-overview-dev
       # =========================================================================
-      - name: Install Tutorial Generator Dependencies
-        # Stage 3 AND Stage 4 run on VoltAgent (generate-repo-docs.cjs requires
-        # @voltagent/core too). Gated on tutorials alone, a repository configured
-        # with inline-docs + repo-docs and no tutorials (openframe-saas-mobile,
-        # openframe-saas-desktop) reached Stage 4 with no dependencies at all:
-        # "Cannot find module '@voltagent/core'", run 35302244804.
+      - name: Install tutorial and repository docs dependencies
+        # Stage 3 AND Stage 4 (generate-repo-docs.cjs) share this tree. Gated
+        # on either: a repository configured with inline-docs + repo-docs and no
+        # tutorials reached Stage 4 with no dependencies at all, run 35302244804.
         if: contains(env.STAGES, 'tutorials') || contains(env.STAGES, 'repo-docs')
-        # Isolated deps tree (see Stage 1) - no reconciliation with the target repo, so no
-        # peer-conflict band-aids. @ai-sdk/anthropic pinned to 2.x (v2 spec): 3.x uses the
-        # v3 spec, incompatible with VoltAgent's ai@5.x (AI SDK 5).
+        # Isolated deps tree (see Stage 1) - no reconciliation with the target repo.
+        # No model SDK: both stages call Claude through the hub.
         run: |
           mkdir -p "$RUNNER_TEMP/doc-orch-deps" && cd "$RUNNER_TEMP/doc-orch-deps"
           npm init -y >/dev/null 2>&1
-          npm install @voltagent/core@2.9.0 "@ai-sdk/anthropic@2.0.91" zod@3.25.76 glob@13.0.6
+          npm install zod@3.25.76 glob@13.0.6
 
-      - name: Generate Tutorials with VoltAgent
+      - name: Generate tutorials (stage 3)
         id: stage3
         if: contains(env.STAGES, 'tutorials')
         env:
-          # SECURITY: Pass secrets per-step with inline masking
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # No ANTHROPIC_API_KEY — this stage calls Claude through the hub
+          # (/api/ci/claude), which the WEBHOOK_SECRET below authenticates.
           WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
           # Pass through output paths from workflow env (OSS Tenant Structure)
           DOCS_OUTPUT_PATH: ${{ env.DOCS_OUTPUT_PATH }}
@@ -2595,8 +2515,6 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "🤖 Stage 3: VoltAgent Tutorial Generator starting..."
-
           # Script already downloaded to /tmp/ in setup step. run_stage records
           # the outcome as stage3_status — see its note in workflow-helpers.sh.
           run_stage "Stage 3" "$STAGE3_TIMEOUT_HOURS" stage3_status node /tmp/generate-tutorials-voltagent.cjs
@@ -2605,16 +2523,14 @@ jobs:
           GETTING_STARTED_FILES=$(count_markdown_files "${GETTING_STARTED_OUTPUT_PATH}")
           DEVELOPMENT_FILES=$(count_markdown_files "${DEVELOPMENT_OUTPUT_PATH}")
           TUTORIAL_FILES=$((GETTING_STARTED_FILES + DEVELOPMENT_FILES))
-          echo "   Getting Started: $GETTING_STARTED_FILES files"
-          echo "   Development: $DEVELOPMENT_FILES files"
-          echo "   Total Stage 3: $TUTORIAL_FILES files"
+          echo "Tutorials written: $TUTORIAL_FILES ($GETTING_STARTED_FILES getting started, $DEVELOPMENT_FILES development)"
           set_output "stage3_files" "$TUTORIAL_FILES"
 
       # =========================================================================
-      # COMMIT STAGE 3 RESULTS (Progressive PR)
+      # COMMIT STAGE 3 RESULTS (progressive pull request)
       # =========================================================================
       # `!= ''` — the run_stage commit rule, stated once at Stage 1.
-      - name: Commit and Push Stage 3 Results
+      - name: Commit and push stage 3 results
         if: always() && steps.stage3.outputs.stage3_status != ''
         id: commit-stage3
         env:
@@ -2625,10 +2541,7 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "📝 Committing Stage 3 (Tutorial Generation) results..."
-
-          # Create .gitignore in VoltAgent output directories
-          echo "📝 Creating .gitignore files in output directories..."
+          # .gitignore in each tutorial output directory
           for output_dir in "$GETTING_STARTED_OUTPUT_PATH" "$DEVELOPMENT_OUTPUT_PATH"; do
             if [ -d "$output_dir" ]; then
               {
@@ -2640,7 +2553,7 @@ jobs:
                 echo "!*-schema.json"
                 echo "!*-config.json"
               } > "$output_dir/.gitignore"
-              echo "   ✅ Created $output_dir/.gitignore"
+              echo "Wrote $output_dir/.gitignore"
             fi
           done
 
@@ -2656,14 +2569,14 @@ jobs:
             git commit -m "docs: Stage 3 - Tutorial generation ($STAGE3_FILES files) [skip ci]"
             git push origin "$BRANCH_NAME"
 
-            echo "✅ Committed and pushed $STAGED_COUNT files from Stage 3"
+            echo "Committed and pushed $STAGED_COUNT stage 3 files"
             set_output "committed" "true"
           else
-            echo "⚠️ No Stage 3 files to commit"
+            echo "::warning title=Stage 3 produced nothing::No tutorials to commit."
             set_output "committed" "false"
           fi
 
-      - name: Update PR with Stage 3 Progress
+      - name: Update pull request with stage 3 progress
         if: always() && steps.commit-stage3.outputs.committed == 'true' && steps.create-initial-pr.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -2675,8 +2588,6 @@ jobs:
           REPO_NAME: ${{ github.repository }}
         run: |
           source /tmp/workflow-helpers.sh
-
-          echo "📝 Updating PR description with Stage 3 results..."
 
           # Update PR body
           PR_BODY="## 🦩 Flamingo Code Documentation: In Progress
@@ -2697,9 +2608,9 @@ jobs:
 
           gh pr edit "$PR_NUMBER" --body "$PR_BODY"
 
-          echo "✅ PR #$PR_NUMBER updated with Stage 3 progress"
+          echo "Pull request #$PR_NUMBER updated with stage 3 progress"
 
-      - name: Report Stage 3 Progress
+      - name: Report stage 3 progress
         if: always() && contains(env.STAGES, 'tutorials') && env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
@@ -2717,24 +2628,25 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          # Construct callback URL from hub base URL
-          CALLBACK_URL="${HUB_BASE_URL}/api/doc-orchestrator/webhook"
-          echo "📤 Reporting Stage 3 (AI Tutorial Generator) completion with PR URL..."
+          CALLBACK_URL="${HUB_BASE_URL}/api/code-documentation/webhook"
+          echo "Reporting stage 3 (tutorials): $STAGE3_STATUS, $STAGE3_FILES files"
           report_stage_progress "$CALLBACK_URL" "$WEBHOOK_SECRET" "$RUN_ID" "$REPO_ID" \
             "$WORKFLOW_RUN_ID" "$WORKFLOW_URL" "repo-docs" \
             "$STAGE1_STATUS" "$STAGE1_FILES" "$STAGE2_STATUS" "$STAGE2_FILES" "$STAGE3_STATUS" "$STAGE3_FILES" "" "0" \
             "$PR_URL" "$PR_NUMBER"
 
       # =========================================================================
-      # STAGE 4: REPOSITORY DOCUMENTATION
+      # STAGE 4: REPOSITORY DOCS
       # Copies LICENSE.md, SECURITY.md from template repo
-      # Generates/updates README.md, CONTRIBUTING.md using VoltAgent
+      # Generates/updates README.md, CONTRIBUTING.md and the docs index through
+      # the Code Documentation lane (one hub call per document, no model key)
       # =========================================================================
-      - name: Generate Repository Documentation
+      - name: Generate repository docs (stage 4)
         id: stage4
         if: contains(env.STAGES, 'repo-docs')
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # No ANTHROPIC_API_KEY — this stage calls Claude through the hub.
+          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
           TEMPLATE_REPO: ${{ env.TEMPLATE_REPO }}
           TEMPLATE_BRANCH: ${{ env.TEMPLATE_BRANCH }}
           DOCS_OUTPUT_PATH: ${{ env.DOCS_OUTPUT_PATH }}
@@ -2771,73 +2683,61 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "📄 Stage 4: Repository Documentation..."
-          echo "   Template: $TEMPLATE_REPO (branch: $TEMPLATE_BRANCH)"
+          echo "Template repository: $TEMPLATE_REPO@$TEMPLATE_BRANCH"
 
           RAW_URL="https://raw.githubusercontent.com/$TEMPLATE_REPO/$TEMPLATE_BRANCH"
 
-          # === STEP 1: Copy LICENSE.md and SECURITY.md from template repo ===
-          echo ""
-          echo "📥 Fetching LICENSE.md from template repo..."
+          # 1. LICENSE.md and SECURITY.md from the template repository
           if curl -fsSL "$RAW_URL/LICENSE.md" -o LICENSE.md 2>/dev/null; then
-            echo "  ✅ LICENSE.md copied"
+            echo "Copied LICENSE.md from the template repository"
           else
-            echo "  ⚠️ LICENSE.md not found in template repo (non-blocking)"
+            echo "::notice title=LICENSE.md not copied::The template repository $TEMPLATE_REPO@$TEMPLATE_BRANCH has no LICENSE.md."
           fi
 
-          echo "📥 Fetching SECURITY.md from template repo..."
           if curl -fsSL "$RAW_URL/SECURITY.md" -o SECURITY.md 2>/dev/null; then
-            echo "  ✅ SECURITY.md copied"
+            echo "Copied SECURITY.md from the template repository"
           else
-            echo "  ⚠️ SECURITY.md not found in template repo (non-blocking)"
+            echo "::notice title=SECURITY.md not copied::The template repository $TEMPLATE_REPO@$TEMPLATE_BRANCH has no SECURITY.md."
           fi
 
-          # === STEP 2: Check existing README ===
-          echo ""
+          # 2. The existing README is context for the new one
           if [ -f "README.md" ]; then
             README_SIZE=$(wc -c < README.md | tr -d ' ')
-            echo "📝 Found existing README.md ($README_SIZE bytes) - will use as context"
+            echo "Existing README.md: $README_SIZE bytes (used as context)"
           else
-            echo "📝 No README.md found"
+            echo "Existing README.md: none"
           fi
-          echo "   Generating fresh README with OpenFrame branding..."
 
-          # === STEP 3: Run VoltAgent script (already downloaded in setup step) ===
-          echo ""
-          echo "🤖 Generating repository documentation with VoltAgent..."
-          # Script already downloaded to /tmp/ in Download Workflow Scripts step
+          # 3. README, CONTRIBUTING and the docs index, one hub call each.
+          # Script already downloaded to /tmp/ in "Download pipeline scripts"
           # run_stage records the outcome as stage4_status — see its note in
           # workflow-helpers.sh. The file count below is REPORTING, not a
           # status: inferring "completed" from it meant a crashed run that left
           # a previous commit's README standing reported success.
           run_stage "Stage 4" "$STAGE4_TIMEOUT_HOURS" stage4_status node /tmp/generate-repo-docs.cjs
 
-          # === STEP 4: Count results ===
-          echo ""
-          echo "📊 Stage 4 Results:"
+          # 4. Count results
           REPO_DOCS=0
           for f in README.md CONTRIBUTING.md LICENSE.md SECURITY.md; do
             if [ -f "$f" ]; then
               SIZE=$(wc -c < "$f" | tr -d ' ')
-              echo "  ✅ $f ($SIZE bytes)"
+              echo "$f: $SIZE bytes"
               REPO_DOCS=$((REPO_DOCS + 1))
             fi
           done
 
           set_output "stage4_files" "$REPO_DOCS"
           if [ "$REPO_DOCS" -gt 0 ]; then
-            echo ""
-            echo "✅ Stage 4 produced $REPO_DOCS repository documentation file(s)"
+            echo "Repository docs present: $REPO_DOCS"
           else
-            echo ""
-            echo "⚠️ Stage 4 produced no repository documentation files"
+            echo "::warning title=Stage 4 produced nothing::No repository docs (README.md, CONTRIBUTING.md, LICENSE.md, SECURITY.md) are present."
           fi
 
       # =========================================================================
-      # COMMIT STAGE 4 RESULTS (Progressive PR)
+      # COMMIT STAGE 4 RESULTS (progressive pull request)
       # =========================================================================
       # `!= ''` — the run_stage commit rule, stated once at Stage 1.
-      - name: Commit and Push Stage 4 Results
+      - name: Commit and push stage 4 results
         if: always() && steps.stage4.outputs.stage4_status != ''
         id: commit-stage4
         env:
@@ -2846,10 +2746,7 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          echo "📝 Committing Stage 4 (Repository Documentation) results..."
-
-          # Create .gitignore in Stage 4 managed directories
-          echo "📝 Creating .gitignore files in managed directories..."
+          # .gitignore in each stage 4 managed directory
           for managed_dir in docs/api docs/deployment docs/operations docs/cli; do
             if [ -d "$managed_dir" ]; then
               {
@@ -2861,7 +2758,7 @@ jobs:
                 echo "!*-schema.json"
                 echo "!*-config.json"
               } > "$managed_dir/.gitignore"
-              echo "   ✅ Created $managed_dir/.gitignore"
+              echo "Wrote $managed_dir/.gitignore"
             fi
           done
 
@@ -2893,14 +2790,14 @@ jobs:
             git commit -m "docs: Stage 4 - Repository documentation ($STAGE4_FILES files) [skip ci]"
             git push origin "$BRANCH_NAME"
 
-            echo "✅ Committed and pushed $STAGED_COUNT files from Stage 4"
+            echo "Committed and pushed $STAGED_COUNT stage 4 files"
             set_output "committed" "true"
           else
-            echo "⚠️ No Stage 4 files to commit"
+            echo "No stage 4 changes to commit"
             set_output "committed" "false"
           fi
 
-      - name: Update PR with Stage 4 Progress
+      - name: Update pull request with stage 4 progress
         if: always() && steps.commit-stage4.outputs.committed == 'true' && steps.create-initial-pr.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -2913,8 +2810,6 @@ jobs:
           REPO_NAME: ${{ github.repository }}
         run: |
           source /tmp/workflow-helpers.sh
-
-          echo "📝 Updating PR description with Stage 4 results..."
 
           # Update PR body
           PR_BODY="## 🦩 Flamingo Code Documentation: In Progress
@@ -2935,13 +2830,13 @@ jobs:
 
           gh pr edit "$PR_NUMBER" --body "$PR_BODY"
 
-          echo "✅ PR #$PR_NUMBER updated with Stage 4 progress"
+          echo "Pull request #$PR_NUMBER updated with stage 4 progress"
 
       # =========================================================================
       # VALIDATE GENERATED MARKDOWN
-      # Warn-only validation (never blocks PRs)
+      # Warn-only validation (never blocks the pull request)
       # =========================================================================
-      - name: Validate Generated Markdown
+      - name: Validate generated Markdown
         if: always()
         continue-on-error: true  # NEVER block PR - validation is warn-only
         env:
@@ -2953,16 +2848,22 @@ jobs:
           DEVELOPMENT_OUTPUT_PATH: ${{ env.DEVELOPMENT_OUTPUT_PATH }}
           NODE_PATH: ${{ runner.temp }}/doc-orch-deps/node_modules
         run: |
-          echo "📋 Validating generated markdown against Flamingo guidelines..."
+          # Warn-only: findings are logged per directory and never fail the run.
+          echo "::group::Validate $DOCS_OUTPUT_DIR"
           node /tmp/validate-markdown.js "$DOCS_OUTPUT_DIR" 2>&1 || true
+          echo "::endgroup::"
           # Validate OSS Tenant Structure outputs
+          echo "::group::Validate $REFERENCE_OUTPUT_PATH"
           node /tmp/validate-markdown.js "$REFERENCE_OUTPUT_PATH" 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::Validate $GETTING_STARTED_OUTPUT_PATH"
           node /tmp/validate-markdown.js "$GETTING_STARTED_OUTPUT_PATH" 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::Validate $DEVELOPMENT_OUTPUT_PATH"
           node /tmp/validate-markdown.js "$DEVELOPMENT_OUTPUT_PATH" 2>&1 || true
-          echo "✅ Validation complete (warnings logged above, non-blocking)"
+          echo "::endgroup::"
 
-      # Report Stage 4 Progress
-      - name: Report Stage 4 Progress
+      - name: Report stage 4 progress
         if: always() && env.HUB_BASE_URL != ''
         continue-on-error: true
         env:
@@ -2982,21 +2883,19 @@ jobs:
         run: |
           source /tmp/workflow-helpers.sh
 
-          # Construct callback URL from hub base URL
-          CALLBACK_URL="${HUB_BASE_URL}/api/doc-orchestrator/webhook"
-          echo "📤 Reporting Stage 4 (Repository Documentation) completion with PR URL..."
+          CALLBACK_URL="${HUB_BASE_URL}/api/code-documentation/webhook"
+          echo "Reporting stage 4 (repository docs): $STAGE4_STATUS, $STAGE4_FILES files"
           report_stage_progress "$CALLBACK_URL" "$WEBHOOK_SECRET" "$RUN_ID" "$REPO_ID" \
             "$WORKFLOW_RUN_ID" "$WORKFLOW_URL" "creating-pr" \
             "$STAGE1_STATUS" "$STAGE1_FILES" "$STAGE2_STATUS" "$STAGE2_FILES" "$STAGE3_STATUS" "$STAGE3_FILES" \
             "$STAGE4_STATUS" "$STAGE4_FILES" "$PR_URL" "$PR_NUMBER"
 
       # =========================================================================
-      # CREATE PULL REQUEST
+      # FINALIZE THE PULL REQUEST
       # =========================================================================
-      - name: Cleanup Temporary Files
+      - name: Clean up temporary files
         run: |
           source /tmp/workflow-helpers.sh
-          echo "🧹 Cleaning up temporary files before PR creation..."
 
           # Remove stats files
           cleanup_path ".doc-stage1-stats.json"
@@ -3014,28 +2913,22 @@ jobs:
           cleanup_path "package.json"
           cleanup_path "package-lock.json"
 
-          # NOTE: /tmp/workflow-helpers.sh is cleaned up in final webhook step
-          echo "✅ Cleanup complete"
+          # NOTE: /tmp/workflow-helpers.sh is removed by "Report run result"
 
-      - name: Stage Generated Documentation
+      - name: Stage remaining docs and detect changes
         id: stage-docs
         run: |
           source /tmp/workflow-helpers.sh
-          echo "📁 Staging generated documentation files..."
-          echo "   DOCS_OUTPUT_PATH: $DOCS_OUTPUT_PATH"
-          echo "   OSS Tenant Structure paths:"
-          echo "     Stage 2: $REFERENCE_OUTPUT_PATH (reference)"
-          echo "     Stage 2: $DIAGRAMS_OUTPUT_PATH (diagrams)"
-          echo "     Stage 3: $GETTING_STARTED_OUTPUT_PATH (getting-started)"
-          echo "     Stage 3: $DEVELOPMENT_OUTPUT_PATH (development)"
+          echo "Docs root: $DOCS_OUTPUT_PATH"
+          echo "Stage 2:   $REFERENCE_OUTPUT_PATH (reference), $DIAGRAMS_OUTPUT_PATH (diagrams)"
+          echo "Stage 3:   $GETTING_STARTED_OUTPUT_PATH (getting started), $DEVELOPMENT_OUTPUT_PATH (development)"
 
           # Count untracked/modified files before staging
           BEFORE_COUNT=$(git status --porcelain | wc -l)
-          echo "   Total changed files: $BEFORE_COUNT"
+          echo "Changed files in the working tree: $BEFORE_COUNT"
 
           # Stage ALL .md and .mmd files anywhere in the repo (for inline docs generated next to source files)
           # This catches Stage 1 inline docs (hidden: .FileName.md), Stage 2 reference/diagrams, Stage 3 tutorials, and Stage 4 repo docs
-          echo "   Finding all .md and .mmd files to stage (including hidden and diagrams)..."
           # Find all .md and .mmd files recursively, including hidden files (.*.md)
           # Includes README.md, CONTRIBUTING.md, LICENSE.md, SECURITY.md from Stage 4
           # Includes .mmd Mermaid diagram files from Stage 2 (CodeWiki/Claude architecture)
@@ -3045,23 +2938,21 @@ jobs:
             -not -name "CHANGELOG.md" \
             -exec git add -f {} \; 2>/dev/null || true
 
-          # Show what .md and .mmd files exist (for debugging)
-          echo ""
-          echo "📋 All .md and .mmd files found (including hidden inline docs and diagrams):"
+          echo "::group::Markdown and Mermaid files in the checkout (first 100)"
           find . \( -name "*.md" -o -name ".*.md" -o -name "*.mmd" \) -type f \
             -not -path "./node_modules/*" \
             -not -path "./.git/*" \
             -not -name "CHANGELOG.md" | head -100
+          echo "::endgroup::"
 
           # Count staged files
           STAGED_COUNT=$(git diff --cached --name-only | wc -l)
-          echo "   Staged files: $STAGED_COUNT"
+          echo "Staged files: $STAGED_COUNT"
           set_output "staged_count" "$STAGED_COUNT"
 
-          # Show what was staged
-          echo ""
-          echo "📋 Staged files:"
+          echo "::group::Staged files (first 50)"
           git diff --cached --name-only | head -50
+          echo "::endgroup::"
 
           # "Changes" means the BRANCH differs from the documented source head, not
           # that this final sweep found something left to stage: every stage commits
@@ -3070,14 +2961,13 @@ jobs:
           # pull request held twenty files (openframe-saas-mobile run 35302244804).
           # The status file is the run's own bookkeeping, never a documentation change.
           if [ "$STAGED_COUNT" -eq "0" ] && git diff --quiet "$SOURCE_HEAD_SHA" HEAD -- . ':!.flamingo-ai-technical-writer-status.md'; then
-            echo ""
-            echo "⚠️ No documentation files to stage, and the branch holds no documentation change"
+            echo "::notice title=No documentation changes::Nothing left to stage, and the branch holds no documentation change against the source head."
             set_output "has_changes" "false"
           else
             set_output "has_changes" "true"
           fi
 
-      - name: Update Final PR Status
+      - name: Mark pull request complete
         if: steps.create-initial-pr.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -3094,8 +2984,6 @@ jobs:
           REPO_NAME: ${{ github.repository }}
         run: |
           source /tmp/workflow-helpers.sh
-
-          echo "📝 Updating PR with final status..."
 
           # Remove "in-progress" label
           gh pr edit "$PR_NUMBER" --remove-label "in-progress" || true
@@ -3141,12 +3029,12 @@ jobs:
 
           gh pr edit "$PR_NUMBER" --body "$PR_BODY"
 
-          echo "✅ PR #$PR_NUMBER updated with final status"
+          echo "Pull request #$PR_NUMBER marked complete"
 
       # =========================================================================
-      # SEND WEBHOOK NOTIFICATION
+      # REPORT RUN RESULT: the terminal callback. Never reports "running".
       # =========================================================================
-      - name: Send Webhook Notification
+      - name: Report run result
         if: always() && env.HUB_BASE_URL != ''
         continue-on-error: true  # Don't fail the workflow if callback fails
         env:
@@ -3160,7 +3048,7 @@ jobs:
           PR_NUMBER: ${{ steps.create-initial-pr.outputs.pull-request-number || 'null' }}
           SAFE_RUN_ID: ${{ steps.branch-name-early.outputs.safe_run_id }}
           # Single source of truth for the branch name (was rebuilt by hand below,
-          # which silently drifted from "Create PR Branch" on every rename)
+          # which silently drifted from "Create docs branch" on every rename)
           BRANCH_NAME: ${{ steps.create-pr-branch.outputs.branch_name }}
           STAGE1_STATUS: ${{ steps.stage1.outputs.stage1_status || 'skipped' }}
           STAGE1_FILES: ${{ steps.stage1.outputs.stage1_files || 0 }}
@@ -3181,28 +3069,28 @@ jobs:
           # helper exists to report the failure — a minimal guarded curl posts
           # it so the hub's run row fails NOW instead of waiting for the reaper.
           if [ ! -f /tmp/workflow-helpers.sh ]; then
-            echo "::error::workflow-helpers.sh missing — sending bootstrap-failure callback"
+            echo "::error title=Script bootstrap failed::workflow-helpers.sh was never downloaded from the hub; reporting the failure with a minimal callback."
             # The bearer goes through a 0600 config file, never argv — see
             # curlAuthPreamble in lib/config/workflow-scripts-bootstrap.ts.
             CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
             trap 'rm -f "$CURL_CFG"' EXIT
             printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
-            curl -sS --max-time 30 -K "$CURL_CFG" -X POST "${HUB_BASE_URL}/api/doc-orchestrator/webhook" \
+            curl -sS --max-time 30 -K "$CURL_CFG" -X POST "${HUB_BASE_URL}/api/code-documentation/webhook" \
               -H "Content-Type: application/json" \
               -d "{\"run_id\":\"$RUN_ID\",\"repo_id\":\"$REPO_ID\",\"status\":\"failure\",\"workflow_run_id\":$WORKFLOW_RUN_ID,\"workflow_url\":\"$WORKFLOW_URL\",\"error\":\"Script bootstrap failed: workflow-helpers.sh never downloaded from the hub.\"}" || true
             exit 1
           fi
           source /tmp/workflow-helpers.sh
 
-          # Construct callback URL from hub base URL
-          CALLBACK_URL="${HUB_BASE_URL}/api/doc-orchestrator/webhook"
+          CALLBACK_URL="${HUB_BASE_URL}/api/code-documentation/webhook"
 
-          echo "📊 Determining final workflow status..."
-          echo "   JOB_STATUS: $JOB_STATUS"
-          echo "   HAS_CHANGES: $HAS_CHANGES"
-          echo "   STAGE2_OUTCOME: $STAGE2_OUTCOME"
-          echo "   CODEWIKI_INSTALL_OUTCOME: $CODEWIKI_INSTALL_OUTCOME"
-          echo "   CODEWIKI_CONFIG_OUTCOME: $CODEWIKI_CONFIG_OUTCOME"
+          echo "::group::Inputs to the final status"
+          echo "JOB_STATUS=$JOB_STATUS"
+          echo "HAS_CHANGES=$HAS_CHANGES"
+          echo "STAGE2_OUTCOME=$STAGE2_OUTCOME"
+          echo "CODEWIKI_INSTALL_OUTCOME=$CODEWIKI_INSTALL_OUTCOME"
+          echo "CODEWIKI_CONFIG_OUTCOME=$CODEWIKI_CONFIG_OUTCOME"
+          echo "::endgroup::"
 
           # CRITICAL: Determine final status - NEVER return "running"
           # Default to failure, only set success if everything checks out
@@ -3211,42 +3099,47 @@ jobs:
           # Check for cancelled job first
           if [ "$JOB_STATUS" = "cancelled" ]; then
             STATUS="cancelled"
-            echo "   ❌ Status: cancelled (workflow was cancelled)"
+            REASON="the workflow run was cancelled"
           # Check if critical stage 2 (CodeWiki) failed - this has continue-on-error: false
           elif [ "$STAGE2_OUTCOME" = "failure" ]; then
             STATUS="failure"
-            echo "   ❌ Status: failure (CodeWiki stage failed)"
+            REASON="the CodeWiki stage failed"
           # Check if CodeWiki installation failed
           elif [ "$CODEWIKI_INSTALL_OUTCOME" = "failure" ]; then
             STATUS="failure"
-            echo "   ❌ Status: failure (CodeWiki installation failed)"
+            REASON="the CodeWiki installation failed"
           # Check if CodeWiki configuration failed
           elif [ "$CODEWIKI_CONFIG_OUTCOME" = "failure" ]; then
             STATUS="failure"
-            echo "   ❌ Status: failure (CodeWiki configuration failed)"
+            REASON="the CodeWiki configuration failed"
           # Check overall job status
           elif [ "$JOB_STATUS" != "success" ]; then
             STATUS="failure"
-            echo "   ❌ Status: failure (job status: $JOB_STATUS)"
+            REASON="the job status is $JOB_STATUS"
           # Check if we have any documentation changes
           elif [ "$HAS_CHANGES" != "true" ]; then
             STATUS="no_changes"
-            echo "   ⚠️ Status: no_changes (no documentation files generated)"
+            REASON="no documentation changed"
           else
             STATUS="success"
-            echo "   ✅ Status: success"
+            REASON="documentation generated"
           fi
 
           # SAFETY CHECK: Ensure status is NEVER "running"
           if [ "$STATUS" = "running" ] || [ -z "$STATUS" ]; then
-            echo "   🚨 SAFETY: Detected invalid status '$STATUS', forcing to 'failure'"
+            echo "::warning::Computed status '$STATUS' is not terminal; reporting failure instead."
             STATUS="failure"
+            REASON="no terminal status could be determined"
           fi
 
-          echo ""
-          echo "📤 Final status to report: $STATUS"
+          case "$STATUS" in
+            success)    echo "Final status: success ($REASON)" ;;
+            no_changes) echo "::notice title=Code Documentation: no changes::Final status: no_changes ($REASON)." ;;
+            cancelled)  echo "::warning title=Code Documentation: cancelled::Final status: cancelled ($REASON)." ;;
+            *)          echo "::error title=Code Documentation: $STATUS::Final status: $STATUS ($REASON)." ;;
+          esac
 
-          # Branch actually created by "Create PR Branch". Falls back to the same
+          # Branch actually created by "Create docs branch". Falls back to the same
           # formula only when that step never ran (this step is `if: always()`).
           SAFE_BRANCH="${BRANCH_NAME:-docs/flamingo-ai-technical-writer-$SAFE_RUN_ID}"
 
@@ -3259,18 +3152,40 @@ jobs:
           # Final cleanup: remove workflow helpers file
           cleanup_path "/tmp/workflow-helpers.sh"
 
-      - name: Pipeline Summary
+      # The run's job summary (the Actions run page). Values reach the script
+      # through env, never inline expressions.
+      - name: Write job summary
         if: always()
+        env:
+          STAGE1_STATUS: ${{ steps.stage1.outputs.stage1_status || 'skipped' }}
+          STAGE1_FILES: ${{ steps.stage1.outputs.stage1_files || '0' }}
+          STAGE2_STATUS: ${{ steps.stage2.outputs.stage2_status || steps.stage2_alt.outputs.stage2_status || 'skipped' }}
+          STAGE2_FILES: ${{ steps.stage2.outputs.stage2_files || steps.stage2_alt.outputs.stage2_files || '0' }}
+          STAGE2_ENGINE: ${{ steps.detect_language.outputs.codewiki_supported == 'true' && 'CodeWiki' || steps.detect_language.outputs.codewiki_supported == 'false' && 'Claude' || 'engine not chosen' }}
+          STAGE3_STATUS: ${{ steps.stage3.outputs.stage3_status || 'skipped' }}
+          STAGE3_FILES: ${{ steps.stage3.outputs.stage3_files || '0' }}
+          STAGE4_STATUS: ${{ steps.stage4.outputs.stage4_status || 'skipped' }}
+          STAGE4_FILES: ${{ steps.stage4.outputs.stage4_files || '0' }}
+          GRAPH_OUTCOME: ${{ steps.graph.outcome || 'skipped' }}
+          PRIMARY_LANGUAGE: ${{ steps.detect_language.outputs.primary_language }}
+          PR_URL: ${{ steps.create-initial-pr.outputs.pull-request-url }}
         run: |
-          echo "## 🦩 Flamingo Code Documentation Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Stage | Status | Files |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Inline Docs | ${{ steps.stage1.outputs.stage1_status || 'skipped' }} | ${{ steps.stage1.outputs.stage1_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Architecture | ${{ steps.stage2.outputs.stage2_status || steps.stage2_alt.outputs.stage2_status || 'skipped' }} | ${{ steps.stage2.outputs.stage2_files || steps.stage2_alt.outputs.stage2_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tutorials | ${{ steps.stage3.outputs.stage3_status || 'skipped' }} | ${{ steps.stage3.outputs.stage3_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Repo Docs | ${{ steps.stage4.outputs.stage4_status || 'skipped' }} | ${{ steps.stage4.outputs.stage4_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ steps.create-initial-pr.outputs.pull-request-url }}" ]; then
-            echo "**Pull Request:** ${{ steps.create-initial-pr.outputs.pull-request-url }}" >> $GITHUB_STEP_SUMMARY
-          fi
+          {
+            echo "## 🦩 Flamingo Code Documentation"
+            echo ""
+            echo "Run \`$RUN_ID\` · source branch \`$SOURCE_BRANCH\` · primary language ${PRIMARY_LANGUAGE:-unknown}"
+            echo ""
+            echo "| Stage | Status | Files |"
+            echo "|-------|--------|-------|"
+            echo "| 0 · Code graph | $GRAPH_OUTCOME | – |"
+            echo "| 1 · Inline docs | $STAGE1_STATUS | $STAGE1_FILES |"
+            echo "| 2 · Reference docs ($STAGE2_ENGINE) | $STAGE2_STATUS | $STAGE2_FILES |"
+            echo "| 3 · Tutorials | $STAGE3_STATUS | $STAGE3_FILES |"
+            echo "| 4 · Repository docs | $STAGE4_STATUS | $STAGE4_FILES |"
+            echo ""
+            if [ -n "$PR_URL" ]; then
+              echo "**Pull request:** $PR_URL"
+            else
+              echo "No pull request was opened."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
