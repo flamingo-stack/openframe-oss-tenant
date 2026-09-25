@@ -20,8 +20,8 @@
 # Stages 2 (Claude), 3 and 4 follow the code reviewer's agentic pattern
 # (templates/scripts/code-documentation-lib.mjs): the hub serves this
 # repository's settings, the script packs the material, ONE hub call writes
-# ONE document (forced `emit_document`; the hub's read tools when the
-# repository's "Graph lookups" switch is on), a deterministic gate checks every
+# ONE document (forced `emit_document`; the hub's read tools once the
+# repository's visibility is resolved), a deterministic gate checks every
 # repository path it names, and the script, never the model, picks where each
 # document is written.
 #
@@ -2513,9 +2513,9 @@ jobs:
       # STAGE 3: TUTORIALS
       # Getting-started guides and how-to tutorials, written by the Code
       # Documentation lane (code-documentation-lib.mjs): one hub call per
-      # tutorial with the forced `emit_document` tool and, when the repository's
-      # "Graph lookups" switch is on, the hub's read tools (the code graph and
-      # the rules, scoped to what THIS repository may see). No model key here.
+      # tutorial with the forced `emit_document` tool and, once the repository's
+      # visibility is resolved, the hub's read tools (the code graph and the
+      # rules, scoped to what THIS repository may see). No model key here.
       # Generates 4 tutorials: user/getting-started, user/common-use-cases,
       #                        dev/getting-started-dev, dev/architecture-overview-dev
       # =========================================================================
