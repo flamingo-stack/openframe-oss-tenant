@@ -1,4 +1,5 @@
 {{- $saas := index .Values "openframe-saas" -}}
+{{- $mgmt := index .Values "management" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,7 +38,7 @@ spec:
           - |
             echo "Registering Cluster..."
             echo "Waiting for OpenFrame Management API to become reachable..."
-            until curl --head --fail --silent http://openframe-management.{{ .Values.tenant.namespace }}.svc.cluster.local:8096/management/{{ $saas.image.tag }}/health; do
+            until curl --head --fail --silent http://openframe-management.{{ .Values.tenant.namespace }}.svc.cluster.local:8096/management/{{ default $saas.image.tag $mgmt.image.tag }}/health; do
               echo "Still waiting..."
               sleep 10
             done
@@ -45,7 +46,7 @@ spec:
               -X POST http://openframe-management.{{ .Values.tenant.namespace }}.svc.cluster.local:8095/v1/cluster-registrations \
               -H "Content-Type: application/json" \
               -d '{
-                  "imageTagVersion": "{{ $saas.image.tag }}"
+                  "imageTagVersion": "{{ default $saas.image.tag $mgmt.image.tag }}"
               }' \
               --retry 20 \
               --retry-delay 15 \
@@ -53,3 +54,4 @@ spec:
             echo "Cluster Registration complete."
 
             echo "Keeping pod alive..." && sleep infinity
+
