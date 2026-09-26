@@ -56,11 +56,13 @@ runs:
             echo "Updated $path with image tag: $COMMIT_SHA"
           else
             echo "Failed to update $path" >&2
+            exit 1
           fi
         }
 
         echo "Updating Helm values with tag: $COMMIT_SHA"
         # Process each changed service
+        FAILURE_FLAG_FILE=$(mktemp)
         jq -c '.[]' <<< "$MATRIX" | while read -r item; do
           name=$(jq -r '.name' <<< "$item")
           changed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
@@ -72,17 +74,25 @@ runs:
           # tenant umbrella under openframe-saas.<name without prefix>
           case "$name" in
             openframe-config)
-              set_image_tag ".platform.apps.openframe-config.values.image.tag"
+              set_image_tag ".platform.apps.openframe-config.values.image.tag" || echo 1 > "$FAILURE_FLAG_FILE"
               ;;
             openframe-*)
-              set_image_tag ".tenant.values.openframe-saas.${name#openframe-}.image.tag"
+              set_image_tag ".tenant.values.openframe-saas.${name#openframe-}.image.tag" || echo 1 > "$FAILURE_FLAG_FILE"
               ;;
             *)
               echo "No helm values mapping for $name, skipping" >&2
+              echo 1 > "$FAILURE_FLAG_FILE"
               ;;
           esac
 
         done
+
+        if [ -s "$FAILURE_FLAG_FILE" ]; then
+          rm -f "$FAILURE_FLAG_FILE"
+          echo "Error: one or more image tag updates failed or had no helm values mapping" >&2
+          exit 1
+        fi
+        rm -f "$FAILURE_FLAG_FILE"
 
     - name: Override repository passwords and branch
       shell: bash
@@ -95,3 +105,4 @@ runs:
         yq eval ".repository.branch = \"$BRANCH_NAME\"" -i "$HELM_VALUES_FILE"
         echo "Updated repository.branch to: $BRANCH_NAME"
         cat "$HELM_VALUES_FILE"
+
