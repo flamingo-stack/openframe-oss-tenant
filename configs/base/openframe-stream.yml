@@ -65,8 +65,10 @@ openframe:
           logs-events:
             name: logs.events
         outbound:
-          integrated-tool-events: integrated-tool.events.pinot
-          devices-topic: devices-topic
+          integrated-tool-events:
+            name: integrated-tool.events.pinot
+          devices-topic:
+            name: devices-topic
 
   integration:
     tool:
