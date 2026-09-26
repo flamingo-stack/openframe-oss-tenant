@@ -286,7 +286,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
-        continue-on-error: true
 
       - name: Prepare release artifacts
         env:
@@ -306,6 +305,13 @@ jobs:
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
             fi
           done
+
+      - name: Verify release artifacts are present
+        run: |
+          if [ -z "$(find final-artifacts/clients -type f \( -name '*.tar.gz' -o -name '*.zip' \) -print -quit)" ]; then
+            echo "::error::No client artifacts found in final-artifacts/clients; aborting release to avoid publishing an empty release." >&2
+            exit 1
+          fi
 
       - name: Generate release header
         run: |
@@ -343,3 +349,4 @@ jobs:
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
+
