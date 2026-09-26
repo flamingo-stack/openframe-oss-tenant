@@ -19,6 +19,13 @@ spec:
       {{- end }}
     spec:
       priorityClassName: mysql-fleetmdm
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
 
       containers:
       - name: mysql
@@ -46,18 +53,24 @@ spec:
         livenessProbe:
           exec:
             command:
-            - mysqladmin
-            - ping
-            - -h
-            - localhost
-            - -u
-            - root
-            - -p${MYSQL_ROOT_PASSWORD}
+            - sh
+            - -c
+            - mysqladmin ping -h localhost -u root --password="$MYSQL_ROOT_PASSWORD"
           initialDelaySeconds: 30
           periodSeconds: 10
         volumeMounts:
         - name: mysql-data
           mountPath: /var/lib/mysql
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          privileged: false
+          capabilities:
+            drop:
+              - ALL
 
       {{- if .Values.mysql.metrics.enabled }}
       - name: mysqld-exporter
@@ -101,6 +114,10 @@ spec:
           runAsUser: 65534
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
+          privileged: false
+          capabilities:
+            drop:
+              - ALL
       {{- end }}
 
   volumeClaimTemplates:
@@ -112,3 +129,4 @@ spec:
       resources:
         requests:
           storage: 10Gi
+
