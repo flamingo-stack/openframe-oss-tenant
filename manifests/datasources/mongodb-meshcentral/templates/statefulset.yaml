@@ -29,6 +29,13 @@ spec:
           image: {{ .Values.mongodb.initImage.registry }}/{{ .Values.mongodb.initImage.repository }}:{{ .Values.mongodb.initImage.tag }}
           securityContext:
             runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER"]
           command:
             - /bin/sh
             - -c
@@ -46,6 +53,13 @@ spec:
           image: {{ .Values.mongodb.initImage.registry }}/{{ .Values.mongodb.initImage.repository }}:{{ .Values.mongodb.initImage.tag }}
           securityContext:
             runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER"]
           command:
             - /bin/sh
             - -c
@@ -168,3 +182,4 @@ spec:
         resources:
           requests:
             storage: 10Gi
+
