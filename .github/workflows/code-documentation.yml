@@ -213,6 +213,8 @@ env:
   # Analysis Exclusions - Complete array of glob patterns to exclude from repository analysis
   # (build artifacts, dependencies, the hub's own checkout, cloned dependency repos)
   EXCLUDED_PATHS: '**/node_modules/**,**/.git/**,**/target/**,**/dist/**,**/build/**,**/.next/**,**/out/**,**/coverage/**,**/vendor/**,**/.yalc/**,**/.turbo/**,**/.gradle/**,**/__pycache__/**,**/.terraform/**,**/.venv/**,**/venv/**,**/multi-platform-hub/**,**/deps-*/**'
+  # The documentation pull request's branch prefix (CODE_DOCUMENTATION_BRANCH_PREFIX, written by npm run workflows:sync)
+  DOCS_BRANCH_PREFIX: 'code-documentation/'
   README_LOGO_ALT: 'OpenFrame Logo'
 
 jobs:
@@ -261,6 +263,7 @@ jobs:
           && github.event.pull_request.head.repo.full_name == github.repository
           && !startsWith(github.event.pull_request.head.ref, 'ai-fix/')
           && !startsWith(github.event.pull_request.head.ref, 'setup/')
+          && !startsWith(github.event.pull_request.head.ref, 'code-documentation/')
           && !(github.event.action == 'edited' && github.event.sender.type == 'Bot'))
     # The overlay coordinates, spelled ONCE: the hub's dispatch payload, or this PR's own event (the steps
     # below build only after the live refresh answered `build`). Both empty on a default-branch rebuild.
@@ -1453,7 +1456,7 @@ jobs:
           # Use sanitized run ID for branch name. Branch, PR title, status file and
           # commit messages all carry the product name: 🦩 Flamingo Code Documentation.
           SAFE_RUN_ID="${{ steps.branch-name-early.outputs.safe_run_id }}"
-          BRANCH_NAME="docs/flamingo-ai-technical-writer-$SAFE_RUN_ID"
+          BRANCH_NAME="${DOCS_BRANCH_PREFIX}$SAFE_RUN_ID"
 
           # Configure git
           git config user.name "github-actions[bot]"
@@ -3206,7 +3209,7 @@ jobs:
 
           # Branch actually created by "Create docs branch". Falls back to the same
           # formula only when that step never ran (this step is `if: always()`).
-          SAFE_BRANCH="${BRANCH_NAME:-docs/flamingo-ai-technical-writer-$SAFE_RUN_ID}"
+          SAFE_BRANCH="${BRANCH_NAME:-${DOCS_BRANCH_PREFIX}$SAFE_RUN_ID}"
 
           # Send final webhook using helper function
           report_final_status "$CALLBACK_URL" "$WEBHOOK_SECRET" "$RUN_ID" "$REPO_ID" \
