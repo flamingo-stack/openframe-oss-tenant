@@ -19,10 +19,24 @@ spec:
       {{- end }}
     spec:
       priorityClassName: mysql-fleetmdm
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
 
       containers:
       - name: mysql
         image: {{ .Values.mysql.image.registry }}/{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+          runAsGroup: 999
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
         args:
           - --default-authentication-plugin=mysql_native_password
           - --skip-mysqlx
@@ -112,3 +126,4 @@ spec:
       resources:
         requests:
           storage: 10Gi
+
