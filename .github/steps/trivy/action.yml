@@ -47,10 +47,11 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
       run: |
         set -euo pipefail
-        [ -f "$SCAN_DIR/pom.xml" ] || exit 0
-        mvn_args=(-B -q -fn -DskipTests -gs "$ACTION_PATH/central-mirror.xml" -f "$SCAN_DIR/pom.xml")
+        poms=$([ -f "$SCAN_DIR/pom.xml" ] && echo "$SCAN_DIR/pom.xml" || find "$SCAN_DIR" -maxdepth 2 -name pom.xml)
+        [ -n "$poms" ] || exit 0
+        mvn_args=(-B -q -fn -DskipTests -gs "$ACTION_PATH/central-mirror.xml")
         [ -f .mvn/settings.xml ] && mvn_args+=(-s .mvn/settings.xml)
-        mvn "${mvn_args[@]}" dependency:go-offline | tee /tmp/mvn.log || true
+        for pom in $poms; do mvn "${mvn_args[@]}" -f "$pom" dependency:go-offline | tee -a /tmp/mvn.log || true; done
         ! grep -q '\[ERROR\]' /tmp/mvn.log ||
           echo "::warning::Some Maven dependencies could not be resolved; scan depth may be reduced"
 
