@@ -2,6 +2,8 @@
 spring:
   main:
     allow-bean-definition-overriding: true
+  reactor:
+    context-propagation: auto
   mvc:
     contentnegotiation:
       favor-parameter: true
@@ -45,6 +47,9 @@ spring:
 
 # Common monitoring configuration
 management:
+  tracing:
+    sampling:
+      probability: 1.0
   base-path: /management
   endpoints:
     web:
