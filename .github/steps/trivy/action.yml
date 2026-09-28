@@ -6,6 +6,7 @@ inputs:
     description: "'code' or 'image'"
     required: true
   path: { default: "." }
+  paths: { default: "" }
   skip-dirs: { default: "" }
   skip-files: { default: "" }
   image-name: { default: "" }
@@ -27,8 +28,8 @@ runs:
             - 'pom.xml'
             - '.trivyignore'
             - '.github/steps/trivy/**'
-            - '${{ inputs.path }}/**'
-            ${{ inputs.skip-dirs && format('- ''!{0}/{1}/**''', inputs.path, inputs.skip-dirs) || '' }}
+            - '${{ inputs.paths && format('{{{0},}}', inputs.paths) || format('{0}/**', inputs.path) }}'
+            ${{ !inputs.paths && inputs.skip-dirs && format('- ''!{0}/{1}/**''', inputs.path, inputs.skip-dirs) || '' }}
 
     - name: Install Trivy
       if: steps.should_run.outputs.changed != 'false'

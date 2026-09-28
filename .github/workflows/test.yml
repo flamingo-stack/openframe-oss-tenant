@@ -73,6 +73,7 @@ jobs:
         target: ${{ fromJson(needs.changes.outputs.images_matrix) }}
         include:
           - target: { name: root-frontend, path: ./clients }
+          - target: { name: openframe-test, path: ./openframe/services/openframe-test }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
