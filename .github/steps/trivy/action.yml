@@ -28,7 +28,7 @@ runs:
             - 'pom.xml'
             - '.trivyignore'
             - '.github/steps/trivy/**'
-            - '${{ inputs.paths || format('{0}/**', inputs.path) }}'
+            - '${{ inputs.paths || format('{0}/**/{{pom.xml,package.json,package-lock.json,yarn.lock,pnpm-lock.yaml,go.mod,go.sum,Cargo.toml,Cargo.lock,Dockerfile*}}', inputs.path) }}'
             ${{ !inputs.paths && inputs.skip-dirs && format('- ''!{0}/{1}/**''', inputs.path, inputs.skip-dirs) || '' }}
 
     - name: Install Trivy
