@@ -16,14 +16,29 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Check if scan should run
+      id: should_run
+      if: inputs.scan == 'code'
+      uses: dorny/paths-filter@v4.0.3
+      with:
+        predicate-quantifier: some-with-excludes
+        filters: |
+          changed:
+            - 'pom.xml'
+            - '.trivyignore'
+            - '.github/steps/trivy/**'
+            - '${{ inputs.path }}/**'
+            ${{ inputs.skip-dirs && format('- ''!{0}/{1}/**''', inputs.path, inputs.skip-dirs) || '' }}
+
     - name: Install Trivy
+      if: steps.should_run.outputs.changed != 'false'
       uses: aquasecurity/setup-trivy@v0.3.1
       with:
         version: v0.74.0
         cache: true
 
     - name: Resolve Maven dependencies
-      if: inputs.scan == 'code'
+      if: inputs.scan == 'code' && steps.should_run.outputs.changed != 'false'
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.maven-token }}
@@ -40,7 +55,7 @@ runs:
           echo "::warning::Some Maven dependencies could not be resolved; scan depth may be reduced"
 
     - name: Scan dependencies
-      if: inputs.scan == 'code'
+      if: inputs.scan == 'code' && steps.should_run.outputs.changed != 'false'
       shell: bash
       env:
         SCAN_DIR: ${{ inputs.path }}
@@ -63,7 +78,7 @@ runs:
         done < "$report" > "$report.tmp" && mv "$report.tmp" "$report"
 
     - name: Scan Dockerfile base images
-      if: inputs.scan == 'code'
+      if: inputs.scan == 'code' && steps.should_run.outputs.changed != 'false'
       shell: bash
       env:
         SCAN_DIR: ${{ inputs.path }}
@@ -105,6 +120,7 @@ runs:
         find . -maxdepth 1 -name 'trivy-*.tsv' -empty -delete
 
     - name: Upload report
+      if: steps.should_run.outputs.changed != 'false'
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.scan == 'code' && (inputs.image-name && format('scan_code-{0}', inputs.image-name) || 'scan_code') || format('scan_image-{0}', inputs.image-name) }}
@@ -112,6 +128,7 @@ runs:
         if-no-files-found: ignore
 
     - name: Evaluate
+      if: steps.should_run.outputs.changed != 'false'
       shell: bash
       env:
         ARTIFACT: ${{ inputs.scan == 'code' && 'scan_code' || 'scan_image' }}

@@ -85,8 +85,7 @@ jobs:
 
           ADDONS='{
             "openframe-test": ["./pom.xml", "./openframe/services/openframe-test/**"],
-            "helm": ["./manifests/app-of-apps/**"],
-            "root": ["./openframe/libs/**", "./clients/**"]
+            "helm": ["./manifests/app-of-apps/**"]
           }'
 
           images_matrix=$(jq -c '[ .[] | {
