@@ -3,7 +3,7 @@ mysql:
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: mysql
-    tag: "8.0.35"
+    tag: "8.0.46"
   podAnnotations:
     loki.grafana.com/scrape: "true"
     prometheus.io/scrape: "true"

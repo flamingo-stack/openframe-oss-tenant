@@ -55,10 +55,6 @@ The `openframe-client` Rust agent uses the OAuth2 Client Credentials flow:
 
 ## Data Encryption
 
-### Token Encryption in openframe-chat
-
-The Tauri desktop app receives authentication tokens encrypted with **AES-256-GCM**. The `TokenDecryptionService` in the Tauri Rust backend decrypts the token before passing it to the React frontend via IPC. The encryption secret is provisioned by the platform, never stored in the app bundle.
-
 ### Secrets at Rest
 
 Sensitive credentials (tool API keys, OAuth2 client secrets) stored in MongoDB are encrypted using the `EncryptionService` from `openframe-core-crypto`. The encryption key is provided through secure environment configuration — never hardcoded.
@@ -79,10 +75,6 @@ All REST and GraphQL inputs use Java Bean Validation (`@Valid`, `@NotBlank`, `@V
 ### GraphQL Input Validation
 
 GraphQL mutations validate inputs through DGS data fetchers before passing to service layer. All GraphQL errors are returned via `GraphQLExceptionHandler` and `GlobalExceptionHandler`.
-
-### TypeScript / Frontend
-
-The `openframe-chat` frontend uses typed GraphQL queries/mutations (via `graphql-request`) which prevents injection of arbitrary query structures. User input is never interpolated directly into query strings.
 
 ---
 
@@ -118,7 +110,6 @@ The `openframe-chat` frontend uses typed GraphQL queries/mutations (via `graphql
 | Agent Registration Secret | openframe-client, Management Service | Single-use per agent; rotate after registration |
 | OAuth2 client secrets | Authorization Server, API clients | Stored encrypted in MongoDB |
 | RSA key pairs (per tenant) | Authorization Server | Generated automatically; stored in MongoDB encrypted |
-| AES-256-GCM encryption key | openframe-chat (Tauri) | Provisioned at deployment; never bundled in app |
 | API keys | External API consumers | Stored encrypted; hashed for validation |
 
 ### Local Development

@@ -1,0 +1,3 @@
+# Vulnerabilities to skip in the Trivy scan: one CVE/GHSA id per line, e.g.:
+#
+# CVE-2026-12345

@@ -29,8 +29,7 @@ openframe-oss-tenant/
 │       ├── openframe-config/           # Config Server
 │       └── openframe-test/             # E2E test runner
 ├── clients/
-│   ├── openframe-client/               # Rust endpoint agent
-│   └── openframe-chat/                 # Tauri + React desktop app
+│   └── openframe-client/               # Rust endpoint agent
 ├── manifests/                          # Kubernetes + datasource configs
 └── pom.xml                             # Root Maven POM
 ```
@@ -94,7 +93,7 @@ To run the full stack locally, start services in this order (infrastructure firs
 cd clients/openframe-client
 
 # Development build
-cargo build
+OPENFRAME_VERSION=0.0.0-dev cargo build
 
 # Enable dev mode for local directories and relaxed TLS
 export OPENFRAME_DEV_MODE=1
@@ -115,58 +114,17 @@ Rust does not have built-in hot reload, but `cargo-watch` provides file-watching
 cargo install cargo-watch
 
 # Watch and rebuild on changes
-cargo watch -x build
-```
-
----
-
-## Running the Desktop App (openframe-chat)
-
-```bash
-cd clients/openframe-chat
-
-# Install dependencies
-npm install
-
-# Start in development mode with hot reload
-npm run tauri dev
-```
-
-### Vite Dev Server Only (No Tauri Shell)
-
-To iterate on the React UI without launching the native window:
-
-```bash
-npm run dev
-```
-
-The Vite dev server starts at `http://localhost:3003`.
-
-### TypeScript Type Checking
-
-```bash
-npx tsc --noEmit
-```
-
-### Linting and Formatting (Biome)
-
-```bash
-# Check
-npx biome check .
-
-# Fix
-npx biome check --write .
+OPENFRAME_VERSION=0.0.0-dev cargo watch -x build
 ```
 
 ---
 
 ## Setting Up the Rust Agent Dev Config
 
-The repository includes a script to set up the development initialization configuration for the Rust agent:
+The setup script moved to openframe-oss-lib with the agent sources; run it from a side-by-side checkout:
 
 ```bash
-cd clients/openframe-client
-bash scripts/setup_dev_init_config.sh
+bash <openframe-oss-lib>/clients/openframe-client/scripts/setup_dev_init_config.sh
 ```
 
 This script creates the necessary configuration files in the development directory layout used when `OPENFRAME_DEV_MODE=1` is set.
@@ -219,15 +177,6 @@ For `openframe-client`, use the `CodeLLDB` extension in VS Code:
 }
 ```
 
-### openframe-chat — Browser DevTools
-
-When running `npm run tauri dev`, the Tauri WebView exposes browser-style DevTools:
-
-- **macOS/Linux:** Right-click → Inspect Element
-- **Windows:** Right-click → Inspect
-
-For the Rust Tauri backend, use standard Rust debugging via RustRover or LLDB.
-
 ---
 
 ## Useful Local Development Tips
@@ -244,14 +193,6 @@ mvn clean install -DskipTests 2>&1 | tee build.log
 ```bash
 cd clients/openframe-client
 cargo clean
-```
-
-### Clear Node Modules
-
-```bash
-cd clients/openframe-chat
-rm -rf node_modules
-npm install
 ```
 
 ### Check Service Health
@@ -274,8 +215,5 @@ curl http://localhost:8081/actuator/health
 |---|---|
 | Build all backend services | `mvn clean install -DskipTests` |
 | Run API service | `mvn spring-boot:run -pl openframe/services/openframe-api` |
-| Build Rust agent | `cd clients/openframe-client && cargo build` |
+| Build Rust agent | `cd clients/openframe-client && OPENFRAME_VERSION=0.0.0-dev cargo build` |
 | Run Rust agent (dev) | `OPENFRAME_DEV_MODE=1 ./target/debug/openframe-client run` |
-| Run desktop app | `cd clients/openframe-chat && npm run tauri dev` |
-| Frontend-only dev | `cd clients/openframe-chat && npm run dev` |
-| Lint TypeScript | `cd clients/openframe-chat && npx biome check .` |

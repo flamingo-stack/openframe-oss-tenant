@@ -6,11 +6,10 @@ Welcome to the OpenFrame OSS Tenant development documentation. This section cove
 
 ## Overview
 
-OpenFrame OSS Tenant is a polyglot platform built across three primary technology stacks:
+OpenFrame OSS Tenant is a polyglot platform built across two primary technology stacks:
 
 - **Java / Spring Boot 3.3** — Backend microservices (API, Gateway, Auth, Stream, Management, Client Service)
-- **Rust** — Cross-platform endpoint agent (`openframe-client`) and Tauri desktop backend (`openframe-chat`)
-- **TypeScript / React** — Desktop client UI (`openframe-chat`) using Vite + Tauri 2
+- **Rust** — Cross-platform endpoint agent (`openframe-client`)
 
 This documentation section guides you through setting up your development environment, understanding the architecture, and contributing code effectively.
 
@@ -61,7 +60,6 @@ This documentation section guides you through setting up your development enviro
 | Application | Tech | Purpose |
 |---|---|---|
 | `clients/openframe-client` | Rust | Cross-platform endpoint agent |
-| `clients/openframe-chat` | React 19 + Vite + Tauri 2 | Desktop AI chat (Fae for clients) |
 
 ### Infrastructure
 

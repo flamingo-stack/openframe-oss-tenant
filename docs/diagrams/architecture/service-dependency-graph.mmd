@@ -1,6 +1,5 @@
 graph LR
     subgraph FE["Frontend Clients"]
-        Chat["openframe-chat\n(Tauri)"]
         Frontend["openframe-frontend\n(Web)"]
     end
 
@@ -21,9 +20,7 @@ graph LR
         CoreLib["openframe-frontend-core\n(TypeScript npm lib)"]
     end
 
-    Chat --> CoreLib
     Frontend --> CoreLib
-    Chat --> GW
     Frontend --> GW
     GW --> Auth
     GW --> API

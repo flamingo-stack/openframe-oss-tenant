@@ -50,10 +50,10 @@ Follow standard Rust conventions as enforced by `rustfmt` and `clippy`.
 cargo fmt
 
 # Lint
-cargo clippy -- -D warnings
+OPENFRAME_VERSION=0.0.0-dev cargo clippy -- -D warnings
 
 # Both before committing
-cargo fmt && cargo clippy -- -D warnings
+cargo fmt && OPENFRAME_VERSION=0.0.0-dev cargo clippy -- -D warnings
 ```
 
 **Naming conventions:**
@@ -61,28 +61,6 @@ cargo fmt && cargo clippy -- -D warnings
 - Types and traits: `PascalCase`
 - Constants: `SCREAMING_SNAKE_CASE`
 - Modules: `snake_case`
-
-### TypeScript / React (openframe-chat)
-
-The project uses [Biome](https://biomejs.dev/) for both formatting and linting (replaces ESLint + Prettier).
-
-```bash
-cd clients/openframe-chat
-
-# Format and lint check
-npx biome check .
-
-# Auto-fix
-npx biome check --write .
-```
-
-**Conventions:**
-- React components: `PascalCase` filenames and function names
-- Hooks: `use` prefix (e.g., `useChat`, `useChatMessages`)
-- Services: camelCase filenames (e.g., `chatApiService.ts`)
-- Types/interfaces: `PascalCase`
-- Use TypeScript strict mode
-- Prefer named exports over default exports for hooks and utilities; use default export for page/component files
 
 ---
 
@@ -93,7 +71,6 @@ Use descriptive branch names that reflect the purpose of the change:
 ```text
 # Feature branches
 feat/add-script-scheduling-api
-feat/openframe-chat-approval-flow
 
 # Bug fixes
 fix/agent-token-refresh-race-condition
@@ -171,7 +148,7 @@ chore(deps): upgrade openframe-libs to 5.65.0
 | `perf` | Performance improvement |
 | `style` | Formatting only (no logic change) |
 
-**Scope examples:** `api`, `gateway`, `auth`, `openframe-client`, `openframe-chat`, `stream`, `management`
+**Scope examples:** `api`, `gateway`, `auth`, `openframe-client`, `stream`, `management`
 
 ---
 
@@ -179,9 +156,9 @@ chore(deps): upgrade openframe-libs to 5.65.0
 
 ### Before Opening a PR
 
-1. **Build successfully:** `mvn clean install -DskipTests` (for Java) or `cargo build` (for Rust) or `npm run build` (for TypeScript)
-2. **Run tests:** `mvn test` or `cargo test` or `npx tsc --noEmit`
-3. **Lint/format:** `cargo fmt && cargo clippy` (Rust) or `npx biome check --write .` (TypeScript)
+1. **Build successfully:** `mvn clean install -DskipTests` (for Java) or `OPENFRAME_VERSION=0.0.0-dev cargo build` (for Rust)
+2. **Run tests:** `mvn test` or `OPENFRAME_VERSION=0.0.0-dev cargo test`
+3. **Lint/format:** `cargo fmt && OPENFRAME_VERSION=0.0.0-dev cargo clippy` (Rust)
 4. **Test your changes manually** against a running instance if possible
 
 ### PR Description
@@ -254,7 +231,7 @@ Use this checklist when reviewing PRs:
 - [ ] New Mongock migrations (`@ChangeUnit`) follow the naming convention
 
 ### Rust Specific
-- [ ] `cargo clippy -- -D warnings` passes with no warnings
+- [ ] `OPENFRAME_VERSION=0.0.0-dev cargo clippy -- -D warnings` passes with no warnings
 - [ ] Error handling uses `anyhow::Result` or `thiserror` appropriately
 - [ ] `Arc`/`Mutex` usage is minimal and necessary
 
@@ -268,16 +245,6 @@ When updating the shared `openframe-libs` version (`openframe.libs.version` in `
 2. Build all services: `mvn clean install -DskipTests`
 3. Run tests: `mvn test`
 4. Document any API changes from the library in the PR description
-
-For the `openframe-chat` frontend dependencies (`package.json`):
-
-```bash
-cd clients/openframe-chat
-npm update
-npm install
-npx tsc --noEmit
-npx biome check .
-```
 
 ---
 

@@ -43,15 +43,6 @@ clients/openframe-client/src/
 └── ...
 ```
 
-### TypeScript / openframe-chat
-
-The `openframe-chat` project uses Vite's testing ecosystem:
-
-```bash
-# openframe-frontend-core uses Vitest
-# Configuration: vitest.config.ts
-```
-
 ---
 
 ## Running Tests
@@ -93,25 +84,16 @@ mvn test -pl openframe/services/openframe-api \
 cd clients/openframe-client
 
 # Run all tests
-cargo test
+OPENFRAME_VERSION=0.0.0-dev cargo test
 
 # Run tests with output (useful for debugging)
-cargo test -- --nocapture
+OPENFRAME_VERSION=0.0.0-dev cargo test -- --nocapture
 
 # Run a specific test
-cargo test test_name
+OPENFRAME_VERSION=0.0.0-dev cargo test test_name
 
 # Run tests matching a pattern
-cargo test service
-```
-
-### openframe-chat (TypeScript)
-
-```bash
-cd clients/openframe-chat
-
-# Type check only
-npx tsc --noEmit
+OPENFRAME_VERSION=0.0.0-dev cargo test service
 ```
 
 ---

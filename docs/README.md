@@ -66,7 +66,6 @@ Diagrams are available in Mermaid format (`.mmd`) and can be rendered in any Mer
 | [Service Dependency Graph](./diagrams/architecture/service-dependency-graph.mmd) | How frontend, backend, and agent components depend on each other |
 | [Multi-Tenant OAuth2 Security Flow](./diagrams/architecture/multi-tenant-oauth2-security-flow.mmd) | JWT issuance, gateway validation, and tenant isolation sequence |
 | [Agent Registration and Authentication](./diagrams/architecture/agent-registration-and-authentication.mmd) | Rust agent registration, token exchange, and NATS subscription sequence |
-| [Fae Client Chat Flow](./diagrams/architecture/fae-client-chat-flow-openframe-chat.mmd) | End-to-end streaming AI chat flow through Tauri, Gateway, and NATS |
 
 ---
 

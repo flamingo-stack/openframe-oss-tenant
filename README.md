@@ -14,7 +14,7 @@
 
 **OpenFrame OSS Tenant** is the multi-service, multi-tenant open-source foundation of the [OpenFrame platform](https://openframe.ai) — an AI-powered MSP (Managed Service Provider) platform built by [Flamingo](https://flamingo.run) that replaces expensive proprietary software with intelligent automation.
 
-It integrates device management, real-time messaging, AI-assisted support (**Mingo AI** for technicians, **Fae** for clients), and event-driven automation across a polyglot microservice architecture built on Spring Boot (Java), Rust, and TypeScript.
+It integrates device management, real-time messaging, AI-assisted support (**Mingo AI** for technicians, **Fae** for clients), and event-driven automation across a polyglot microservice architecture built on Spring Boot (Java) and Rust.
 
 [![OpenFrame v0.7.8: Fleet MDM Integration &amp; Platform Architecture Deep Dive](https://img.youtube.com/vi/FgQu7hfKJKw/maxresdefault.jpg)](https://www.youtube.com/watch?v=FgQu7hfKJKw)
 
@@ -24,7 +24,6 @@ It integrates device management, real-time messaging, AI-assisted support (**Min
 
 - **AI-Assisted Support** — Mingo AI for technicians and Fae for end clients, both powered by streaming LLMs with real-time response delivery
 - **Cross-Platform Rust Agent** — `openframe-client` runs as a system service on Windows, macOS, and Linux; supports script execution, tool management, and self-updating via Velopack
-- **Desktop AI Chat (Fae)** — Tauri 2 + React 19 desktop application delivering the Fae end-client experience with AES-256-GCM token security and NATS-based streaming
 - **Multi-Tenant Architecture** — Full tenant isolation with per-tenant OAuth2 clients, RSA-signed JWTs, and `TenantAwareMongoTemplate` database scoping
 - **Real-Time Event Streaming** — Apache Kafka + NATS JetStream for device events, script execution results, and AI message chunk delivery
 - **Remote Management (RMM)** — Script execution (bash, PowerShell, Python, Nushell), scheduling, live commands, and compliance checking across all managed endpoints
@@ -42,7 +41,6 @@ All client traffic passes through the Spring Cloud Gateway. Backend services com
 ```mermaid
 graph TB
     subgraph Clients["Client Layer"]
-        ChatApp["openframe-chat\n(Tauri Desktop App)"]
         FrontendUI["openframe-frontend\n(Web UI)"]
     end
 
@@ -71,7 +69,6 @@ graph TB
         NATS[("NATS JetStream")]
     end
 
-    ChatApp --> GW
     FrontendUI --> GW
     GW --> API
     GW --> AuthServer
@@ -100,7 +97,6 @@ graph TB
 | **Stream Service** | Java / Kafka Streams | 8085 | Real-time event normalization, enrichment, Cassandra/Pinot writes |
 | **Client Service** | Java / Spring Boot + NATS | 8084 | Agent lifecycle management, tool orchestration |
 | **openframe-client** | Rust | — | Cross-platform system agent; device registration, script execution, self-update |
-| **openframe-chat** | TypeScript / Tauri + React | 3003 | Desktop AI chat client (Fae) for end clients |
 
 ---
 
@@ -110,9 +106,7 @@ graph TB
 
 - **JDK 21** (OpenJDK 21 recommended)
 - **Apache Maven 3.9+**
-- **Node.js 20 LTS** + npm 9+
 - **Rust 1.78+** (stable) — install via [rustup](https://rustup.rs)
-- **Tauri system libraries** — see [Prerequisites guide](./docs/getting-started/prerequisites.md)
 
 ### Clone and Build
 
@@ -124,26 +118,13 @@ cd openframe-oss-tenant
 # 2. Build all backend services (Java / Spring Boot)
 mvn clean install -DskipTests
 
-# 3. Install frontend dependencies (openframe-chat desktop app)
-cd clients/openframe-chat
-npm install
+# 3. Build the Rust agent
+cd clients/openframe-client
+OPENFRAME_VERSION=0.0.0-dev cargo build
 
-# 4. Build the Rust agent
-cd ../openframe-client
-cargo build
-
-# 5. Return to root
+# 4. Return to root
 cd ../..
 ```
-
-### Run the Desktop App
-
-```bash
-cd clients/openframe-chat
-npm run tauri dev
-```
-
-The OpenFrame Chat desktop window (Fae) will launch automatically at `http://localhost:3003`.
 
 ### Run a Backend Service
 
@@ -182,7 +163,6 @@ sudo ./target/release/openframe-client install \
 |---|---|
 | Backend services | Java 21, Spring Boot 3.3, Spring Cloud Gateway, Spring Authorization Server, Netflix DGS (GraphQL) |
 | Endpoint agent | Rust (stable), async-nats, tokio, Velopack |
-| Desktop client | TypeScript, React 19, Vite, Tauri 2 |
 | Event streaming | Apache Kafka, Kafka Streams |
 | Agent messaging | NATS JetStream |
 | Primary datastore | MongoDB (multi-tenant, tenant-scoped) |
@@ -208,8 +188,7 @@ openframe-oss-tenant/
 │       ├── openframe-management/
 │       └── openframe-config/
 ├── clients/
-│   ├── openframe-client/      # Rust cross-platform agent
-│   └── openframe-chat/        # Tauri + React desktop app (Fae)
+│   └── openframe-client/      # Rust cross-platform agent
 ├── manifests/                 # Kubernetes manifests & data service configs
 └── pom.xml                    # Parent Maven POM
 ```

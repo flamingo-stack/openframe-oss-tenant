@@ -33,9 +33,6 @@ openframe:
   auth:
     error-url: "${TENANT_HOST_URL:https://localhost}/auth/error"
 
-  # SSO Configuration
-  tenancy:
-    local-tenant: true
 
   sso:
     google:

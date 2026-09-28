@@ -44,7 +44,6 @@ openframe:
     kafka:
       topics:
         outbound:
-          openframe-events: openframe.events
           devices-topic: devices-topic
 
 # NATS connection for the spring-cloud-stream nats binder (lib >= 6.16 binds

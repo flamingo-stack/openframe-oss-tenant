@@ -13,14 +13,11 @@ Before working with OpenFrame OSS Tenant, ensure your development environment me
 | **JDK (Java Development Kit)** | 21 | OpenJDK 21 recommended (matches `<java.version>21</java.version>` in pom.xml) |
 | **Apache Maven** | 3.9+ | Used for building all Spring Boot services |
 
-### Frontend / Desktop Client
+### Endpoint Agent (Rust)
 
 | Tool | Minimum Version | Notes |
 |---|---|---|
-| **Node.js** | 20 LTS | Required for the `openframe-chat` React app |
-| **npm** | 9+ | Comes bundled with Node.js |
-| **Rust** | 1.78+ (stable) | Required for `openframe-client` (Rust agent) and `openframe-chat` (Tauri backend) |
-| **Tauri CLI** | 2.x | Bundled via `@tauri-apps/cli` devDependency in `openframe-chat` |
+| **Rust** | 1.78+ (stable) | Required for `openframe-client` (Rust agent) |
 
 ### Infrastructure / Data Services
 
@@ -52,7 +49,7 @@ Before working with OpenFrame OSS Tenant, ensure your development environment me
 
 ## Rust Toolchain Setup
 
-The `openframe-client` (Rust agent) and `openframe-chat` (Tauri) require a working Rust toolchain.
+The `openframe-client` (Rust agent) requires a working Rust toolchain.
 
 ```bash
 # Install rustup (Rust toolchain installer)
@@ -79,38 +76,6 @@ rustup target add x86_64-unknown-linux-gnu
 # Windows x86_64
 rustup target add x86_64-pc-windows-msvc
 ```
-
----
-
-## Tauri Prerequisites (openframe-chat)
-
-Tauri requires native system libraries for the WebView. Follow the [official Tauri prerequisites guide](https://tauri.app/start/prerequisites/) for your OS.
-
-### Linux (Ubuntu/Debian)
-
-```bash
-sudo apt-get update
-sudo apt-get install -y \
-  libwebkit2gtk-4.1-dev \
-  build-essential \
-  curl \
-  wget \
-  file \
-  libxdo-dev \
-  libssl-dev \
-  libayatana-appindicator3-dev \
-  librsvg2-dev
-```
-
-### macOS
-
-```bash
-xcode-select --install
-```
-
-### Windows
-
-Install the [Microsoft Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) and [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
 
 ---
 
@@ -152,10 +117,6 @@ java -version
 mvn -version
 # Expected: Apache Maven 3.x.x
 
-# Node.js
-node -version
-# Expected: v20.x.x or higher
-
 # Rust
 rustc --version
 # Expected: rustc 1.78.x (stable)
@@ -163,10 +124,6 @@ rustc --version
 # Cargo
 cargo --version
 # Expected: cargo 1.78.x
-
-# Tauri CLI (install first if missing)
-npx @tauri-apps/cli --version
-# Expected: tauri-cli x.x.x
 ```
 
 ---

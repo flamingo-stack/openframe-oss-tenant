@@ -23,7 +23,6 @@ OpenFrame OSS Tenant is a multi-service, multi-tenant platform that integrates d
 |---|---|
 | **AI-Assisted Support** | Mingo AI for technicians, Fae for end clients — both powered by streaming LLMs |
 | **Cross-Platform Agent** | Rust-based agent (openframe-client) runs as a system service on Windows, macOS, and Linux |
-| **Desktop AI Chat** | Tauri-based desktop app (openframe-chat) delivering the Fae experience to clients |
 | **Multi-Tenant Architecture** | Full tenant isolation with per-tenant OAuth2 clients, RSA-signed JWTs, and database scoping |
 | **Real-Time Event Streaming** | Apache Kafka + NATS JetStream for device events, script execution, and AI message chunks |
 | **Remote Management (RMM)** | Script execution, scheduling, live commands, and compliance checking across all managed devices |
@@ -44,12 +43,11 @@ OpenFrame OSS Tenant is designed for:
 
 ## High-Level Architecture Overview
 
-OpenFrame OSS Tenant is a polyglot microservice system built with Java (Spring Boot 3.3), Rust, and TypeScript (React + Tauri). All client traffic passes through the Spring Cloud Gateway before reaching backend services.
+OpenFrame OSS Tenant is a polyglot microservice system built with Java (Spring Boot 3.3) and Rust. All client traffic passes through the Spring Cloud Gateway before reaching backend services.
 
 ```mermaid
 graph TB
     subgraph Clients["Client Layer"]
-        ChatApp["openframe-chat\n(Tauri Desktop App)"]
         FrontendUI["openframe-frontend\n(Web UI)"]
     end
 
@@ -75,7 +73,6 @@ graph TB
         Pinot[("Apache Pinot")]
     end
 
-    ChatApp --> GW
     FrontendUI --> GW
     GW --> API
     GW --> AuthServer
@@ -99,7 +96,6 @@ graph TB
 | **Client Service** | Spring Boot + NATS | Agent lifecycle, tool orchestration |
 | **Stream Service** | Kafka Streams | Event normalization, analytics writes |
 | **openframe-client** | Rust | Cross-platform endpoint agent |
-| **openframe-chat** | React + Tauri | Desktop AI chat client (Fae) |
 
 ---
 
