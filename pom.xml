@@ -44,7 +44,7 @@
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
         <grpc.version>1.58.0</grpc.version>
         <!-- Centralized OpenFrame OSS libs version -->
-        <openframe.libs.version>999-tracing-SNAPSHOT</openframe.libs.version>
+        <openframe.libs.version>6.37.7-1764-SNAPSHOT</openframe.libs.version>
     </properties>
 
     <modules>
