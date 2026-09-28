@@ -28,7 +28,7 @@ runs:
             - 'pom.xml'
             - '.trivyignore'
             - '.github/steps/trivy/**'
-            - '${{ inputs.paths && format('{{{0},}}', inputs.paths) || format('{0}/**', inputs.path) }}'
+            - '${{ inputs.paths || format('{0}/**', inputs.path) }}'
             ${{ !inputs.paths && inputs.skip-dirs && format('- ''!{0}/{1}/**''', inputs.path, inputs.skip-dirs) || '' }}
 
     - name: Install Trivy
@@ -85,11 +85,14 @@ runs:
       env:
         SCAN_DIR: ${{ inputs.path }}
         SKIP_DIRS: ${{ inputs.skip-dirs }}
+        SKIP_FILES: ${{ inputs.skip-files }}
         ACTION_PATH: ${{ github.action_path }}
       run: |
         set -euo pipefail
         find_args=(-name 'Dockerfile*' -not -path '*/.git/*' -not -path '*/node_modules/*')
         for dir in ${SKIP_DIRS//,/ }; do find_args+=(-not -path "*/$dir/*" -not -path "$dir/*"); done
+        IFS=, read -ra skip_files <<< "$SKIP_FILES"
+        for file in "${skip_files[@]}"; do find_args+=(-not -name "${file##*/}"); done
         find "$SCAN_DIR" "${find_args[@]}" -print0 |
           xargs -0 -r awk 'toupper($1)=="FROM" { img=$2; if (img ~ /^--/) img=$3; print img; if (toupper($3)=="AS") print "~"$4; if (toupper($4)=="AS") print "~"$5 }' |
           sort -u > /tmp/base-images.txt
