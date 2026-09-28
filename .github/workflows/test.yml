@@ -75,7 +75,7 @@ jobs:
     steps:
       - name: Check if scan should run
         id: should_run
-        run: echo "run=${{ matrix.target.name == 'root' || fromJSON(needs.changes.outputs.changes || '{}')[matrix.target.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ fromJSON(needs.changes.outputs.changes || '{}')[matrix.target.name] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         if: steps.should_run.outputs.run == 'true'
