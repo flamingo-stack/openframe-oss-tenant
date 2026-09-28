@@ -72,27 +72,19 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.changes.outputs.images_matrix) }}
         include:
-          - target: { name: root, path: ".", skip: openframe/services, skip_files: pom.xml }
+          - target: { name: root-frontend, path: ./clients }
     steps:
-      - name: Check if scan should run
-        id: should_run
-        run: echo "run=${{ matrix.target.name == 'root' || fromJSON(needs.changes.outputs.changes || '{}')[matrix.target.name] == 'true' }}" >> $GITHUB_OUTPUT
-
       - name: Checkout
-        if: steps.should_run.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Scan code
-        if: steps.should_run.outputs.run == 'true'
         uses: ./.github/steps/trivy
         with:
           scan: code
           path: ${{ matrix.target.path }}
-          skip-dirs: ${{ matrix.target.skip || '' }}
-          skip-files: ${{ matrix.target.skip_files || '' }}
           image-name: ${{ matrix.target.name }}
 
   build_images:
