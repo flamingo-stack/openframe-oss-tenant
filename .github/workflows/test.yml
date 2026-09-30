@@ -70,11 +70,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJson(needs.changes.outputs.images_matrix) }}
-        include:
-          - target: { name: root-backend, path: ".", paths: "pom.xml", skip: "openframe/services,clients", skip_files: pom.xml }
-          - target: { name: root-frontend, path: ./clients }
-          - target: { name: openframe-test, path: ./openframe/services/openframe-test }
+        target: ${{ fromJson(needs.changes.outputs.scan_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
