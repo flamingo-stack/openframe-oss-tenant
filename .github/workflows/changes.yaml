@@ -9,6 +9,9 @@ on:
       clients_matrix:
         description: "Clients matrix configuration for all components"
         value: ${{ jobs.collect.outputs.clients_matrix }}
+      scan_matrix:
+        description: "Code scan targets"
+        value: ${{ jobs.collect.outputs.scan_matrix }}
       changes:
         description: "JSON object mapping each component key to true/false"
         value: ${{ jobs.collect.outputs.changes }}
@@ -28,6 +31,7 @@ jobs:
     outputs:
       images_matrix: ${{ steps.define.outputs.images_matrix }}
       clients_matrix: ${{ steps.define.outputs.clients_matrix }}
+      scan_matrix: ${{ steps.define.outputs.scan_matrix }}
       changes: ${{ steps.changes.outputs.changes }}
       timestamp: ${{ steps.setup_env.outputs.timestamp }}
       timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
@@ -94,6 +98,11 @@ jobs:
             context: (.context // ".")
           } ]' <<< "$IMAGES")
           clients_matrix=$(jq -c '.' <<< "$CLIENTS")
+          scan_matrix=$(jq -c --argjson clients "$CLIENTS" '
+            . + ($clients | map({ name: (.id // .name), path }) | unique)
+              + [{ name: "root-backend", path: ".", paths: "pom.xml", skip: "openframe/services,clients", skip_files: "pom.xml" },
+                 { name: "openframe-test", path: "./openframe/services/openframe-test" }]
+          ' <<< "$images_matrix")
 
           filters=$(jq -nc \
             --argjson images "$IMAGES" \
@@ -115,6 +124,7 @@ jobs:
           {
             echo "images_matrix=$images_matrix"
             echo "clients_matrix=$clients_matrix"
+            echo "scan_matrix=$scan_matrix"
             echo "filters=$filters"
             echo "keys=$keys"
           } >> "$GITHUB_OUTPUT"

@@ -6,6 +6,7 @@ inputs:
     description: "'code' or 'image'"
     required: true
   path: { default: "." }
+  paths: { default: "" }
   skip-dirs: { default: "" }
   skip-files: { default: "" }
   image-name: { default: "" }
@@ -16,14 +17,29 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Check if scan should run
+      id: should_run
+      if: inputs.scan == 'code'
+      uses: dorny/paths-filter@v4.0.3
+      with:
+        predicate-quantifier: some-with-excludes
+        filters: |
+          changed:
+            - 'pom.xml'
+            - '.trivyignore'
+            - '.github/steps/trivy/**'
+            - '${{ inputs.paths || format('{0}/**/{{pom.xml,package.json,package-lock.json,yarn.lock,pnpm-lock.yaml,go.mod,go.sum,Cargo.toml,Cargo.lock,Dockerfile*}}', inputs.path) }}'
+            ${{ !inputs.paths && inputs.skip-dirs && format('- ''!{0}/{1}/**''', inputs.path, inputs.skip-dirs) || '' }}
+
     - name: Install Trivy
+      if: steps.should_run.outputs.changed != 'false'
       uses: aquasecurity/setup-trivy@v0.3.1
       with:
         version: v0.74.0
         cache: true
 
     - name: Resolve Maven dependencies
-      if: inputs.scan == 'code'
+      if: inputs.scan == 'code' && steps.should_run.outputs.changed != 'false'
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.maven-token }}
@@ -32,15 +48,16 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
       run: |
         set -euo pipefail
-        [ -f "$SCAN_DIR/pom.xml" ] || exit 0
-        mvn_args=(-B -q -fn -DskipTests -gs "$ACTION_PATH/central-mirror.xml" -f "$SCAN_DIR/pom.xml")
+        poms=$([ -f "$SCAN_DIR/pom.xml" ] && echo "$SCAN_DIR/pom.xml" || find "$SCAN_DIR" -maxdepth 2 -name pom.xml)
+        [ -n "$poms" ] || exit 0
+        mvn_args=(-B -q -fn -DskipTests -gs "$ACTION_PATH/central-mirror.xml")
         [ -f .mvn/settings.xml ] && mvn_args+=(-s .mvn/settings.xml)
-        mvn "${mvn_args[@]}" dependency:go-offline | tee /tmp/mvn.log || true
+        for pom in $poms; do mvn "${mvn_args[@]}" -f "$pom" dependency:go-offline | tee -a /tmp/mvn.log || true; done
         ! grep -q '\[ERROR\]' /tmp/mvn.log ||
           echo "::warning::Some Maven dependencies could not be resolved; scan depth may be reduced"
 
     - name: Scan dependencies
-      if: inputs.scan == 'code'
+      if: inputs.scan == 'code' && steps.should_run.outputs.changed != 'false'
       shell: bash
       env:
         SCAN_DIR: ${{ inputs.path }}
@@ -63,16 +80,19 @@ runs:
         done < "$report" > "$report.tmp" && mv "$report.tmp" "$report"
 
     - name: Scan Dockerfile base images
-      if: inputs.scan == 'code'
+      if: inputs.scan == 'code' && steps.should_run.outputs.changed != 'false'
       shell: bash
       env:
         SCAN_DIR: ${{ inputs.path }}
         SKIP_DIRS: ${{ inputs.skip-dirs }}
+        SKIP_FILES: ${{ inputs.skip-files }}
         ACTION_PATH: ${{ github.action_path }}
       run: |
         set -euo pipefail
         find_args=(-name 'Dockerfile*' -not -path '*/.git/*' -not -path '*/node_modules/*')
         for dir in ${SKIP_DIRS//,/ }; do find_args+=(-not -path "*/$dir/*" -not -path "$dir/*"); done
+        IFS=, read -ra skip_files <<< "$SKIP_FILES"
+        for file in "${skip_files[@]}"; do find_args+=(-not -name "${file##*/}"); done
         find "$SCAN_DIR" "${find_args[@]}" -print0 |
           xargs -0 -r awk 'toupper($1)=="FROM" { img=$2; if (img ~ /^--/) img=$3; print img; if (toupper($3)=="AS") print "~"$4; if (toupper($4)=="AS") print "~"$5 }' |
           sort -u > /tmp/base-images.txt
@@ -105,6 +125,7 @@ runs:
         find . -maxdepth 1 -name 'trivy-*.tsv' -empty -delete
 
     - name: Upload report
+      if: steps.should_run.outputs.changed != 'false'
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.scan == 'code' && (inputs.image-name && format('scan_code-{0}', inputs.image-name) || 'scan_code') || format('scan_image-{0}', inputs.image-name) }}
@@ -112,6 +133,7 @@ runs:
         if-no-files-found: ignore
 
     - name: Evaluate
+      if: steps.should_run.outputs.changed != 'false'
       shell: bash
       env:
         ARTIFACT: ${{ inputs.scan == 'code' && 'scan_code' || 'scan_image' }}
