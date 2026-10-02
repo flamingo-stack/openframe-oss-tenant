@@ -40,6 +40,9 @@ springdoc:
     displayRequestDuration: true
     
 openframe:
+  loki:
+    enabled: true
+    url: http://loki.platform.svc.cluster.local:3100
   oss-tenant:
     kafka:
       topics:
