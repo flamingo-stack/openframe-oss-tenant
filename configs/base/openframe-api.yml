@@ -59,6 +59,9 @@ dgs:
       enabled: true
 
 openframe:
+  loki:
+    enabled: true
+    url: http://loki.platform.svc.cluster.local:3100
   security:
     jwt:
       cache:

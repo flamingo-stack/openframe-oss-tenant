@@ -43,6 +43,11 @@ fleet:
     base-url: http://fleet-service.tenant.svc.cluster.local:8080
 
 openframe:
+  loki:
+    enabled: true
+    url: http://loki.platform.svc.cluster.local:3100
+    read-timeout: 10s
+    max-line-size: 256KB
   machine-id:
     cache:
       enabled: true
