@@ -19,6 +19,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
 
       initContainers:
         # Kafka must be reachable before Connect starts, or the pod crash-loops
@@ -28,6 +35,13 @@ spec:
           command: [sh, -c]
           args:
             - until nc -z kafka-broker-headless.datasources.svc.cluster.local 9092; do echo "waiting for kafka"; sleep 3; done
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
       {{- if .Values.metrics.enabled }}
         - name: jmx-exporter
           image: "{{ .Values.metrics.jmx.image.registry }}/{{ .Values.metrics.jmx.image.repository }}:{{ .Values.metrics.jmx.image.tag }}"
@@ -43,11 +57,25 @@ spec:
               mountPath: /jmx
             - name: jmx-config
               mountPath: /jmx-config
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
       {{- end }}
 
       containers:
         - name: debezium-connect
           image: {{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 8083
               name: connect-api
@@ -109,3 +137,4 @@ spec:
           configMap:
             name: debezium-connect-jmx
         {{- end }}
+

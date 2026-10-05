@@ -5,7 +5,7 @@ metadata:
 spec:
   serviceName: meshcentral-mongodb
   replicas: 1
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: meshcentral-mongodb
@@ -29,6 +29,13 @@ spec:
           image: {{ .Values.mongodb.initImage.registry }}/{{ .Values.mongodb.initImage.repository }}:{{ .Values.mongodb.initImage.tag }}
           securityContext:
             runAsUser: 0
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           command:
             - /bin/sh
             - -c
@@ -46,6 +53,13 @@ spec:
           image: {{ .Values.mongodb.initImage.registry }}/{{ .Values.mongodb.initImage.repository }}:{{ .Values.mongodb.initImage.tag }}
           securityContext:
             runAsUser: 0
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           command:
             - /bin/sh
             - -c
@@ -59,6 +73,14 @@ spec:
       containers:
         - name: mongodb
           image: {{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           command: ["/usr/local/bin/mongodb-entrypoint.sh"]
           ports:
             - name: mongodb
@@ -120,6 +142,14 @@ spec:
         {{- if .Values.mongodb.metrics.enabled }}
         - name: mongodb-exporter
           image: "{{ .Values.mongodb.metrics.image.registry }}/{{ .Values.mongodb.metrics.image.repository }}:{{ .Values.mongodb.metrics.image.tag }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           args:
             - --mongodb.uri=mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin
             - --collect-all
@@ -168,3 +198,4 @@ spec:
         resources:
           requests:
             storage: 10Gi
+
