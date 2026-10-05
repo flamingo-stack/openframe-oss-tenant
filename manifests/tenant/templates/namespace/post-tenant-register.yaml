@@ -31,6 +31,9 @@ spec:
         securityContext:
           {{- toYaml . | nindent 10 }}
         {{- end }}
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
         command:
           - /bin/sh
           - -c
@@ -53,3 +56,7 @@ spec:
             echo "Cluster Registration complete."
 
             echo "Keeping pod alive..." && sleep infinity
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
