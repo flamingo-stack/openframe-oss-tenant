@@ -63,9 +63,9 @@ management:
 
 nats:
   spring:
-    server: nats://nats.datasources.svc.cluster.local:4222
-    username: service
-    password: service_pass
+    server: ${NATS_SERVER:nats://nats.datasources.svc.cluster.local:4222}
+    username: ${NATS_USERNAME:service}
+    password: ${NATS_PASSWORD:service_pass}
     connection-timeout: 30s
     max-reconnect: -1
     reconnect-wait: 5s
