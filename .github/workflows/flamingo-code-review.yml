@@ -16,26 +16,21 @@ on:
     paths:
       - '.github/workflows/flamingo-code-review.yml'
 
-  # ENTERS-REVIEW ONLY (2026-08-12; corrected 2026-09-07). The automatic
-  # triggers are the moments a pull request ENTERS review, and nothing else.
+  # REVIEWED ON REQUEST (2026-10-04). Nothing is reviewed automatically when a
+  # pull request ENTERS review ('opened' / 'ready_for_review' / 'reopened'): a
+  # pull request rarely holds everything a review needs at the moment it is
+  # opened, so that first pass was mostly spent on a change that was not
+  # finished. Those three events now run the small 'invite' job below, which
+  # posts the summary comment as an INVITATION; its checkbox (or the comment
+  # command, or the label) starts the first review when the author is ready.
+  # A draft gets its invitation on ready_for_review.
   #
-  # 'synchronize' (per-push) stays deliberately OFF. Reviewing every commit on
-  # an open PR is the largest avoidable cost in an AI review pipeline, and it
-  # trains authors to tune the bot out; the 2026 industry default is to review
-  # at review moments and offer an explicit re-review on demand.
+  # 'synchronize' (per-push) is not a review moment either. Reviewing every
+  # commit on an open PR is the largest avoidable cost in an AI review
+  # pipeline, and it trains authors to tune the bot out.
   #
-  # 'opened' and 'reopened' were OFF between 2026-08-15 and 2026-09-07, on the
-  # assumption that PRs are opened as drafts and later promoted. They are not
-  # — PRs here are born non-draft, GitHub NEVER fires ready_for_review for
-  # those, and so the automatic review effectively never ran. Drafts stay
-  # excluded: an 'opened' event for a draft is dropped by the job's
-  # draft == false guard, and that PR is reviewed later, on its
-  # ready_for_review.
-  #
-  # 'labeled' is the on-demand re-review — the affordance that makes the
-  # no-per-push default liveable. Commits pushed AFTER the first review are not
-  # auto-reviewed, so adding the flamingo-review label is how a human
-  # asks for another pass. A SEPARATE job removes it the moment the event
+  # 'labeled' is the on-demand review from the sidebar: adding the
+  # flamingo-review label asks for a pass, the first one or another. A SEPARATE job removes it the moment the event
   # arrives, so adding it again asks again, and it can never strand itself on a
   # pull request the review gate declines. Every other label name is dropped by
   # the job's if — a skipped run, zero billable minutes.
@@ -51,16 +46,16 @@ on:
   # 'synchronize' (every push) is otherwise here ONLY to serve the
   # flamingo-review-always label, and the job's if drops it on every pull
   # request that does not carry it. That is the per-PR escalation: subscribe the
-  # risky refactor to continuous review, leave everything else on one review per
-  # pull request. A skipped push run costs no billable minutes.
+  # risky refactor to continuous review, leave everything else to be reviewed
+  # when asked. A skipped push run costs no billable minutes.
   #
   # Every repeat pass diffs only the delta since the last reviewed head — see
   # the incremental anchor in code-review-review.mjs.
   pull_request:
     types: [opened, ready_for_review, reopened, labeled, synchronize]
 
-  # THE PRIMARY MANUAL TRIGGER (2026-09-08). A new top-level pull-request
-  # comment beginning with '@flamingo-review' asks for another pass;
+  # THE PRIMARY TRIGGER (2026-09-08). A new top-level pull-request
+  # comment beginning with '@flamingo-review' asks for a pass;
   # '@flamingo-review full' additionally overrules the incremental anchor
   # and re-reads the whole cumulative diff.
   #
@@ -76,7 +71,8 @@ on:
   # 'edited' is the CHECKBOX lane — the closest thing a GitHub comment has to a
   # button, and the same mechanism CodeRabbit uses for its clickable actions.
   # Checking a task-list box in the summary comment edits that comment, which
-  # fires issue_comment.edited; the boxes are the two commands, clickable.
+  # fires issue_comment.edited; the boxes are the two commands, clickable, and
+  # the invitation's single box is the first review.
   #
   # Its costs are real and accepted, not overlooked: 'edited' fires on EVERY
   # comment edit in the repository, so an unrelated typo fix evaluates this
@@ -246,7 +242,8 @@ jobs:
         github.event.comment.user.type == 'Bot' &&
         github.event.sender.type != 'Bot' &&
         (contains(github.event.comment.body, '[x] Review the new commits') ||
-         contains(github.event.comment.body, '[x] Review the whole diff again'))))
+         contains(github.event.comment.body, '[x] Review the whole diff again') ||
+         contains(github.event.comment.body, '[x] Review this pull request'))))
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -331,7 +328,7 @@ jobs:
           }
 
           if [ -z "$HEAD_SHA" ]; then
-            refuse "🦩 Could not read this pull request from the GitHub API, so the review was not started. Try the command again."
+            refuse "🦩 **Review not started.** This pull request could not be read from the GitHub API. Ask again in a moment."
           fi
 
           # The SAME two exclusions the review job applies to every other
@@ -339,10 +336,10 @@ jobs:
           # from. A fork additionally cannot be waived by any command: this run
           # holds a write token.
           if [ "$HEAD_REPO" != "$REPO_FULL" ]; then
-            refuse "🦩 This pull request comes from a fork, so it is not reviewed automatically. Dispatch it from the Flamingo hub instead."
+            refuse "🦩 **Review not started.** This pull request comes from a fork, and a fork cannot be reviewed from a comment. Start it from the Flamingo hub (Code Review) instead."
           fi
           if [ "$AUTHOR_TYPE" = "Bot" ]; then
-            refuse "🦩 This pull request was opened by a bot, so it is not reviewed automatically. Dispatch it from the Flamingo hub instead."
+            refuse "🦩 **Review not started.** This pull request was opened by a bot, and a bot's pull request cannot be reviewed from a comment. Start it from the Flamingo hub (Code Review) instead."
           fi
 
           # DRAFTS ARE ALLOWED — same rule the on-demand label already follows:
@@ -377,8 +374,7 @@ jobs:
           # trigger workflows — so it cannot loop back into this job.
           if [ "$EVENT_ACTION" = "edited" ]; then
             printf '%s' "$COMMENT_BODY" \
-              | sed -e 's/\[x\] Review the new commits/[ ] Review the new commits/' \
-                    -e 's/\[x\] Review the whole diff again/[ ] Review the whole diff again/' \
+              | sed -e 's/\[x\] Review the new commits/[ ] Review the new commits/' -e 's/\[x\] Review the whole diff again/[ ] Review the whole diff again/' -e 's/\[x\] Review this pull request/[ ] Review this pull request/' \
               | jq -Rs '{body: .}' \
               | curl -sS --max-time 30 -K "$CURL_CFG" -X PATCH \
                   -H "Accept: application/vnd.github+json" \
@@ -392,6 +388,179 @@ jobs:
             echo "base_ref=$BASE_REF"
             echo "full=$FULL"
           } >> "$GITHUB_OUTPUT"
+
+  # A pull request that ENTERS review is INVITED, not reviewed. This job posts
+  # the summary comment with one checkbox; ticking it (or typing the command)
+  # is what starts the first review, through resolve_command above. It asks the
+  # hub first, so a repository whose review is switched off gets no invitation
+  # to a review that would not run; a hub that cannot be reached still gets
+  # one, because the invitation promises nothing about this moment. It reports
+  # nothing to the hub: no run row, and above all no reviewed-head anchor, which
+  # would make the first real review skip everything up to this commit.
+  #
+  # The gate is the one the automatic review used to have: never a bot's pull
+  # request (a hub-opened fix PR), never a fork (read-only token), never a draft.
+  invite:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.type != 'Bot' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.action != 'labeled' &&
+      github.event.action != 'synchronize' &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      # Fail LOUD, not silent: a pull_request run on a repo whose org never set
+      # FLAMINGO_HUB_BASE_URL would otherwise curl an empty origin and die with
+      # an unrelated error. Also normalizes a trailing slash ONCE for every
+      # downstream consumer (a value of https://hub.example/ would otherwise
+      # yield //api double-slash paths in four places).
+      - name: Validate configuration
+        run: |
+          if [ -z "$HUB_BASE_URL" ]; then
+            echo "::error::HUB_BASE_URL is empty — set the org Actions variable FLAMINGO_HUB_BASE_URL (or pass hub_base_url in the dispatch payload)."
+            exit 1
+          fi
+          echo "HUB_BASE_URL=${HUB_BASE_URL%/}" >> "$GITHUB_ENV"
+
+      - name: Download the review scripts from the hub
+        env:
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
+        run: |
+          set -euo pipefail
+
+          SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # WEBHOOK_SECRET reaches curl through a 0600 config file, never argv — see
+          # curlAuthPreamble, which always traps the removal.
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
+          CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
+
+          # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          # The manifest is asked for ONE group: its keys are the files to download.
+          _try_manifest() {
+            local base="$1" code
+            code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
+              -K "$CURL_CFG" \
+              "$base/manifest.json?group=$SCRIPT_GROUP") || code="000"
+
+            if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
+            if [ "$code" != "200" ]; then
+              echo "❌ manifest request to $base failed (HTTP $code)"
+              rm -f "$SCRIPT_MANIFEST"
+              return 2
+            fi
+            # The digests are the TOP-LEVEL object. successResponse is the standard
+            # emitter but it does NOT add a wrapper — it is NextResponse.json(data)
+            # plus the no-store header — so there is no .data to reach through.
+            # A 200 that is not a manifest is how a hub which does not serve this path
+            # answers (the proxy rewrites unknown routes and returns HTML), so it
+            # means "wrong surface", not "corrupt".
+            if ! jq -e 'type == "object" and length > 0 and (to_entries | all(.value | type == "string"))' "$SCRIPT_MANIFEST" >/dev/null 2>&1; then
+              rm -f "$SCRIPT_MANIFEST"
+              return 1
+            fi
+            return 0
+          }
+
+          # load_script_manifest <group>
+          load_script_manifest() {
+            SCRIPT_GROUP="$1"
+            # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
+            # errexit fires before rc is read and the step ends with NO output. And
+            # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
+            # the NEGATION (0), so every failure reads as success. "|| rc=$?" is the
+            # one form that both suppresses errexit and preserves the real code.
+            local rc=0
+            _try_manifest "$CI_SCRIPTS_URL" || rc=$?
+            if [ "$rc" = "0" ]; then
+              SCRIPTS_BASE_URL="$CI_SCRIPTS_URL"
+              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
+              return 0
+            fi
+            if [ "$rc" = "2" ]; then exit 1; fi
+
+            # No manifest on the scripts surface: a hub older than the manifest
+            # itself. The manifest is the file list, so there is nothing to download.
+            echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
+            exit 1
+          }
+
+          # download_script_group <group> — the hub names the files, this workflow
+          # names only the group. Downloads every script of the group, in served order.
+          download_script_group() {
+            load_script_manifest "$1"
+            local name
+            # The loop runs in THIS shell (no pipe), so a failed download exits the step.
+            while IFS= read -r name; do
+              download_and_verify "$name"
+            done < <(jq -r 'keys_unsorted[]' "$SCRIPT_MANIFEST")
+          }
+
+          download_and_verify() {
+            local script_name="$1"
+            local output_path="/tmp/$script_name"
+
+            local expected_hash
+            expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+            if [ -z "$expected_hash" ]; then
+              echo "❌ $script_name is not in the server's script manifest!"
+              echo "   The hub serves no such script, or it failed to read on the server."
+              exit 1
+            fi
+            if ! printf '%s' "$expected_hash" | grep -Eq '^[0-9a-f]{64}$'; then
+              echo "❌ the manifest entry for $script_name is not a SHA-256 digest — refusing to run it."
+              exit 1
+            fi
+
+            curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
+              -K "$CURL_CFG" \
+              -o "$output_path"
+
+            local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
+
+            if [ "$actual_hash" != "$expected_hash" ]; then
+              echo "❌ HASH MISMATCH for $script_name!"
+              echo "   Expected: $expected_hash"
+              echo "   Actual:   $actual_hash"
+              echo "   The download was corrupted in transit — both values come from the same deployment."
+              exit 1
+            fi
+
+            # Make shell scripts executable
+            if [[ "$script_name" == *.sh ]]; then
+              chmod +x "$output_path"
+            fi
+
+            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
+          }
+
+          download_script_group "review"
+
+      - name: Ask the hub whether this repository is reviewed
+        id: rules
+        env:
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: /tmp/code-review-fetch-rules.sh
+
+      - name: Invite a review on the pull request
+        if: steps.rules.outputs.skip != 'true' || steps.rules.outputs.skip_kind == 'corpus_unavailable'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          WF_RUN_ID: ${{ github.run_id }}
+        run: |
+          if grep -aq -- "argv.includes('--invite')" /tmp/code-review-post.mjs; then
+            node /tmp/code-review-post.mjs --invite
+          else
+            echo "the hub's post.mjs predates --invite — the pull request gets no invitation; the comment command still starts a review"
+          fi
 
   review:
     # Superseding a PR cancels the in-flight review of the stale head SHA; the
@@ -415,7 +584,10 @@ jobs:
     # DRAFT is different, and only the on-demand label waives it: an explicit
     # request says "review this now" and means it whether or not the PR is
     # finished, which is how every comparable tool treats its manual trigger.
-    # Automatic events and subscribed pushes still skip drafts.
+    # Subscribed pushes still skip drafts.
+    #
+    # The events where a pull request ENTERS review (opened / ready_for_review /
+    # reopened) are NOT here: they run the invite job, never a review.
     # NOTE: there is deliberately no vars. kill switch here. The hub's
     # per-repo enabled dial already covers it and answers 409 REVIEW_DISABLED,
     # which produces a recorded run. A second switch living in GitHub would be
@@ -442,10 +614,7 @@ jobs:
          (github.event.action == 'synchronize' &&
           (contains(github.event.pull_request.labels.*.name, 'flamingo-review') ||
            (github.event.pull_request.draft == false &&
-            contains(github.event.pull_request.labels.*.name, 'flamingo-review-always')))) ||
-         (github.event.action != 'labeled' &&
-          github.event.action != 'synchronize' &&
-          github.event.pull_request.draft == false))))
+            contains(github.event.pull_request.labels.*.name, 'flamingo-review-always')))))))
     runs-on: ubuntu-latest
     # NO custom timeout-minutes — deliberately. GitHub's 6h hosted-runner
     # ceiling is the only clock: on hitting it the always() report step still
@@ -930,8 +1099,8 @@ jobs:
       # supports them; already-posted fingerprints are never re-commented, so
       # a new push adds only NEW findings. The check run is 'neutral' unless
       # the repo's served mode is 'blocking' AND action_required findings
-      # exist. Writes posted.json (fingerprint -> comment id) for the report
-      # step's callback — the reaction-learning loop reads it.
+      # exist. Every inline comment carries its finding's fingerprint marker,
+      # which the hub's feedback sweep reads back from the pull request.
       - name: Report progress — finalizing
         env:
           WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
