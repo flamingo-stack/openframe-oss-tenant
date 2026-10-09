@@ -95,8 +95,8 @@ sso:
 nats:
   spring:
     server: nats://nats.datasources.svc.cluster.local:4222
-    username: service
-    password: service_pass
+    username: ${NATS_USERNAME:service}
+    password: ${NATS_PASSWORD:service_pass}
     connection-timeout: 30s
     max-reconnect: -1
     reconnect-wait: 5s
@@ -107,7 +107,7 @@ oauth:
   client:
     default:
       id: openframe_web_dashboard
-      secret: prod_secret
+      secret: ${OAUTH_CLIENT_DEFAULT_SECRET}
 
 fleet:
   api:
@@ -122,3 +122,4 @@ storage:
   s3:
     disabled: false
     bucket: local-dev-bucket
+
