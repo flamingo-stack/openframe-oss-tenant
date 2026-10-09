@@ -38,6 +38,11 @@
             <artifactId>openframe-data-redis</artifactId>
             <version>${openframe.libs.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.netflix.graphql.dgs</groupId>
+            <artifactId>graphql-dgs-spring-boot-starter</artifactId>
+            <version>${netflix.dgs.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

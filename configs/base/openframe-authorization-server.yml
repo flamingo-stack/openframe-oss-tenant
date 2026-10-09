@@ -11,6 +11,10 @@ spring:
   data:
     mongodb:
       enabled: true
+  graphql:
+    path: /graphql
+    graphiql:
+      enabled: false
   redis:
     enabled: true
     timeout: 2000
@@ -27,6 +31,13 @@ spring:
   mail:
     host: localhost
     port: 25
+
+# GraphQL: one public query for the /auth/error page, served at /sas/graphql
+dgs:
+  graphql:
+    path: /graphql
+    graphiql:
+      enabled: false
 
 openframe:
 
