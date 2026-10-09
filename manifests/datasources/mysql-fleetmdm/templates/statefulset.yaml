@@ -5,7 +5,7 @@ metadata:
 spec:
   serviceName: fleetmdm-mysql
   replicas: 1
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: fleetmdm-mysql
@@ -19,10 +19,21 @@ spec:
       {{- end }}
     spec:
       priorityClassName: mysql-fleetmdm
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
 
       containers:
       - name: mysql
         image: {{ .Values.mysql.image.registry }}/{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
         args:
           - --default-authentication-plugin=mysql_native_password
           - --skip-mysqlx
@@ -58,6 +69,8 @@ spec:
         volumeMounts:
         - name: mysql-data
           mountPath: /var/lib/mysql
+        - name: tmp
+          mountPath: /tmp
 
       {{- if .Values.mysql.metrics.enabled }}
       - name: mysqld-exporter
@@ -100,7 +113,21 @@ spec:
           runAsNonRoot: true
           runAsUser: 65534
           allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
           readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: exporter-tmp
+          mountPath: /tmp
+      {{- end }}
+
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      {{- if .Values.mysql.metrics.enabled }}
+      - name: exporter-tmp
+        emptyDir: {}
       {{- end }}
 
   volumeClaimTemplates:
@@ -112,3 +139,4 @@ spec:
       resources:
         requests:
           storage: 10Gi
+
