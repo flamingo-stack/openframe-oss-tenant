@@ -452,4 +452,4 @@ spring:
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the [Flamingo AI Unified License v1.0](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/LICENSE.md). 
