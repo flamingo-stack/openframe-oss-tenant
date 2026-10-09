@@ -61,15 +61,15 @@ spec:
 
           startupProbe:
             httpGet:
-              path: /xml/shared-logback-spring.xml
-              port: http
+              path: /actuator/health
+              port: management
             periodSeconds: 5
             timeoutSeconds: 5
             failureThreshold: 36   # up to 3m to start (initial git clone included)
           livenessProbe:
             httpGet:
-              path: /xml/shared-logback-spring.xml
-              port: http
+              path: /actuator/health/liveness
+              port: management
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
@@ -86,3 +86,4 @@ spec:
           emptyDir: {}
         - name: logs
           emptyDir: {}
+
