@@ -13,8 +13,16 @@ redis-cluster:
 
   usePassword: false
 
-  # 3 masters, no replicas — smallest valid redis cluster. Keep in sync with
-  # deployment.redisClusterNodes in manifests/tenant/values.yaml (seed list).
+  # 3 masters, no replicas — smallest valid redis cluster.
+  # INVARIANT: this value must equal deployment.redisClusterNodes in
+  # manifests/tenant/values.yaml, which is used to generate the
+  # REDIS_CLUSTER_NODES seed list in the tenant configmap. There is no
+  # automated cross-chart check for this today (Helm does not support a
+  # shared global across independently-installed charts here), so any
+  # change to this number MUST be mirrored manually in
+  # manifests/tenant/values.yaml. TODO: consider consolidating both charts
+  # under a parent chart with a shared `global.redisClusterNodes` value to
+  # remove this manual invariant.
   cluster:
     init: true
     nodes: 3
@@ -54,3 +62,4 @@ redis-cluster:
       prometheus.io/scrape: "true"
       prometheus.io/port: "9121"
       prometheus.io/path: "/metrics"
+
