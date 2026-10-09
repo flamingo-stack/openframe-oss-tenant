@@ -5,7 +5,7 @@ metadata:
 spec:
   serviceName: "mongodb"
   replicas: 1
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: mongodb
@@ -105,3 +105,4 @@ spec:
         resources:
           requests:
             storage: {{ .Values.persistence.size }}
+
