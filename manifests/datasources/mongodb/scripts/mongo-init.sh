@@ -12,7 +12,7 @@ set +a
 : "${MONGO_APP_USERNAME:?Required}"
 : "${MONGO_APP_PASSWORD:?Required}"
 
-if [ ! -f "$DATA_DIR/db/s.mongodb_password_set" ]; then
+if [ ! -f "$DATA_DIR/db/.mongodb_password_set" ]; then
     echo "First time initialization..."
 
     # mkdir -p $DATA_DIR/.mongodb
@@ -69,3 +69,4 @@ EOF
     # Mark initialization as complete
     touch $DATA_DIR/db/.mongodb_password_set
 fi
+
