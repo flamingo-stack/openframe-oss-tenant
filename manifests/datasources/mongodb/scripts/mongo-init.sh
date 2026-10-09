@@ -18,20 +18,21 @@ if [ ! -f "$DATA_DIR/db/s.mongodb_password_set" ]; then
     # mkdir -p $DATA_DIR/.mongodb
 
     # Initialize MongoDB with users
-    mongosh admin -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --eval <<EOF
-db = db.getSiblingDB('$MONGO_INITDB_DATABASE');
+    export MONGO_INITDB_DATABASE MONGO_APP_USERNAME MONGO_APP_PASSWORD
+    mongosh admin -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --eval "$(cat <<'EOF'
+db = db.getSiblingDB(process.env.MONGO_INITDB_DATABASE);
 
 // Create the database explicitly
 db.createCollection('system.users');
 
 // Only create app user if username is not 'root'
-if ('$MONGO_APP_USERNAME' !== 'root') {
+if (process.env.MONGO_APP_USERNAME !== 'root') {
     db.createUser({
-        user: '$MONGO_APP_USERNAME',
-        pwd: '$MONGO_APP_PASSWORD',
+        user: process.env.MONGO_APP_USERNAME,
+        pwd: process.env.MONGO_APP_PASSWORD,
         roles: [
-            { role: 'readWrite', db: '$MONGO_INITDB_DATABASE' },
-            { role: 'dbAdmin', db: '$MONGO_INITDB_DATABASE' }
+            { role: 'readWrite', db: process.env.MONGO_INITDB_DATABASE },
+            { role: 'dbAdmin', db: process.env.MONGO_INITDB_DATABASE }
         ]
     });
 }
@@ -65,7 +66,9 @@ db.events.insertMany([
 db.events.createIndex({ 'userId': 1, 'timestamp': -1 });
 db.events.createIndex({ 'type': 1 });
 EOF
+)"
 
     # Mark initialization as complete
     touch $DATA_DIR/db/.mongodb_password_set
 fi
+
