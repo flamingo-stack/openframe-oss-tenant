@@ -19,6 +19,9 @@ spec:
       {{- end }}
     spec:
       priorityClassName: mysql-fleetmdm
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
 
       containers:
       - name: mysql
@@ -42,7 +45,11 @@ spec:
             name: fleetmdm-mysql
         - secretRef:
             name: fleetmdm-mysql
-        
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          allowPrivilegeEscalation: false
+
         livenessProbe:
           exec:
             command:
@@ -112,3 +119,4 @@ spec:
       resources:
         requests:
           storage: 10Gi
+
