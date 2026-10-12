@@ -186,30 +186,26 @@ else
   echo "[INIT] Unexpected status: ${RS_STATUS}"
 fi
 
-# Create admin user if not exists
-echo "[INIT] Creating admin user..."
+# Create application user scoped to the MeshCentral database (not a root/admin user)
+echo "[INIT] Creating application user..."
 USER_RESULT=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --quiet --eval "
   try {
-    // Switch to admin database
-    const adminDb = db.getSiblingDB('admin');
+    // Switch to the application database
+    const appDb = db.getSiblingDB('${MONGO_INITDB_DATABASE}');
     
     // Check if user already exists
-    const users = adminDb.getUsers();
+    const users = appDb.getUsers();
     const userExists = users.users.some(u => u.user === '${MONGO_INITDB_ROOT_USERNAME}');
     
     if (userExists) {
       print('USER_EXISTS');
     } else {
-      // Create user
-      adminDb.createUser({
+      // Create user scoped to the application database only
+      appDb.createUser({
         user: '${MONGO_INITDB_ROOT_USERNAME}',
         pwd: '${MONGO_INITDB_ROOT_PASSWORD}',
         roles: [
-          { role: 'root', db: 'admin' },
-          { role: 'clusterAdmin', db: 'admin' },
-          { role: 'userAdminAnyDatabase', db: 'admin' },
-          { role: 'dbAdminAnyDatabase', db: 'admin' },
-          { role: 'readWriteAnyDatabase', db: 'admin' }
+          { role: 'readWrite', db: '${MONGO_INITDB_DATABASE}' }
         ]
       });
       print('USER_CREATED');
@@ -266,3 +262,4 @@ else
   echo "[INIT] WARNING: Final verification had issues, but continuing..."
   exit 0
 fi
+
