@@ -58,6 +58,13 @@ spec:
         volumeMounts:
         - name: mysql-data
           mountPath: /var/lib/mysql
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+              - ALL
 
       {{- if .Values.mysql.metrics.enabled }}
       - name: mysqld-exporter
@@ -112,3 +119,4 @@ spec:
       resources:
         requests:
           storage: 10Gi
+
