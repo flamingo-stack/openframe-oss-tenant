@@ -62,10 +62,25 @@ fi
 # Shutdown MongoDB cleanly
 echo "[ENTRYPOINT] Shutting down MongoDB for restart with auth..."
 mongosh --host 127.0.0.1:27017 --eval "db.adminCommand({shutdown: 1})" 2>/dev/null || true
-sleep 5
+
+# Poll for the process to actually exit instead of a fixed sleep
+SHUTDOWN_MAX_ATTEMPTS=30
+SHUTDOWN_ATTEMPT=0
+while [ $SHUTDOWN_ATTEMPT -lt $SHUTDOWN_MAX_ATTEMPTS ]; do
+  if ! kill -0 $MONGOD_PID 2>/dev/null; then
+    echo "[ENTRYPOINT] MongoDB process has exited"
+    break
+  fi
+  SHUTDOWN_ATTEMPT=$((SHUTDOWN_ATTEMPT + 1))
+  echo "[ENTRYPOINT] Waiting for MongoDB to shut down (attempt $SHUTDOWN_ATTEMPT/$SHUTDOWN_MAX_ATTEMPTS)..."
+  sleep 1
+done
 
 # Kill if still running
-kill -TERM $MONGOD_PID 2>/dev/null || true
+if kill -0 $MONGOD_PID 2>/dev/null; then
+  echo "[ENTRYPOINT] MongoDB still running, sending SIGTERM..."
+  kill -TERM $MONGOD_PID 2>/dev/null || true
+fi
 wait $MONGOD_PID 2>/dev/null || true
 
 # Clear the trap
