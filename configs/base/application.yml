@@ -11,7 +11,11 @@ spring:
         actuator: application/vnd.spring-boot.actuator.v3+json
   autoconfigure:
     exclude:
+      # Transition: each entry is listed under its Spring Boot 3 name, then its Spring Boot 4 one; Spring Boot skips
+      # names it does not have. Drop the Spring Boot 3 names once every service runs Spring Boot 4.
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
       - org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
       - org.springframework.boot.security.oauth2.server.resource.autoconfigure.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
   data:
     spring:
