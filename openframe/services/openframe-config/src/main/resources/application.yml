@@ -35,15 +35,16 @@ management:
       base-path: /management/${RELEASE_VERSION:v1}
       exposure:
         include: health,info,prometheus,metrics
-    enabled-by-default: true
+    access:
+      default: read-only
   endpoint:
     prometheus:
-      enabled: true
+      access: read-only
     health:
-      enabled: true
+      access: read-only
       show-details: always
     metrics:
-      enabled: true
+      access: read-only
   metrics:
     enable:
       all: true

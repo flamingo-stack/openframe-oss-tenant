@@ -1,5 +1,7 @@
 # Common properties shared across all services
 spring:
+  mongodb:
+    uri: &mongo-uri mongodb://openframe:password123456789@mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
   main:
     allow-bean-definition-overriding: true
   mvc:
@@ -9,8 +11,8 @@ spring:
         actuator: application/vnd.spring-boot.actuator.v3+json
   autoconfigure:
     exclude:
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.security.oauth2.server.resource.autoconfigure.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
   data:
     spring:
     redis:
@@ -19,7 +21,9 @@ spring:
         max-redirects: 3
     # Common MongoDB configuration
     mongodb:
-      uri: mongodb://openframe:password123456789@mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
+      # Transition: Spring Boot 3 services read spring.data.mongodb.uri, Spring Boot 4 ones spring.mongodb.uri.
+      # Remove this key once every service runs Spring Boot 4.
+      uri: *mongo-uri
       auto-index-creation: true
       connect-timeout: 10000
       socket-timeout: 10000
@@ -51,15 +55,16 @@ management:
       base-path: /management/${RELEASE_VERSION:v1}
       exposure:
         include: health,info,metrics,prometheus
-    enabled-by-default: true
+    access:
+      default: read-only
   endpoint:
     prometheus:
-      enabled: true
+      access: read-only
     health:
-      enabled: true
+      access: read-only
       show-details: always
     metrics:
-      enabled: true
+      access: read-only
   metrics:
     enable:
       all: true
