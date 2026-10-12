@@ -136,6 +136,27 @@ logging:
 
 openframe:
   cluster-id: ${OPENFRAME_CLUSTER_ID:cluster-id}
+  presence:
+    ttl-seconds: 30
+  # Machine delivery engine from the shared libs (openframe-machine-delivery). Every delivery type is off unless
+  # listed under openframe.delivery.enabled; the libs require the policy below.
+  delivery:
+    dispatch-topic: delivery-dispatch
+    sweep:
+      enabled: false
+      interval: 30000
+      lock-at-most-for: 2m
+      lock-at-least-for: 10s
+      batch-size: 500
+    defaults:
+      ack-threshold-seconds: 30
+      max-attempts: 3
+      backoff-multiplier: 2
+      max-retry-interval-seconds: 300
+      offline-behavior: RETRY_ON_RECONNECT
+      reconnect-window-seconds: 86400
+      result-timeout-seconds: 600
+      ttl-seconds: 604800
   # See the comment block at the end of this file: OSS runs the shared libs in
   # tenant-isolation mode so the tenant-aware repositories (and their
   # TenantAwareMongoTemplate) exist — without it every Java service crash-loops
