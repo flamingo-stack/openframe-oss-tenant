@@ -43,6 +43,8 @@ fleet:
     base-url: http://fleet-service.tenant.svc.cluster.local:8080
 
 openframe:
+  tool-events:
+    store: cassandra
   machine-id:
     cache:
       enabled: true
