@@ -41,7 +41,7 @@
         <jjwt.version>0.11.5</jjwt.version>
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
         <!-- Centralized OpenFrame OSS libs version -->
-        <openframe.libs.version>6.37.47-2534-SNAPSHOT</openframe.libs.version>
+        <openframe.libs.version>6.37.50-2534-SNAPSHOT</openframe.libs.version>
         <!-- DGS 12 needs Jackson3JsonProvider (json-path 3); the Spring Boot 4.1 BOM still manages 2.10 -->
         <json-path.version>3.0.0</json-path.version>
         <!-- Security overrides on top of the Spring Boot BOM: versions with fixes for HIGH/CRITICAL CVEs flagged by Trivy.
