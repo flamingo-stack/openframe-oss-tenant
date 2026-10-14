@@ -1,15 +1,16 @@
-# The Flamingo AI Unified License v1.0
+# The Flamingo AI Unified License v1.1
 
-**Version:** 1.0  
-**Effective date:** September 2, 2025  
+**Version:** 1.1  
+**Effective date:**  
 **Copyright © 2025 Flamingo AI, Inc. All rights reserved.**
 
 ---
 
 ## 1. Preamble
 
-This License governs all Flamingo AI products, including OpenFrame, OpenMSP, and the Flamingo Website.  
-It serves as both the **License** and the **Terms of Use**.  
+This License governs the software Flamingo AI publishes, including OpenFrame. It sets out what You may do with the code.  
+
+It does not govern the hosted OpenFrame service, OpenMSP or the Flamingo Website. Those are governed by the Flamingo AI Terms of Service at https://www.flamingo.run/terms-of-service.  
 
 Flamingo AI software includes components developed by Flamingo AI as well as upstream projects that remain under their original licenses.  
 This License applies **only** to Flamingo AI contributions. For upstream components, You must comply with their respective licenses (see Appendix).  
@@ -68,26 +69,14 @@ Subject to this License:
 - **5.1 No Competing SaaS.** You may not provide Flamingo Software as a Commercial Managed Service without a separate commercial license from Flamingo AI.  
 - **5.2 No Relicensing.** You may not relicense Flamingo Software under other terms.  
 - **5.3 No Removal of Attribution.** You may not remove or alter copyright or license notices.  
-- **5.4 Acceptable Use.** You may not use Flamingo Software, OpenMSP, or the Website for illegal activity, scraping, spamming, reverse engineering, or abusive purposes.  
 
 ---
 
-## 6. Product-Specific Terms
+## 6. OpenFrame
 
-### 6.1 OpenFrame  
-- OpenFrame integrates upstream software (Fleet, MeshCentral, Osquery, and Flamingo contributions.  
+- OpenFrame integrates upstream software (Fleet, MeshCentral, Osquery) and Flamingo contributions.  
 - Upstream components remain under their original licenses (see Appendix).  
-- SaaS restriction applies fully to Flamingo contributions.  
-
-### 6.2 OpenMSP  
-- Covers community knowledge base and contributions.  
-- Contributions may be reused by Flamingo AI commercially.  
-- No scraping, resale, or redistribution without consent.  
-
-### 6.3 Flamingo Website  
-- Website content is Flamingo AI intellectual property.  
-- Users must not scrape, clone, or misuse content.  
-- Acceptable use restrictions apply.  
+- The restriction in section 5.1 applies fully to Flamingo contributions.  
 
 ---
 
@@ -99,7 +88,7 @@ If You believe your copyrighted material has been used in violation of this Lice
 
 ## 8. Warranty Disclaimer & Limitation of Liability
 
-**Disclaimer.** The Flamingo Software, OpenMSP, and Website are provided **“AS IS”**, without warranties of any kind.  
+**Disclaimer.** The Flamingo Software is provided **“AS IS”**, without warranties of any kind.  
 
 **Liability.** To the maximum extent permitted by law, Flamingo AI shall have **zero liability** for any damages, losses, or claims, whether in contract, tort, or otherwise. Users assume all risks of deploying and operating Flamingo Software.  
 
@@ -121,7 +110,7 @@ This License is governed by the laws of the State of Delaware, USA.
 ## 11. Miscellaneous
 
 - If any provision is unenforceable, the remainder remains in effect.  
-- This License is the full agreement between You and Flamingo AI.  
+- This License is the full agreement between You and Flamingo AI about the Flamingo Software. A hosted service You buy from Flamingo AI is governed by its own terms.  
 
 ---
 
@@ -133,7 +122,7 @@ The following upstream components are incorporated into Flamingo Software and re
 - **Osquery** — Dual-licensed under Apache-2.0 OR GPL-2.0-only.  
 - **MeshCentral Agent** — Apache-2.0.  
 
-You must comply with these licenses in addition to the Flamingo AI Unified License v1.0.  
+You must comply with these licenses in addition to the Flamingo AI Unified License v1.1.  
 
 ---
 

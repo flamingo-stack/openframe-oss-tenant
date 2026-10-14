@@ -7,7 +7,7 @@
 </div>
 
 <p align="center">
-  <a href="LICENSE.md"><img alt="License" src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.0-%23FFC109?style=for-the-badge&labelColor=white"></a>
+  <a href="LICENSE.md"><img alt="License" src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.1-%23FFC109?style=for-the-badge&labelColor=white"></a>
 </p>
 
 # OpenFrame OSS Tenant
