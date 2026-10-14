@@ -36,7 +36,7 @@ If a signed order form or master agreement between You and Flamingo AI conflicts
 
 **2.3 Accurate details.** Keep the name of Your organization, the account owner's email address and Your billing details correct. We send notices under these Terms to the account owner's email address.
 
-**2.4 Tell us about misuse.** Tell us without delay at security@flamingo.so if You believe an account has been used without permission.
+**2.4 Tell us about misuse.** Tell us without delay at security@flamingo.run if You believe an account has been used without permission.
 
 
 ## 3. The Services
@@ -80,7 +80,7 @@ We may suspend access that breaks this section, as described in section 12.
 
 **5.2 What we may do with it.** You give us permission to host, copy, process and transmit Customer Data only as needed to provide, secure and support the Services, to bill for them, and as the law requires. We do not sell Customer Data.
 
-**5.3 Personal data.** Where Customer Data includes personal data, we process it on Your behalf as described in the Privacy Policy. If You need a data processing agreement, ask us at privacy@flamingo.so.
+**5.3 Personal data.** Where Customer Data includes personal data, we process it on Your behalf as described in the Privacy Policy. If You need a data processing agreement, ask us at privacy@flamingo.run.
 
 **5.4 Security.** We protect Customer Data with the technical and organizational measures described in our Trust Center at https://www.flamingo.run/trust-center. You are responsible for the security of Your own devices, networks and accounts.
 
@@ -168,7 +168,7 @@ Each of us may receive information from the other that is marked confidential or
 
 **14.2 Governing law.** These Terms are governed by the laws of the State of Delaware, USA, without regard to its conflict of laws rules. The state and federal courts located in Delaware have exclusive jurisdiction over any dispute, and each party accepts their jurisdiction.
 
-**14.3 Notices.** We send notices to the account owner's email address. Send legal notices to us at legal@flamingo.so.
+**14.3 Notices.** We send notices to the account owner's email address. Send legal notices to us at legal@flamingo.run.
 
 **14.4 Assignment.** Neither party may transfer these Terms without the other's written consent, except to a successor in a merger, acquisition or sale of substantially all of its business.
 
@@ -181,7 +181,7 @@ Each of us may receive information from the other that is marked confidential or
 
 ## 15. Contact
 
-**Legal notices:** legal@flamingo.so  
-**Privacy:** privacy@flamingo.so  
-**Security:** security@flamingo.so  
+**Legal notices:** legal@flamingo.run  
+**Privacy:** privacy@flamingo.run  
+**Security:** security@flamingo.run  
 **Billing and support:** support@flamingo.run  

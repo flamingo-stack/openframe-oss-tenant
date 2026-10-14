@@ -137,4 +137,4 @@ We may change these Payment Terms. For a change that affects what You pay or whe
 ## 12. Contact
 
 **Billing questions:** support@flamingo.run  
-**Legal notices:** legal@flamingo.so  
+**Legal notices:** legal@flamingo.run  
