@@ -7,11 +7,11 @@
 
 ## 1. Who These Terms Cover
 
-**1.1** These Payment Terms apply to paid OpenFrame plans sold by Flamingo AI, Inc. ("Flamingo AI", "we") to a customer organization ("Customer", "You"). They are part of the Terms of Service at https://www.flamingo.run/terms-of-service. Where these Payment Terms set a notice period or a consequence for non-payment, they apply in place of the general rule in the Terms of Service. OpenFrame is sold for business use only.
+**1.1** These Payment Terms apply to paid OpenFrame plans sold by Flamingo AI, Inc. ("Flamingo AI", "we") to a customer organization ("Customer", "You"). They are part of the [Terms of Service](https://www.flamingo.run/terms-of-service). Where these Payment Terms set a notice period or a consequence for non-payment, they apply in place of the general rule in the Terms of Service. OpenFrame is sold for business use only.
 
 **1.2** Current prices, token prices and token rates are shown in the product and on our website. The price that applies to a purchase is the one shown at checkout.
 
-**1.3** These Payment Terms do not apply to self-hosted OpenFrame, which is free of charge under the license published at https://www.flamingo.run/license.
+**1.3** These Payment Terms do not apply to self-hosted OpenFrame, which is free of charge under the [license](https://www.flamingo.run/license).
 
 
 ## 2. Free Trial

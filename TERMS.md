@@ -15,13 +15,13 @@
 - **OpenMSP**, the community knowledge base and directory at openmsp.ai; and
 - the **Flamingo Website**: flamingo.run, openframe.ai, openmsp.ai and related domains controlled by Flamingo AI.
 
-**1.3 What it does not cover.** The OpenFrame source code, and any copy of OpenFrame You host Yourself, are governed by the license published at https://www.flamingo.run/license ("License") and not by these Terms. Nothing in these Terms limits the rights the License gives You in the code.
+**1.3 What it does not cover.** The OpenFrame source code, and any copy of OpenFrame You host Yourself, are governed by the [license](https://www.flamingo.run/license) ("License") and not by these Terms. Nothing in these Terms limits the rights the License gives You in the code.
 
 **1.4 Documents that are part of these Terms.**
 
-- The **Payment Terms** at https://www.flamingo.run/payment-terms apply to paid plans.
-- The **Privacy Policy** at https://www.flamingo.run/privacy-policy explains how we handle personal data.
-- The **Security Policy** at https://www.flamingo.run/security-policy explains how to report a vulnerability.
+- The [Payment Terms](https://www.flamingo.run/payment-terms) apply to paid plans.
+- The [Privacy Policy](https://www.flamingo.run/privacy-policy) explains how we handle personal data.
+- The [Security Policy](https://www.flamingo.run/security-policy) explains how to report a vulnerability.
 
 If a signed order form or master agreement between You and Flamingo AI conflicts with these Terms, the signed document applies. If the Payment Terms conflict with these Terms on a payment matter, the Payment Terms apply.
 
@@ -82,7 +82,7 @@ We may suspend access that breaks this section, as described in section 12.
 
 **5.3 Personal data.** Where Customer Data includes personal data, we process it on Your behalf as described in the Privacy Policy. If You need a data processing agreement, ask us at privacy@flamingo.run.
 
-**5.4 Security.** We protect Customer Data with the technical and organizational measures described in our Trust Center at https://www.flamingo.run/trust-center. You are responsible for the security of Your own devices, networks and accounts.
+**5.4 Security.** We protect Customer Data with the technical and organizational measures described in our [Trust Center](https://www.flamingo.run/trust-center). You are responsible for the security of Your own devices, networks and accounts.
 
 **5.5 Getting Your data out.** You can export Customer Data through the product while Your account is active. What happens to it when an account ends is set out in section 12 and, for paid plans, in the Payment Terms.
 

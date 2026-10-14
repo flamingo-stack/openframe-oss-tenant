@@ -12,7 +12,7 @@
 
 This License governs the software Flamingo AI publishes, including OpenFrame. It sets out what You may do with the code.  
 
-It does not govern the hosted OpenFrame service, OpenMSP or the Flamingo Website. Those are governed by the Flamingo AI Terms of Service at https://www.flamingo.run/terms-of-service.  
+It does not govern the hosted OpenFrame service, OpenMSP or the Flamingo Website. Those are governed by the [Flamingo AI Terms of Service](https://www.flamingo.run/terms-of-service).  
 
 Flamingo AI software includes components developed by Flamingo AI as well as upstream projects that remain under their original licenses.  
 This License applies **only** to Flamingo AI contributions. For upstream components, You must comply with their respective licenses (see Appendix).  

@@ -9,7 +9,7 @@
 
 Flamingo AI, Inc. ("Flamingo AI") is committed to protecting the systems and data of its customers. This policy tells security researchers and customers how to report a vulnerability to us, what we ask of them, and what they can expect from us in return.
 
-For how we protect customer data, our controls and our compliance status, see the Trust Center at https://www.flamingo.run/trust-center. For how we handle personal data, see the Privacy Policy at https://www.flamingo.run/privacy-policy.
+For how we protect customer data, our controls and our compliance status, see the [Trust Center](https://www.flamingo.run/trust-center). For how we handle personal data, see the [Privacy Policy](https://www.flamingo.run/privacy-policy).
 
 
 ## 2. Reporting a Vulnerability
@@ -71,7 +71,7 @@ The following are not authorized:
 
 In scope:
 
-- The source code in the public repositories of https://github.com/flamingo-stack, including the OpenFrame agent and installers.
+- The source code in the public repositories of the [flamingo-stack GitHub organization](https://github.com/flamingo-stack), including the OpenFrame agent and installers.
 - OpenFrame SaaS at openframe.ai and the addresses under it that Flamingo AI operates.
 - The Flamingo Websites: flamingo.run, openframe.ai and openmsp.ai.
 
@@ -93,7 +93,7 @@ If you are unsure whether something is in scope, ask us at security@flamingo.run
 | OpenFrame (self-hosted) | The latest release. Operators should upgrade to the latest release to receive fixes. |
 | OpenFrame agent and desktop and mobile apps | The latest release. |
 
-Security fixes are announced in the release notes at https://www.flamingo.run/releases.
+Security fixes are announced in the [release notes](https://www.flamingo.run/releases).
 
 
 ## 9. Rewards
