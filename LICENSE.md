@@ -1,5 +1,7 @@
 # The Flamingo AI Unified License v1.0
 
+**Version:** 1.0  
+**Effective date:** September 2, 2025  
 **Copyright © 2025 Flamingo AI, Inc. All rights reserved.**
 
 ---
