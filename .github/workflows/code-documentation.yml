@@ -826,6 +826,7 @@ jobs:
           echo "STAGE3_FILES_TRACKER=/tmp/stage3-files.txt" >> $GITHUB_ENV
           echo "STAGE3_STATS_FILE=/tmp/.doc-stage3-stats.json" >> $GITHUB_ENV
           echo "STAGE4_FILES_TRACKER=/tmp/stage4-files.txt" >> $GITHUB_ENV
+          echo "LEGAL_FILES_LIST=/tmp/stage4-legal-files.txt" >> $GITHUB_ENV
 
           # Flamingo Markdown guidelines (their own endpoint). REQUIRED: the
           # Markdown validation and the CodeWiki prompts both read them.
@@ -2699,7 +2700,7 @@ jobs:
 
       # =========================================================================
       # STAGE 4: REPOSITORY DOCS
-      # Copies LICENSE.md, SECURITY.md from template repo
+      # Copies the legal files the hub's list names from the template repo
       # Generates/updates README.md, CONTRIBUTING.md and the docs index through
       # the Code Documentation lane (one hub call per document, no model key)
       # =========================================================================
@@ -2732,6 +2733,8 @@ jobs:
           GUIDELINES_PATH: ${{ env.GUIDELINES_PATH }}
           # Stage 4 tracking files (configurable paths)
           STAGE4_FILES_TRACKER: ${{ env.STAGE4_FILES_TRACKER }}
+          # Where the script records the legal files it copied (read by the checks and the commit)
+          STAGE4_LEGAL_FILES: ${{ env.LEGAL_FILES_LIST }}
           # Custom AI Instructions (All Stages)
           CUSTOM_REPO_INSTRUCTIONS: ${{ env.CUSTOM_INSTRUCTIONS }}
           # Analysis Exclusions
@@ -2747,20 +2750,11 @@ jobs:
 
           echo "Template repository: $TEMPLATE_REPO@$TEMPLATE_BRANCH"
 
-          RAW_URL="https://raw.githubusercontent.com/$TEMPLATE_REPO/$TEMPLATE_BRANCH"
-
-          # 1. LICENSE.md and SECURITY.md from the template repository
-          if curl -fsSL "$RAW_URL/LICENSE.md" -o LICENSE.md 2>/dev/null; then
-            echo "Copied LICENSE.md from the template repository"
-          else
-            echo "::notice title=LICENSE.md not copied::The template repository $TEMPLATE_REPO@$TEMPLATE_BRANCH has no LICENSE.md."
-          fi
-
-          if curl -fsSL "$RAW_URL/SECURITY.md" -o SECURITY.md 2>/dev/null; then
-            echo "Copied SECURITY.md from the template repository"
-          else
-            echo "::notice title=SECURITY.md not copied::The template repository $TEMPLATE_REPO@$TEMPLATE_BRANCH has no SECURITY.md."
-          fi
+          # 1. The legal files (license, terms, privacy policy, ...) are copied from
+          # the template repository by generate-repo-docs.cjs, from the list the
+          # hub serves (repo_docs.legal_files). This file names none of them: the
+          # script records the ones present in $LEGAL_FILES_LIST.
+          rm -f "$LEGAL_FILES_LIST"
 
           # 2. The existing README is context for the new one
           if [ -f "README.md" ]; then
@@ -2780,7 +2774,7 @@ jobs:
 
           # 4. Count results
           REPO_DOCS=0
-          for f in README.md CONTRIBUTING.md LICENSE.md SECURITY.md; do
+          for f in README.md CONTRIBUTING.md $(cat "$LEGAL_FILES_LIST" 2>/dev/null); do
             if [ -f "$f" ]; then
               SIZE=$(wc -c < "$f" | tr -d ' ')
               echo "$f: $SIZE bytes"
@@ -2792,7 +2786,7 @@ jobs:
           if [ "$REPO_DOCS" -gt 0 ]; then
             echo "Repository docs present: $REPO_DOCS"
           else
-            echo "::warning title=Stage 4 produced nothing::No repository docs (README.md, CONTRIBUTING.md, LICENSE.md, SECURITY.md) are present."
+            echo "::warning title=Stage 4 produced nothing::No repository docs (README.md, CONTRIBUTING.md, legal files) are present."
           fi
 
       # =========================================================================
@@ -2826,7 +2820,7 @@ jobs:
 
           # Stage repository documentation files
           # AGENTS.md (and CLAUDE.md's @AGENTS.md import) are here as the backstop for a run whose Stage 2 commit did not happen.
-          for f in README.md CONTRIBUTING.md LICENSE.md SECURITY.md AGENTS.md CLAUDE.md; do
+          for f in README.md CONTRIBUTING.md $(cat "$LEGAL_FILES_LIST" 2>/dev/null) AGENTS.md CLAUDE.md; do
             if [ -f "$f" ]; then
               git add -f "$f"
             fi
@@ -2992,7 +2986,7 @@ jobs:
           # Stage ALL .md and .mmd files anywhere in the repo (for inline docs generated next to source files)
           # This catches Stage 1 inline docs (hidden: .FileName.md), Stage 2 reference/diagrams, Stage 3 tutorials, and Stage 4 repo docs
           # Find all .md and .mmd files recursively, including hidden files (.*.md)
-          # Includes README.md, CONTRIBUTING.md, LICENSE.md, SECURITY.md from Stage 4
+          # Includes README.md, CONTRIBUTING.md and the legal files from Stage 4
           # Includes .mmd Mermaid diagram files from Stage 2 (CodeWiki/Claude architecture)
           find . \( -name "*.md" -o -name ".*.md" -o -name "*.mmd" \) -type f \
             -not -path "./node_modules/*" \
@@ -3076,7 +3070,7 @@ jobs:
           ### Stage 4: Repository Documentation
           - Status: $STAGE4_STATUS
           - Files generated: $STAGE4_FILES
-          - README.md, CONTRIBUTING.md, LICENSE.md, SECURITY.md
+          - README.md, CONTRIBUTING.md and the legal files (license, terms, privacy and security policies)
 
           ---
 
