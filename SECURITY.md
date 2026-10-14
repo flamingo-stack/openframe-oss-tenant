@@ -14,7 +14,7 @@ For how we protect customer data, our controls and our compliance status, see th
 
 ## 2. Reporting a Vulnerability
 
-Email **security@flamingo.so**.
+Email **security@flamingo.run**.
 
 Do not open a public GitHub issue, pull request or discussion for a security problem, and do not post it in a community channel. A public report puts every user at risk before a fix exists.
 
@@ -82,7 +82,7 @@ Out of scope:
 - Vulnerabilities in the upstream projects OpenFrame includes (for example Fleet, MeshCentral and osquery) that are not caused by how we use them. Report those to the upstream project; tell us too if OpenFrame users are affected.
 - Findings with no practical security impact, such as missing best-practice headers without a working attack, reports from automated scanners that were not verified, and issues that require a device or account that is already compromised.
 
-If you are unsure whether something is in scope, ask us at security@flamingo.so before you test.
+If you are unsure whether something is in scope, ask us at security@flamingo.run before you test.
 
 
 ## 8. Supported Versions
@@ -103,7 +103,7 @@ Flamingo AI does not run a paid bug bounty program. We thank reporters publicly,
 
 ## 10. Questions
 
-Questions about this policy go to **security@flamingo.so**. We welcome suggestions for improving it.
+Questions about this policy go to **security@flamingo.run**. We welcome suggestions for improving it.
 
 
 ## 11. Document History

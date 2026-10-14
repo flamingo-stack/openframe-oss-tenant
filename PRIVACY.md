@@ -68,7 +68,7 @@ Flamingo AI does not sell customer data and does not use it to train artificial 
 
 **How we protect it.** Google user data is encrypted in transit. The OAuth refresh token issued for a connected tenant is encrypted with Google Cloud Key Management Service under a key created for that customer, and is never stored or transmitted by us in unencrypted form.
 
-**How long we keep it, and how it is deleted.** Directory data is retained for as long as the connection exists. When the connection is deleted, we revoke the OAuth grant with Google and delete the directory data synchronized through it; if the revocation cannot be completed, you can remove the grant yourself from your Google Account's third-party access settings. Other records are retained for as long as needed to provide the service, and you can request deletion by contacting privacy@flamingo.so. Copies may remain in backups for a limited period after deletion.
+**How long we keep it, and how it is deleted.** Directory data is retained for as long as the connection exists. When the connection is deleted, we revoke the OAuth grant with Google and delete the directory data synchronized through it; if the revocation cannot be completed, you can remove the grant yourself from your Google Account's third-party access settings. Other records are retained for as long as needed to provide the service, and you can request deletion by contacting privacy@flamingo.run. Copies may remain in backups for a limited period after deletion.
 
 **Limited Use.** OpenFrame's use of information received from Google Workspace APIs will adhere to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy) and the [Google Workspace API User Data and Developer Policy](https://developers.google.com/workspace/workspace-api-user-data-developer-policy), including the Limited Use requirements. Data received from Google Workspace APIs is not used to develop, improve, or train non-personalized artificial intelligence or machine learning models, whether by Flamingo AI or by any third party.
 
@@ -109,7 +109,7 @@ Depending on your location (EU/UK under GDPR, California under CCPA, or similar 
 - Opt out of sale or sharing of personal data (CCPA).  
 - Lodge a complaint with a supervisory authority (for EU/UK residents).  
 
-Requests can be submitted to **privacy@flamingo.so**.  
+Requests can be submitted to **privacy@flamingo.run**.  
 
 
 ## 9. Data Transfers
@@ -184,8 +184,8 @@ The version and effective date of this Privacy Policy are stated at the top. Whe
 
 ## 18. Contact Information
 
-**Privacy Inquiries:** privacy@flamingo.so  
-**General Information:** info@flamingo.so  
+**Privacy Inquiries:** privacy@flamingo.run  
+**General Information:** hello@flamingo.run  
 
 ---
 

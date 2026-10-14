@@ -82,7 +82,7 @@ Subject to this License:
 
 ## 7. DMCA and Copyright Compliance
 
-If You believe your copyrighted material has been used in violation of this License, You may submit a notice to: **legal@flamingo.so**.  
+If You believe your copyrighted material has been used in violation of this License, You may submit a notice to: **legal@flamingo.run**.  
 
 ---
 
@@ -126,4 +126,4 @@ You must comply with these licenses in addition to the Flamingo AI Unified Licen
 
 ---
 
-**Contact for Commercial Licensing:** legal@flamingo.so  
+**Contact for Commercial Licensing:** legal@flamingo.run  
