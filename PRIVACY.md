@@ -166,7 +166,7 @@ We use service providers that process personal data on our behalf, each under a 
 | Community | Slack |
 | Meeting recording and transcription | Fireflies |
 
-The current list of subprocessors is published in our Trust Center at https://www.flamingo.run/trust-center.
+The current list of subprocessors is published in our [Trust Center](https://www.flamingo.run/trust-center).
 
 
 ## 16. Cookies
