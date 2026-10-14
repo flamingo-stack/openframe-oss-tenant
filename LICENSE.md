@@ -1,7 +1,9 @@
 # The Flamingo AI Unified License v1.1
 
 **Version:** 1.1  
-**Effective date:**  
+**Effective date:** October 14, 2026  
+**Applies to:** The source code Flamingo AI publishes, including OpenFrame and every repository of the flamingo-stack organization
+
 **Copyright © 2025 Flamingo AI, Inc. All rights reserved.**
 
 ---

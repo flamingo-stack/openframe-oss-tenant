@@ -1,7 +1,7 @@
-# OpenFrame Payment Terms
+# Flamingo AI Payment Terms
 
 **Version:** 1.0  
-**Effective date:**  
+**Effective date:** October 14, 2026  
 **Applies to:** Paid plans of OpenFrame SaaS, the OpenFrame service hosted by Flamingo AI
 
 
