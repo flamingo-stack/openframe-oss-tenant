@@ -1,7 +1,7 @@
 # Flamingo AI Terms of Service
 
 **Version:** 1.0  
-**Effective date:**  
+**Effective date:** October 14, 2026  
 **Applies to:** OpenFrame SaaS, OpenMSP and the Flamingo Website
 
 
