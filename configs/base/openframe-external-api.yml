@@ -40,6 +40,8 @@ springdoc:
     displayRequestDuration: true
     
 openframe:
+  tool-events:
+    store: cassandra
   oss-tenant:
     kafka:
       topics:

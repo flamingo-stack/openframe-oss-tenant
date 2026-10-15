@@ -59,6 +59,8 @@ dgs:
       enabled: true
 
 openframe:
+  tool-events:
+    store: cassandra
   security:
     jwt:
       cache:
