@@ -15,12 +15,20 @@ spring:
       enabled: true
   autoconfigure:
     exclude:
+      # Transition: each entry is listed under its Spring Boot 3 name, then its Spring Boot 4 one; Spring Boot skips
+      # names it does not have. Drop the Spring Boot 3 names once every service runs Spring Boot 4.
       - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
+      - org.springframework.boot.cassandra.autoconfigure.CassandraAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
+      - org.springframework.boot.data.cassandra.autoconfigure.DataCassandraAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration
+      - org.springframework.boot.data.cassandra.autoconfigure.DataCassandraReactiveAutoConfiguration
       - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerAutoConfiguration
       - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.security.oauth2.server.resource.autoconfigure.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.cassandra.CassandraHealthContributorAutoConfiguration
+      - org.springframework.boot.cassandra.autoconfigure.health.CassandraHealthContributorAutoConfiguration
   oss-tenant:
     kafka:
       bootstrap-servers: kafka.datasources.svc.cluster.local:9092
@@ -45,6 +53,9 @@ openframe:
   oss-tenant:
     kafka:
       topics:
+        inbound:
+          delivery-dispatch:
+            name: delivery-dispatch
         outbound:
           devices-topic: devices-topic
 

@@ -1,6 +1,7 @@
 package com.openframe.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
 import com.openframe.data.document.oauth.OAuthClient;
@@ -11,7 +12,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 public final class TestUtils {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new JsonMapper();
 
     private TestUtils() {}
 

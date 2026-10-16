@@ -72,7 +72,7 @@ OpenFrame is a distributed microservices platform with the following core archit
 ### Technology Stack
 
 #### Backend
-- **Runtime**: Java 21, Spring Boot 3.3.0, Spring Cloud 2023.0.3
+- **Runtime**: Java 25, Spring Boot 4.1.1, Spring Cloud 2025.1.3
 - **API**: GraphQL (Netflix DGS 7.0.0), RESTful services
 - **Security**: JWT with OAuth2, Spring Security, AES-256 encryption
 - **Data**: MongoDB 7.x, Cassandra 4.x, Apache Pinot 1.2.0, Redis
@@ -170,8 +170,8 @@ The documentation has been restructured into a comprehensive, flat hierarchy:
 ## Code Standards
 
 ### Java/Spring Boot
-- Use Java 21 features (records, sealed classes, pattern matching)
-- Follow Spring Boot 3.x conventions and best practices
+- Use Java 25 features (records, sealed classes, pattern matching)
+- Follow Spring Boot 4.x conventions and best practices
 - Constructor injection over field injection
 - Use `@ConfigurationProperties` for type-safe configuration
 - Implement proper exception handling with `@ControllerAdvice`
@@ -232,7 +232,7 @@ cargo test test_name                    # Run specific test
 
 ## Local Development Setup
 
-1. **Prerequisites**: Java 21, Maven 3.9+, Docker 24.0+, Node.js 18+, Rust 1.70+ (for client)
+1. **Prerequisites**: Java 25, Maven 3.9+, Docker 24.0+, Node.js 18+, Rust 1.70+ (for client)
 2. **GitHub Token**: Required for private repository access during setup
 3. **Run platform script**: `./scripts/run-mac.sh` (or equivalent for your OS)
 4. **Access URLs**:

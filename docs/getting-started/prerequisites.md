@@ -10,7 +10,7 @@ Before working with OpenFrame OSS Tenant, ensure your development environment me
 
 | Tool | Minimum Version | Notes |
 |---|---|---|
-| **JDK (Java Development Kit)** | 21 | OpenJDK 21 recommended (matches `<java.version>21</java.version>` in pom.xml) |
+| **JDK (Java Development Kit)** | 25 | OpenJDK 25 recommended (matches `<java.version>25</java.version>` in pom.xml) |
 | **Apache Maven** | 3.9+ | Used for building all Spring Boot services |
 
 ### Endpoint Agent (Rust)
@@ -95,7 +95,7 @@ The following environment variables are commonly used across the platform. Speci
 | Variable | Used By | Purpose |
 |---|---|---|
 | `OPENFRAME_DEV_MODE` | openframe-client | Set to `1` to use user-local directories and disable TLS cert verification for local dev |
-| `SPRING_DATA_MONGODB_URI` | All Spring Boot services | MongoDB connection string |
+| `SPRING_MONGODB_URI` | All Spring Boot services | MongoDB connection string |
 | `SPRING_KAFKA_BOOTSTRAP_SERVERS` | API, Stream services | Kafka broker addresses |
 | `SPRING_DATA_REDIS_HOST` | Gateway, Management | Redis host |
 | `NATS_URL` | Client Service | NATS server connection URL |
@@ -111,7 +111,7 @@ Run these to confirm your environment is ready:
 ```bash
 # Java
 java -version
-# Expected: openjdk version "21.x.x"
+# Expected: openjdk version "25.x.x"
 
 # Maven
 mvn -version

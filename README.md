@@ -90,7 +90,7 @@ graph TB
 
 | Component | Language | Port | Responsibility |
 |---|---|---|---|
-| **API Service** | Java / Spring Boot 3.3 | 8080 | REST + GraphQL APIs; tickets, dialogs, AI settings, tenant management |
+| **API Service** | Java / Spring Boot 4.1 | 8080 | REST + GraphQL APIs; tickets, dialogs, AI settings, tenant management |
 | **Authorization Server** | Java / Spring Authorization Server | 8082 | Multi-tenant OAuth2/OIDC; RSA-signed JWT issuance; SSO (Google, Microsoft) |
 | **Gateway** | Java / Spring Cloud Gateway | 8081 | Security enforcement, JWT validation, routing, WebSocket proxy |
 | **External API** | Java / Spring Boot | 8083 | Rate-limited public API endpoints with API key management |
@@ -104,7 +104,7 @@ graph TB
 
 ### Prerequisites
 
-- **JDK 21** (OpenJDK 21 recommended)
+- **JDK 25** (OpenJDK 25 recommended)
 - **Apache Maven 3.9+**
 - **Rust 1.78+** (stable) — install via [rustup](https://rustup.rs)
 
@@ -161,7 +161,7 @@ sudo ./target/release/openframe-client install \
 
 | Layer | Technology |
 |---|---|
-| Backend services | Java 21, Spring Boot 3.3, Spring Cloud Gateway, Spring Authorization Server, Netflix DGS (GraphQL) |
+| Backend services | Java 25, Spring Boot 4.1, Spring Cloud Gateway, Spring Authorization Server, Netflix DGS (GraphQL) |
 | Endpoint agent | Rust (stable), async-nats, tokio, Velopack |
 | Event streaming | Apache Kafka, Kafka Streams |
 | Agent messaging | NATS JetStream |

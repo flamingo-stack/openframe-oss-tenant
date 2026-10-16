@@ -23,7 +23,7 @@ The codebase follows standard Java conventions with Lombok for boilerplate reduc
 - Use `@Slf4j` for logging (via Lombok)
 - Use `@Builder`, `@Data`, `@Value` annotations appropriately
 - Prefer constructor injection over field injection (for testability)
-- Use record types for immutable DTOs where appropriate (Java 21)
+- Use record types for immutable DTOs where appropriate (Java 25)
 - Follow Spring naming conventions: `*Service`, `*Repository`, `*Controller`, `*DataFetcher`
 
 **Package structure:**
