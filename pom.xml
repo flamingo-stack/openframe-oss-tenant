@@ -24,18 +24,12 @@
         <spring-cloud.version>2025.1.3</spring-cloud.version>
         <nifi.version>1.22.0</nifi.version>
         <logstash.version>8.0</logstash.version>
-        <spring-actuator.version>4.1.1</spring-actuator.version>
         <spring-boot.version>4.1.1</spring-boot.version>
         <spring-retry.version>2.0.13</spring-retry.version>
         <lombok.version>1.18.48</lombok.version>
-        <netflix.dgs.version>7.0.0</netflix.dgs.version>
-        <nats.version>0.6.2+3.5</nats.version>
         <pinot.version>1.5.1</pinot.version>
         <simpleclient.version>0.16.0</simpleclient.version>
-        <slf4j.api.version>2.0.7</slf4j.api.version>
-        <slf4j.impl.version>2.21.1</slf4j.impl.version>
         <opensaml.version>4.3.0</opensaml.version>
-        <spring-data-mongodb.version>4.2.0</spring-data-mongodb.version>
         <esri.geometry.version>2.2.4</esri.geometry.version>
         <tinkergraph.gremlin.version>3.4.0</tinkergraph.gremlin.version>
         <jjwt.version>0.11.5</jjwt.version>

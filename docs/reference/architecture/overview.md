@@ -66,7 +66,7 @@ graph TB
 
 | Component | Language | Port | Responsibility |
 |---|---|---|---|
-| **API Service** | Java / Spring Boot 3.3 | 8080 | Internal REST + GraphQL APIs; ticket, dialog, AI settings, tenant management |
+| **API Service** | Java / Spring Boot 4.1 | 8080 | Internal REST + GraphQL APIs; ticket, dialog, AI settings, tenant management |
 | **Authorization Server** | Java / Spring Authorization Server | 8082 | Multi-tenant OAuth2/OIDC; JWT issuance with RSA keys; SSO (Google, Microsoft) |
 | **Gateway** | Java / Spring Cloud Gateway | 8081 | Security enforcement, JWT validation, request routing, WebSocket proxy |
 | **External API** | Java / Spring Boot | 8083 | Rate-limited public API endpoints with API key management |

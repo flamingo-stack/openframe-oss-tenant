@@ -74,7 +74,7 @@ To build a single service (for example, the API service):
 mvn clean install -pl openframe/services/openframe-api -am -DskipTests
 ```
 
-> **Java 21 is required.** Verify with `java -version` before building.
+> **Java 25 is required.** Verify with `java -version` before building.
 
 ---
 

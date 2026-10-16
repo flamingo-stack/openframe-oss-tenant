@@ -43,7 +43,7 @@ OpenFrame OSS Tenant is designed for:
 
 ## High-Level Architecture Overview
 
-OpenFrame OSS Tenant is a polyglot microservice system built with Java (Spring Boot 3.3) and Rust. All client traffic passes through the Spring Cloud Gateway before reaching backend services.
+OpenFrame OSS Tenant is a polyglot microservice system built with Java (Spring Boot 4.1) and Rust. All client traffic passes through the Spring Cloud Gateway before reaching backend services.
 
 ```mermaid
 graph TB

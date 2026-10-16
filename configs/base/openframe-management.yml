@@ -53,6 +53,9 @@ openframe:
   oss-tenant:
     kafka:
       topics:
+        inbound:
+          delivery-dispatch:
+            name: delivery-dispatch
         outbound:
           devices-topic: devices-topic
 
