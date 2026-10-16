@@ -19,7 +19,7 @@ spring:
         max-redirects: 3
     # Common MongoDB configuration
     mongodb:
-      uri: mongodb://openframe:password123456789@mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
+      uri: ${MONGODB_URI:mongodb://openframe:password123456789@mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000}
       auto-index-creation: true
       connect-timeout: 10000
       socket-timeout: 10000
@@ -170,3 +170,4 @@ debezium:
 # openframe_client_configuration E11000 self-collision on first boot.
 # Requires openframe-oss-lib >= the release with TenantAwareInfraConfig (the
 # mongoTemplate/TenantAwareMongoTemplate bean) — see the lib-side fix.
+
