@@ -151,8 +151,10 @@ openframe:
     defaults:
       ack-threshold-seconds: 30
       max-attempts: 3
-      backoff-multiplier: 2
-      max-retry-interval-seconds: 300
+      backoff:
+        multiplier: 2
+        max-interval-seconds: 300
+        jitter: 0.0
       offline-behavior: RETRY_ON_RECONNECT
       reconnect-window-seconds: 86400
       result-timeout-seconds: 600
