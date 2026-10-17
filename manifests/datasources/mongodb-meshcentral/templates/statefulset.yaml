@@ -23,6 +23,9 @@ spec:
         runAsUser: 999
         runAsGroup: 999
         fsGroup: 999
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
 
       initContainers:
         - name: keyfile-prepare
@@ -60,6 +63,12 @@ spec:
         - name: mongodb
           image: {{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}
           command: ["/usr/local/bin/mongodb-entrypoint.sh"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - name: mongodb
               containerPort: 27017
@@ -120,6 +129,12 @@ spec:
         {{- if .Values.mongodb.metrics.enabled }}
         - name: mongodb-exporter
           image: "{{ .Values.mongodb.metrics.image.registry }}/{{ .Values.mongodb.metrics.image.repository }}:{{ .Values.mongodb.metrics.image.tag }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           args:
             - --mongodb.uri=mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin
             - --collect-all
@@ -168,3 +183,4 @@ spec:
         resources:
           requests:
             storage: 10Gi
+
