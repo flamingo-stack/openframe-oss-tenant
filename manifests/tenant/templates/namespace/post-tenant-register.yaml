@@ -19,18 +19,27 @@ spec:
         app: post-tenant-register
     spec:
       restartPolicy: Never
-      {{- with .Values.initImage.podSecurityContext }}
       securityContext:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- if .Values.initImage.podSecurityContext }}
+        {{- toYaml .Values.initImage.podSecurityContext | nindent 8 }}
+        {{- else }}
+        runAsNonRoot: true
+        {{- end }}
 
       containers:
       - name: register
         image: {{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}
-        {{- with .Values.initImage.securityContext }}
         securityContext:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
+          {{- if .Values.initImage.securityContext }}
+          {{- toYaml .Values.initImage.securityContext | nindent 10 }}
+          {{- else }}
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+          {{- end }}
         command:
           - /bin/sh
           - -c
@@ -53,3 +62,4 @@ spec:
             echo "Cluster Registration complete."
 
             echo "Keeping pod alive..." && sleep infinity
+
