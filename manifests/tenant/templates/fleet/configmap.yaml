@@ -9,7 +9,6 @@ data:
   FLEET_SERVER_QUERY_RESULTS_TTL: "720h"
   FLEET_SERVER_QUERY_RESULTS_CLEANUP_INTERVAL: "1h"
   FLEET_SETUP_ADMIN_EMAIL: {{ .Values.fleet.fleet.setup.adminEmail | quote }}
-  test: "test"
 
 ---
 
@@ -26,3 +25,4 @@ data:
   FLEET_MYSQL_HOST: "fleetmdm-mysql-0.fleetmdm-mysql.datasources.svc.cluster.local"
   FLEET_MYSQL_PORT: "3306"
 {{- end }}
+
