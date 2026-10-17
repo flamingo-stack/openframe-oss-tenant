@@ -30,9 +30,23 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 1
 
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+
       containers:
         - name: mongodb
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 27017
           envFrom:
@@ -63,6 +77,14 @@ spec:
         {{- if .Values.metrics.enabled }}
         - name: mongodb-exporter
           image: "{{ .Values.metrics.image.registry }}/{{ .Values.metrics.image.repository }}:{{ .Values.metrics.image.tag }}"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           args:
             - --mongodb.uri=mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin
             - --collect-all
@@ -105,3 +127,4 @@ spec:
         resources:
           requests:
             storage: {{ .Values.persistence.size }}
+
