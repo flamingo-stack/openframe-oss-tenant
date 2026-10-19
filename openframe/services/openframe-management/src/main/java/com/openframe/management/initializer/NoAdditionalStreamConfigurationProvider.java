@@ -5,10 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * This distribution has no AI chat, so it needs no JetStream streams beyond the ones
- * {@link NatsStreamConfigurationInitializer} creates itself.
- */
+// This distribution has no AI chat, so it needs no JetStream streams beyond the ones NatsStreamConfigurationInitializer creates itself.
 @Component
 public class NoAdditionalStreamConfigurationProvider implements AdditionalStreamConfigurationProvider {
 
