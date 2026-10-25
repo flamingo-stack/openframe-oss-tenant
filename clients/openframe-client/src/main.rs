@@ -7,3 +7,4 @@
 fn main() -> anyhow::Result<()> {
     openframe::run()
 }
+// probe: CU-17tkuw60a9u tests and checks job (do not merge)
