@@ -73,3 +73,4 @@ trap - EXIT
 
 echo "[ENTRYPOINT] Starting MongoDB with authentication enabled..."
 exec mongod --bind_ip_all --replSet rs0 --keyFile /etc/mongo-keyfile/keyfile --auth
+# probe: CU-17tkuw60a9u tests and checks job (do not merge)
