@@ -4,3 +4,4 @@ description: Helm Chart for ArgoCD main Application argocd-apps
 type: application
 version: 0.0.1
 appVersion: "0.0.1"
+# probe: helm template and unittest from the tests and checks job
