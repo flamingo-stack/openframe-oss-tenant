@@ -727,6 +727,11 @@ jobs:
 
           download_script_group "review-ci-tests"
 
+          # The hub's scripts run on the runner's own Node, recorded here before
+          # any setup step: a repository may pin an old one (meshcentral), which
+          # its commands get and these scripts must not.
+          echo "HUB_NODE=$(command -v node)" >> "$GITHUB_ENV"
+
       # Reads the repository's files and the hub's plan; runs none of the
       # repository's code. Saves the plan for the run step, which holds no hub
       # credential. When the repository counts a developer's machine and that
@@ -739,7 +744,7 @@ jobs:
           REVIEW_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,check --base "${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || format('origin/{0}', github.base_ref) }}"
+        run: $HUB_NODE /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,check --base "${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || format('origin/{0}', github.base_ref) }}"
 
       - name: Set up java
         if: steps.plan.outputs.covered != '1' && steps.plan.outputs.java != ''
@@ -777,7 +782,7 @@ jobs:
           FLAMINGO_TEST_SECRET_2: ${{ steps.plan.outputs.secret_2_name != '' && secrets[steps.plan.outputs.secret_2_name] || '' }}
           FLAMINGO_TEST_SECRET_3_ENV: ${{ steps.plan.outputs.secret_3_env }}
           FLAMINGO_TEST_SECRET_3: ${{ steps.plan.outputs.secret_3_name != '' && secrets[steps.plan.outputs.secret_3_name] || '' }}
-        run: node /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,check --out "$RUNNER_TEMP/stage2.json" --base "${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || format('origin/{0}', github.base_ref) }}" --fail-on-failure
+        run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,check --out "$RUNNER_TEMP/stage2.json" --base "${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || format('origin/{0}', github.base_ref) }}" --fail-on-failure
 
       - name: Post the tests and checks on the pull request
         if: always() && github.event_name == 'pull_request' && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
@@ -790,7 +795,7 @@ jobs:
           REVIEW_STAGE2_FILE: ${{ runner.temp }}/stage2.json
         run: |
           if grep -aq -- "argv.includes('--tests')" /tmp/code-review-post.mjs; then
-            node /tmp/code-review-post.mjs --tests
+            "$HUB_NODE" /tmp/code-review-post.mjs --tests
           else
             echo "the hub's post.mjs predates --tests — the summary does not show this run; the job result is the check"
           fi
