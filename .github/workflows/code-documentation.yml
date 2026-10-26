@@ -1928,7 +1928,7 @@ jobs:
           source /tmp/workflow-helpers.sh
 
           # Through ci-hub.mjs, the shell's way into the ONE hub transport
-          # (code-review-lib.mjs): it checks the destination before the secret
+          # (code-review-lib-hub.mjs): it checks the destination before the secret
           # leaves, keeps the secret in a header, and writes the body only on a
           # 2xx. It prints the status and exits 0 whenever the hub ANSWERED — a 404
           # is an answer ("no graph yet"), not a failure.
