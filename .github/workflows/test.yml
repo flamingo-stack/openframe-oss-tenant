@@ -302,10 +302,9 @@ jobs:
     name: "Test Helm Chart"
     needs: [changes]
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'pull_request' &&
-      !github.event.pull_request.draft &&
-      contains(fromJSON(needs.changes.outputs.changes || '{}').helm, 'true')
+    # Disabled: covered by "Flamingo Code Review / tests and checks" (helm template and helm unittest on a changed chart). Kept here, not deleted. CU-17tkuw60a9u
+    # was: if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(fromJSON(needs.changes.outputs.changes || '{}').helm, 'true')
+    if: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
