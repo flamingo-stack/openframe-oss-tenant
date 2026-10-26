@@ -55,8 +55,9 @@ on:
     types: [opened, ready_for_review, reopened, labeled, synchronize]
 
   # The merge queue: a repository whose ruleset requires the tests-and-checks
-  # job must run it on the queued merge too, or the queue waits for it forever.
-  # Only the tests job runs on it.
+  # check needs a report on the queued merge, or the queue waits forever. The
+  # tests job is SKIPPED there (it runs on request only), and a skipped job is
+  # the report a required check accepts.
   merge_group:
     types: [checks_requested]
 
@@ -568,19 +569,29 @@ jobs:
             echo "the hub's post.mjs predates --invite — the pull request gets no invitation; the comment command still starts a review"
           fi
 
-  # Every push and the merge queue, never a fork (no secrets there) and never
-  # a draft. A newer push cancels the run of the stale head.
+  # ON REQUEST, never on a plain push: the moments the review job runs (the
+  # on-demand label, the comment command or a checkbox, a subscribed push).
+  # Skipped otherwise, which a required check accepts. Never a fork or a bot.
+  # A newer request cancels the run of the stale head.
   tests:
     name: Flamingo Code Review / tests and checks
     concurrency:
-      group: flamingo-tests-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.run_id }}
+      group: flamingo-tests-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
       cancel-in-progress: true
+    # always(): resolve_command is skipped on every event but a comment, and a
+    # skipped dependency would otherwise skip this job too.
+    needs: [resolve_command]
     if: >-
-      github.event_name == 'merge_group' ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.repo.full_name == github.repository &&
-       github.event.action != 'labeled' &&
-       github.event.pull_request.draft == false)
+      always() &&
+      (needs.resolve_command.outputs.proceed == 'true' ||
+       (github.event_name == 'pull_request' &&
+        (github.event.pull_request.user.type != 'Bot' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        ((github.event.action == 'labeled' && github.event.label.name == 'flamingo-review') ||
+         (github.event.action == 'synchronize' &&
+          (contains(github.event.pull_request.labels.*.name, 'flamingo-review') ||
+           (github.event.pull_request.draft == false &&
+            contains(github.event.pull_request.labels.*.name, 'flamingo-review-always'))))))))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -608,7 +619,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+          ref: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
           persist-credentials: false
 
       - name: Download the tests runner from the hub
@@ -743,8 +754,8 @@ jobs:
           HUB_TOKEN: ${{ secrets.FLAMINGO_HUB_SECRET }}
           REVIEW_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: $HUB_NODE /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,check --base "${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || format('origin/{0}', github.base_ref) }}"
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
+        run: $HUB_NODE /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,check --base "${{ format('origin/{0}', github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref) }}"
 
       - name: Set up java
         if: steps.plan.outputs.covered != '1' && steps.plan.outputs.java != ''
@@ -782,15 +793,15 @@ jobs:
           FLAMINGO_TEST_SECRET_2: ${{ steps.plan.outputs.secret_2_name != '' && secrets[steps.plan.outputs.secret_2_name] || '' }}
           FLAMINGO_TEST_SECRET_3_ENV: ${{ steps.plan.outputs.secret_3_env }}
           FLAMINGO_TEST_SECRET_3: ${{ steps.plan.outputs.secret_3_name != '' && secrets[steps.plan.outputs.secret_3_name] || '' }}
-        run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,check --out "$RUNNER_TEMP/stage2.json" --base "${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || format('origin/{0}', github.base_ref) }}" --fail-on-failure
+        run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,check --out "$RUNNER_TEMP/stage2.json" --base "${{ format('origin/{0}', github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref) }}" --fail-on-failure
 
       - name: Post the tests and checks on the pull request
-        if: always() && github.event_name == 'pull_request' && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
+        if: always() && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
           WF_RUN_ID: ${{ github.run_id }}
           REVIEW_STAGE2_FILE: ${{ runner.temp }}/stage2.json
         run: |
