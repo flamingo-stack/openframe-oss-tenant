@@ -64,7 +64,7 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(needs.changes.outputs.changes || '{}')[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(needs.changes.outputs.changes || '{}')[matrix.name] == 'true' }}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -148,7 +148,7 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(needs.changes.outputs.changes || '{}')[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(needs.changes.outputs.changes || '{}')[matrix.id || matrix.name] == 'true' }}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -251,7 +251,7 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || contains(fromJSON(needs.changes.outputs.changes || '{}').helm, 'true') }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || contains(fromJSON(needs.changes.outputs.changes || '{}').helm, 'true') }}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -343,3 +343,4 @@ jobs:
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
+
