@@ -40,6 +40,8 @@ public class LogsEventListener {
             messageProcessor.process(message, messageType);
         } catch (Exception e) {
             log.error("Failed to process logs-event: type={}", messageType, e);
+            throw new RuntimeException("Failed to process logs-event: type=" + messageType, e);
         }
     }
 }
+
