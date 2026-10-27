@@ -42,10 +42,12 @@ jobs:
         id: setup_env
         run: |
           set -euo pipefail
-          echo "timestamp=$(date +%s)" >> "$GITHUB_OUTPUT"
-          echo "timestamp_tag=$(date +%d%m%Y%H%M)" >> "$GITHUB_OUTPUT"
-          echo "commit_sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
-          echo "test_commit_sha=test-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+          {
+            echo "timestamp=$(date +%s)"
+            echo "timestamp_tag=$(date +%d%m%Y%H%M)"
+            echo "commit_sha=${GITHUB_SHA::8}"
+            echo "test_commit_sha=test-${GITHUB_SHA::8}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Define components
         id: define
@@ -143,3 +145,4 @@ jobs:
                 commit_sha: $commit_sha, test_commit_sha: $test_commit_sha }
           ')
           echo "changes=$changes" >> "$GITHUB_OUTPUT"
+
