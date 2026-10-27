@@ -69,7 +69,9 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(needs.changes.outputs.changes || '{}')[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        env:
+          SHOULD_RUN: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(needs.changes.outputs.changes || '{}')[matrix.name] == 'true' }}
+        run: echo "run=${SHOULD_RUN}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -105,7 +107,6 @@ jobs:
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.test_commit_sha }}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -152,7 +153,9 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(needs.changes.outputs.changes || '{}')[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        env:
+          SHOULD_RUN: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(needs.changes.outputs.changes || '{}')[matrix.id || matrix.name] == 'true' }}
+        run: echo "run=${SHOULD_RUN}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -322,3 +325,4 @@ jobs:
       - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: exit 1
       - run: echo "All checks passed"
+
