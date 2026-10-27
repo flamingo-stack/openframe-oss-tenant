@@ -14,15 +14,16 @@ data:
 ---
 
 # fleet reads its database wiring from this ConfigMap in the release namespace
-# (fleet.database.existingConfigMap); values must match the mysql rendered by
-# manifests/datasources/mysql-fleetmdm
+# (fleet.database.existingConfigMap); values are sourced from .Values.fleetmdmMysql
+# which must be kept in sync with manifests/datasources/mysql-fleetmdm (ideally via
+# a shared values file consumed by both charts)
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fleetmdm-mysql
 data:
-  MYSQL_USER: "fleet-mdm-user"
-  MYSQL_DATABASE: "fleet-mdm-database"
-  FLEET_MYSQL_HOST: "fleetmdm-mysql-0.fleetmdm-mysql.datasources.svc.cluster.local"
-  FLEET_MYSQL_PORT: "3306"
+  MYSQL_USER: {{ .Values.fleetmdmMysql.mysqlUser | quote }}
+  MYSQL_DATABASE: {{ .Values.fleetmdmMysql.mysqlDatabase | quote }}
+  FLEET_MYSQL_HOST: {{ .Values.fleetmdmMysql.fleetMysqlHost | quote }}
+  FLEET_MYSQL_PORT: {{ .Values.fleetmdmMysql.fleetMysqlPort | quote }}
 {{- end }}
