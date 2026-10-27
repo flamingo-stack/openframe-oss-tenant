@@ -1020,7 +1020,7 @@ jobs:
           FLAMINGO_TEST_SECRET_3: ${{ steps.plan.outputs.secret_3_name != '' && secrets[steps.plan.outputs.secret_3_name] || '' }}
         run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,mutation,check --out "$RUNNER_TEMP/stage2.json" --sweep --fail-on-failure
 
-      - name: Hand the results to the sweep's review
+      - name: Hand the results to the sweep review
         if: always() && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
         uses: actions/upload-artifact@v4
         with:
@@ -1029,7 +1029,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
-      - name: Summarize the sweep's tests and checks
+      - name: Summarize the sweep tests and checks
         if: always() && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
         run: |
           {
@@ -1529,7 +1529,7 @@ jobs:
       # A SWEEP reviews what its tests and checks found too (sweep_checks): their
       # stage2.json, which the reviewer turns into findings. Absent when that job
       # did not run or failed before writing it; the review runs either way.
-      - name: Take the sweep's tests and checks
+      - name: Take the sweep tests and checks
         if: env.MODE == 'sweep'
         continue-on-error: true
         uses: actions/download-artifact@v4
