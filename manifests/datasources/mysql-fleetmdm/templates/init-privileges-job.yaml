@@ -16,7 +16,7 @@ spec:
                 configMapKeyRef:
                   name: fleetmdm-mysql
                   key: MYSQL_USER
-            - name: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_PWD
               valueFrom:
                 secretKeyRef:
                   name: fleetmdm-mysql
@@ -31,15 +31,16 @@ spec:
             - -c
             - |
               echo "Waiting for MySQL to be ready..."
-              until mysql -h ${FLEET_MYSQL_HOST} -u root -p${MYSQL_ROOT_PASSWORD} -e "SELECT 1" 2>/dev/null; do
+              until mysql -h ${FLEET_MYSQL_HOST} -u root -e "SELECT 1" 2>/dev/null; do
                 echo "Still waiting for MySQL..."
                 sleep 5
               done
               
               echo "Granting Debezium privileges to ${MYSQL_USER}..."
-              mysql -h ${FLEET_MYSQL_HOST} -u root -p${MYSQL_ROOT_PASSWORD} -e "GRANT RELOAD, FLUSH_TABLES, REPLICATION CLIENT, REPLICATION SLAVE ON *.* TO '${MYSQL_USER}'@'%'; FLUSH PRIVILEGES;"
+              mysql -h ${FLEET_MYSQL_HOST} -u root -e "GRANT RELOAD, FLUSH_TABLES, REPLICATION CLIENT, REPLICATION SLAVE ON *.* TO '${MYSQL_USER}'@'%'; FLUSH PRIVILEGES;"
               
               echo "Verifying privileges..."
-              mysql -h ${FLEET_MYSQL_HOST} -u root -p${MYSQL_ROOT_PASSWORD} -e "SHOW GRANTS FOR '${MYSQL_USER}'@'%';"
+              mysql -h ${FLEET_MYSQL_HOST} -u root -e "SHOW GRANTS FOR '${MYSQL_USER}'@'%';"
               
               echo "MySQL user privileges configured successfully."
+
