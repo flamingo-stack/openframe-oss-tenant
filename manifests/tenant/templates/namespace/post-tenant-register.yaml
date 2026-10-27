@@ -30,6 +30,17 @@ spec:
         {{- with .Values.initImage.securityContext }}
         securityContext:
           {{- toYaml . | nindent 10 }}
+        {{- else }}
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
         {{- end }}
         command:
           - /bin/sh
@@ -53,3 +64,4 @@ spec:
             echo "Cluster Registration complete."
 
             echo "Keeping pod alive..." && sleep infinity
+
