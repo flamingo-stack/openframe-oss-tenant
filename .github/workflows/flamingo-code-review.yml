@@ -755,7 +755,7 @@ jobs:
           REVIEW_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
-        run: $HUB_NODE /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,check --base "${{ format('origin/{0}', github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref) }}"
+        run: $HUB_NODE /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,mutation,check --base "${{ format('origin/{0}', github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref) }}"
 
       - name: Set up java
         if: steps.plan.outputs.covered != '1' && steps.plan.outputs.java != ''
@@ -793,7 +793,7 @@ jobs:
           FLAMINGO_TEST_SECRET_2: ${{ steps.plan.outputs.secret_2_name != '' && secrets[steps.plan.outputs.secret_2_name] || '' }}
           FLAMINGO_TEST_SECRET_3_ENV: ${{ steps.plan.outputs.secret_3_env }}
           FLAMINGO_TEST_SECRET_3: ${{ steps.plan.outputs.secret_3_name != '' && secrets[steps.plan.outputs.secret_3_name] || '' }}
-        run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,check --out "$RUNNER_TEMP/stage2.json" --base "${{ format('origin/{0}', github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref) }}" --fail-on-failure
+        run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,mutation,check --out "$RUNNER_TEMP/stage2.json" --base "${{ format('origin/{0}', github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref) }}" --fail-on-failure
 
       - name: Post the tests and checks on the pull request
         if: always() && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
@@ -976,7 +976,7 @@ jobs:
           HUB_TOKEN: ${{ secrets.FLAMINGO_HUB_SECRET }}
           REVIEW_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: $HUB_NODE /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,check --sweep
+        run: $HUB_NODE /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,mutation,check --sweep
 
       - name: Set up java
         if: steps.plan.outputs.covered != '1' && steps.plan.outputs.java != ''
@@ -1014,7 +1014,7 @@ jobs:
           FLAMINGO_TEST_SECRET_2: ${{ steps.plan.outputs.secret_2_name != '' && secrets[steps.plan.outputs.secret_2_name] || '' }}
           FLAMINGO_TEST_SECRET_3_ENV: ${{ steps.plan.outputs.secret_3_env }}
           FLAMINGO_TEST_SECRET_3: ${{ steps.plan.outputs.secret_3_name != '' && secrets[steps.plan.outputs.secret_3_name] || '' }}
-        run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,check --out "$RUNNER_TEMP/stage2.json" --sweep --fail-on-failure
+        run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,mutation,check --out "$RUNNER_TEMP/stage2.json" --sweep --fail-on-failure
 
       - name: Hand the results to the sweep's review
         if: always() && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
