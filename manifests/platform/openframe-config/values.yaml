@@ -21,6 +21,8 @@ resources:
 podAnnotations:
   loki.grafana.com/scrape: "true"
   prometheus.io/scrape: "true"
+  prometheus.io/port: "8889"
+  prometheus.io/path: "/management/v1/prometheus"
 
 podSecurityContext:
   runAsNonRoot: true
@@ -40,3 +42,4 @@ securityContext:
       - ALL
   privileged: false
   readOnlyRootFilesystem: true
+
