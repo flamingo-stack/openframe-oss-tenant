@@ -52,9 +52,9 @@ jobs:
               exit 1
             fi
             IFS='.' read -r new_major new_minor new_patch <<< "$INPUT_VERSION"
-            if ! ([ "$new_major" -eq $((cur_major + 1)) ] && [ "$new_minor" -eq 0 ] && [ "$new_patch" -eq 0 ]) &&
-               ! ([ "$new_major" -eq "$cur_major" ] && [ "$new_minor" -eq $((cur_minor + 1)) ] && [ "$new_patch" -eq 0 ]) &&
-               ! ([ "$new_major" -eq "$cur_major" ] && [ "$new_minor" -eq "$cur_minor" ] && [ "$new_patch" -eq $((cur_patch + 1)) ]); then
+            if ! { [ "$new_major" -eq $((cur_major + 1)) ] && [ "$new_minor" -eq 0 ] && [ "$new_patch" -eq 0 ]; } &&
+               ! { [ "$new_major" -eq "$cur_major" ] && [ "$new_minor" -eq $((cur_minor + 1)) ] && [ "$new_patch" -eq 0 ]; } &&
+               ! { [ "$new_major" -eq "$cur_major" ] && [ "$new_minor" -eq "$cur_minor" ] && [ "$new_patch" -eq $((cur_patch + 1)) ]; }; then
               echo "Invalid version bump: ${latest} -> ${INPUT_VERSION} (expected $((cur_major + 1)).0.0, ${cur_major}.$((cur_minor + 1)).0, or ${cur_major}.${cur_minor}.$((cur_patch + 1)))"
               exit 1
             fi
@@ -63,3 +63,4 @@ jobs:
           fi
 
           echo "version=${version}" >> "$GITHUB_OUTPUT"
+
