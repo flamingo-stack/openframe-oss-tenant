@@ -595,8 +595,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Reads the stage 2 check run a developer's machine posted on this commit.
-      checks: read
+      # Reads the stage 2 check run a developer's machine posted on this commit, and publishes this job's result on the
+      # pull request's head when a comment started the run (the job's own check lands on the default branch's commit).
+      checks: write
       # A repository may map the job's own token for its package registry
       # (secret.GITHUB_TOKEN = GITHUB_TOKEN): reading packages, nothing else.
       packages: read
@@ -804,6 +805,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
           WF_RUN_ID: ${{ github.run_id }}
           REVIEW_STAGE2_FILE: ${{ runner.temp }}/stage2.json
+          # A comment-started run's result, published on the PR head under the required check's name.
+          TESTS_CHECK_NAME: ${{ github.event_name == 'issue_comment' && 'Flamingo Code Review / tests and checks' || '' }}
+          TESTS_OUTCOME: ${{ steps.run.outcome }}
         run: |
           if grep -aq -- "argv.includes('--tests')" /tmp/code-review-post.mjs; then
             "$HUB_NODE" /tmp/code-review-post.mjs --tests
