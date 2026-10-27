@@ -105,7 +105,6 @@ jobs:
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.test_commit_sha }}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
