@@ -35,11 +35,13 @@ public class LogsEventListener {
     )
     public void listenLogsEvents(@Payload CommonDebeziumMessage message,
                                  @Header(KafkaHeader.MESSAGE_TYPE_HEADER) MessageType messageType) {
+        log.info("Received logs-event: type={}", messageType);
         try {
-            log.info("Received logs-event: type={}", messageType);
             messageProcessor.process(message, messageType);
         } catch (Exception e) {
             log.error("Failed to process logs-event: type={}", messageType, e);
+            throw e;
         }
     }
 }
+
