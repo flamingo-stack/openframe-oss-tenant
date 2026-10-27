@@ -225,7 +225,7 @@ jobs:
           RUST_TARGET_x64=${ARCHITECTURES[1]}
           RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
           RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
-          lipo -create ${{ matrix.target_path }}/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ${{ matrix.target_path }}/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
+          lipo -create "${{ matrix.target_path }}/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }}" "${{ matrix.target_path }}/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }}" -output "./artifacts/${{ env.BINARY_NAME }}"
 
           echo "Verify macOS openframe universal package"
           lipo -info ./artifacts/${{ env.BINARY_NAME }}
@@ -322,3 +322,4 @@ jobs:
       - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: exit 1
       - run: echo "All checks passed"
+
