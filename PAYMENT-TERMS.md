@@ -1,7 +1,7 @@
 # Flamingo AI Payment Terms
 
-**Version:** 1.1  
-**Effective date:** October 26, 2026  
+**Version:** 1.2  
+**Effective date:** October 28, 2026  
 **Applies to:** Paid plans of OpenFrame SaaS, the OpenFrame service hosted by Flamingo AI
 
 
@@ -29,11 +29,11 @@
 
 **3.1 Devices, pay as you go.** Devices are billed after each monthly billing period at the pay-as-you-go rate in force for that period, with a minimum of 10 devices per period.
 
-**3.2 Devices, yearly package.** You buy a package for a number of devices (minimum 10) for 12 months and pay for the 12 months in advance. In each monthly billing period the package covers that number of devices, except in the month of an upgrade (section 4.1). Devices above it are billed after each monthly period at the pay-as-you-go rate.
+**3.2 Devices, yearly package.** You buy a package for a number of devices (minimum 10) for a package year (section 3.4) and pay for it in advance. In each monthly billing period the package covers that number of devices, except in the month of an upgrade (section 4.1). Devices above it are billed after each monthly period at the pay-as-you-go rate.
 
 **3.3 How devices are counted.** A managed device is a device in Your organization whose status is Online or Offline. For each calendar day (UTC) we record the highest number of managed devices that day. Your device count for a monthly period is the sum of those daily numbers divided by the number of days in the period, rounded up to a whole device. For example, 100 devices kept for 15 days of a 30-day period count as 50 devices. The day You activate a paid plan is not counted. The running figure is shown on the Billing page.
 
-**3.4 Billing period.** A monthly billing period starts on the day of the month You activated and ends the day before that day in the next month. A yearly package renews on the anniversary of its purchase.
+**3.4 Billing period.** A monthly billing period starts on the day of the month You activated and ends the day before that day in the next month. A package year runs from the anniversary of Your activation. A package bought later, including one bought in place of pay as you go, first covers the rest of the current package year, charged as in section 4.1, and then renews on that anniversary.
 
 **3.5 Included AI tokens.** Each paid plan includes free OpenFrame tokens in every monthly period; the amount is shown in the product. Free tokens that are not used by the end of the period expire. Usage beyond them is paid from tokens You buy (section 5).
 
