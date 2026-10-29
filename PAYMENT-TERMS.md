@@ -1,7 +1,7 @@
 # Flamingo AI Payment Terms
 
-**Version:** 1.2  
-**Effective date:** October 28, 2026  
+**Version:** 1.3  
+**Effective date:** October 29, 2026  
 **Applies to:** Paid plans of OpenFrame SaaS, the OpenFrame service hosted by Flamingo AI
 
 
@@ -57,7 +57,7 @@
 
 **5.3 Order of use.** Free tokens are used first, then purchased tokens, oldest purchase first.
 
-**5.4 Expiry.** Purchased tokens expire 12 months after the date of purchase. The expiry date is shown on the invoice and on the Billing page. We email the account owner 30 days before a balance of purchased tokens expires.
+**5.4 Expiry.** Purchased tokens expire 12 months after purchase. The expiry date is set when You buy and is shown at checkout for the tokens bought at activation, on the invoice for every other purchase, and on the Billing page. We email the account owner 30 days before a balance of purchased tokens expires.
 
 **5.5 No cash value.** Tokens are not money. They cannot be transferred or sold, can be used only by the organization that bought them, and are not refundable except as stated in section 9.
 
