@@ -133,6 +133,16 @@ jobs:
             while IFS= read -r l; do [ -n "$l" ] && args+=(--label "$l"); done <<< "$META_LABELS"
             docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
 
+      # The image built above, amd64 from this job's builder cache, so no second build. A fixable
+      # HIGH/CRITICAL finding fails the leg and All Checks goes red.
+      - name: Scan image
+        if: steps.should_run.outputs.run == 'true'
+        uses: ./.github/steps/trivy
+        with:
+          name: ${{ matrix.name }}
+          dockerfile: ${{ matrix.path }}/Dockerfile
+          context: ${{ matrix.context || matrix.path }}
+
   test_clients:
     name: "Test Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
     needs: [changes]
