@@ -1,0 +1,91 @@
+name: "Trivy Image Scan"
+description: "Trivy scan of a service image with its jars, built amd64 from dockerfile. Writes fixable HIGH/CRITICAL findings to the trivy-<name> artifact and the job summary, and fails on any. Runs after actions/checkout and docker/setup-buildx-action (in test.yml the job's own builder, so the image build's cache is reused)."
+
+inputs:
+  name:
+    description: "Names the report file, its artifact and the job summary"
+    required: true
+  dockerfile:
+    required: true
+  context: { default: "." }
+  maven-token: { default: "${{ github.token }}" }
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Trivy
+      uses: aquasecurity/setup-trivy@v0.3.1
+      with:
+        version: v0.76.1
+        cache: true  # the binary only
+
+    - name: Get the date
+      id: date
+      shell: bash
+      run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+    # The vulnerability and Java DBs (129 + 941 MB) cached per day, as aquasecurity/trivy-action does.
+    # Trivy downloads a DB again only past its NextUpdate.
+    - name: Cache the Trivy DBs
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/.cache/trivy/db
+          ~/.cache/trivy/java-db
+        key: trivy-dbs-${{ steps.date.outputs.date }}
+        restore-keys: trivy-dbs-
+
+    - name: Scan image
+      shell: bash
+      env:
+        REPORT: trivy-${{ inputs.name }}.tsv
+        GITHUB_TOKEN: ${{ inputs.maven-token }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        DOCKERFILE: ${{ inputs.dockerfile }}
+        CONTEXT: ${{ inputs.context }}
+      run: |
+        set -euo pipefail
+        # Same 30 min cap as the image build steps.
+        timeout 30m docker buildx build --platform linux/amd64 --secret id=GITHUB_TOKEN,env=GITHUB_TOKEN --build-arg GITHUB_ACTOR="$GITHUB_ACTOR" \
+          -f "$DOCKERFILE" --output type=docker,dest=/tmp/image.tar "$CONTEXT"
+        # apk upgrade fixes OS CVEs once Alpine publishes the package; jar CVEs need a dependency bump.
+        # Trivy's own default timeout is 5m, short for a large image on a slow runner.
+        # One TSV row per finding: severity, package, installed, fixed, ID, target (a jar's path).
+        trivy image --timeout 15m --no-progress --skip-version-check --cache-dir "$HOME/.cache/trivy" --scanners vuln --pkg-types "os,library" --severity "HIGH,CRITICAL" --ignore-unfixed \
+          --format json --input /tmp/image.tar |
+          jq -r '.Results[]? as $r | ($r.Vulnerabilities // [])[]
+            | [.Severity, .PkgName, .InstalledVersion, (.FixedVersion // "-"), .VulnerabilityID, (.PkgPath // $r.Target)] | @tsv' |
+          sort -u > "$REPORT"
+
+    - name: Upload report
+      id: upload
+      uses: actions/upload-artifact@v7
+      with:
+        name: "trivy-${{ inputs.name }}"
+        path: trivy-${{ inputs.name }}.tsv
+        if-no-files-found: error
+        retention-days: 7
+        overwrite: true  # a re-run of the job uploads it again
+
+    - name: Summarize
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        REPORT: trivy-${{ inputs.name }}.tsv
+        REPORT_URL: ${{ steps.upload.outputs.artifact-url }}
+      run: |
+        set -euo pipefail
+        [ -s "$REPORT" ] || { echo "No HIGH/CRITICAL findings."; exit 0; }
+        { printf 'SEVERITY\tPACKAGE\tINSTALLED\tFIXED\tID\tTARGET\n'; sort "$REPORT"; } | column -t -s "$(printf '\t')"
+        ids=$(cut -f5 "$REPORT" | sort -u | wc -l | tr -d ' ')
+        {
+          echo "### Trivy $NAME, HIGH/CRITICAL IDs: $ids"
+          echo
+          echo "| Severity | Package | Installed | Fixed | ID | Target |"
+          echo "|---|---|---|---|---|---|"
+          sort "$REPORT" | awk -F'\t' -v OFS=' | ' '{ $1 = $1; print "| " $0 " |" }'
+          echo
+          echo "Full report: $REPORT_URL"
+        } >> "$GITHUB_STEP_SUMMARY"
+        echo "::error title=Trivy $NAME::HIGH/CRITICAL IDs: $ids. See the job summary"
+        exit 1
