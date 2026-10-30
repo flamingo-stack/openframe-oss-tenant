@@ -1,3 +1,11 @@
-# Vulnerabilities to skip in the Trivy scan: one CVE/GHSA id per line, e.g.:
+# Findings to skip in the Trivy scans: a CVE, GHSA or check ID (e.g. DS-0002), one per line.
+# Reason and owner go on a comment line above it, an expiry on the ID line, e.g.:
 #
-# CVE-2026-12345
+# CVE-2026-12345 exp:2026-12-31
+
+# snappy-java 1.1.10.8 in every service image (via pinot-java-client), not pinned in pom.xml; fix: pin snappy-java 1.1.10.12 (1.1.10.9 still has two HIGH advisories fixed in 1.1.10.10). Owner: @flamingo-stack/backend-engineers
+CVE-2026-93451 exp:2027-01-31
+CVE-2026-108106 exp:2027-01-31
+
+# guava 33.5.0-jre in every service image but openframe-gateway (33.6.0-android), plus 32.1.2 shaded inside graphql-java in openframe-api, not pinned in pom.xml; fix: pin guava 33.7.2-jre as openframe-saas-tenant does (the shaded copy waits for a graphql-java release that shades guava >= 33.7.2). Owner: @flamingo-stack/backend-engineers
+CVE-2026-102554 exp:2027-01-31
