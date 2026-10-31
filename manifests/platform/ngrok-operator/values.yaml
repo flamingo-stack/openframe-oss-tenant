@@ -6,7 +6,11 @@ ngrok-operator:
     tag: "0.19.1"
 
   credentials:
-    apiKey: "2zXpZ8Ka8DYjdNKXYcv4VznABha_7Laa3fUvZX5gyTt3kEat"
-    authtoken: "2yv5cuRsSW6gKpaaweVRzCNKYk9_6pozz69uPtSQT4vZ2uHpL"
+    # Do NOT hardcode real credentials here. Values below are non-functional
+    # placeholders; real credentials must be sourced from Secret Manager via
+    # an externalSecret / env-var reference (see OPENFRAM-001-16, OPENFRAM-001-9).
+    apiKey: "REPLACE_WITH_EXTERNAL_SECRET_REFERENCE"
+    authtoken: "REPLACE_WITH_EXTERNAL_SECRET_REFERENCE"
+
 
 
