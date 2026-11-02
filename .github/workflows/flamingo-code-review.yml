@@ -2,7 +2,7 @@
 # Per-repo settings live in the hub admin (/admin/code-review); this file is
 # byte-identical across every reviewed repository AND every deployment, which
 # is what makes drift detectable by comparison. The hub's address arrives in
-# the dispatch payload (doc-orchestrator style) or, for pull_request runs, the
+# the dispatch payload (Code Documentation style) or, for pull_request runs, the
 # org Actions variable FLAMINGO_HUB_BASE_URL.
 # Named like its sibling pipeline ('🦩 Flamingo Code Documentation') so both
 # read as one product family in the Actions sidebar.
@@ -11,31 +11,26 @@ name: 🦩 Flamingo Code Review
 on:
   # Push trigger - registers workflow with GitHub Actions (required for
   # workflow_dispatch API). Only fires when this file itself changes; the job
-  # skips it — same pattern as the doc-orchestrator workflow.
+  # skips it — same pattern as the Code Documentation workflow.
   push:
     paths:
       - '.github/workflows/flamingo-code-review.yml'
 
-  # ENTERS-REVIEW ONLY (2026-08-12; corrected 2026-09-07). The automatic
-  # triggers are the moments a pull request ENTERS review, and nothing else.
+  # REVIEWED ON REQUEST (2026-10-04). Nothing is reviewed automatically when a
+  # pull request ENTERS review ('opened' / 'ready_for_review' / 'reopened'): a
+  # pull request rarely holds everything a review needs at the moment it is
+  # opened, so that first pass was mostly spent on a change that was not
+  # finished. Those three events now run the small 'invite' job below, which
+  # posts the summary comment as an INVITATION; its checkbox (or the comment
+  # command, or the label) starts the first review when the author is ready.
+  # A draft gets its invitation on ready_for_review.
   #
-  # 'synchronize' (per-push) stays deliberately OFF. Reviewing every commit on
-  # an open PR is the largest avoidable cost in an AI review pipeline, and it
-  # trains authors to tune the bot out; the 2026 industry default is to review
-  # at review moments and offer an explicit re-review on demand.
+  # 'synchronize' (per-push) is not a review moment either. Reviewing every
+  # commit on an open PR is the largest avoidable cost in an AI review
+  # pipeline, and it trains authors to tune the bot out.
   #
-  # 'opened' and 'reopened' were OFF between 2026-08-15 and 2026-09-07, on the
-  # assumption that PRs are opened as drafts and later promoted. They are not
-  # — PRs here are born non-draft, GitHub NEVER fires ready_for_review for
-  # those, and so the automatic review effectively never ran. Drafts stay
-  # excluded: an 'opened' event for a draft is dropped by the job's
-  # draft == false guard, and that PR is reviewed later, on its
-  # ready_for_review.
-  #
-  # 'labeled' is the on-demand re-review — the affordance that makes the
-  # no-per-push default liveable. Commits pushed AFTER the first review are not
-  # auto-reviewed, so adding the flamingo-review label is how a human
-  # asks for another pass. A SEPARATE job removes it the moment the event
+  # 'labeled' is the on-demand review from the sidebar: adding the
+  # flamingo-review label asks for a pass, the first one or another. A SEPARATE job removes it the moment the event
   # arrives, so adding it again asks again, and it can never strand itself on a
   # pull request the review gate declines. Every other label name is dropped by
   # the job's if — a skipped run, zero billable minutes.
@@ -51,16 +46,23 @@ on:
   # 'synchronize' (every push) is otherwise here ONLY to serve the
   # flamingo-review-always label, and the job's if drops it on every pull
   # request that does not carry it. That is the per-PR escalation: subscribe the
-  # risky refactor to continuous review, leave everything else on one review per
-  # pull request. A skipped push run costs no billable minutes.
+  # risky refactor to continuous review, leave everything else to be reviewed
+  # when asked. A skipped push run costs no billable minutes.
   #
   # Every repeat pass diffs only the delta since the last reviewed head — see
   # the incremental anchor in code-review-review.mjs.
   pull_request:
     types: [opened, ready_for_review, reopened, labeled, synchronize]
 
-  # THE PRIMARY MANUAL TRIGGER (2026-09-08). A new top-level pull-request
-  # comment beginning with '@flamingo-review' asks for another pass;
+  # The merge queue: a repository whose ruleset requires the tests-and-checks
+  # check needs a report on the queued merge, or the queue waits forever. The
+  # tests job is SKIPPED there (it runs on request only), and a skipped job is
+  # the report a required check accepts.
+  merge_group:
+    types: [checks_requested]
+
+  # THE PRIMARY TRIGGER (2026-09-08). A new top-level pull-request
+  # comment beginning with '@flamingo-review' asks for a pass;
   # '@flamingo-review full' additionally overrules the incremental anchor
   # and re-reads the whole cumulative diff.
   #
@@ -76,7 +78,8 @@ on:
   # 'edited' is the CHECKBOX lane — the closest thing a GitHub comment has to a
   # button, and the same mechanism CodeRabbit uses for its clickable actions.
   # Checking a task-list box in the summary comment edits that comment, which
-  # fires issue_comment.edited; the boxes are the two commands, clickable.
+  # fires issue_comment.edited; the boxes are the two commands, clickable, and
+  # the invitation's single box is the first review.
   #
   # Its costs are real and accepted, not overlooked: 'edited' fires on EVERY
   # comment edit in the repository, so an unrelated typo fix evaluates this
@@ -130,7 +133,7 @@ on:
         required: false
         default: 'sweep'
       hub_base_url:
-        description: 'Absolute hub origin. Dispatches carry it doc-orchestrator style; pull_request runs fall back to the org/repo Actions variable FLAMINGO_HUB_BASE_URL (shipped by Sync Secrets).'
+        description: 'Absolute hub origin. Dispatches carry it Code Documentation style; pull_request runs fall back to the org/repo Actions variable FLAMINGO_HUB_BASE_URL (shipped by Sync Secrets).'
         required: false
         default: ''
       review_budget_chars:
@@ -142,7 +145,7 @@ on:
     # ═══════════════════════════════════════════════════════════════════════════
 
 # GENERATED FROM SINGLE SOURCE OF TRUTH: CODE_REVIEW_PARAMS (this module)
-# The doc-orchestrator's parameter chain for EVERY dispatch param: payload
+# The Code Documentation parameter chain for EVERY dispatch param: payload
 # first, workflow_dispatch input second, then the param's runtime fallback.
 # Workflow-level, so every dispatch var reaches every step and every
 # downloaded script. SECURITY: only NON-SENSITIVE values live here — secrets
@@ -164,16 +167,6 @@ permissions:
   contents: read
   pull-requests: write
   checks: write
-  # Cache SAVE needs it. With an explicit permissions block every unlisted
-  # scope is 'none', so actions/cache could restore but not reserve a key and
-  # every run ended with "Failed to save: ... cache write denied: token has no
-  # writable scopes" — the corpus 304 path silently never worked. The path
-  # is reachable only from a corpus-only fetch (see the cache step), so this
-  # scope buys a rehearsal-lane saving and nothing on a production trigger.
-  # NECESSARY, NOT SUFFICIENT: an untrusted trigger (issue_comment) gets a
-  # read-only cache token whatever this block grants, which is why the save
-  # step below runs on workflow_dispatch only.
-  actions: write
 
 jobs:
   # Consuming the label is its OWN job, gated on nothing but "that label was
@@ -256,7 +249,8 @@ jobs:
         github.event.comment.user.type == 'Bot' &&
         github.event.sender.type != 'Bot' &&
         (contains(github.event.comment.body, '[x] Review the new commits') ||
-         contains(github.event.comment.body, '[x] Review the whole diff again'))))
+         contains(github.event.comment.body, '[x] Review the whole diff again') ||
+         contains(github.event.comment.body, '[x] Review this pull request'))))
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -341,7 +335,7 @@ jobs:
           }
 
           if [ -z "$HEAD_SHA" ]; then
-            refuse "🦩 Could not read this pull request from the GitHub API, so the review was not started. Try the command again."
+            refuse "🦩 **Review not started.** This pull request could not be read from the GitHub API. Ask again in a moment."
           fi
 
           # The SAME two exclusions the review job applies to every other
@@ -349,10 +343,10 @@ jobs:
           # from. A fork additionally cannot be waived by any command: this run
           # holds a write token.
           if [ "$HEAD_REPO" != "$REPO_FULL" ]; then
-            refuse "🦩 This pull request comes from a fork, so it is not reviewed automatically. Dispatch it from the Flamingo hub instead."
+            refuse "🦩 **Review not started.** This pull request comes from a fork, and a fork cannot be reviewed from a comment. Start it from the Flamingo hub (Code Review) instead."
           fi
           if [ "$AUTHOR_TYPE" = "Bot" ]; then
-            refuse "🦩 This pull request was opened by a bot, so it is not reviewed automatically. Dispatch it from the Flamingo hub instead."
+            refuse "🦩 **Review not started.** This pull request was opened by a bot, and a bot's pull request cannot be reviewed from a comment. Start it from the Flamingo hub (Code Review) instead."
           fi
 
           # DRAFTS ARE ALLOWED — same rule the on-demand label already follows:
@@ -387,8 +381,7 @@ jobs:
           # trigger workflows — so it cannot loop back into this job.
           if [ "$EVENT_ACTION" = "edited" ]; then
             printf '%s' "$COMMENT_BODY" \
-              | sed -e 's/\[x\] Review the new commits/[ ] Review the new commits/' \
-                    -e 's/\[x\] Review the whole diff again/[ ] Review the whole diff again/' \
+              | sed -e 's/\[x\] Review the new commits/[ ] Review the new commits/' -e 's/\[x\] Review the whole diff again/[ ] Review the whole diff again/' -e 's/\[x\] Review this pull request/[ ] Review this pull request/' \
               | jq -Rs '{body: .}' \
               | curl -sS --max-time 30 -K "$CURL_CFG" -X PATCH \
                   -H "Accept: application/vnd.github+json" \
@@ -403,67 +396,28 @@ jobs:
             echo "full=$FULL"
           } >> "$GITHUB_OUTPUT"
 
-  review:
-    # Superseding a PR cancels the in-flight review of the stale head SHA; the
-    # fresh run reviews (and reports on) the new one. The always() report step
-    # still fires on the cancelled job, so its row records 'cancelled' rather
-    # than dangling. Job-level on purpose — see the note above permissions.
-    concurrency:
-      group: flamingo-code-review-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
-      cancel-in-progress: true
-    # Skip actual work when triggered by push (push only registers the
-    # workflow with GitHub, which is what lets workflow_dispatch target a
-    # setup branch before the install PR merges).
-    # Bots and forks never run, on EVERY event. A fork PR's token is read-only,
-    # so the run could not post a comment or a check even if it finished; the
-    # bot clause is what stops a hub-opened ai-fix PR from being reviewed into
-    # another fix PR, and no label may waive it — "only a human applies a
-    # label" is an assumption, not an invariant, since anything holding
-    # pull-requests: write can label. To review a bot PR, dispatch it from the
-    # hub admin, which is an authenticated, recorded decision.
-    #
-    # DRAFT is different, and only the on-demand label waives it: an explicit
-    # request says "review this now" and means it whether or not the PR is
-    # finished, which is how every comparable tool treats its manual trigger.
-    # Automatic events and subscribed pushes still skip drafts.
-    # NOTE: there is deliberately no vars. kill switch here. The hub's
-    # per-repo enabled dial already covers it and answers 409 REVIEW_DISABLED,
-    # which produces a recorded run. A second switch living in GitHub would be
-    # invisible to the admin screen and would produce no callback at all.
-    #
-    # A COMMENT COMMAND arrives here already judged: resolve_command made the
-    # API calls this expression cannot, and its 'proceed' carries the same two
-    # exclusions (fork, bot) plus the "is it really a pull request" answer.
-    #
-    # 'needs' therefore requires always(): on every OTHER event resolve_command
-    # is skipped, and a skipped dependency would otherwise skip this job too —
-    # i.e. adding the comment trigger would have silently disabled every
-    # existing trigger. always() re-admits them; the clauses below still decide.
-    needs: [resolve_command]
+  # A pull request that ENTERS review is INVITED, not reviewed. This job posts
+  # the summary comment with one checkbox; ticking it (or typing the command)
+  # is what starts the first review, through resolve_command above. It asks the
+  # hub first, so a repository whose review is switched off gets no invitation
+  # to a review that would not run; a hub that cannot be reached still gets
+  # one, because the invitation promises nothing about this moment. It reports
+  # nothing to the hub: no run row, and above all no reviewed-head anchor, which
+  # would make the first real review skip everything up to this commit.
+  #
+  # The gate is the one the automatic review used to have: never a bot's pull
+  # request (a hub-opened fix PR), never a fork (read-only token), never a draft.
+  invite:
     if: >-
-      always() &&
-      github.event_name != 'push' &&
-      (github.event_name == 'repository_dispatch' ||
-       needs.resolve_command.outputs.proceed == 'true' ||
-       github.event_name == 'workflow_dispatch' ||
-       (github.event.pull_request.user.type != 'Bot' &&
-        github.event.pull_request.head.repo.full_name == github.repository &&
-        ((github.event.action == 'labeled' && github.event.label.name == 'flamingo-review') ||
-         (github.event.action == 'synchronize' &&
-          (contains(github.event.pull_request.labels.*.name, 'flamingo-review') ||
-           (github.event.pull_request.draft == false &&
-            contains(github.event.pull_request.labels.*.name, 'flamingo-review-always')))) ||
-         (github.event.action != 'labeled' &&
-          github.event.action != 'synchronize' &&
-          github.event.pull_request.draft == false))))
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.type != 'Bot' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.action != 'labeled' &&
+      github.event.action != 'synchronize' &&
+      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    # NO custom timeout-minutes — deliberately. GitHub's 6h hosted-runner
-    # ceiling is the only clock: on hitting it the always() report step still
-    # runs, so a sweep ships its per-batch checkpoint home and the NEXT sweep
-    # resumes from the covered files (nothing is lost, nothing re-paid). Hung
-    # runs are the hub reaper's job (run-safety-net-utils.ts, no-report cutoff
-    # sized past the platform ceiling) — a second hand-tuned ceiling here was
-    # one more number to keep in sync for no added safety.
+    permissions:
+      pull-requests: write
     steps:
       # Fail LOUD, not silent: a pull_request run on a repo whose org never set
       # FLAMINGO_HUB_BASE_URL would otherwise curl an empty origin and die with
@@ -478,14 +432,9 @@ jobs:
           fi
           echo "HUB_BASE_URL=${HUB_BASE_URL%/}" >> "$GITHUB_ENV"
 
-      # REPORT CAPABILITY FIRST. Only workflow-helpers.sh + code-review-report.sh
-      # download here — before checkout, cache, or any other script — so every
-      # later failure (including the download step for the REST of the scripts
-      # 404ing or hash-mismatching, the class that produced phantom 'running'
-      # rows) still has a verified report script to call home with.
-      - name: Download the report script
+      - name: Download the review scripts from the hub
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
         run: |
           set -euo pipefail
 
@@ -495,10 +444,8 @@ jobs:
           CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
           trap 'rm -f "$CURL_CFG"' EXIT
           printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
-          # The canonical scripts surface and the pre-rename one. load_script_manifest
-          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
-          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
           # The manifest is asked for ONE group: its keys are the files to download.
@@ -530,12 +477,6 @@ jobs:
           # load_script_manifest <group>
           load_script_manifest() {
             SCRIPT_GROUP="$1"
-            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
-            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
-            # workflow file ships in the repo and the routes ship with the deployment,
-            # so the two are one version apart in BOTH directions across the rollout.
-            # Probe the canonical surface, fall back to the legacy one, and let the
-            # winner decide SCRIPTS_BASE_URL for every download that follows.
             # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
             # errexit fires before rc is read and the step ends with NO output. And
             # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
@@ -550,18 +491,695 @@ jobs:
             fi
             if [ "$rc" = "2" ]; then exit 1; fi
 
-            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
-            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
+            # No manifest on the scripts surface: a hub older than the manifest
+            # itself. The manifest is the file list, so there is nothing to download.
+            echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
+            exit 1
+          }
 
-            rc=0
-            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
+          # download_script_group <group> — the hub names the files, this workflow
+          # names only the group. Downloads every script of the group, in served order.
+          download_script_group() {
+            load_script_manifest "$1"
+            local name
+            # The loop runs in THIS shell (no pipe), so a failed download exits the step.
+            while IFS= read -r name; do
+              download_and_verify "$name"
+            done < <(jq -r 'keys_unsorted[]' "$SCRIPT_MANIFEST")
+          }
+
+          download_and_verify() {
+            local script_name="$1"
+            local output_path="/tmp/$script_name"
+
+            local expected_hash
+            expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+            if [ -z "$expected_hash" ]; then
+              echo "❌ $script_name is not in the server's script manifest!"
+              echo "   The hub serves no such script, or it failed to read on the server."
+              exit 1
+            fi
+            if ! printf '%s' "$expected_hash" | grep -Eq '^[0-9a-f]{64}$'; then
+              echo "❌ the manifest entry for $script_name is not a SHA-256 digest — refusing to run it."
+              exit 1
+            fi
+
+            curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
+              -K "$CURL_CFG" \
+              -o "$output_path"
+
+            local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
+
+            if [ "$actual_hash" != "$expected_hash" ]; then
+              echo "❌ HASH MISMATCH for $script_name!"
+              echo "   Expected: $expected_hash"
+              echo "   Actual:   $actual_hash"
+              echo "   The download was corrupted in transit — both values come from the same deployment."
+              exit 1
+            fi
+
+            # Make shell scripts executable
+            if [[ "$script_name" == *.sh ]]; then
+              chmod +x "$output_path"
+            fi
+
+            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
+          }
+
+          download_script_group "review"
+
+      - name: Ask the hub whether this repository is reviewed
+        id: rules
+        env:
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: /tmp/code-review-fetch-rules.sh
+
+      - name: Invite a review on the pull request
+        if: steps.rules.outputs.skip != 'true' || steps.rules.outputs.skip_kind == 'corpus_unavailable'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          WF_RUN_ID: ${{ github.run_id }}
+        run: |
+          if grep -aq -- "argv.includes('--invite')" /tmp/code-review-post.mjs; then
+            node /tmp/code-review-post.mjs --invite
+          else
+            echo "the hub's post.mjs predates --invite — the pull request gets no invitation; the comment command still starts a review"
+          fi
+
+  # ON REQUEST, never on a plain push: the moments the review job runs (the
+  # on-demand label, the comment command or a checkbox, a subscribed push).
+  # Skipped otherwise, which a required check accepts. Never a fork or a bot.
+  # A newer request cancels the run of the stale head.
+  tests:
+    name: Flamingo Code Review / tests and checks
+    concurrency:
+      group: flamingo-tests-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+      cancel-in-progress: true
+    # always(): resolve_command is skipped on every event but a comment, and a
+    # skipped dependency would otherwise skip this job too.
+    needs: [resolve_command]
+    if: >-
+      always() &&
+      (needs.resolve_command.outputs.proceed == 'true' ||
+       (github.event_name == 'pull_request' &&
+        (github.event.pull_request.user.type != 'Bot' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        ((github.event.action == 'labeled' && github.event.label.name == 'flamingo-review') ||
+         (github.event.action == 'synchronize' &&
+          (contains(github.event.pull_request.labels.*.name, 'flamingo-review') ||
+           (github.event.pull_request.draft == false &&
+            contains(github.event.pull_request.labels.*.name, 'flamingo-review-always'))))))))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Reads the stage 2 check run a developer's machine posted on this commit, and publishes this job's result on the
+      # pull request's head when a comment started the run (the job's own check lands on the default branch's commit).
+      checks: write
+      # A repository may map the job's own token for its package registry
+      # (secret.GITHUB_TOKEN = GITHUB_TOKEN): reading packages, nothing else.
+      packages: read
+      pull-requests: write
+    steps:
+      # Fail LOUD, not silent: a pull_request run on a repo whose org never set
+      # FLAMINGO_HUB_BASE_URL would otherwise curl an empty origin and die with
+      # an unrelated error. Also normalizes a trailing slash ONCE for every
+      # downstream consumer (a value of https://hub.example/ would otherwise
+      # yield //api double-slash paths in four places).
+      - name: Validate configuration
+        run: |
+          if [ -z "$HUB_BASE_URL" ]; then
+            echo "::error::HUB_BASE_URL is empty — set the org Actions variable FLAMINGO_HUB_BASE_URL (or pass hub_base_url in the dispatch payload)."
+            exit 1
+          fi
+          echo "HUB_BASE_URL=${HUB_BASE_URL%/}" >> "$GITHUB_ENV"
+
+      - name: Check out the change
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Download the tests runner from the hub
+        env:
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
+        run: |
+          set -euo pipefail
+
+          SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # WEBHOOK_SECRET reaches curl through a 0600 config file, never argv — see
+          # curlAuthPreamble, which always traps the removal.
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
+          CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
+
+          # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          # The manifest is asked for ONE group: its keys are the files to download.
+          _try_manifest() {
+            local base="$1" code
+            code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
+              -K "$CURL_CFG" \
+              "$base/manifest.json?group=$SCRIPT_GROUP") || code="000"
+
+            if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
+            if [ "$code" != "200" ]; then
+              echo "❌ manifest request to $base failed (HTTP $code)"
+              rm -f "$SCRIPT_MANIFEST"
+              return 2
+            fi
+            # The digests are the TOP-LEVEL object. successResponse is the standard
+            # emitter but it does NOT add a wrapper — it is NextResponse.json(data)
+            # plus the no-store header — so there is no .data to reach through.
+            # A 200 that is not a manifest is how a hub which does not serve this path
+            # answers (the proxy rewrites unknown routes and returns HTML), so it
+            # means "wrong surface", not "corrupt".
+            if ! jq -e 'type == "object" and length > 0 and (to_entries | all(.value | type == "string"))' "$SCRIPT_MANIFEST" >/dev/null 2>&1; then
+              rm -f "$SCRIPT_MANIFEST"
+              return 1
+            fi
+            return 0
+          }
+
+          # load_script_manifest <group>
+          load_script_manifest() {
+            SCRIPT_GROUP="$1"
+            # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
+            # errexit fires before rc is read and the step ends with NO output. And
+            # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
+            # the NEGATION (0), so every failure reads as success. "|| rc=$?" is the
+            # one form that both suppresses errexit and preserves the real code.
+            local rc=0
+            _try_manifest "$CI_SCRIPTS_URL" || rc=$?
             if [ "$rc" = "0" ]; then
+              SCRIPTS_BASE_URL="$CI_SCRIPTS_URL"
               echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
               return 0
             fi
             if [ "$rc" = "2" ]; then exit 1; fi
 
-            # Neither surface published a manifest: a hub older than the manifest
+            # No manifest on the scripts surface: a hub older than the manifest
+            # itself. The manifest is the file list, so there is nothing to download.
+            echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
+            exit 1
+          }
+
+          # download_script_group <group> — the hub names the files, this workflow
+          # names only the group. Downloads every script of the group, in served order.
+          download_script_group() {
+            load_script_manifest "$1"
+            local name
+            # The loop runs in THIS shell (no pipe), so a failed download exits the step.
+            while IFS= read -r name; do
+              download_and_verify "$name"
+            done < <(jq -r 'keys_unsorted[]' "$SCRIPT_MANIFEST")
+          }
+
+          download_and_verify() {
+            local script_name="$1"
+            local output_path="/tmp/$script_name"
+
+            local expected_hash
+            expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+            if [ -z "$expected_hash" ]; then
+              echo "❌ $script_name is not in the server's script manifest!"
+              echo "   The hub serves no such script, or it failed to read on the server."
+              exit 1
+            fi
+            if ! printf '%s' "$expected_hash" | grep -Eq '^[0-9a-f]{64}$'; then
+              echo "❌ the manifest entry for $script_name is not a SHA-256 digest — refusing to run it."
+              exit 1
+            fi
+
+            curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
+              -K "$CURL_CFG" \
+              -o "$output_path"
+
+            local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
+
+            if [ "$actual_hash" != "$expected_hash" ]; then
+              echo "❌ HASH MISMATCH for $script_name!"
+              echo "   Expected: $expected_hash"
+              echo "   Actual:   $actual_hash"
+              echo "   The download was corrupted in transit — both values come from the same deployment."
+              exit 1
+            fi
+
+            # Make shell scripts executable
+            if [[ "$script_name" == *.sh ]]; then
+              chmod +x "$output_path"
+            fi
+
+            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
+          }
+
+          download_script_group "review-ci-tests"
+
+          # The hub's scripts run on the runner's own Node, recorded here before
+          # any setup step: a repository may pin an old one (meshcentral), which
+          # its commands get and these scripts must not.
+          echo "HUB_NODE=$(command -v node)" >> "$GITHUB_ENV"
+
+      # Reads the repository's files and the hub's plan; runs none of the
+      # repository's code. Saves the plan for the run step, which holds no hub
+      # credential. When the repository counts a developer's machine and that
+      # machine already ran this commit's tests and checks under the same plan
+      # and passed, says so (covered=1) and nothing else runs.
+      - name: Plan the tests and checks of this change
+        id: plan
+        env:
+          HUB_TOKEN: ${{ secrets.FLAMINGO_HUB_SECRET }}
+          REVIEW_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
+        run: $HUB_NODE /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,mutation,check --base "${{ format('origin/{0}', github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref) }}"
+
+      - name: Set up java
+        if: steps.plan.outputs.covered != '1' && steps.plan.outputs.java != ''
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '${{ steps.plan.outputs.java }}'
+
+      - name: Set up node
+        if: steps.plan.outputs.covered != '1' && steps.plan.outputs.node != ''
+        uses: actions/setup-node@v5
+        with:
+          node-version: '${{ steps.plan.outputs.node }}'
+
+      - name: Set up python
+        if: steps.plan.outputs.covered != '1' && steps.plan.outputs.python != ''
+        uses: actions/setup-python@v6
+        with:
+          python-version: '${{ steps.plan.outputs.python }}'
+
+      - name: Set up go
+        if: steps.plan.outputs.covered != '1' && steps.plan.outputs.go != ''
+        uses: actions/setup-go@v6
+        with:
+          go-version: '${{ steps.plan.outputs.go }}'
+
+      - name: Run the tests and checks
+        id: run
+        if: steps.plan.outputs.covered != '1'
+        env:
+          REVIEW_REPO: ${{ github.repository }}
+          FLAMINGO_TEST_SECRET_1_ENV: ${{ steps.plan.outputs.secret_1_env }}
+          FLAMINGO_TEST_SECRET_1: ${{ steps.plan.outputs.secret_1_name != '' && secrets[steps.plan.outputs.secret_1_name] || '' }}
+          FLAMINGO_TEST_SECRET_2_ENV: ${{ steps.plan.outputs.secret_2_env }}
+          FLAMINGO_TEST_SECRET_2: ${{ steps.plan.outputs.secret_2_name != '' && secrets[steps.plan.outputs.secret_2_name] || '' }}
+          FLAMINGO_TEST_SECRET_3_ENV: ${{ steps.plan.outputs.secret_3_env }}
+          FLAMINGO_TEST_SECRET_3: ${{ steps.plan.outputs.secret_3_name != '' && secrets[steps.plan.outputs.secret_3_name] || '' }}
+        run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,mutation,check --out "$RUNNER_TEMP/stage2.json" --base "${{ format('origin/{0}', github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref) }}" --fail-on-failure
+
+      - name: Post the tests and checks on the pull request
+        if: always() && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || needs.resolve_command.outputs.pr_number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
+          WF_RUN_ID: ${{ github.run_id }}
+          REVIEW_STAGE2_FILE: ${{ runner.temp }}/stage2.json
+          # A comment-started run's result, published on the PR head under the required check's name.
+          TESTS_CHECK_NAME: ${{ github.event_name == 'issue_comment' && 'Flamingo Code Review / tests and checks' || '' }}
+          TESTS_OUTCOME: ${{ steps.run.outcome }}
+        run: |
+          if grep -aq -- "argv.includes('--tests')" /tmp/code-review-post.mjs; then
+            "$HUB_NODE" /tmp/code-review-post.mjs --tests
+          else
+            echo "the hub's post.mjs predates --tests — the summary does not show this run; the job result is the check"
+          fi
+
+  # A SWEEP's tests and checks over the whole repository, the heavy ones
+  # (Trivy, image builds) included: see sweepChecksJob. Its stage2.json goes to
+  # the sweep's review, which turns failures into findings and fix PRs.
+  sweep_checks:
+    name: Flamingo Code Review / sweep tests and checks
+    concurrency:
+      group: flamingo-sweep-checks-${{ github.ref }}
+      cancel-in-progress: true
+    if: >-
+      (github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch') &&
+      (github.event.client_payload.mode || github.event.inputs.mode || 'sweep') == 'sweep'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      # Fail LOUD, not silent: a pull_request run on a repo whose org never set
+      # FLAMINGO_HUB_BASE_URL would otherwise curl an empty origin and die with
+      # an unrelated error. Also normalizes a trailing slash ONCE for every
+      # downstream consumer (a value of https://hub.example/ would otherwise
+      # yield //api double-slash paths in four places).
+      - name: Validate configuration
+        run: |
+          if [ -z "$HUB_BASE_URL" ]; then
+            echo "::error::HUB_BASE_URL is empty — set the org Actions variable FLAMINGO_HUB_BASE_URL (or pass hub_base_url in the dispatch payload)."
+            exit 1
+          fi
+          echo "HUB_BASE_URL=${HUB_BASE_URL%/}" >> "$GITHUB_ENV"
+
+      - name: Check out the change
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download the tests runner from the hub
+        env:
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
+        run: |
+          set -euo pipefail
+
+          SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # WEBHOOK_SECRET reaches curl through a 0600 config file, never argv — see
+          # curlAuthPreamble, which always traps the removal.
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
+          CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
+
+          # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          # The manifest is asked for ONE group: its keys are the files to download.
+          _try_manifest() {
+            local base="$1" code
+            code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
+              -K "$CURL_CFG" \
+              "$base/manifest.json?group=$SCRIPT_GROUP") || code="000"
+
+            if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
+            if [ "$code" != "200" ]; then
+              echo "❌ manifest request to $base failed (HTTP $code)"
+              rm -f "$SCRIPT_MANIFEST"
+              return 2
+            fi
+            # The digests are the TOP-LEVEL object. successResponse is the standard
+            # emitter but it does NOT add a wrapper — it is NextResponse.json(data)
+            # plus the no-store header — so there is no .data to reach through.
+            # A 200 that is not a manifest is how a hub which does not serve this path
+            # answers (the proxy rewrites unknown routes and returns HTML), so it
+            # means "wrong surface", not "corrupt".
+            if ! jq -e 'type == "object" and length > 0 and (to_entries | all(.value | type == "string"))' "$SCRIPT_MANIFEST" >/dev/null 2>&1; then
+              rm -f "$SCRIPT_MANIFEST"
+              return 1
+            fi
+            return 0
+          }
+
+          # load_script_manifest <group>
+          load_script_manifest() {
+            SCRIPT_GROUP="$1"
+            # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
+            # errexit fires before rc is read and the step ends with NO output. And
+            # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
+            # the NEGATION (0), so every failure reads as success. "|| rc=$?" is the
+            # one form that both suppresses errexit and preserves the real code.
+            local rc=0
+            _try_manifest "$CI_SCRIPTS_URL" || rc=$?
+            if [ "$rc" = "0" ]; then
+              SCRIPTS_BASE_URL="$CI_SCRIPTS_URL"
+              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
+              return 0
+            fi
+            if [ "$rc" = "2" ]; then exit 1; fi
+
+            # No manifest on the scripts surface: a hub older than the manifest
+            # itself. The manifest is the file list, so there is nothing to download.
+            echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
+            exit 1
+          }
+
+          # download_script_group <group> — the hub names the files, this workflow
+          # names only the group. Downloads every script of the group, in served order.
+          download_script_group() {
+            load_script_manifest "$1"
+            local name
+            # The loop runs in THIS shell (no pipe), so a failed download exits the step.
+            while IFS= read -r name; do
+              download_and_verify "$name"
+            done < <(jq -r 'keys_unsorted[]' "$SCRIPT_MANIFEST")
+          }
+
+          download_and_verify() {
+            local script_name="$1"
+            local output_path="/tmp/$script_name"
+
+            local expected_hash
+            expected_hash=$(jq -r --arg n "$script_name" '.[$n] // empty' "$SCRIPT_MANIFEST")
+            if [ -z "$expected_hash" ]; then
+              echo "❌ $script_name is not in the server's script manifest!"
+              echo "   The hub serves no such script, or it failed to read on the server."
+              exit 1
+            fi
+            if ! printf '%s' "$expected_hash" | grep -Eq '^[0-9a-f]{64}$'; then
+              echo "❌ the manifest entry for $script_name is not a SHA-256 digest — refusing to run it."
+              exit 1
+            fi
+
+            curl -fsSL "$SCRIPTS_BASE_URL/$script_name" \
+              -K "$CURL_CFG" \
+              -o "$output_path"
+
+            local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
+
+            if [ "$actual_hash" != "$expected_hash" ]; then
+              echo "❌ HASH MISMATCH for $script_name!"
+              echo "   Expected: $expected_hash"
+              echo "   Actual:   $actual_hash"
+              echo "   The download was corrupted in transit — both values come from the same deployment."
+              exit 1
+            fi
+
+            # Make shell scripts executable
+            if [[ "$script_name" == *.sh ]]; then
+              chmod +x "$output_path"
+            fi
+
+            echo "✅ $script_name verified (hash: ${actual_hash:0:16}...)"
+          }
+
+          download_script_group "review-ci-tests"
+
+          # The hub's scripts run on the runner's own Node, recorded here before
+          # any setup step: a repository may pin an old one (meshcentral), which
+          # its commands get and these scripts must not.
+          echo "HUB_NODE=$(command -v node)" >> "$GITHUB_ENV"
+
+      # Reads the repository's files and the hub's plan, kept to the toolchains'
+      # whole repository; runs none of the repository's code.
+      - name: Plan the tests and checks of the whole repository
+        id: plan
+        env:
+          HUB_TOKEN: ${{ secrets.FLAMINGO_HUB_SECRET }}
+          REVIEW_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: $HUB_NODE /tmp/code-review-tests.mjs setup --plan-out "$RUNNER_TEMP/test-plan.json" --kinds test,mutation,check --sweep
+
+      - name: Set up java
+        if: steps.plan.outputs.covered != '1' && steps.plan.outputs.java != ''
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '${{ steps.plan.outputs.java }}'
+
+      - name: Set up node
+        if: steps.plan.outputs.covered != '1' && steps.plan.outputs.node != ''
+        uses: actions/setup-node@v5
+        with:
+          node-version: '${{ steps.plan.outputs.node }}'
+
+      - name: Set up python
+        if: steps.plan.outputs.covered != '1' && steps.plan.outputs.python != ''
+        uses: actions/setup-python@v6
+        with:
+          python-version: '${{ steps.plan.outputs.python }}'
+
+      - name: Set up go
+        if: steps.plan.outputs.covered != '1' && steps.plan.outputs.go != ''
+        uses: actions/setup-go@v6
+        with:
+          go-version: '${{ steps.plan.outputs.go }}'
+
+      - name: Run the tests and checks
+        id: run
+        if: steps.plan.outputs.covered != '1'
+        env:
+          REVIEW_REPO: ${{ github.repository }}
+          FLAMINGO_TEST_SECRET_1_ENV: ${{ steps.plan.outputs.secret_1_env }}
+          FLAMINGO_TEST_SECRET_1: ${{ steps.plan.outputs.secret_1_name != '' && secrets[steps.plan.outputs.secret_1_name] || '' }}
+          FLAMINGO_TEST_SECRET_2_ENV: ${{ steps.plan.outputs.secret_2_env }}
+          FLAMINGO_TEST_SECRET_2: ${{ steps.plan.outputs.secret_2_name != '' && secrets[steps.plan.outputs.secret_2_name] || '' }}
+          FLAMINGO_TEST_SECRET_3_ENV: ${{ steps.plan.outputs.secret_3_env }}
+          FLAMINGO_TEST_SECRET_3: ${{ steps.plan.outputs.secret_3_name != '' && secrets[steps.plan.outputs.secret_3_name] || '' }}
+        run: $HUB_NODE /tmp/code-review-tests.mjs run --plan-file "$RUNNER_TEMP/test-plan.json" --kinds test,mutation,check --out "$RUNNER_TEMP/stage2.json" --sweep --fail-on-failure
+
+      - name: Hand the results to the sweep review
+        if: always() && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
+        uses: actions/upload-artifact@v4
+        with:
+          name: flamingo-sweep-stage2
+          path: ${{ runner.temp }}/stage2.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Summarize the sweep tests and checks
+        if: always() && (steps.run.outcome == 'success' || steps.run.outcome == 'failure')
+        run: |
+          {
+            echo "### Sweep tests and checks"
+            echo
+            echo "| Check | Project | Result | Seconds |"
+            echo "|---|---|---|---|"
+            jq -r '.lanes[] | "| \(.name // .kind) | \(.project) | \(.status)\(if .advisory then " (advisory)" else "" end) | \(.seconds // "") |"' "$RUNNER_TEMP/stage2.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  review:
+    # Superseding a PR cancels the in-flight review of the stale head SHA; the
+    # fresh run reviews (and reports on) the new one. The always() report step
+    # still fires on the cancelled job, so its row records 'cancelled' rather
+    # than dangling. Job-level on purpose — see the note above permissions.
+    concurrency:
+      group: flamingo-code-review-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+      cancel-in-progress: true
+    # Skip actual work when triggered by push (push only registers the
+    # workflow with GitHub, which is what lets workflow_dispatch target a
+    # setup branch before the install PR merges).
+    # Bots and forks never run, on EVERY event. A fork PR's token is read-only,
+    # so the run could not post a comment or a check even if it finished; the
+    # bot clause is what stops a hub-opened ai-fix PR from being reviewed into
+    # another fix PR, and no label may waive it — "only a human applies a
+    # label" is an assumption, not an invariant, since anything holding
+    # pull-requests: write can label. To review a bot PR, dispatch it from the
+    # hub admin, which is an authenticated, recorded decision.
+    #
+    # DRAFT is different, and only the on-demand label waives it: an explicit
+    # request says "review this now" and means it whether or not the PR is
+    # finished, which is how every comparable tool treats its manual trigger.
+    # Subscribed pushes still skip drafts.
+    #
+    # The events where a pull request ENTERS review (opened / ready_for_review /
+    # reopened) are NOT here: they run the invite job, never a review.
+    # NOTE: there is deliberately no vars. kill switch here. The hub's
+    # per-repo enabled dial already covers it and answers 409 REVIEW_DISABLED,
+    # which produces a recorded run. A second switch living in GitHub would be
+    # invisible to the admin screen and would produce no callback at all.
+    #
+    # A COMMENT COMMAND arrives here already judged: resolve_command made the
+    # API calls this expression cannot, and its 'proceed' carries the same two
+    # exclusions (fork, bot) plus the "is it really a pull request" answer.
+    #
+    # 'needs' therefore requires always(): on every OTHER event resolve_command
+    # is skipped, and a skipped dependency would otherwise skip this job too —
+    # i.e. adding the comment trigger would have silently disabled every
+    # existing trigger. always() re-admits them; the clauses below still decide.
+    needs: [resolve_command, sweep_checks]
+    if: >-
+      always() &&
+      github.event_name != 'push' &&
+      (github.event_name == 'repository_dispatch' ||
+       needs.resolve_command.outputs.proceed == 'true' ||
+       github.event_name == 'workflow_dispatch' ||
+       (github.event.pull_request.user.type != 'Bot' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        ((github.event.action == 'labeled' && github.event.label.name == 'flamingo-review') ||
+         (github.event.action == 'synchronize' &&
+          (contains(github.event.pull_request.labels.*.name, 'flamingo-review') ||
+           (github.event.pull_request.draft == false &&
+            contains(github.event.pull_request.labels.*.name, 'flamingo-review-always')))))))
+    runs-on: ubuntu-latest
+    # NO custom timeout-minutes — deliberately. GitHub's 6h hosted-runner
+    # ceiling is the only clock: on hitting it the always() report step still
+    # runs, so a sweep ships its per-batch checkpoint home and the NEXT sweep
+    # resumes from the covered files (nothing is lost, nothing re-paid). Hung
+    # runs are the hub reaper's job (run-safety-net-utils.ts, no-report cutoff
+    # sized past the platform ceiling) — a second hand-tuned ceiling here was
+    # one more number to keep in sync for no added safety.
+    steps:
+      # Fail LOUD, not silent: a pull_request run on a repo whose org never set
+      # FLAMINGO_HUB_BASE_URL would otherwise curl an empty origin and die with
+      # an unrelated error. Also normalizes a trailing slash ONCE for every
+      # downstream consumer (a value of https://hub.example/ would otherwise
+      # yield //api double-slash paths in four places).
+      - name: Validate configuration
+        run: |
+          if [ -z "$HUB_BASE_URL" ]; then
+            echo "::error::HUB_BASE_URL is empty — set the org Actions variable FLAMINGO_HUB_BASE_URL (or pass hub_base_url in the dispatch payload)."
+            exit 1
+          fi
+          echo "HUB_BASE_URL=${HUB_BASE_URL%/}" >> "$GITHUB_ENV"
+
+      # REPORT CAPABILITY FIRST. Only workflow-helpers.sh + code-review-report.sh
+      # download here — before checkout, cache, or any other script — so every
+      # later failure (including the download step for the REST of the scripts
+      # 404ing or hash-mismatching, the class that produced phantom 'running'
+      # rows) still has a verified report script to call home with.
+      - name: Download the report script
+        env:
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
+        run: |
+          set -euo pipefail
+
+          SCRIPT_MANIFEST=/tmp/flamingo-script-manifest.json
+          # WEBHOOK_SECRET reaches curl through a 0600 config file, never argv — see
+          # curlAuthPreamble, which always traps the removal.
+          CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
+          trap 'rm -f "$CURL_CFG"' EXIT
+          printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
+          CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
+
+          # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
+          # The manifest is asked for ONE group: its keys are the files to download.
+          _try_manifest() {
+            local base="$1" code
+            code=$(curl -sS -w '%{http_code}' -o "$SCRIPT_MANIFEST" \
+              -K "$CURL_CFG" \
+              "$base/manifest.json?group=$SCRIPT_GROUP") || code="000"
+
+            if [ "$code" = "404" ]; then rm -f "$SCRIPT_MANIFEST"; return 1; fi
+            if [ "$code" != "200" ]; then
+              echo "❌ manifest request to $base failed (HTTP $code)"
+              rm -f "$SCRIPT_MANIFEST"
+              return 2
+            fi
+            # The digests are the TOP-LEVEL object. successResponse is the standard
+            # emitter but it does NOT add a wrapper — it is NextResponse.json(data)
+            # plus the no-store header — so there is no .data to reach through.
+            # A 200 that is not a manifest is how a hub which does not serve this path
+            # answers (the proxy rewrites unknown routes and returns HTML), so it
+            # means "wrong surface", not "corrupt".
+            if ! jq -e 'type == "object" and length > 0 and (to_entries | all(.value | type == "string"))' "$SCRIPT_MANIFEST" >/dev/null 2>&1; then
+              rm -f "$SCRIPT_MANIFEST"
+              return 1
+            fi
+            return 0
+          }
+
+          # load_script_manifest <group>
+          load_script_manifest() {
+            SCRIPT_GROUP="$1"
+            # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
+            # errexit fires before rc is read and the step ends with NO output. And
+            # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
+            # the NEGATION (0), so every failure reads as success. "|| rc=$?" is the
+            # one form that both suppresses errexit and preserves the real code.
+            local rc=0
+            _try_manifest "$CI_SCRIPTS_URL" || rc=$?
+            if [ "$rc" = "0" ]; then
+              SCRIPTS_BASE_URL="$CI_SCRIPTS_URL"
+              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
+              return 0
+            fi
+            if [ "$rc" = "2" ]; then exit 1; fi
+
+            # No manifest on the scripts surface: a hub older than the manifest
             # itself. The manifest is the file list, so there is nothing to download.
             echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
             exit 1
@@ -626,7 +1244,7 @@ jobs:
       # report below is the authoritative callback.
       - name: Tell the hub the run started
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha || github.sha }}
           WF_RUN_ID: ${{ github.run_id }}
@@ -657,37 +1275,7 @@ jobs:
           # The review job must never hold a push credential.
           persist-credentials: false
 
-      # The corpus hash has to SURVIVE between runs, or the hash param is empty
-      # and the hub's 304 path is unreachable. That path serves ONLY a
-      # corpus-only fetch (a workflow_dispatch rehearsal with no PR number):
-      # the pr, sweep and mine fetches each carry a per-request rider, which a
-      # 304 cannot, so the hub answers them in full by design and this cache
-      # spares no transfer on a production trigger. Kept for the rehearsal
-      # lane; the reason is stated here so nobody expects a saving it never
-      # made.
-      # RESTORE and SAVE are separate steps, not the combined actions/cache
-      # whose post-step saves at job end: since GitHub's 2026-06-26 change an
-      # UNTRUSTED trigger on the default-branch scope (issue_comment here —
-      # anyone who can comment can fire it) gets a READ-ONLY cache token, so
-      # that post-step ended every commanded review with "Failed to save …
-      # cache write denied: token has no writable scopes" (run 34519652342),
-      # a warning no permissions block can lift. The save is done only where
-      # it can succeed AND serves the one lane that reads it — see below.
-      # v5 = the Node 24 drop-in (v4 targets EOL Node 20 and warns on every run).
-      - name: Restore the last corpus hash
-        uses: actions/cache/restore@v5
-        with:
-          # BOTH files. Caching only the hash meant a 304 left rules.json
-          # truncated to zero bytes while the run continued as if it had a
-          # corpus.
-          path: |
-            .rules-hash
-            rules.json
-          key: flamingo-rules-hash-${{ github.repository }}-${{ github.run_id }}
-          restore-keys: |
-            flamingo-rules-hash-${{ github.repository }}-
-
-      # The SAME download_and_verify function as the doc-orchestrator workflow
+      # The SAME download_and_verify function as the Code Documentation workflow
       # (single source: lib/config/workflow-scripts-bootstrap.ts, parity with
       # the doc template asserted at build time), fetching from the SAME
       # scripts endpoint. This bootstrap (and the report-capability step above,
@@ -695,10 +1283,10 @@ jobs:
       # runs a verified unified script, so a script change ships from the hub
       # without touching this caller. Helpers + report already downloaded above;
       # this step fetches the rest, and its failure is REPORTABLE.
-      - name: Download and verify scripts
+      - name: Download the review scripts from the hub
         id: scripts
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
         run: |
           set -euo pipefail
 
@@ -708,10 +1296,8 @@ jobs:
           CURL_CFG=$(mktemp) && chmod 600 "$CURL_CFG"
           trap 'rm -f "$CURL_CFG"' EXIT
           printf 'header = "Authorization: Bearer %s"\n' "$WEBHOOK_SECRET" > "$CURL_CFG"
-          # The canonical scripts surface and the pre-rename one. load_script_manifest
-          # picks whichever this deployment actually serves and pins SCRIPTS_BASE_URL.
+          # The scripts surface. load_script_manifest pins SCRIPTS_BASE_URL to it.
           CI_SCRIPTS_URL="${HUB_BASE_URL%/}/api/ci/scripts"
-          LEGACY_SCRIPTS_URL="${HUB_BASE_URL%/}/api/doc-orchestrator/scripts"
 
           # _try_manifest <base> — 0 loaded, 1 no manifest surface there, 2 fatal.
           # The manifest is asked for ONE group: its keys are the files to download.
@@ -743,12 +1329,6 @@ jobs:
           # load_script_manifest <group>
           load_script_manifest() {
             SCRIPT_GROUP="$1"
-            # The scripts surface was renamed from /api/doc-orchestrator/scripts to the
-            # pipeline-neutral /api/ci/scripts (it always served BOTH pipelines). The
-            # workflow file ships in the repo and the routes ship with the deployment,
-            # so the two are one version apart in BOTH directions across the rollout.
-            # Probe the canonical surface, fall back to the legacy one, and let the
-            # winner decide SCRIPTS_BASE_URL for every download that follows.
             # "cmd; rc=$?" dies under the set -euo pipefail these steps run with —
             # errexit fires before rc is read and the step ends with NO output. And
             # "if ! cmd; then rc=$?" is worse: inside the branch $? is the status of
@@ -763,18 +1343,7 @@ jobs:
             fi
             if [ "$rc" = "2" ]; then exit 1; fi
 
-            echo "::warning::this hub does not serve $CI_SCRIPTS_URL — falling back to the legacy $LEGACY_SCRIPTS_URL; it predates the rename"
-            SCRIPTS_BASE_URL="$LEGACY_SCRIPTS_URL"
-
-            rc=0
-            _try_manifest "$LEGACY_SCRIPTS_URL" || rc=$?
-            if [ "$rc" = "0" ]; then
-              echo "✅ script manifest loaded ($(jq -r 'length' "$SCRIPT_MANIFEST") scripts)"
-              return 0
-            fi
-            if [ "$rc" = "2" ]; then exit 1; fi
-
-            # Neither surface published a manifest: a hub older than the manifest
+            # No manifest on the scripts surface: a hub older than the manifest
             # itself. The manifest is the file list, so there is nothing to download.
             echo "❌ no script manifest on this hub ($HUB_BASE_URL): it cannot name the $SCRIPT_GROUP scripts. Redeploy the hub."
             exit 1
@@ -853,10 +1422,18 @@ jobs:
             echo "graph_lib=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Fetch the rule corpus
+      # ONE hub call answers how this repository is reviewed: the settings
+      # (mode, models, locale, whether the hub's TOOLS are on), the hash that
+      # anchors incremental review, and the rule INDEX. Where the tools are on,
+      # that is all the review step is handed: it reads rule text and the code
+      # graph through the hub's tools (get_code_rules, get_code_rule,
+      # get_repo_ecosystem, find_code_consumers, …) as it reviews. Where they
+      # are off, the same call carries the full rule text. Nothing is cached
+      # between runs: every review asks the hub afresh.
+      - name: Ask the hub how to review this repository
         id: rules
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           # PR runs identify the pull request so the hub can answer with the
           # last successfully reviewed head SHA (X-Last-Reviewed-Sha) — the
           # incremental-review anchor persisted as .last-reviewed-sha.
@@ -866,23 +1443,6 @@ jobs:
           # Empty on every other trigger, which keeps them incremental.
           REVIEW_FULL: ${{ needs.resolve_command.outputs.full }}
         run: /tmp/code-review-fetch-rules.sh
-
-      # The save half of the corpus cache (see the restore step for why the
-      # two are split). workflow_dispatch ONLY: it is the sole trigger that is
-      # both trusted (keeps a read-write cache token on the default-branch
-      # scope) and served by the 304 path the cache exists for. A pull_request
-      # run could write, but into its own branch scope, which the rehearsal
-      # lane never reads. Guarded on the files existing so a fetch that
-      # skipped (corpus unavailable, review disabled) does not fail the job on
-      # a missing path.
-      - name: Save the corpus hash for the next rehearsal
-        if: github.event_name == 'workflow_dispatch' && hashFiles('.rules-hash', 'rules.json') != ''
-        uses: actions/cache/save@v5
-        with:
-          path: |
-            .rules-hash
-            rules.json
-          key: flamingo-rules-hash-${{ github.repository }}-${{ github.run_id }}
 
       # Stage checkpoints are their OWN credentialed steps. The review step
       # holds the shared webhook secret — unavoidably, since the reviewer's
@@ -925,7 +1485,7 @@ jobs:
       # Gated on the STABLE skip_kind token, not on 'degraded' (which carries
       # the HTTP code and would need copy per code). review_disabled never
       # reaches here: silence is the right answer to opting out.
-      - name: Say the corpus could not be fetched
+      - name: Say the hub could not be reached
         if: (github.event_name == 'pull_request' || needs.resolve_command.outputs.pr_number != '') && steps.rules.outputs.skip_kind == 'corpus_unavailable'
         continue-on-error: true
         env:
@@ -941,7 +1501,7 @@ jobs:
 
       - name: Report progress — reviewing
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           WF_RUN_ID: ${{ github.run_id }}
           REPO_FULL: ${{ github.repository }}
@@ -957,12 +1517,27 @@ jobs:
       # Gated on the library having been downloaded: without it nothing can
       # import this runtime, so installing it would be wasted work and would
       # export a CODE_GRAPH_DEPS_DIR no script reads.
-      - name: Install graph dependencies
+      - name: Install the code-graph parsers for the deletion gate
         if: steps.rules.outputs.skip != 'true' && steps.scripts.outputs.graph_lib == 'true'
         continue-on-error: true
         run: mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund && echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV" || { echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; }
 
-      - name: Review
+      # Reviews the change against the hub's rules and code graph. The
+      # reviewer calls the hub for rule text and graph facts as it works (its
+      # log prints every call under "Tool use"), and the deterministic
+      # deletion gate asks the hub who consumes what a finding would remove.
+      # A SWEEP reviews what its tests and checks found too (sweep_checks): their
+      # stage2.json, which the reviewer turns into findings. Absent when that job
+      # did not run or failed before writing it; the review runs either way.
+      - name: Take the sweep tests and checks
+        if: env.MODE == 'sweep'
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: flamingo-sweep-stage2
+          path: ${{ runner.temp }}/sweep-stage2
+
+      - name: Review with the rules and code graph from the hub
         # The id lets the report step read the reviewer's own degraded output
         # (e.g. skipped_trivial_diff) alongside the rules step's.
         id: review
@@ -984,7 +1559,7 @@ jobs:
         # cannot drift back into the one step that runs node over untrusted
         # pull-request content.
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           REVIEW_BASE_REF: ${{ github.event.pull_request.base.ref || needs.resolve_command.outputs.base_ref }}
           # The RUN STAMP. The reviewer and the miner write .review-run-id from
           # this value and the report step discards every artifact not stamped
@@ -995,9 +1570,15 @@ jobs:
           # zero findings under a green status while the pull request showed
           # them. A build gate now asserts the writer's step has it.
           WF_RUN_ID: ${{ github.run_id }}
+          # The pull request's HEAD commit, known here (the event's, or the comment
+          # command's resolved one). The change-set overlay is built at it; inferring
+          # it from the checkout's parents read main's tip when the head was itself a merge.
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || needs.resolve_command.outputs.head_sha }}
           # Where "Install graph dependencies" put the graph library's runtime;
           # empty when that step failed, which the reviewer reads as "no graph".
           CODE_GRAPH_DEPS_DIR: ${{ env.CODE_GRAPH_DEPS_DIR }}
+          # A sweep's tests and checks (sweep_checks); read in a sweep only.
+          REVIEW_SWEEP_STAGE2_FILE: ${{ runner.temp }}/sweep-stage2/stage2.json
         run: /tmp/code-review-run.sh
 
       # Post the findings to the PULL REQUEST itself and publish the
@@ -1009,11 +1590,11 @@ jobs:
       # supports them; already-posted fingerprints are never re-commented, so
       # a new push adds only NEW findings. The check run is 'neutral' unless
       # the repo's served mode is 'blocking' AND action_required findings
-      # exist. Writes posted.json (fingerprint -> comment id) for the report
-      # step's callback — the reaction-learning loop reads it.
+      # exist. Every inline comment carries its finding's fingerprint marker,
+      # which the hub's feedback sweep reads back from the pull request.
       - name: Report progress — finalizing
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           WF_RUN_ID: ${{ github.run_id }}
           REPO_FULL: ${{ github.repository }}
@@ -1093,7 +1674,7 @@ jobs:
         # is the secret plus values that exist nowhere but the GitHub context —
         # which enters through env, never interpolated into a script body.
         env:
-          WEBHOOK_SECRET: ${{ secrets.DOC_ORCH_WEBHOOK_SECRET }}
+          WEBHOOK_SECRET: ${{ secrets.FLAMINGO_HUB_SECRET }}
           RUN_TOKEN: ${{ github.event.client_payload.run_token || github.event.inputs.run_token || '' }}
           JOB_STATUS: ${{ job.status }}
           # Either step can degrade a run: the rules step (corpus unavailable)

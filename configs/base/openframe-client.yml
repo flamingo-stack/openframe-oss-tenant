@@ -6,10 +6,16 @@ spring:
     web-application-type: servlet
   autoconfigure:
     exclude:
+      # Transition: each entry is listed under its Spring Boot 3 name, then its Spring Boot 4 one; Spring Boot skips
+      # names it does not have. Drop the Spring Boot 3 names once every service runs Spring Boot 4.
       - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
+      - org.springframework.boot.cassandra.autoconfigure.CassandraAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
+      - org.springframework.boot.data.cassandra.autoconfigure.DataCassandraAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration
+      - org.springframework.boot.data.cassandra.autoconfigure.DataCassandraReactiveAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.cassandra.CassandraHealthContributorAutoConfiguration
+      - org.springframework.boot.cassandra.autoconfigure.health.CassandraHealthContributorAutoConfiguration
   data:
     mongodb:
       enabled: true
@@ -126,6 +132,47 @@ oauth:
         - agent
 
 openframe:
+  delivery:
+    dispatch-group: openframe-client-delivery-dispatch
+  # RMM features of the shared libs: script execution watchdog/retry, schedules, device-online dispatch
+  rmm:
+    execution:
+      watchdog:
+        enabled: true
+        interval: 60000
+        grace-seconds: 120
+        threshold-seconds: 600
+        lock-at-most-for: 2m
+        lock-at-least-for: 10s
+      retry:
+        enabled: true
+        size: 3
+        ttl-seconds: 3600
+        interval: 30000
+        lock-at-most-for: 2m
+        lock-at-least-for: 10s
+      queued:
+        threshold-seconds: 30
+    schedule:
+      runner:
+        enabled: true
+      watchdog:
+        enabled: true
+        interval: 60000
+        threshold-seconds: 900
+      device-local:
+        catchup-seconds: 1800
+    device-online:
+      dispatch:
+        interval: 20000
+        batch-size: 500
+        lock-at-most-for: 2m
+        lock-at-least-for: 10s
+    package-manager-bootstrap:
+      cooldown-seconds: 1800
+      enabled: true
+    software:
+      enabled: true
   oss-tenant:
     kafka:
       topics:

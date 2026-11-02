@@ -1,5 +1,5 @@
 # Stage 1: Build Java application
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-alpine-3.23 AS builder
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk-alpine-3.23 AS builder
 
 # Build arguments for GitHub authentication
 ARG GITHUB_ACTOR
@@ -29,7 +29,7 @@ RUN --mount=type=secret,id=GITHUB_TOKEN \
     -Dmaven.test.skip=true
 
 # Stage 2: Runtime image
-FROM eclipse-temurin:21-jre-alpine-3.23
+FROM eclipse-temurin:25-jre-alpine-3.23
 
 RUN apk upgrade --no-cache && \
     apk add --no-cache libstdc++ iputils netcat-openbsd curl && \

@@ -8,7 +8,7 @@ Welcome to the OpenFrame OSS Tenant development documentation. This section cove
 
 OpenFrame OSS Tenant is a polyglot platform built across two primary technology stacks:
 
-- **Java / Spring Boot 3.3** — Backend microservices (API, Gateway, Auth, Stream, Management, Client Service)
+- **Java / Spring Boot 4.1** — Backend microservices (API, Gateway, Auth, Stream, Management, Client Service)
 - **Rust** — Cross-platform endpoint agent (`openframe-client`)
 
 This documentation section guides you through setting up your development environment, understanding the architecture, and contributing code effectively.
@@ -46,7 +46,7 @@ This documentation section guides you through setting up your development enviro
 
 | Service | Tech | Port |
 |---|---|---|
-| `openframe-api` | Spring Boot 3.3 + Netflix DGS (GraphQL) | 8080 |
+| `openframe-api` | Spring Boot 4.1 + Netflix DGS (GraphQL) | 8080 |
 | `openframe-gateway` | Spring Cloud Gateway | 8081 |
 | `openframe-authorization-server` | Spring Authorization Server (OAuth2/OIDC) | 8082 |
 | `openframe-external-api` | Spring Boot REST | 8083 |

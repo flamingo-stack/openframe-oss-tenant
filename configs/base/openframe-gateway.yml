@@ -27,7 +27,7 @@ spring:
     config:
       fail-fast: false
     gateway:
-      globalcors:
+      globalcors: &gateway-globalcors
         add-to-simple-url-handler-mapping: true
         cors-configurations:
           '[/**]':
@@ -47,7 +47,7 @@ spring:
               - Refresh-Token
             allow-credentials: true
             max-age: 3600
-      httpclient:
+      httpclient: &gateway-httpclient
         connect-timeout: 3000
         # NOTE: gateway closes SSE connections at response-timeout (default 30s). This was
         # previously raised to 5m to keep SSE streams open, but is intentionally set to 20s.
@@ -57,7 +57,7 @@ spring:
           useInsecureTrustManager: true
         websocket:
           max-frame-payload-length: 1048576 #1MB
-      routes:
+      routes: &gateway-routes
         - id: sas
           uri: http://openframe-authorization-server.tenant.svc.cluster.local:9005
           predicates:
@@ -108,6 +108,17 @@ spring:
           uri: http://openframe-frontend.tenant.svc.cluster.local:3000
           predicates:
             - Path=/**
+      # Spring Cloud Gateway 5 (Spring Boot 4) reads its settings from spring.cloud.gateway.server.webflux.*, Gateway 4
+      # (Spring Boot 3) from spring.cloud.gateway.* above. Configs are served from main to every install, so both read
+      # the same block through these aliases; drop the old keys once every install runs Spring Boot 4.
+      server:
+        webflux:
+          # Gateway 5 adds X-Forwarded-* (original host, proto) only for requests from trusted proxies, none by
+          # default; trust every proxy, as Gateway 4 did.
+          trusted-proxies: ".*"
+          globalcors: *gateway-globalcors
+          httpclient: *gateway-httpclient
+          routes: *gateway-routes
 
 nats-ws-url: ws://nats.datasources.svc.cluster.local:8080
 

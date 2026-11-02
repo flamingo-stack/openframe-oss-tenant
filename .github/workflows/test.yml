@@ -58,42 +58,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/steps/yaml-lint
 
-  scan:
-    name: "Scan Code: ${{ matrix.target.name }}"
-    runs-on: ubuntu-latest
-    needs: [changes]
-    permissions:
-      contents: read
-      packages: read
-    if: github.event_name == 'pull_request'
-    strategy:
-      fail-fast: false
-      matrix:
-        target: ${{ fromJson(needs.changes.outputs.images_matrix) }}
-        include:
-          - target: { name: root, path: ".", skip: openframe/services, skip_files: pom.xml }
-    steps:
-      - name: Check if scan should run
-        id: should_run
-        run: echo "run=${{ matrix.target.name == 'root' || fromJSON(needs.changes.outputs.changes || '{}')[matrix.target.name] == 'true' }}" >> $GITHUB_OUTPUT
-
-      - name: Checkout
-        if: steps.should_run.outputs.run == 'true'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-
-      - name: Scan code
-        if: steps.should_run.outputs.run == 'true'
-        uses: ./.github/steps/trivy
-        with:
-          scan: code
-          path: ${{ matrix.target.path }}
-          skip-dirs: ${{ matrix.target.skip || '' }}
-          skip-files: ${{ matrix.target.skip_files || '' }}
-          image-name: ${{ matrix.target.name }}
-
   build_images:
     name: "Build: ${{ matrix.name }}"
     needs: [changes]
@@ -169,12 +133,13 @@ jobs:
             while IFS= read -r l; do [ -n "$l" ] && args+=(--label "$l"); done <<< "$META_LABELS"
             docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
 
+      # The image built above, amd64 from this job's builder cache, so no second build. A fixable
+      # HIGH/CRITICAL finding fails the leg and All Checks goes red.
       - name: Scan image
         if: steps.should_run.outputs.run == 'true'
         uses: ./.github/steps/trivy
         with:
-          scan: image
-          image-name: ${{ matrix.name }}
+          name: ${{ matrix.name }}
           dockerfile: ${{ matrix.path }}/Dockerfile
           context: ${{ matrix.context || matrix.path }}
 
@@ -302,10 +267,9 @@ jobs:
     name: "Test Helm Chart"
     needs: [changes]
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'pull_request' &&
-      !github.event.pull_request.draft &&
-      contains(fromJSON(needs.changes.outputs.changes || '{}').helm, 'true')
+    # Disabled: covered by "Flamingo Code Review / tests and checks" (helm template and helm unittest on a changed chart). Kept here, not deleted: the repository variable FLAMINGO_LEGACY_CHECKS=on runs it again. CU-17tkuw60a9u
+    # was: if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(fromJSON(needs.changes.outputs.changes || '{}').helm, 'true')
+    if: vars.FLAMINGO_LEGACY_CHECKS == 'on'
     steps:
       - name: Checkout
         uses: actions/checkout@v4

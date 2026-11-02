@@ -27,7 +27,7 @@ OpenFrame OSS Tenant is a multi-service, multi-tenant platform that integrates d
 | **Real-Time Event Streaming** | Apache Kafka + NATS JetStream for device events, script execution, and AI message chunks |
 | **Remote Management (RMM)** | Script execution, scheduling, live commands, and compliance checking across all managed devices |
 | **Integrated Tool Management** | MeshCentral, FleetMDM, and custom tool agents orchestrated through the platform |
-| **Open Source** | Apache-licensed microservice platform you can self-host and extend |
+| **Open Source** | Microservice platform you can self-host and extend, published under the [Flamingo AI Unified License v1.0](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/LICENSE.md) |
 
 ---
 
@@ -43,7 +43,7 @@ OpenFrame OSS Tenant is designed for:
 
 ## High-Level Architecture Overview
 
-OpenFrame OSS Tenant is a polyglot microservice system built with Java (Spring Boot 3.3) and Rust. All client traffic passes through the Spring Cloud Gateway before reaching backend services.
+OpenFrame OSS Tenant is a polyglot microservice system built with Java (Spring Boot 4.1) and Rust. All client traffic passes through the Spring Cloud Gateway before reaching backend services.
 
 ```mermaid
 graph TB

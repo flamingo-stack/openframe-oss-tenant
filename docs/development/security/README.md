@@ -118,7 +118,7 @@ For local development, use a `.env` file or export variables in your shell. **Ne
 
 ```bash
 # Example local development environment variables
-export SPRING_DATA_MONGODB_URI="mongodb://localhost:27017/openframe_dev"
+export SPRING_MONGODB_URI="mongodb://localhost:27017/openframe_dev"
 export OPENFRAME_ENCRYPTION_KEY="local-dev-key-not-for-production"
 ```
 

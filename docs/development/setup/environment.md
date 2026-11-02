@@ -46,13 +46,14 @@ For working on the Rust component (`clients/openframe-client`):
 
 ## Toolchain Installation
 
-### Java 21
+### Java 25
 
 ```bash
 # Using SDKMAN (recommended for version management)
 curl -s "https://get.sdkman.io" | bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
-sdk install java 21.0.3-ms
+sdk list java | grep -- '-tem' | grep ' 25\.'   # pick the latest Temurin 25.x
+sdk install java <version>-tem
 
 # Verify
 java -version
@@ -99,7 +100,7 @@ These are typically set in each service's `application-local.yml` or passed as J
 
 ```bash
 # MongoDB
-export SPRING_DATA_MONGODB_URI="mongodb://localhost:27017/openframe"
+export SPRING_MONGODB_URI="mongodb://localhost:27017/openframe"
 
 # Kafka
 export SPRING_KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
@@ -142,7 +143,7 @@ git config --global init.defaultBranch main
 
 | Tool | Status |
 |---|---|
-| JDK 21 installed and `JAVA_HOME` set | ✅ / ❌ |
+| JDK 25 installed and `JAVA_HOME` set | ✅ / ❌ |
 | Maven 3.9+ installed | ✅ / ❌ |
 | Rust stable toolchain installed | ✅ / ❌ |
 | IDE configured with recommended plugins | ✅ / ❌ |
