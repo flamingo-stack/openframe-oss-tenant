@@ -1,7 +1,7 @@
 # Flamingo AI Privacy Policy
 
-**Version:** 2.0  
-**Effective date:** October 14, 2026  
+**Version:** 2.1  
+**Effective date:** November 16, 2026  
 **Applies to:** All Flamingo AI products, including OpenFrame, OpenFrame SaaS, OpenMSP, and the Flamingo Website
 
 
@@ -47,7 +47,7 @@ Where a customer uses OpenFrame SaaS, Flamingo AI processes the following on the
 
 - **Account data** — for each user who signs in, including through Google or Microsoft single sign-on: name, email address, the identifier that identity provider uses for the account, whether the provider reported the address as verified, and the time of the most recent sign-in. Where a user signs in with Google, we also store the profile picture URL that Google supplies; Microsoft does not supply one. When an organization first registers, we also record the IP address and browser user agent used.  
 - **Operational data** — data collected by the OpenFrame agent from the customer’s managed endpoints, together with support conversations, tickets, and records of administrative actions performed in the product.  
-- **AI requests** — the content of each request an OpenFrame user makes to the AI assistant and the response, sent to the AI provider configured for that customer (section 5), together with a count of the tokens the request used, which we keep for billing.  
+- **AI requests** — the content of each request an OpenFrame user makes to the AI assistant and the response, sent to the AI provider configured for that customer (section 5), together with a count of the tokens the request used, which we keep for billing. Flamingo AI records and reviews requests and responses as described in section 5.  
 - **Billing data** — the plan, the daily count of managed devices, token purchases and usage, invoices, the billing address and, where given, a tax ID. Payments are processed by Stripe; Flamingo AI does not store card details.  
 - **Connected directory data** — where a customer connects a Google Workspace tenant, the data described in section 5; where a customer connects a Microsoft 365 tenant, the data described in section 6.  
 
@@ -64,7 +64,7 @@ Flamingo AI does not sell customer data and does not use it to train artificial 
 
 **Actions we take on the customer's behalf.** The Directory write permissions listed above form part of the consent a Google Workspace super administrator grants when connecting a tenant, and OpenFrame can make no change unless that consent has been granted. An administrator can also switch write-back off for a connection, which stops OpenFrame making any change while directory data continues to synchronize. Where write-back is on, OpenFrame can create a user account, update a user's first name, last name or job title, suspend or restore a user's account, move a user to another organizational unit, create, update or delete a group, and add or remove group members. OpenFrame does not change licence assignments, delete user accounts, or perform any action on a device. It does not reset the password of an existing account. Changes are made only in response to a request from an OpenFrame user: no scheduled or background process modifies your users, groups, group memberships or organizational units. OpenFrame does run a background job that maintains the notification channels it registers with Google in order to receive directory updates; those channels are OpenFrame's own subscriptions, and they are removed when the connection is deleted. Each change is recorded against the identity of the OpenFrame user who requested it, and Google's own administrative audit log records the same action independently.
 
-**Who we share it with.** To generate a response to an administrator's request, the relevant data is sent to the AI provider configured for that customer — Anthropic (Claude API) or OpenAI — solely to produce that response. Under those providers' commercial API terms, customer content is not used to train their models. We do not sell Google Workspace data, and we do not transfer it to advertising platforms, data brokers, or resellers. It is not shared with any other third party, except where an administrator asks us to include information in a support request.
+**Who we share it with.** To generate a response to an administrator's request, the relevant data is sent to the AI provider configured for that customer: Anthropic (Claude API) or OpenAI. We do not send customer data to Google's Gemini API. Under those providers' commercial API terms, customer content is not used to train their models. Each provider may retain requests and responses for up to 30 days to detect abuse and misuse, and OpenAI may review retained content for that purpose. Flamingo AI records AI requests and responses in its operational logs for up to 90 days; Flamingo AI engineers may access those logs to operate, debug and improve the service. We may publish anonymized descriptions of how the AI assistant is used, including in our Slack community, with customer, client and personal identifiers removed. We do not sell Google Workspace data, and we do not transfer it to advertising platforms, data brokers, or resellers. It is not otherwise shared with any third party, except where an administrator asks us to include information in a support request.
 
 **How we protect it.** Google user data is encrypted in transit. The OAuth refresh token issued for a connected tenant is encrypted with Google Cloud Key Management Service under a key created for that customer, and is never stored or transmitted by us in unencrypted form.
 
@@ -81,7 +81,7 @@ Flamingo AI does not sell customer data and does not use it to train artificial 
 
 **Actions we take on the customer's behalf.** Making changes requires a further, separate admin consent for the write permissions; until a Global Administrator grants it, Microsoft refuses every change we attempt. Where write-back is enabled, OpenFrame can create a user account, update a user's display name, first name, last name or job title, enable or disable a user's sign-in, create, update or delete a group, and add or remove group members. OpenFrame does not change licence assignments, reset passwords for existing accounts, delete user accounts, perform any action on a device, or assign administrative roles. Changes are made only in response to a request from an OpenFrame user; no scheduled or background process modifies your users, groups or group memberships. OpenFrame does run a background job that maintains the change-notification subscriptions it registers with Microsoft in order to receive directory updates.
 
-**Who we share it with.** As described in section 5 for Google Workspace data: the relevant data is sent to the AI provider configured for that customer solely to generate a response, and is not sold, transferred to advertising platforms, data brokers or resellers, or shared with any other third party except where an administrator asks us to include information in a support request.
+**Who we share it with.** As described in section 5 for Google Workspace data: the relevant data is sent to the AI provider configured for that customer to generate a response, is retained by that provider and recorded in Flamingo AI's operational logs as described there, and is not sold, transferred to advertising platforms, data brokers or resellers, or otherwise shared with any third party except where an administrator asks us to include information in a support request.
 
 **How we protect it.** Microsoft 365 data is encrypted in transit. We store no credential of yours: access is granted as a service principal of OpenFrame's own application inside your Entra directory, and OpenFrame's own application credentials are held in our secret store, never in the customer database.
 
@@ -115,7 +115,7 @@ Requests can be submitted to **privacy@flamingo.run**.
 ## 9. Data Transfers
 
 - Flamingo AI does not transfer customer data from self-hosted deployments.  
-- For OpenFrame SaaS, customer data may be transmitted to the AI providers named in section 5, solely to generate responses to the customer’s own requests.  
+- For OpenFrame SaaS, customer data may be transmitted to the AI providers named in section 5 to generate responses to the customer’s own requests and may be retained by them for up to 30 days to detect abuse and misuse.  
 - If personal data must cross borders (e.g., for support or OpenMSP account services), Flamingo AI uses safeguards such as Standard Contractual Clauses.  
 
 
