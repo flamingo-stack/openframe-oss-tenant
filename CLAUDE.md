@@ -321,3 +321,7 @@ Current integrations include:
 - **Authentik**: Identity provider
 
 Each tool has dedicated documentation in `docs/reference/tools/` and API documentation in `docs/api/tools/`.
+
+<!-- flamingo-agents-import:start -->
+@AGENTS.md
+<!-- flamingo-agents-import:end -->

@@ -1,106 +1,64 @@
-# OpenFrame OSS Tenant — Documentation
+# Project Documentation
 
-Welcome to the documentation for **OpenFrame OSS Tenant**, the open-source multi-service, multi-tenant foundation of the [OpenFrame platform](https://openframe.ai). This index provides navigation to all available documentation sections.
+Welcome to the documentation for **OpenFrame OSS Tenant**.
 
----
+OpenFrame OSS Tenant is the multi-service, multi-tenant open-source backend of [OpenFrame](https://openframe.ai), an AI-powered MSP (Managed Service Provider) platform built by [Flamingo](https://flamingo.run). This index is your starting point for setup, architecture, development workflow, and reference material.
 
 ## 📚 Table of Contents
 
-- [Getting Started](#-getting-started)
-- [Development](#-development)
-- [Reference Architecture](#-reference-architecture)
-- [Architecture Diagrams](#-architecture-diagrams)
-- [CLI Tools](#-cli-tools)
-- [Quick Links](#-quick-links)
+### Getting Started
 
----
+- [Introduction](./getting-started/introduction.md) — **OpenFrame OSS Tenant** is the multi-service, multi-tenant open-source backend of [OpenFrame](https://openframe.ai), an AI-powered MSP (Managed Service Provider) platform
+- [Prerequisites](./getting-started/prerequisites.md) — What you need installed, configured, and accessible before working with **OpenFrame OSS Tenant** — the Spring Boot microservices (API, Gateway, and related services) and supporting tooling
+- [Quick Start](./getting-started/quick-start.md) — Gets the OpenFrame OSS Tenant backend building and a service running locally in about five minutes, using the Maven build for the Java services and Cargo for the Rust client
+- [First Steps](./getting-started/first-steps.md) — You've installed OpenFrame OSS Tenant — now what? Walks through the first things to do right after setup, including configuration to check before running services
 
-## 🚀 Getting Started
+### Development
 
-New to OpenFrame OSS Tenant? Start here.
+- [Development Hub](./development/README.md) — The hub for everything you need to build, run, test, secure, and contribute to **OpenFrame OSS Tenant** — the multi-service, multi-tenant open-source backend
+- [Architecture Overview](./development/architecture/README.md) — OpenFrame OSS Tenant is the multi-service, multi-tenant open-source foundation of the OpenFrame platform — the unified, AI-driven MSP tooling layer built by Flamingo
+- [Contributing Guidelines](./development/contributing/guidelines.md) — Contributing Guidelines for the project
+- [Security](./development/security/README.md) — OpenFrame OSS Tenant is the multi-service, multi-tenant backend of the OpenFrame platform: a Spring Cloud Gateway, an OAuth2/OIDC authorization server, and several supporting services
+- [Development Environment Setup](./development/setup/environment.md) — The tools, IDE configuration, and environment variables you need to work on **OpenFrame OSS Tenant** — the polyglot repository that hosts the platform's services
+- [Local Development](./development/setup/local-development.md) — Covers cloning the repository, building its Java and Rust components, running services locally, enabling hot-reload-style workflows, and attaching a debugger
+- [Testing](./development/testing/README.md) — Describes how automated testing is organized and run across the OpenFrame OSS Tenant monorepo: the Java/Spring Boot backend services and the Rust `openframe_client`
 
-| Guide | Description |
-|---|---|
-| [Introduction](./getting-started/introduction.md) | What is OpenFrame OSS Tenant? Key features and architecture overview |
-| [Prerequisites](./getting-started/prerequisites.md) | Required tools, system requirements, and toolchain setup |
-| [Quick Start](./getting-started/quick-start.md) | Clone, build, and run the platform in a few steps |
-| [First Steps](./getting-started/first-steps.md) | What to explore and configure after your first setup |
+### Reference
 
----
+Reference docs are in `./reference/architecture/`:
 
-## 🛠️ Development
+- [Ecosystem](./reference/architecture/ecosystem.md) — OpenFrame OSS Tenant is a **service** (bash, java, rust), covering its published artifacts and upstream/downstream relationships
+- [Module Overview](./reference/architecture/overview.md) — OpenFrame OSS Tenant is the multi-service, multi-tenant open-source foundation of the OpenFrame platform, an AI-powered MSP platform
 
-Guides for engineers building with or contributing to OpenFrame OSS Tenant.
+### Diagrams
 
-| Guide | Description |
-|---|---|
-| [Development Overview](./development/README.md) | Technology stack, shared libraries, and navigation to all dev guides |
-| [Environment Setup](./development/setup/environment.md) | IDE recommendations, extensions, and toolchain configuration |
-| [Local Development](./development/setup/local-development.md) | Clone, run, debug, and develop services locally |
-| [Architecture Overview](./development/architecture/README.md) | High-level diagrams, component relationships, and data flows |
-| [Testing Overview](./development/testing/README.md) | Test structure, running tests, and writing new tests |
-| [Security Guidelines](./development/security/README.md) | Auth patterns, secrets management, and input validation |
-| [Contributing Guidelines](./development/contributing/guidelines.md) | Code style, branch naming, PR process, and commit format |
+Visual documentation - View Mermaid diagrams in: `./diagrams/architecture/`
 
----
+Available diagrams include the overall architecture diagram, component relationships, and a script execution sequence — see [Diagrams Overview](./diagrams/architecture/README.md) for details on each.
 
-## 📖 Reference Architecture
+### CLI Tools
 
-Technical reference documentation generated from source code analysis.
+The OpenFrame CLI tools is maintained in a separate repository:
+- **Repository**: [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli)
+- **Installation**: [Installation Guide](https://github.com/flamingo-stack/openframe-cli#installation)
+- **Documentation**: [CLI Documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs)
 
-| Document | Description |
-|---|---|
-| [Architecture Overview](./reference/architecture/overview.md) | Complete component documentation, data flows, CLI reference, and key file index |
+**Note**: CLI tools are NOT located in this repository. Always refer to the external repository for installation and usage.
 
----
+### Other Documentation
 
-## 📊 Architecture Diagrams
-
-Visual documentation of the platform architecture and data flows.
-
-Diagrams are available in Mermaid format (`.mmd`) and can be rendered in any Mermaid-compatible viewer:
-
-| Diagram | Description |
-|---|---|
-| [High-Level System Architecture](./diagrams/architecture/high-level-system-architecture.mmd) | Full platform overview: clients, gateway, services, data layer |
-| [Service Dependency Graph](./diagrams/architecture/service-dependency-graph.mmd) | How frontend, backend, and agent components depend on each other |
-| [Multi-Tenant OAuth2 Security Flow](./diagrams/architecture/multi-tenant-oauth2-security-flow.mmd) | JWT issuance, gateway validation, and tenant isolation sequence |
-| [Agent Registration and Authentication](./diagrams/architecture/agent-registration-and-authentication.mmd) | Rust agent registration, token exchange, and NATS subscription sequence |
-
----
-
-## 🔧 CLI Tools
-
-The OpenFrame CLI tools are maintained in a **separate external repository**:
-
-| Resource | Link |
-|---|---|
-| **Repository** | [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli) |
-| **Installation** | [Installation Guide](https://github.com/flamingo-stack/openframe-cli#installation) |
-| **Documentation** | [CLI Documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs) |
-
-> **Note:** CLI tools are **not** located in this repository. Always refer to the external repository for installation and usage.
-
----
-
-## 🤝 Community
-
-All support, feature requests, and development discussions happen in the **OpenMSP Slack community** — GitHub Issues and GitHub Discussions are not used.
-
-- **OpenMSP Community:** [https://www.openmsp.ai/](https://www.openmsp.ai/)
-- **Join Slack:** [Invite Link](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- **OpenFrame:** [https://openframe.ai](https://openframe.ai)
-- **Flamingo:** [https://flamingo.run](https://flamingo.run)
-
----
+Documentation coming soon.
 
 ## 📖 Quick Links
-
-- [Project README](../README.md) — Main project overview and quick start
-- [Contributing](../CONTRIBUTING.md) — How to contribute to this project
-- [License](../LICENSE.md) — License information
-- [Releases](https://github.com/flamingo-stack/openframe-oss-tenant/releases) — Release notes and downloads
+- [Project README](../README.md) - Main project README
+- [Contributing](../CONTRIBUTING.md) - How to contribute
+- [License](../LICENSE.md) - License information
 
 ---
 
-*Documentation generated by [🦩 Flamingo AI Technical Writer](https://flamingo.run)*
+## About This Repository
+
+OpenFrame OSS Tenant publishes the following Maven artifacts that make up the platform's Java services: `openframe-api`, `openframe-authorization-server`, `openframe-client`, `openframe-config`, `openframe-external-api`, `openframe-gateway`, `openframe-management`, `openframe-stream`, and `openframe-test`, plus the `openframe_client` Rust crate. It depends on the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) as an upstream shared library. See the [Ecosystem reference](./reference/architecture/ecosystem.md) for the full dependency and delivery-chain breakdown.
+
+---
+*Documentation generated by [🦩 Flamingo Code Documentation](https://flamingo.run)*

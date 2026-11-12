@@ -4,10 +4,9 @@ This directory contains Mermaid diagrams generated from architecture analysis.
 
 ## Diagrams
 
-- **[High-Level System Architecture](./high-level-system-architecture.mmd)** - `.mmd` file
-- **[Service Dependency Graph](./service-dependency-graph.mmd)** - `.mmd` file
-- **[Agent Registration and Authentication](./agent-registration-and-authentication.mmd)** - `.mmd` file
-- **[Multi-Tenant OAuth2 Security Flow](./multi-tenant-oauth2-security-flow.mmd)** - `.mmd` file
+- **[Architecture Diagram](./architecture-diagram.mmd)** - `.mmd` file
+- **[Component Relationships](./component-relationships.mmd)** - `.mmd` file
+- **[Script Execution Sequence](./script-execution-sequence.mmd)** - `.mmd` file
 
 ## Viewing Diagrams
 

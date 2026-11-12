@@ -1,52 +1,55 @@
 # openframe-oss-tenant Module Documentation
 
-# OpenFrame OSS Tenant — Architecture Documentation
+# OpenFrame OSS Tenant
 
 ## Overview
 
-OpenFrame OSS Tenant is the multi-service, multi-tenant open-source foundation of the OpenFrame platform — an AI-powered MSP (Managed Service Provider) platform that replaces expensive proprietary software with intelligent automation. It integrates device management, real-time messaging, AI-assisted support (Mingo AI for technicians, Fae for clients), and event-driven automation across a polyglot microservice architecture built on Spring Boot (Java) and Rust.
+OpenFrame OSS Tenant is the multi-service, multi-tenant open-source foundation of the OpenFrame platform — an AI-powered MSP (Managed Service Provider) platform built by [Flamingo](https://flamingo.run) that replaces expensive proprietary software with intelligent automation. It integrates device management, real-time messaging, AI-assisted support (Mingo AI for technicians, Fae for clients), and event-driven automation across a polyglot microservice architecture built on Spring Boot (Java) and Rust.
 
----
+The repository bundles the Spring Boot backend services (API, Gateway, Authorization Server, External API, Client, Stream, Management, Config) alongside the cross-platform `openframe-client` Rust agent, plus the Kubernetes manifests that deploy and wire them together.
 
 ## Architecture
 
-### High-Level System Architecture
+All client traffic enters through the Spring Cloud Gateway. Backend services communicate synchronously via HTTP/GraphQL and asynchronously via Apache Kafka and NATS JetStream. The Rust agent (`openframe-client`) talks to the platform exclusively over NATS, with a lifecycle/orchestration counterpart service of the same name running in the Java backend.
+
+### Architecture Diagram
 
 ```mermaid
 graph TB
     subgraph Clients["Client Layer"]
-        FrontendUI["openframe-frontend\n(Web UI)"]
+        FrontendUI["openframe-frontend (Web UI)"]
+        RustAgent["openframe-client (Rust Agent)"]
     end
 
     subgraph Gateway["Edge Layer"]
-        GW["Gateway Service\n:8081\nSpring Cloud Gateway"]
+        GW["Gateway :8081 (Spring Cloud Gateway)"]
     end
 
-    subgraph CoreServices["Core Services"]
-        API["API Service\n:8080\nSpring Boot + GraphQL"]
-        AuthServer["Authorization Server\n:8082\nOAuth2/OIDC"]
-        ExtAPI["External API\n:8083\nSpring Boot REST"]
-        StreamSvc["Stream Service\n:8085\nKafka Streams"]
-        ClientSvc["Client Service\n:8084\nSpring Boot + NATS"]
-    end
-
-    subgraph AgentLayer["Agent Layer"]
-        OFClient["openframe-client\n(Rust Agent)\nSystem Service"]
+    subgraph CoreServices["Core Services (this repo)"]
+        API["API Service :8080 (Spring Boot + GraphQL)"]
+        AuthServer["Auth Server :8082 (OAuth2 / OIDC)"]
+        ExtAPI["External API :8083 (REST)"]
+        ClientSvc["Client Service :8084 (Agent lifecycle + NATS)"]
+        StreamSvc["Stream Service :8085 (Kafka Streams)"]
+        Mgmt["Management Service"]
+        Config["Config Service"]
     end
 
     subgraph DataLayer["Data Layer"]
-        Mongo[("MongoDB\nTransactional Storage")]
-        Cassandra[("Cassandra\nTime-Series / Logs")]
-        Pinot[("Apache Pinot\nReal-Time Analytics")]
-        Redis[("Redis\nCache / Sessions")]
-        Kafka[("Apache Kafka\nEvent Streaming")]
-        NATS[("NATS/JetStream\nAgent Messaging")]
+        Mongo[("MongoDB")]
+        Cassandra[("Cassandra")]
+        Pinot[("Apache Pinot")]
+        Redis[("Redis Cluster")]
+        Kafka[("Apache Kafka")]
+        NATS[("NATS JetStream")]
     end
 
     FrontendUI --> GW
+    RustAgent -->|NATS| NATS
     GW --> API
     GW --> AuthServer
     GW --> ExtAPI
+    GW --> ClientSvc
     API --> Mongo
     API --> Pinot
     API --> Kafka
@@ -56,228 +59,183 @@ graph TB
     ClientSvc --> Mongo
     ClientSvc --> NATS
     AuthServer --> Mongo
-    OFClient --> NATS
-    OFClient --> API
+    Config --> Mgmt
 ```
-
----
 
 ## Core Components
 
 | Component | Language | Port | Responsibility |
 |---|---|---|---|
-| **API Service** | Java / Spring Boot 4.1 | 8080 | Internal REST + GraphQL APIs; ticket, dialog, AI settings, tenant management |
-| **Authorization Server** | Java / Spring Authorization Server | 8082 | Multi-tenant OAuth2/OIDC; JWT issuance with RSA keys; SSO (Google, Microsoft) |
-| **Gateway** | Java / Spring Cloud Gateway | 8081 | Security enforcement, JWT validation, request routing, WebSocket proxy |
-| **External API** | Java / Spring Boot | 8083 | Rate-limited public API endpoints with API key management |
-| **Stream Service** | Java / Kafka Streams | 8085 | Real-time event normalization, enrichment, Cassandra/Pinot write |
-| **Client Service** | Java / Spring Boot + NATS | 8084 | Agent lifecycle management, tool orchestration |
-| **openframe-client** | Rust | — | Cross-platform system agent; device registration, tool management, script execution, NATS messaging |
-| **openframe-frontend** | TypeScript / Node.js | 3000 | Web-based tenant dashboard (Mingo AI) |
-| **openframe-frontend-core** | TypeScript (lib) | — | Shared UI component library; ODS design tokens, chat components, NATS hooks |
-
----
+| `openframe-api` | Java / Spring Boot 4.1 | 8080 | REST + GraphQL APIs; tickets, dialogs, AI settings, tenant management |
+| `openframe-authorization-server` | Java / Spring Authorization Server | 8082 | Multi-tenant OAuth2/OIDC; RSA-signed JWT issuance; SSO (Google, Microsoft) |
+| `openframe-gateway` | Java / Spring Cloud Gateway | 8081 | Security enforcement, JWT validation, routing, WebSocket proxy |
+| `openframe-external-api` | Java / Spring Boot | 8083 | Rate-limited public API endpoints with API key management |
+| `openframe-client` (service) | Java / Spring Boot + NATS | 8084 | Agent lifecycle management, tool orchestration (MeshCentral, FleetMDM) |
+| `openframe-stream` | Java / Kafka Streams | 8085 | Real-time event normalization, enrichment, Cassandra/Pinot writes |
+| `openframe-management` | Java / Spring Boot | — | Platform/tenant management operations |
+| `openframe-config` | Java / Spring Cloud Config | — | Centralized configuration serving to every other service |
+| `openframe-client` (agent) | Rust | — | Cross-platform system agent; device registration, script execution, self-update via Velopack |
+| `openframe-test` | Java | — | Shared test support module |
 
 ## Component Relationships
 
-### Service Dependency Graph
-
 ```mermaid
-graph LR
-    subgraph FE["Frontend Clients"]
-        Frontend["openframe-frontend\n(Web)"]
-    end
+flowchart LR
+    GW["openframe-gateway"] --> API["openframe-api"]
+    GW --> AUTH["openframe-authorization-server"]
+    GW --> EXT["openframe-external-api"]
+    GW --> CLIENTSVC["openframe-client (service)"]
+    GW --> FRONTEND["openframe-ui-spa"]
 
-    subgraph Backend["Backend Services"]
-        GW["Gateway\n:8081"]
-        API["API Service\n:8080"]
-        Auth["Auth Server\n:8082"]
-        Ext["External API\n:8083"]
-        Stream["Stream Service\n:8085"]
-        ClientSvc["Client Service\n:8084"]
-    end
+    CONFIG["openframe-config"] -.->|serves config| API
+    CONFIG -.->|serves config| AUTH
+    CONFIG -.->|serves config| EXT
+    CONFIG -.->|serves config| CLIENTSVC
+    CONFIG -.->|serves config| STREAM["openframe-stream"]
+    CONFIG -.->|serves config| MGMT["openframe-management"]
 
-    subgraph Agent["Agent"]
-        OFC["openframe-client\n(Rust)"]
-    end
+    STREAM --> KAFKA[("Kafka")]
+    API --> KAFKA
+    CLIENTSVC --> KAFKA
+    EXT --> KAFKA
+    MGMT --> KAFKA
 
-    subgraph Lib["Shared Libraries"]
-        CoreLib["openframe-frontend-core\n(TypeScript npm lib)"]
-    end
+    CLIENTSVC --> NATS[("NATS JetStream")]
+    AGENT["openframe-client (Rust agent)"] -->|NATS only| NATS
 
-    Frontend --> CoreLib
-    Frontend --> GW
-    GW --> Auth
-    GW --> API
-    GW --> Ext
-    API --> Stream
-    ClientSvc --> NATS[("NATS")]
-    OFC --> NATS
-    Stream --> Kafka[("Kafka")]
-    API --> Kafka
+    STREAM --> CASSANDRA[("Cassandra")]
+    STREAM --> PINOT[("Apache Pinot")]
+    API --> MONGO[("MongoDB")]
+    AUTH --> MONGO
+    CLIENTSVC --> MONGO
+
+    LIB["OpenFrame OSS Library (flamingo-stack/openframe-oss-lib)"] -.->|shared code, pinned manually| API
+    LIB -.-> AUTH
+    LIB -.-> GW
+    LIB -.-> EXT
+    LIB -.-> CLIENTSVC
+    LIB -.-> STREAM
+    LIB -.-> AGENT
 ```
-
----
 
 ## Data Flow
 
-### Agent Registration and Authentication
+The sequence below traces a device script execution: a technician triggers a script from the API/GraphQL layer, the Gateway routes it, the Client service hands it to the agent over NATS, and the result flows back through Kafka Streams into analytics storage.
+
+### Script Execution Sequence
 
 ```mermaid
 sequenceDiagram
-    participant Agent as openframe-client
-    participant GW as Gateway
-    participant Auth as Auth Server
-    participant API as API Service
-    participant Mongo as MongoDB
+    participant UI as openframe-frontend
+    participant GW as openframe-gateway
+    participant API as openframe-api
+    participant CS as openframe-client (service)
     participant NATS as NATS JetStream
+    participant Agent as openframe-client (Rust agent)
+    participant Stream as openframe-stream
+    participant Pinot as Apache Pinot
 
-    Agent->>GW: POST /clients/api/agents/register (X-Initial-Key)
-    GW->>API: Forward registration request
-    API->>Mongo: Persist machine record
-    API-->>Agent: {machineId, clientId, clientSecret}
-    Agent->>GW: POST /clients/oauth/token (client_credentials)
-    GW->>Auth: Forward token request
-    Auth->>Mongo: Lookup OAuth2 client
-    Auth-->>Agent: JWT access_token + refresh_token
-    Agent->>NATS: Subscribe machine.{machineId}.* subjects
-    NATS-->>Agent: Tool install / update / script execution messages
+    UI->>GW: Request script execution (GraphQL/REST)
+    GW->>API: Route + validate JWT
+    API->>CS: Dispatch command for device
+    CS->>NATS: Publish ScriptMessage
+    NATS->>Agent: Deliver command
+    Agent->>Agent: Execute script (bash/PowerShell/Python/Nushell)
+    Agent->>NATS: Publish execution result
+    NATS->>CS: Consume result
+    CS->>Stream: Emit event to Kafka
+    Stream->>Pinot: Write enriched event
+    API-->>UI: Query result via GraphQL
 ```
-
-### Multi-Tenant OAuth2 Security Flow
-
-```mermaid
-sequenceDiagram
-    participant Browser as Browser
-    participant GW as Gateway
-    participant Auth as Auth Server
-    participant API as API Service
-    participant DB as MongoDB
-
-    Browser->>Auth: OAuth2 login (tenant-scoped PKCE)
-    Auth->>DB: Lookup tenant OAuth2 client
-    Auth-->>Browser: JWT (tenant_id + RSA signed)
-    Browser->>GW: API request with Bearer JWT
-    GW->>GW: Validate issuer + RSA signature
-    GW->>GW: Attach identity context headers
-    GW->>API: Forward with X-Tenant-Id, X-Machine-Id
-    API->>API: Enforce tenant isolation filter
-    API->>DB: Query with tenantId scope
-    DB-->>API: Tenant-scoped results
-    API-->>Browser: Response
-```
-
----
 
 ## Key Files
 
 | File | Purpose |
 |---|---|
-| [`clients/openframe-client/src/main.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/main.rs) | Thin agent entry point — calls `openframe::run()` from openframe-agent-lib |
-| [`clients/openframe-client/src/lib.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/lib.rs) | Agent core: wires all services (NATS, auth, registration, execution, update, logging) |
-| [`clients/openframe-client/src/service.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/service.rs) | Cross-platform service lifecycle (install/uninstall/run); Windows SCM integration |
-| [`clients/openframe-client/src/service_adapter.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/service_adapter.rs) | `CrossPlatformServiceManager`: macOS launchd, Linux systemd, Windows SCM |
-| [`clients/openframe-client/src/installation_initial_config_service.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/installation_initial_config_service.rs) | Builds and persists `InitialConfiguration`; resolves mkcert CA in local mode |
-| [`clients/openframe-client/src/doctor/mod.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/doctor/mod.rs) | Pre-install + post-install health check runner (`DoctorReport`) |
-| [`clients/openframe-client/src/executor/mod.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/executor/mod.rs) | Cross-platform script execution engine (bash, powershell, python, nushell) |
-| [`clients/openframe-client/src/listener/execution_listener.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/listener/execution_listener.rs) | Generic NATS core subscription; bounded concurrency, durable result outbox |
-| [`clients/openframe-client/src/listener/tool_installation_message_listener.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/listener/tool_installation_message_listener.rs) | JetStream consumer for tool install messages; parks during client update |
-| [`clients/openframe-client/src/clients/auth_client.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/clients/auth_client.rs) | OAuth2 `client_credentials` and `refresh_token` flows against the auth server |
-| [`clients/openframe-client/src/clients/registration_client.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/clients/registration_client.rs) | `/register` + `/reinstall` with `CLIENT_SECRET_*` error detection |
-| [`clients/openframe-client/src/updater.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/updater.rs) | Velopack-based self-update: check → download → apply + restart |
-| [`clients/openframe-client/src/logging/nats_streaming.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/logging/nats_streaming.rs) | Batched log shipping to NATS `agents.logs` subject (60s intervals) |
-| [`clients/openframe-client/src/config/update_config.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/config/update_config.rs) | All timing/retry/concurrency constants for updates, NATS, and execution |
-| [`clients/openframe-client/src/models/mod.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/main/clients/openframe-client/src/models/mod.rs) | Central re-export of all domain models (registration, tools, execution, updates) |
-
----
+| `pom.xml` | Parent Maven POM coordinating all Java services |
+| `openframe/services/openframe-api/` | Core REST + GraphQL API service source |
+| `openframe/services/openframe-gateway/` | Spring Cloud Gateway service source |
+| `openframe/services/openframe-authorization-server/` | OAuth2/OIDC authorization server source |
+| `openframe/services/openframe-external-api/` | Public, rate-limited API service source |
+| `openframe/services/openframe-client/` | Java agent-lifecycle/orchestration service source |
+| `openframe/services/openframe-stream/` | Kafka Streams event-processing service source |
+| `openframe/services/openframe-management/` | Management service source |
+| `openframe/services/openframe-config/` | Spring Cloud Config service source |
+| `clients/openframe-client/src/main.rs` | Thin entry point for the Rust agent; delegates to the `openframe` library crate (`openframe::run()`) |
+| `manifests/` | Kubernetes manifests: Argo CD app-of-apps, datasources (MongoDB, Cassandra, Kafka, NATS, Pinot, Redis Cluster, ZooKeeper), platform charts, and the tenant chart that wires every service's image together |
+| `configs/base/application.yml` | Shared Spring config: MongoDB, Redis Cluster, Cassandra, Pinot connection endpoints |
+| `configs/base/openframe-gateway.yml` | Gateway route table (`/sas/**`, `/api-docs/**`, `/api/**`, `/clients/**`, `/**`) |
+| `.github/workflows/release.yml` | CI/CD: builds and publishes every service container image and the Helm app-of-apps chart |
+| `README.md` | Project overview, quick start, and technology stack |
 
 ## Dependencies
 
-The repository consumes `../deps/openframe-oss-lib/` as a monorepo dependency workspace.
+This repository is registered as a **service** publishing nine Maven artifacts under the `com.openframe` group (`openframe-api`, `openframe-authorization-server`, `openframe-client`, `openframe-config`, `openframe-external-api`, `openframe-gateway`, `openframe-management`, `openframe-stream`, `openframe-test`, all `1.0.0-SNAPSHOT`) and one Cargo crate, `openframe_client` (`0.1.0`), for the Rust agent.
 
-### `openframe-frontend-core` (TypeScript npm package `@flamingo-stack/openframe-frontend-core`)
+### Upstream: OpenFrame OSS Library
 
-This is the shared UI library consumed by `openframe-frontend` (the web UI). It provides chat UI surfaces, NATS streaming hooks, ODS design tokens, and UI primitives.
+The one upstream dependency recorded in the code graph is **[OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib)**, pinned manually (not via a version-manager edge). The material under `../deps/openframe-oss-lib/` confirms this is a shared-code checkout consumed by this repository:
 
-The library ships two tsup build configurations: a **server-safe** entry (pure types, configs, platform domains — no React) and a **client-side** entry (React components with `"use client"` banner).
+- **`clients/openframe-client/src/main.rs`** states it directly: *"All logic lives in the `openframe-agent-lib` library (crate name `openframe`), shared from `https://github.com/flamingo-stack/openframe-oss-lib`."* The Rust binary in this repo is a thin wrapper that calls `openframe::run()`.
+- **`clients/openframe-client/build.rs`** (in the lib checkout) forwards build-time environment variables (`OPENFRAME_VERSION`, and feature-gated `OPENFRAME_CHAT_VERSION`, `MESHCENTRAL_AGENT_VERSION`, `FLEETMDM_AGENT_VERSION`, `OSQUERY_VERSION`) that this repo's build must supply, as the README's Quick Start shows: `OPENFRAME_VERSION=0.0.0-dev cargo build`.
+- The lib also ships `openframe-frontend-core` (an npm package, `@flamingo-stack/openframe-frontend-core`) and `openframe-test-service-core`, a Java test-support module used by a coverage-matrix tool (`test-coverage-analyser/coverage_matrix.py`) that cross-references this repository's (and its sibling SaaS repositories') GraphQL schemas and REST controllers against frontend and test usage — evidence that shared test tooling in the lib targets this repo's API surface.
 
-### `openframe-client` in `../deps/openframe-oss-lib/clients/openframe-client`
+No downstream consumer of this repository's artifacts is recorded in the code graph (coverage is `full`, meaning this absence is conclusive, not a gap): nothing else in the organization currently depends on `com.openframe:*` or `openframe_client`.
 
-The agent implementation lives there as the `openframe-agent-lib` crate; the in-repo `clients/openframe-client` is a thin binary that depends on it via a pinned git tag and calls `openframe::run()`. The library's `build.rs` requires `OPENFRAME_VERSION` at build time (optional tool/agent version env vars can be injected at compile time).
+### Delivery chain
 
----
+Per the ecosystem facts, the release workflow (`.github/workflows/release.yml`) builds and publishes a container image per service to `ghcr.io/flamingo-stack/openframe-oss-tenant/<service>` (api, authorization-server, external-api, client, config, gateway, management, stream) plus an `app-of-apps` Helm chart (`oci://ghcr.io/flamingo-stack/openframe-oss-tenant/app-of-apps`). The `manifests/tenant` chart assembles these images together with the `openframe-oss-frontend` UI image and the third-party FleetMDM and MeshCentral charts into one deployable tenant. The `manifests/apps` Argo CD app-of-apps then layers in the `platform` wave (ingress-nginx, dev-tools, openframe-config) and the `datasources` wave (Cassandra, Kafka, MongoDB, MySQL for FleetMDM, NATS, Pinot, Redis Cluster, ZooKeeper, Debezium Connect) ahead of the tenant services.
 
 ## CLI Commands
 
-The `openframe-client` Rust binary exposes the following subcommands:
+### Build
 
 ```bash
-openframe-client install \
-  --serverUrl <https://your-server> \
-  --initialKey <key> \
-  --orgId <org-id> \
-  [--localMode] \
-  [--tag key=value ...]
+# Clone the repository
+git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
+cd openframe-oss-tenant
+
+# Build all backend services (Java / Spring Boot)
+mvn clean install -DskipTests
+
+# Build the Rust agent
+cd clients/openframe-client
+OPENFRAME_VERSION=0.0.0-dev cargo build
+
+cd ../..
 ```
+
+### Run
 
 ```bash
-openframe-client uninstall
+# Start the API service
+mvn spring-boot:run -pl openframe/services/openframe-api
 ```
+
+### Rust Agent
 
 ```bash
-openframe-client run
+# Verify the agent binary
+./clients/openframe-client/target/debug/openframe-client --help
+
+# Run environment diagnostics
+./clients/openframe-client/target/debug/openframe-client doctor
+
+# Install as a system service
+sudo ./target/release/openframe-client install \
+  --serverUrl https://your-openframe-instance.example.com \
+  --initialKey YOUR_INITIAL_KEY \
+  --orgId YOUR_ORG_ID
 ```
 
-```bash
-openframe-client doctor
-```
+The agent's CLI (defined in `clients/openframe-client/src/cli.rs`, via the lib's shared `openframe` crate) also exposes `auth` (second-step authentication for a parameterless install), `uninstall`, `doctor`, and a hidden `restart-service` subcommand, each accepting an optional `--remote-access-mode` flag (`approval-required`, `notify-only`, `silent-access`, `deny-access`).
 
-### Command Reference
+## Community
 
-| Command | Requires Admin | Description |
-|---|---|---|
-| `install` | ✅ | Runs pre-install doctor checks, writes `initial_config.json`, registers agent as OS service |
-| `uninstall` | ✅ | Stops and removes the system service, cleans up registration |
-| `run` | — | Runs the agent directly in the foreground (non-service mode, for debugging) |
-| `run-as-service` | — | Hidden; invoked by the OS service manager (launchd / systemd / SCM) |
-| `check-permissions` | — | Hidden; verifies admin capability for the current process |
-| `doctor` | ✅ | Reads installed config, checks connectivity and disk, prints `[+]`/`[x]`/`[!]` report |
+This project does not use GitHub Issues or GitHub Discussions. All support, feature requests, bug reports, and development discussion happen in the OpenMSP Slack community:
 
-### Doctor Check Categories
-
-```text
-[+] Pass    [x] Fail    [!] Warn    [i] Info
-
-Pre-install checks:
-  Command   — all required CLI args present
-  Admin     — running as root/Administrator
-  Disk      — install path writable, 200MB free, log/secured dirs writable
-  Network   — DNS resolves server URL, TCP connects :443, HTTPS handshake succeeds
-
-Health check (post-install):
-  Command   — initial_config.json readable, server_host present
-  Admin     — elevated privileges
-  Network   — same DNS/TCP/TLS checks against persisted server_host
-```
-
-### Install Flags
-
-| Flag | Required | Description |
-|---|---|---|
-| `--serverUrl` | ✅ | Base URL of the OpenFrame server (e.g. `https://tenant.openframe.example`) |
-| `--initialKey` | ✅ | One-time registration key issued by the tenant admin |
-| `--orgId` | ✅ | Organization ID the device belongs to |
-| `--localMode` | — | Enables mkcert CA resolution for local TLS (dev environments) |
-| `--tag key=value` | — | Repeatable; assigns device tags (e.g. `--tag site=CHICAGO --tag env=prod`) |
-
----
-
-## Community & Links
-
-- **Community (Slack):** [OpenMSP Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- **Platform:** [flamingo.run](https://flamingo.run)
-- **OpenFrame Product:** [flamingo.run/openframe](https://www.flamingo.run/openframe)
-- **OpenMSP:** [openmsp.ai](https://www.openmsp.ai/)
-- **Repository:** [flamingo-stack/openframe-oss-tenant](https://github.com/flamingo-stack/openframe-oss-tenant)
-- **Issues / PRs:** [github.com/flamingo-stack/openframe-oss-tenant/pulls](https://github.com/flamingo-stack/openframe-oss-tenant/pulls)
-- **Releases:** [github.com/flamingo-stack/openframe-oss-tenant/releases](https://github.com/flamingo-stack/openframe-oss-tenant/releases)
+- OpenMSP Community: [https://www.openmsp.ai/](https://www.openmsp.ai/)
+- Join Slack: [Invite Link](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- OpenFrame Website: [https://openframe.ai](https://openframe.ai)
+- Flamingo Platform: [https://flamingo.run](https://flamingo.run)
+- Releases: [github.com/flamingo-stack/openframe-oss-tenant/releases](https://github.com/flamingo-stack/openframe-oss-tenant/releases)
