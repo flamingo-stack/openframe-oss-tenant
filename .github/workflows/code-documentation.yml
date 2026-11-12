@@ -391,7 +391,8 @@ jobs:
               -K "$CURL_CFG" \
               -o "$output_path"
 
-            local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
+            local actual_hash
+            actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
 
             if [ "$actual_hash" != "$expected_hash" ]; then
               echo "❌ HASH MISMATCH for $script_name!"
@@ -479,7 +480,7 @@ jobs:
       - name: Install graph dependencies
         if: github.event_name != 'pull_request' || steps.refresh.outputs.build == 'true'
         continue-on-error: ${{ github.event_name == 'pull_request' }}
-        run: mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund && echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV" || { echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; }
+        run: if mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund; then echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV"; else echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; fi
 
       # Overlay mode posts the PR's overlay INSTEAD of a snapshot (code-graph-build.mjs `overlayMain`).
       - name: Build and upload the code graph
@@ -624,7 +625,8 @@ jobs:
               -K "$CURL_CFG" \
               -o "$output_path"
 
-            local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
+            local actual_hash
+            actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
 
             if [ "$actual_hash" != "$expected_hash" ]; then
               echo "❌ HASH MISMATCH for $script_name!"
@@ -787,7 +789,8 @@ jobs:
               -K "$CURL_CFG" \
               -o "$output_path"
 
-            local actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
+            local actual_hash
+            actual_hash=$(shasum -a 256 "$output_path" | cut -d' ' -f1)
 
             if [ "$actual_hash" != "$expected_hash" ]; then
               echo "❌ HASH MISMATCH for $script_name!"
@@ -816,17 +819,19 @@ jobs:
           # detection, source discovery, the generators, the graph build) reads this
           # file, so none of them needs the secret for it.
           node /tmp/ci-source.mjs vocabulary /tmp/ci-vocabulary.json || { echo "::error title=Source vocabulary unavailable::Could not read the source vocabulary from the hub."; exit 1; }
-          echo "CODE_GRAPH_VOCABULARY_FILE=/tmp/ci-vocabulary.json" >> $GITHUB_ENV
+          echo "CODE_GRAPH_VOCABULARY_FILE=/tmp/ci-vocabulary.json" >> "$GITHUB_ENV"
 
           echo "Pipeline scripts and source vocabulary downloaded and verified"
 
           # Export paths for all stages (use os.tmpdir() compatible paths)
-          echo "VALIDATION_RULES_PATH=/tmp/markdown-validation-rules.md" >> $GITHUB_ENV
-          echo "GUIDELINES_PATH=/tmp/flamingo-markdown-guidelines.md" >> $GITHUB_ENV
-          echo "STAGE3_FILES_TRACKER=/tmp/stage3-files.txt" >> $GITHUB_ENV
-          echo "STAGE3_STATS_FILE=/tmp/.doc-stage3-stats.json" >> $GITHUB_ENV
-          echo "STAGE4_FILES_TRACKER=/tmp/stage4-files.txt" >> $GITHUB_ENV
-          echo "LEGAL_FILES_LIST=/tmp/stage4-legal-files.txt" >> $GITHUB_ENV
+          {
+            echo "VALIDATION_RULES_PATH=/tmp/markdown-validation-rules.md"
+            echo "GUIDELINES_PATH=/tmp/flamingo-markdown-guidelines.md"
+            echo "STAGE3_FILES_TRACKER=/tmp/stage3-files.txt"
+            echo "STAGE3_STATS_FILE=/tmp/.doc-stage3-stats.json"
+            echo "STAGE4_FILES_TRACKER=/tmp/stage4-files.txt"
+            echo "LEGAL_FILES_LIST=/tmp/stage4-legal-files.txt"
+          } >> "$GITHUB_ENV"
 
           # Flamingo Markdown guidelines (their own endpoint). REQUIRED: the
           # Markdown validation and the CodeWiki prompts both read them.
@@ -908,7 +913,7 @@ jobs:
           # rewrite would also send this job's own pushes through it.
           IFS=',' read -ra DEPS <<< "$DEPENDENCIES"
           for dep in "${DEPS[@]}"; do
-            repo_name=$(basename $dep)
+            repo_name=$(basename "$dep")
             echo "::group::Clone $dep into ../deps/$repo_name"
             if git -c "url.https://x-access-token:${CLONE_TOKEN}@github.com/.insteadOf=https://github.com/" \
                 clone --depth 1 "https://github.com/$dep.git" "../deps/$repo_name" 2>&1; then
@@ -1239,44 +1244,46 @@ jobs:
 
           # 4. Export to GITHUB_ENV (every later step reads these) -------------
 
-          # CodeWiki config (31 vars: cluster=9, generation=10, fallback=9, shared=3)
-          echo "CODEWIKI_CLUSTER_PROVIDER=$CODEWIKI_CLUSTER_PROVIDER" >> $GITHUB_ENV
-          echo "CODEWIKI_CLUSTER_MODEL=$CODEWIKI_CLUSTER_MODEL" >> $GITHUB_ENV
-          echo "CODEWIKI_CLUSTER_MAX_TOKENS=$CODEWIKI_CLUSTER_MAX_TOKENS" >> $GITHUB_ENV
-          echo "CODEWIKI_CLUSTER_MAX_TOKEN_FIELD=$CODEWIKI_CLUSTER_MAX_TOKEN_FIELD" >> $GITHUB_ENV
-          echo "CODEWIKI_GENERATION_PROVIDER=$CODEWIKI_GENERATION_PROVIDER" >> $GITHUB_ENV
-          echo "CODEWIKI_GENERATION_MODEL=$CODEWIKI_GENERATION_MODEL" >> $GITHUB_ENV
-          echo "CODEWIKI_GENERATION_MAX_TOKENS=$CODEWIKI_GENERATION_MAX_TOKENS" >> $GITHUB_ENV
-          echo "CODEWIKI_GENERATION_MAX_TOKEN_FIELD=$CODEWIKI_GENERATION_MAX_TOKEN_FIELD" >> $GITHUB_ENV
-          echo "CODEWIKI_FALLBACK_PROVIDER=$CODEWIKI_FALLBACK_PROVIDER" >> $GITHUB_ENV
-          echo "CODEWIKI_FALLBACK_MODEL=$CODEWIKI_FALLBACK_MODEL" >> $GITHUB_ENV
-          echo "CODEWIKI_FALLBACK_MAX_TOKENS=$CODEWIKI_FALLBACK_MAX_TOKENS" >> $GITHUB_ENV
-          echo "CODEWIKI_FALLBACK_MAX_TOKEN_FIELD=$CODEWIKI_FALLBACK_MAX_TOKEN_FIELD" >> $GITHUB_ENV
-          echo "CODEWIKI_MAX_FILES_PER_MODULE=$CODEWIKI_MAX_FILES_PER_MODULE" >> $GITHUB_ENV
-          echo "CODEWIKI_MAX_DEPTH=$CODEWIKI_MAX_DEPTH" >> $GITHUB_ENV
-          echo "CODEWIKI_REPO=$CODEWIKI_REPO" >> $GITHUB_ENV
+          {
+            # CodeWiki config (31 vars: cluster=9, generation=10, fallback=9, shared=3)
+            echo "CODEWIKI_CLUSTER_PROVIDER=$CODEWIKI_CLUSTER_PROVIDER"
+            echo "CODEWIKI_CLUSTER_MODEL=$CODEWIKI_CLUSTER_MODEL"
+            echo "CODEWIKI_CLUSTER_MAX_TOKENS=$CODEWIKI_CLUSTER_MAX_TOKENS"
+            echo "CODEWIKI_CLUSTER_MAX_TOKEN_FIELD=$CODEWIKI_CLUSTER_MAX_TOKEN_FIELD"
+            echo "CODEWIKI_GENERATION_PROVIDER=$CODEWIKI_GENERATION_PROVIDER"
+            echo "CODEWIKI_GENERATION_MODEL=$CODEWIKI_GENERATION_MODEL"
+            echo "CODEWIKI_GENERATION_MAX_TOKENS=$CODEWIKI_GENERATION_MAX_TOKENS"
+            echo "CODEWIKI_GENERATION_MAX_TOKEN_FIELD=$CODEWIKI_GENERATION_MAX_TOKEN_FIELD"
+            echo "CODEWIKI_FALLBACK_PROVIDER=$CODEWIKI_FALLBACK_PROVIDER"
+            echo "CODEWIKI_FALLBACK_MODEL=$CODEWIKI_FALLBACK_MODEL"
+            echo "CODEWIKI_FALLBACK_MAX_TOKENS=$CODEWIKI_FALLBACK_MAX_TOKENS"
+            echo "CODEWIKI_FALLBACK_MAX_TOKEN_FIELD=$CODEWIKI_FALLBACK_MAX_TOKEN_FIELD"
+            echo "CODEWIKI_MAX_FILES_PER_MODULE=$CODEWIKI_MAX_FILES_PER_MODULE"
+            echo "CODEWIKI_MAX_DEPTH=$CODEWIKI_MAX_DEPTH"
+            echo "CODEWIKI_REPO=$CODEWIKI_REPO"
 
-          # YouTube config (2 vars - API key from secrets, not exported here)
-          echo "YOUTUBE_ENABLED=$YOUTUBE_ENABLED" >> $GITHUB_ENV
-          echo "YOUTUBE_CHANNELS=$YOUTUBE_CHANNELS" >> $GITHUB_ENV
+            # YouTube config (2 vars - API key from secrets, not exported here)
+            echo "YOUTUBE_ENABLED=$YOUTUBE_ENABLED"
+            echo "YOUTUBE_CHANNELS=$YOUTUBE_CHANNELS"
 
-          # README config (3 vars)
-          echo "README_LOGO_DARK=$README_LOGO_DARK" >> $GITHUB_ENV
-          echo "README_LOGO_LIGHT=$README_LOGO_LIGHT" >> $GITHUB_ENV
-          echo "README_LOGO_ALT=$README_LOGO_ALT" >> $GITHUB_ENV
+            # README config (3 vars)
+            echo "README_LOGO_DARK=$README_LOGO_DARK"
+            echo "README_LOGO_LIGHT=$README_LOGO_LIGHT"
+            echo "README_LOGO_ALT=$README_LOGO_ALT"
 
-          # Output paths (5 vars)
-          echo "DOCS_OUTPUT_PATH=$DOCS_OUTPUT_PATH" >> $GITHUB_ENV
-          echo "REFERENCE_OUTPUT_PATH=$REFERENCE_OUTPUT_PATH" >> $GITHUB_ENV
-          echo "DIAGRAMS_OUTPUT_PATH=$DIAGRAMS_OUTPUT_PATH" >> $GITHUB_ENV
-          echo "GETTING_STARTED_OUTPUT_PATH=$GETTING_STARTED_OUTPUT_PATH" >> $GITHUB_ENV
-          echo "DEVELOPMENT_OUTPUT_PATH=$DEVELOPMENT_OUTPUT_PATH" >> $GITHUB_ENV
+            # Output paths (5 vars)
+            echo "DOCS_OUTPUT_PATH=$DOCS_OUTPUT_PATH"
+            echo "REFERENCE_OUTPUT_PATH=$REFERENCE_OUTPUT_PATH"
+            echo "DIAGRAMS_OUTPUT_PATH=$DIAGRAMS_OUTPUT_PATH"
+            echo "GETTING_STARTED_OUTPUT_PATH=$GETTING_STARTED_OUTPUT_PATH"
+            echo "DEVELOPMENT_OUTPUT_PATH=$DEVELOPMENT_OUTPUT_PATH"
 
-          # Custom instructions (2 vars)
-          echo "CUSTOM_INSTRUCTIONS<<EOF" >> $GITHUB_ENV
-          echo "$CUSTOM_INSTRUCTIONS" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          echo "EXTERNAL_REPOS=$EXTERNAL_REPOS" >> $GITHUB_ENV
+            # Custom instructions (2 vars)
+            echo "CUSTOM_INSTRUCTIONS<<EOF"
+            echo "$CUSTOM_INSTRUCTIONS"
+            echo "EOF"
+            echo "EXTERNAL_REPOS=$EXTERNAL_REPOS"
+          } >> "$GITHUB_ENV"
 
           echo "Run configuration validated and exported: 15 CodeWiki, 2 YouTube, 3 README, 5 output paths, 2 instruction values"
 
@@ -1337,11 +1344,11 @@ jobs:
             KEEPING=$(wc -l < "$SOURCE_FILES_LIST" | tr -d ' ')
 
             # 2. Find ALL files in the repo (except .git and workflow temp files)
-            find . ../deps 2>/dev/null -type f \
+            find . ../deps -type f \
               -not -path "*/.git/*" \
               -not -path "*/.git" \
               -not -name ".code-documentation-*" \
-              -not -name ".doc-stage*" \
+              -not -name ".doc-stage*" 2>/dev/null \
             | sort > "$ALL_FILES_TEMP"
 
             TOTAL_FILES=$(wc -l < "$ALL_FILES_TEMP" | tr -d ' ')
@@ -1349,7 +1356,7 @@ jobs:
 
             # Build delete list: ALL files EXCEPT the ones we're keeping
             # Also preserve workflow temp files (.code-documentation-*, .doc-stage*)
-            > "$FILES_TO_DELETE"
+            : > "$FILES_TO_DELETE"
             while IFS= read -r file; do
               # Skip workflow temp files we need to preserve
               case "$file" in
@@ -1388,7 +1395,7 @@ jobs:
               -delete 2>/dev/null || true
 
             # Multiple passes to handle nested empty directories
-            for i in 1 2 3 4 5 6 7 8 9 10; do
+            for _ in 1 2 3 4 5 6 7 8 9 10; do
               PASS_COUNT=0
               while IFS= read -r empty_dir; do
                 if [ -d "$empty_dir" ] && [ -z "$(ls -A "$empty_dir" 2>/dev/null)" ]; then
@@ -1467,11 +1474,13 @@ jobs:
           git checkout -b "$BRANCH_NAME"
 
           # Create initial commit to enable PR creation
-          echo "# 🦩 Flamingo Code Documentation: Started" > .flamingo-ai-technical-writer-status.md
-          echo "" >> .flamingo-ai-technical-writer-status.md
-          echo "Run ID: $SAFE_RUN_ID" >> .flamingo-ai-technical-writer-status.md
-          echo "Status: In Progress" >> .flamingo-ai-technical-writer-status.md
-          echo "Started: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> .flamingo-ai-technical-writer-status.md
+          {
+            echo "# 🦩 Flamingo Code Documentation: Started"
+            echo ""
+            echo "Run ID: $SAFE_RUN_ID"
+            echo "Status: In Progress"
+            echo "Started: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          } > .flamingo-ai-technical-writer-status.md
           # -f: the status file is a hidden dot-md that many target repos' .gitignore
           # patterns (e.g. `.*` / `*status*`) cover — without -f, `git add` fails the
           # step. It's removed again in "Clean up temporary files" before the PR.
@@ -1544,7 +1553,7 @@ jobs:
           PR_URL=$(gh pr create \
             --base "$DEFAULT_BRANCH" \
             --head "$BRANCH_NAME" \
-            --title "[IN PROGRESS] 🦩 Flamingo Code Documentation" \
+            --title "[IN PROGRESS] docs: 🦩 Flamingo Code Documentation" \
             --body-file /tmp/pr-body.md \
             --label "documentation,automated,in-progress")
 
@@ -1578,7 +1587,7 @@ jobs:
           # deleted on its behalf. Without it, a skipped stage turns the pull request
           # into a net DELETION of existing documentation.
           PRE_CLEAN_SHA=$(git rev-parse HEAD)
-          echo "PRE_CLEAN_SHA=$PRE_CLEAN_SHA" >> $GITHUB_ENV
+          echo "PRE_CLEAN_SHA=$PRE_CLEAN_SHA" >> "$GITHUB_ENV"
           echo "Commit before removal: $PRE_CLEAN_SHA"
 
           # SCOPED TO THE CONFIGURED STAGES.
@@ -1629,7 +1638,7 @@ jobs:
             echo "CLEAN_TARGETS_RECORD<<__EOT__"
             for t in ${CLEAN_TARGETS[@]+"${CLEAN_TARGETS[@]}"}; do echo "$t"; done
             echo "__EOT__"
-          } >> $GITHUB_ENV
+          } >> "$GITHUB_ENV"
 
           # Count files before deletion (for reporting). Iterate DELETE_TARGETS —
           # the actual rm list (blanket docs/ on a full wipe, per-stage subtrees
@@ -1685,7 +1694,7 @@ jobs:
       # The command is CODE_GRAPH_INSTALL_COMMAND (lib/config/code-graph-workflow.ts).
       - name: Install graph dependencies
         continue-on-error: true
-        run: mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund && echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV" || { echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; }
+        run: if mkdir -p "$RUNNER_TEMP/code-graph-deps" && cd "$RUNNER_TEMP/code-graph-deps" && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","private":true,"dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}}' > package.json && printf '%s' '{"name":"code-graph-deps","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"code-graph-deps","version":"1.0.0","dependencies":{"web-tree-sitter":"0.27.0","@vscode/tree-sitter-wasm":"0.3.1","yaml":"2.9.1"}},"node_modules/web-tree-sitter":{"version":"0.27.0","resolved":"https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.27.0.tgz","integrity":"sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg=="},"node_modules/@vscode/tree-sitter-wasm":{"version":"0.3.1","resolved":"https://registry.npmjs.org/@vscode/tree-sitter-wasm/-/tree-sitter-wasm-0.3.1.tgz","integrity":"sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ=="},"node_modules/yaml":{"version":"2.9.1","resolved":"https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz","integrity":"sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw=="}}}' > package-lock.json && npm ci --ignore-scripts --no-audit --no-fund; then echo "CODE_GRAPH_DEPS_DIR=$RUNNER_TEMP/code-graph-deps" >> "$GITHUB_ENV"; else echo "::warning::graph dependencies failed their lockfile-enforced install; continuing without them"; rm -rf "$RUNNER_TEMP/code-graph-deps"; exit 1; fi
 
       - name: Build and upload the code graph
         id: graph
@@ -2114,9 +2123,7 @@ jobs:
 
           # Configure CodeWiki from CODEWIKI_CONFIG_JSON (single extractor: configure_codewiki_from_json)
           # Pass per-provider API keys for mixed provider configurations
-          configure_codewiki_from_json "$CODEWIKI_CONFIG_JSON" "$CLUSTER_API_KEY" "$MAIN_API_KEY" "$FALLBACK_API_KEY"
-
-          if [ $? -ne 0 ]; then
+          if ! configure_codewiki_from_json "$CODEWIKI_CONFIG_JSON" "$CLUSTER_API_KEY" "$MAIN_API_KEY" "$FALLBACK_API_KEY"; then
             echo "❌ CodeWiki configuration failed"
             exit 1
           fi
@@ -2212,8 +2219,8 @@ jobs:
 
           if [ -d "./deps" ]; then
             echo "   ✅ ./deps EXISTS"
-            echo "      Contents: $(ls -1 ./deps 2>/dev/null | wc -l) repositories"
-            ls -la ./deps 2>/dev/null | head -5
+            echo "      Contents: $(find ./deps -mindepth 1 -maxdepth 1 | wc -l) repositories"
+            find ./deps -mindepth 1 -maxdepth 1 | head -5
           else
             echo "   ❌ ./deps NOT FOUND"
           fi
@@ -2221,8 +2228,8 @@ jobs:
           if [ -d "../deps" ]; then
             echo "   ✅ ../deps EXISTS"
             echo "      Absolute: $(realpath ../deps)"
-            echo "      Contents: $(ls -1 ../deps 2>/dev/null | wc -l) repositories"
-            ls -la ../deps 2>/dev/null | head -5
+            echo "      Contents: $(find ../deps -mindepth 1 -maxdepth 1 | wc -l) repositories"
+            find ../deps -mindepth 1 -maxdepth 1 | head -5
           else
             echo "   ❌ ../deps NOT FOUND"
           fi
@@ -3045,7 +3052,7 @@ jobs:
           gh pr edit "$PR_NUMBER" --remove-label "in-progress" || true
 
           # Update title to remove [IN PROGRESS]
-          gh pr edit "$PR_NUMBER" --title "🦩 Flamingo Code Documentation"
+          gh pr edit "$PR_NUMBER" --title "docs: 🦩 Flamingo Code Documentation"
 
           # Update body with final results
           PR_BODY="## 🦩 Flamingo Code Documentation: Complete
