@@ -1,0 +1,28 @@
+flowchart TD
+    subgraph TenantServices["Tenant Services"]
+        Api["API Service Core"]
+        Authz["Authorization Server Core"]
+        Client["Client Service Core"]
+        External["External API Service"]
+        Gateway["Gateway Service Core"]
+        Management["Management Service Core"]
+        Stream["Stream Service Core"]
+    end
+
+    ConfigService["Config Server Core"]
+    ConfigLibrary["OpenFrame Config Core 7.0.11"]
+    ConfigSource["Configuration Source"]
+    GitCache["Temporary JGit Cache"]
+    Observability["Management and Prometheus Endpoints"]
+
+    Api -->|"request configuration"| ConfigService
+    Authz -->|"request configuration"| ConfigService
+    Client -->|"request configuration"| ConfigService
+    External -->|"request configuration"| ConfigService
+    Gateway -->|"request configuration"| ConfigService
+    Management -->|"request configuration"| ConfigService
+    Stream -->|"request configuration"| ConfigService
+    ConfigService -->|"bootstraps behavior from"| ConfigLibrary
+    ConfigService -->|"reads selected branch from"| ConfigSource
+    ConfigService -->|"stores clone cache in"| GitCache
+    ConfigService -->|"exposes"| Observability

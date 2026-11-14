@@ -1,0 +1,8 @@
+flowchart LR
+    ConfigServer["Config Server"] --> ExternalApi["External Api Service"]
+    Gateway["Gateway Service"] --> ExternalApi
+    ExternalApi --> ExternalCore["External API Service Core"]
+    ExternalApi --> Mongo["MongoDB"]
+    ExternalApi --> Kafka["Kafka"]
+    ExternalApi --> Nats["NATS"]
+    ExternalApi --> Cassandra["Cassandra"]

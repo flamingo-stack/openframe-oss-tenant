@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Consumer
+    participant Gateway
+    participant Authz as AuthorizationServer
+    participant Backend
+    Consumer->>Gateway: Request to protected route
+    Gateway->>Gateway: Apply CORS and gateway security
+    Gateway->>Gateway: Evaluate token and rate-limit policy
+    alt Authentication is required
+        Gateway->>Authz: Use configured OAuth authorization endpoints
+        Authz-->>Gateway: Authorization result or token material
+    end
+    Gateway->>Backend: Proxy the matched request
+    Backend-->>Gateway: Backend response
+    Gateway-->>Consumer: Response with configured headers

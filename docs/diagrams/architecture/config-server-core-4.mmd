@@ -1,0 +1,12 @@
+flowchart LR
+    User["User or Client"] --> Gateway["Gateway Service Core"]
+    Gateway --> Api["API Service Core"]
+    Gateway --> Authz["Authorization Server Core"]
+    Gateway --> Client["Client Service Core"]
+    Gateway --> External["External API Service"]
+
+    Api -.->|"configuration dependency"| Config["Config Server Core"]
+    Authz -.->|"configuration dependency"| Config
+    Client -.->|"configuration dependency"| Config
+    External -.->|"configuration dependency"| Config
+    Config --> Source["Configuration Source"]

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Runtime as "Spring Boot runtime"
+    participant App as "Management Application"
+    participant Context as "Application context"
+    participant Provider as "No additional stream provider"
+    participant Initializer as "NATS stream initializer"
+
+    Runtime->>App: Invoke main method
+    App->>Context: Start application context
+    Context->>Context: Scan management, data, and core packages
+    Context->>Context: Exclude Cassandra health indicator
+    Context->>Provider: Discover provider bean
+    Initializer->>Provider: Request additional stream configurations
+    Provider->>Initializer: Return empty list
+    Initializer->>Initializer: Retain baseline stream configuration

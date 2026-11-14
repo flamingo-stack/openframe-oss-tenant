@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Operator
+    participant Helm as Helm Deployment
+    participant Config as Config Server Core
+    participant Source as Configuration Source
+    participant Service as Tenant Service
+
+    Operator->>Helm: Set branch and Git timeout values
+    Helm->>Config: Start pod with environment variables
+    Config->>Source: Load selected configuration branch
+    Service->>Config: Request application configuration
+    Config->>Service: Return shared and service-specific properties
+    Service->>Service: Build application context with properties

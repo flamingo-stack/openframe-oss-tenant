@@ -1,0 +1,9 @@
+flowchart TD
+    Main["ClientApplication main()"] -->|"SpringApplication.run"| Boot["Spring Boot runtime"]
+    Boot -->|"auto-configuration"| Context["Application context"]
+    Context -->|"component scan"| Client["com.openframe.client"]
+    Context -->|"component scan"| Data["com.openframe.data"]
+    Context -->|"component scan"| Core["com.openframe.core"]
+    Context -->|"component scan"| Security["com.openframe.security"]
+    Context -->|"component scan"| Kafka["com.openframe.kafka.producer"]
+    Exclusion["CassandraHealthIndicator exclusion"] -.->|"not registered"| Context

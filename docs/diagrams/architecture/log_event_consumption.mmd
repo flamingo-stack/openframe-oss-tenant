@@ -1,0 +1,6 @@
+flowchart LR
+    Configuration["Inbound topic configuration"] -->|"enables listener"| Listener["Logs Event Listener"]
+    Topic["Configured logs-events topic"] -->|"delivers record"| Listener
+    Header["message-type header"] -->|"binds to MessageType"| Listener
+    Payload["CommonDebeziumMessage payload"] -->|"binds payload"| Listener
+    Listener -->|"processes typed event"| Processor["Generic JSON Message Processor"]

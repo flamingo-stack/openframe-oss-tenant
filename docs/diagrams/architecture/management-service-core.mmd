@@ -1,0 +1,9 @@
+flowchart TD
+    Boot["Spring Boot runtime"] --> App["Management Application"]
+    App --> Management["Management components"]
+    App --> Data["Shared data components"]
+    App --> Core["Shared core components"]
+    App -.->|"excludes"| CassandraHealth["Cassandra health indicator"]
+    Management --> StreamInitializer["NATS stream configuration initializer"]
+    Provider["No additional stream configuration provider"] -->|"returns empty list"| StreamInitializer
+    StreamInitializer --> BaselineStreams["Baseline JetStream streams"]

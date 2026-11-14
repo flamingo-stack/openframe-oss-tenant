@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Runtime as Java Runtime
+    participant App as External Api Application
+    participant Spring as Spring Boot
+    participant Scan as Component Scan
+    participant Context as Application Context
+    Runtime->>App: Invoke main arguments
+    App->>Spring: Run application class
+    Spring->>Scan: Scan configured package roots
+    Scan-->>Spring: Discover components and configuration
+    Spring->>Context: Create configured beans
+    Context-->>Runtime: Start servlet service on configured port

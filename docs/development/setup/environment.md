@@ -1,175 +1,138 @@
+---
 
 # Development Environment Setup
 
-This guide covers the tools, IDE configuration, and environment variables you need to work on **OpenFrame OSS Tenant** — the polyglot repository that hosts the platform's Spring Boot (Java) backend services, the `openframe-client` Rust agent, and the Kubernetes manifests that deploy them. It assumes you have already read the [prerequisites](../../getting-started/prerequisites.md) and completed the [quick start](../../getting-started/quick-start.md).
+This guide covers how to set up a local development environment for **OpenFrame OSS Tenant** — the tenant-facing service and deployment repository for OpenFrame. The repository hosts Spring Boot microservices (Java 25), a Rust client binary, and the Kubernetes/Helm/Argo CD manifests that compose a running tenant environment.
 
-> This repository publishes nine Maven artifacts (`com.openframe:openframe-api`, `openframe-authorization-server`, `openframe-client`, `openframe-config`, `openframe-external-api`, `openframe-gateway`, `openframe-management`, `openframe-stream`, `openframe-test`, all `1.0.0-SNAPSHOT`) and one Cargo crate (`openframe_client` `0.1.0`). No other repository in the organization currently consumes them — the ecosystem graph coverage is `full`, so this is confirmed, not a gap.
+For the broader platform and product context, see [Introduction](../../getting-started/introduction.md) and [Prerequisites](../../getting-started/prerequisites.md). This page focuses on tooling and editor configuration; day-to-day workflows (building, running services locally, port-forwarding) are covered in [Local Development](./local-development.md).
 
-## Repository shape at a glance
+> OpenFrame does not use GitHub Issues or GitHub Discussions for coordination. Development questions and discussion happen in the [OpenMSP Slack community](https://www.openmsp.ai/) ([invite link](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)).
+
+## Repository shape
+
+This repository is **polyglot**: Java (Spring Boot services under Maven), Rust (the thin `openframe-client` binary), and Bash (datasource init scripts for Helm charts). Your editor and toolchain setup needs to cover all three.
 
 ```mermaid
 flowchart LR
-    repo["openframe-oss-tenant"] -->|manual pin| lib["OpenFrame OSS Library (openframe-oss-lib)"]
-    repo --> javaServices["Java services (pom.xml modules)"]
-    repo --> rustAgent["openframe-client Rust agent"]
-    repo --> manifests["manifests/ (Argo CD, Helm)"]
+    Pom["Root pom.xml<br/>openframe-parent"] --> Api["openframe-api"]
+    Pom --> Authz["openframe-authorization-server"]
+    Pom --> Client["openframe-client (Java)"]
+    Pom --> Config["openframe-config"]
+    Pom --> External["openframe-external-api"]
+    Pom --> Gateway["openframe-gateway"]
+    Pom --> Mgmt["openframe-management"]
+    Pom --> Stream["openframe-stream"]
+    Pom --> Test["openframe-test"]
+    Cargo["clients/openframe-client<br/>Cargo.toml"] --> Rust["openframe-client binary (Rust)"]
+    Rust -->|git dependency| Lib["openframe-agent-lib<br/>flamingo-stack/openframe-oss-lib@v0.0.5"]
 ```
 
-The repository has one recorded upstream dependency: the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib), pinned manually rather than through a package manager. The Rust agent in `clients/openframe-client/src/main.rs` pulls it directly via its `Cargo.toml` git dependency (`openframe-agent-lib`, tag `v0.0.5`), and the Java services depend on the `com.openframe.oss` artifacts from the same library (version pinned by `<openframe.libs.version>` in the root `pom.xml`).
+Note that there are two distinctly named "client" components: the Java Maven module `openframe/services/openframe-client` (a Spring Boot service) and the Rust binary under `clients/openframe-client` (a thin wrapper over `openframe-agent-lib`). Do not confuse the two when configuring your IDE.
 
 ## Required development tools
 
-| Tool | Why you need it | Notes |
+| Tool | Why it's required | Evidence in this repository |
 |---|---|---|
-| **JDK 25** | Compiles and runs every Java service | Root `pom.xml` sets `<java.version>25</java.version>` and inherits from `spring-boot-starter-parent` `4.1.1` |
-| **Apache Maven** | Builds the multi-module Java project | The parent POM (`pom.xml`) declares all nine service modules under `openframe/services/` |
-| **Rust toolchain (cargo, rustc)** | Builds the `openframe-client` agent | `clients/openframe-client/Cargo.toml` targets edition `2021` |
-| **Git** | Source control, including a git-based Cargo dependency | `openframe-agent-lib` is fetched straight from GitHub by tag, not from crates.io |
-| **kubectl** | Inspect and interact with the Kubernetes cluster the services run in | Used against the namespaces referenced throughout `manifests/` and `configs/base/*.yml` |
-| **Helm** | Deploy/inspect the charts under `manifests/` | Charts such as `manifests/datasources/cassandra`, `manifests/datasources/kafka`, and `manifests/tenant` declare Helm/OCI chart dependencies |
-| **Docker or an OCI-compatible builder** | Build/inspect the container images the release workflow publishes | Each service gets an image at `ghcr.io/flamingo-stack/openframe-oss-tenant/<service>` |
+| **JDK 25** | The root `pom.xml` sets `<java.version>25</java.version>` and all nine Maven service modules inherit it. | `pom.xml` |
+| **Apache Maven** | All Java services build through the multi-module `pom.xml` (parent `spring-boot-starter-parent` 4.1.1). | `pom.xml`, `openframe/services/*/pom.xml` |
+| **Rust toolchain (cargo, rustc)** | `clients/openframe-client/Cargo.toml` defines the `openframe-client` binary crate, edition 2021, depending on `openframe-agent-lib` as a git dependency. | `clients/openframe-client/Cargo.toml` |
+| **rust-analyzer** (editor-side, see below) and **clippy** | `.vscode/settings.json` configures `rust-analyzer.checkOnSave.command` as `clippy`, and VS Code tasks run `cargo clippy` directly. | `.vscode/settings.json`, `.vscode/tasks.json` |
+| **lldb debugger** | `.vscode/launch.json` uses the `lldb` request type for every Rust debug configuration (debug build, service mode, release, tests). | `.vscode/launch.json` |
+| **Node.js / npm** | The frontend dev task (`start-vue`) and the "OpenFrame Frontend" launch configurations run `npm run dev` against `openframe/services/openframe-frontend`. | `.vscode/tasks.json`, `.vscode/launch.json` |
+| **Git** (with access to private/pinned dependencies) | The Rust crate pulls `openframe-agent-lib` directly from the `flamingo-stack/openframe-oss-lib` git repository at tag `v0.0.5`; Java services pin `com.openframe.oss` artifacts at version `7.0.11` from the same upstream library repository. | `clients/openframe-client/Cargo.toml`, `pom.xml` |
+| **kubectl / Helm / Argo CD CLI** (for manifest work) | The repository ships Argo CD app-of-apps definitions and Helm charts under `manifests/apps`, `manifests/platform`, `manifests/datasources`, and `manifests/tenant`. | `manifests/apps/values.yaml` and related chart files |
+| **OpenFrame CLI** | Used for bootstrapping/operating an OpenFrame environment; it is a separate, externally maintained tool. | External: [openframe-cli](https://github.com/flamingo-stack/openframe-cli) |
 
-### Java toolchain details
+> The OpenFrame CLI lives in its own repository, [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli), with installation instructions at [openframe-cli#installation](https://github.com/flamingo-stack/openframe-cli#installation) and docs under [openframe-cli/tree/main/docs](https://github.com/flamingo-stack/openframe-cli/tree/main/docs). It is not part of this repository and is not bundled here — install it separately if your workflow requires it.
 
-The parent `pom.xml` pins these key versions, which your local JDK and IDE project settings should match:
+### Java/Maven version pinning details
 
-- `java.version`: `25`
-- `spring-boot.version` / Spring Boot parent: `4.1.1`
-- `spring-cloud.version`: `2025.1.3`
-- `lombok.version`: `1.18.48`
+The root `pom.xml` centralizes dependency versions as Maven properties, notably:
 
-> Lombok is required for every service (the parent POM adds it as a direct dependency and also wires it into `maven-compiler-plugin`'s `annotationProcessorPaths`). JDK 23+ no longer auto-discovers annotation processors on the classpath, so Lombok must be installed and enabled in your IDE, or builds involving generated code will fail.
+- `openframe.libs.version` = `7.0.11` — the single source of truth for every `com.openframe.oss:*` artifact (openframe-core, openframe-api-lib, openframe-security-core, fleetmdm, and so on).
+- `spring-boot.version` = `4.1.1`, `spring-cloud.version` = `2025.1.3`.
+- `lombok.version` = `1.18.48` — required at the annotation-processor level; JDK 23+ no longer auto-discovers annotation processors on the classpath, so Lombok (and `spring-boot-configuration-processor`) must be explicitly listed in `maven-compiler-plugin` configuration, which the root POM already does.
 
-Build the backend with the standard Maven lifecycle from the repository root:
-
-```bash
-# Clone the repository
-git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
-cd openframe-oss-tenant
-
-# Build all backend services (Java / Spring Boot)
-mvn clean install -DskipTests
-```
-
-Run an individual service with the Maven Spring Boot plugin, pointing `-pl` at its module path:
+When working on a module, build it with its dependents using Maven's reactor flags, for example from the repository root:
 
 ```bash
-mvn spring-boot:run -pl openframe/services/openframe-api
+mvn -pl openframe/services/openframe-api -am compile
 ```
+
+If you are simultaneously iterating on the upstream shared library (`openframe-oss-lib`), the repository's active review rules describe the expected local development handshake: install the library locally as `999-SNAPSHOT` and point `openframe.libs.version` at that coordinate temporarily, rather than publishing a new snapshot release or hand-editing dependency coordinates. Revert any such local-only version property change before committing.
 
 ### Rust toolchain details
 
-The agent crate is defined in `clients/openframe-client/Cargo.toml`; its one binary target (`openframe-client`) has `src/main.rs` as its thin entry point, delegating all logic to the `openframe` crate shared from the `openframe-oss-lib` repository. The library's build script expects `OPENFRAME_VERSION` as a build-time environment variable, so always export it before building:
+`clients/openframe-client/Cargo.toml` declares:
 
-```bash
-cd clients/openframe-client
-OPENFRAME_VERSION=0.0.0-dev cargo build
+```toml
+[dependencies]
+openframe-agent-lib = { git = "https://github.com/flamingo-stack/openframe-oss-lib.git", tag = "v0.0.5" }
+anyhow = "1.0"
 ```
 
-Once built, you can exercise the agent binary directly:
+The actual agent logic lives in that external crate; `clients/openframe-client/src/main.rs` is a thin entry point that calls `openframe::run()`. A correct local build also requires setting `OPENFRAME_VERSION` at build time, since the library's build script consumes it:
 
 ```bash
-# Verify the agent binary
-./clients/openframe-client/target/debug/openframe-client --help
-
-# Run environment diagnostics
-./clients/openframe-client/target/debug/openframe-client doctor
+OPENFRAME_VERSION=0.0.0-dev cargo build --release
 ```
-
-### Kubernetes and datasource tooling
-
-Many services expect to reach datasources over in-cluster DNS names (for example `mongodb-0.mongodb.datasources.svc.cluster.local`, `cassandra.datasources.svc.cluster.local`, `kafka.datasources.svc.cluster.local`, `nats.datasources.svc.cluster.local`), as configured in `configs/base/application.yml` and the per-service config files (`configs/base/openframe-api.yml`, `configs/base/openframe-client.yml`, `configs/base/openframe-external-api.yml`). For local development against a real cluster you need `kubectl` configured against that cluster, and ideally a tool to tunnel or proxy those service names to your workstation — the `manifests/platform/dev-tools` chart bundles `telepresence-oss` (`oci://ghcr.io/flamingo-stack/registry/helm-charts/telepresence-oss`) for exactly this purpose, alongside `kafka-ui` for inspecting Kafka topics.
-
-For the deeper walkthrough of running services together locally, see [Local Development](./local-development.md).
 
 ## IDE recommendations and setup
 
-The repository ships a `.vscode/` folder with working launch, task, and settings configuration, which strongly suggests **Visual Studio Code** as the primary supported editor for this repo. If you prefer IntelliJ IDEA or another Java IDE, import the root `pom.xml` as a multi-module Maven project and make sure the project SDK is set to JDK 25 to match the parent POM.
+The repository ships a `.vscode` directory with `settings.json`, `tasks.json`, and `launch.json`, which indicates **Visual Studio Code** as the primary supported editor for day-to-day development across both the Java and Rust codebases. Any Java IDE with Maven and Lombok support (for example IntelliJ IDEA) can also be used for the Java services, and any Rust-aware editor with `rust-analyzer` can be used for the client — but the checked-in launch/debug configurations target VS Code specifically.
 
-### VS Code: workspace settings
+### VS Code workspace settings
 
-`.vscode/settings.json` configures:
+`.vscode/settings.json` applies these editor defaults across the repository:
 
-- Consistent line endings and indentation (`files.eol: "\n"`, `editor.tabSize: 2`, `editor.insertSpaces: true`).
-- YAML schema validation, mapping Argo Workflows and `yamllint` schemas onto `**/*.yml` files, useful when editing the Helm values and Argo CD manifests under `manifests/`.
-- Java tooling: `java.debug.settings.hotCodeReplace: "auto"`, `java.configuration.updateBuildConfiguration: "automatic"`, `java.autobuild.enabled: true`, and `java.compile.nullAnalysis.mode: "automatic"` — these keep the Java language server in sync as you edit the Maven modules.
-- Rust tooling via `rust-analyzer`: `rust-analyzer.checkOnSave.command: "clippy"`, `cargo.features: "all"`, `cargo.allFeatures: true`, plus inlay hints and code lenses enabled. A `[rust]` language override sets `editor.defaultFormatter` to `rust-lang.rust-analyzer` with `editor.formatOnSave: true` and 4-space indentation.
+- `files.eol`: `\n` — enforce LF line endings.
+- `editor.tabSize`: `2`, `editor.insertSpaces`: `true` — two-space indentation by default.
+- YAML schema associations for `**/*.yml` (Argo Workflows schema) and a `toc.yml` schema, useful when editing the many Helm/Argo CD manifest files under `manifests/`.
+- Java tooling: `java.debug.settings.hotCodeReplace` set to `auto`, `java.configuration.updateBuildConfiguration` set to `automatic`, `java.autobuild.enabled` true, and `java.compile.nullAnalysis.mode` set to `automatic` — these keep the Java Language Server in sync with Maven module changes and enable hot code replace while debugging.
+- Rust tooling: `rust-analyzer.checkOnSave.command` set to `clippy` (lints run on save instead of plain `cargo check`), plus `rust-analyzer.cargo.features: "all"` and `rust-analyzer.cargo.allFeatures: true` so rust-analyzer resolves the crate with every feature enabled. Inlay hints, code lenses, procedural macro expansion, and diagnostics are all explicitly enabled.
+- A `[rust]` language-specific block sets `rust-lang.rust-analyzer` as the default formatter and enables `editor.formatOnSave`, with a 4-space tab size override for Rust files specifically (overriding the repository-wide 2-space default).
 
-### VS Code: recommended extensions
+### Recommended editor extensions
 
-Based on the languages and tooling the workspace settings and tasks target, install:
+Based on the languages and tooling actually configured in this repository:
 
-- **Extension Pack for Java** (or equivalent) — needed for the `java.*` settings in `.vscode/settings.json` and for the `java` launch configurations in `.vscode/launch.json` (`Management Application`, `API Application`, `Client Application`, `Config Server Application`, `Stream Application`, `Gateway Application`).
-- **rust-analyzer** — required for the `[rust]` editor settings and the `lldb`-based Rust debug configurations in `.vscode/launch.json`.
-- **CodeLLDB** — provides the `lldb` debugger type used by every Rust launch configuration (`OpenFrame Client Debug`, `OpenFrame Client Debug (Service Mode)`, `OpenFrame Client Release`, `OpenFrame Client Tests`).
-- **YAML** — backs the `yaml.schemas` mapping in `.vscode/settings.json` for validating `manifests/` and `configs/` YAML files.
-
-### VS Code: launch configurations
-
-`.vscode/launch.json` defines ready-to-use debug targets. The table below summarizes what each one runs and from where:
-
-| Configuration | Type | Entry point | Working directory |
-|---|---|---|---|
-| OpenFrame Client Debug | `lldb` | `client/target/debug/openframe` (`run-as-service`) | `${workspaceFolder}/client` |
-| OpenFrame Client Debug (Service Mode) | `lldb` | same binary, `run-as-service` | `${workspaceFolder}/client` |
-| OpenFrame Client Release | `lldb` | `client/target/release/openframe` (`run`) | `${workspaceFolder}/client` |
-| OpenFrame Client Tests | `lldb` | `client/target/debug/openframe-test` | `${workspaceFolder}/client` |
-| Management Application | `java` | `com.openframe.management.ManagementApplication` | `openframe/services/openframe-management` |
-| API Application | `java` | `com.openframe.api.ApiApplication` | `openframe/services/openframe-api` |
-| Client Application | `java` | `com.openframe.client.ClientApplication` | `openframe/services/openframe-client` |
-| Config Server Application | `java` | `com.openframe.config.ConfigServerApplication` | `openframe/services/openframe-config` |
-| Stream Application | `java` | `com.openframe.stream.StreamApplication` | `openframe/services/openframe-stream` |
-| Gateway Application | `java` | `com.openframe.gateway.GatewayApplication` | `openframe/services/openframe-gateway` |
-| OpenFrame Frontend (Local K8s / Dev / Stage / Prod) | `node` | `npm run dev` | `openframe/services/openframe-frontend` |
-
-> The four Rust `lldb` configurations reference `client/target/...` and `cwd: "${workspaceFolder}/client"`, while the Cargo workspace under this repository lives at `clients/openframe-client`. If these paths do not match your checkout layout, adjust `program` and `cwd` locally, or build and point the debugger at your actual `clients/openframe-client/target/...` output.
-
-Every Java launch configuration sets `SPRING_PROFILES_ACTIVE: "k8s"` so the service boots with the same profile convention used across the platform.
-
-### VS Code: build and test tasks
-
-`.vscode/tasks.json` wires the editor's build/test commands to Cargo and npm:
-
-- `rust-build` (default build task) runs `cargo build` in `${workspaceFolder}/client`.
-- `rust-build-release` runs `cargo build --release`.
-- `rust-test` (default test task) runs `cargo test`.
-- `rust-watch` runs `cargo watch -x run` as a background task.
-- `rust-check` runs `cargo check`.
-- `rust-clippy` runs `cargo clippy` — pairs with the `rust-analyzer.checkOnSave.command: "clippy"` setting above.
-- `deploy-client` runs `./deploy.sh` from `client/scripts`.
-- `start-vue` runs `npm run dev` for `openframe/services/openframe-ui` with `VITE_*` environment variables pointing at local service hosts (`openframe-api.microservices:8090`, `openframe-gateway.microservices:8100`).
-- `kill-port-4000` and `frontend-with-port-cleanup` free port `4000` (used by the Next.js frontend dev server) before each frontend launch, with OS-specific commands for Windows and Linux.
-
-As with the launch configurations, these tasks assume a `client/` directory for the Rust agent; align the `cwd` with `clients/openframe-client` if your checkout differs.
+| Extension | Purpose |
+|---|---|
+| **rust-analyzer** (`rust-lang.rust-analyzer`) | Required — explicitly referenced as the default formatter for Rust files in `.vscode/settings.json`, and all Rust settings (clippy-on-save, inlay hints, proc-macro expansion) target this extension. |
+| **Language Support for Java(TM)** / Java Extension Pack | Required for Maven-aware Java editing, debugging, and the `java.*` settings configured in `.vscode/settings.json` (hot code replace, auto build config update, null analysis). |
+| **CodeLLDB** (`vadimcn.vscode-lldb`) | Provides the `lldb` debug adapter type used by every Rust configuration in `.vscode/launch.json` ("OpenFrame Client Debug", "OpenFrame Client Debug (Service Mode)", "OpenFrame Client Release", "OpenFrame Client Tests"). |
+| **YAML** (`redhat.vscode-yaml`) | Consumes the `yaml.schemas` mappings in `.vscode/settings.json` for Argo Workflows (`**/*.yml`) and `toc.yml` validation — directly relevant given the volume of Helm/Argo manifests in `manifests/`. |
 
 ## Environment variables for development
 
-Environment variables in this repository fall into three groups: Rust build-time variables, Spring configuration overrides, and frontend dev-server variables used by the VS Code launch configurations.
+Environment variables in this repository fall into three groups: Rust client build/runtime variables, Java service launch variables, and frontend dev-server variables. All of the following are taken directly from `.vscode/launch.json` and `.vscode/tasks.json`.
 
-### Rust agent build and runtime variables
+### Rust client (debug/test launch configurations)
 
-| Variable | Used by | Purpose |
+| Variable | Example value | Purpose |
 |---|---|---|
-| `OPENFRAME_VERSION` | `cargo build` (consumed by the `openframe-agent-lib` build script) | Required at build time; the Quick Start command is `OPENFRAME_VERSION=0.0.0-dev cargo build` |
-| `RUST_LOG` | the `lldb` debug configurations | Log verbosity (`debug` for debug builds, `info` for release) |
-| `RUST_BACKTRACE` | the `lldb` debug configurations | Set to `"1"` to get full panic backtraces while debugging |
-| `OPENFRAME_DEV_MODE` | the `lldb` debug configurations | Set to `"true"` to run the agent in development mode |
-| `OPENFRAME_LOG_DIR` | the `lldb` debug configurations | Points at `${workspaceFolder}/client/logs` for local log output |
+| `RUST_LOG` | `debug` (debug builds) / `info` (release) | Controls log verbosity for the `openframe` binary. |
+| `RUST_BACKTRACE` | `1` | Enables full backtraces on panic during debug and test runs. |
+| `OPENFRAME_DEV_MODE` | `true` | Signals development mode to the agent library. |
+| `OPENFRAME_LOG_DIR` | `${workspaceFolder}/client/logs` | Directory the client writes logs to locally. |
+| `OPENFRAME_VERSION` | e.g. `0.0.0-dev` | Required at build time; consumed by `openframe-agent-lib`'s build script (set it on the command line, as shown above, not in `launch.json`). |
 
-### Spring service configuration variables
+> The `.vscode/launch.json` and `.vscode/tasks.json` configurations reference a `${workspaceFolder}/client` directory for Rust build/test tasks (`rust-build`, `rust-test`, `deploy-client`), while the Rust source actually inlined in this repository lives under `clients/openframe-client`. If your checkout does not have a top-level `client/` directory, adjust the `cwd` in your local VS Code configuration to point at `clients/openframe-client` before using these tasks.
 
-The shared config file `configs/base/application.yml` and per-service files (`configs/base/openframe-api.yml`, `openframe-client.yml`, `openframe-external-api.yml`, `openframe-management.yml`, `openframe-stream.yml`, `openframe-gateway.yml`) resolve most infrastructure endpoints from Kubernetes service DNS, with a handful of overridable variables:
+### Java services (VS Code launch configurations)
 
-| Variable | Default (from `configs/base/application.yml`) | Purpose |
-|---|---|---|
-| `REDIS_CLUSTER_NODES` | `redis-cluster-0.redis-cluster-headless.datasources.svc.cluster.local:6379,redis-cluster-1...,redis-cluster-2...` | Overrides the Redis Cluster node list |
-| `SPRING_CONFIG_URL` | `http://openframe-config.microservices.svc.cluster.local:8888` (per-service) / `http://openframe-config.platform.svc.cluster.local:8888` (shared logging config) | Points each service at the Config Server for `optional:configserver:` imports and the shared Logback config |
-| `RELEASE_VERSION` | `v1` | Used to build the Actuator management endpoint base path |
-| `ENCRYPTION_PASSWORD` | fallback value in `application.yml` | Overrides the password used by the shared encryption settings — set a real value outside the fallback for any non-local environment |
-| `ENCRYPTION_SALT` | fallback value in `application.yml` | Overrides the salt used alongside `ENCRYPTION_PASSWORD` |
-| `OPENFRAME_CLUSTER_ID` | `cluster-id` | Identifies the cluster for the `openframe.cluster-id` property |
+Every Java service launch configuration in `.vscode/launch.json` (Management, API, Client, Config Server, Stream, Gateway Applications) sets:
 
-Every service imports its configuration from the Config Server, as declared in the individual `application.yml` resources, for example `openframe/services/openframe-api/src/main/resources/application.yml`:
+```json
+"env": {
+    "SPRING_PROFILES_ACTIVE": "k8s"
+},
+"vmArgs": "-Dspring.profiles.active=k8s"
+```
+
+This activates the `k8s` Spring profile when launching any service directly from the IDE, aligning local debug runs with the configuration shape used in the Kubernetes deployment. Each service's `mainClass` and `cwd` map onto its Maven module directory, for example `com.openframe.api.ApiApplication` under `openframe/services/openframe-api`.
+
+All services additionally resolve centralized configuration at startup via Spring Cloud Config. Each service's `src/main/resources/application.yml` imports it optionally, for example in `openframe/services/openframe-api/src/main/resources/application.yml`:
 
 ```yaml
 spring:
@@ -179,59 +142,73 @@ spring:
     import: "optional:configserver:${SPRING_CONFIG_URL:http://openframe-config.microservices.svc.cluster.local:8888}"
 ```
 
-The same `spring.config.import` pattern, with the service's own `spring.application.name`, appears in the `openframe-authorization-server` and `openframe-client` service resources.
+| Variable | Default (if unset) | Purpose |
+|---|---|---|
+| `SPRING_CONFIG_URL` | `http://openframe-config.microservices.svc.cluster.local:8888` | Where each service's Spring Cloud Config client looks for the Config Server. Override this for a local/alternate Config Server location. |
+| `SPRING_PROFILES_ACTIVE` | (none by default outside the IDE launch configs) | Set to `k8s` by the VS Code launch configurations described above. |
 
-> `ENCRYPTION_PASSWORD` and `ENCRYPTION_SALT` ship with fallback defaults in `configs/base/application.yml` purely so services boot locally. Refer to your environment configuration for the real values used outside a local sandbox — never rely on the checked-in fallbacks beyond local development.
+Shared, cross-service configuration (in `configs/base/application.yml`) layers in further environment-driven overrides consumed at runtime inside the cluster, including `REDIS_CLUSTER_NODES`, `OPENFRAME_CLUSTER_ID`, `ENCRYPTION_PASSWORD`, and `ENCRYPTION_SALT` — each has an inline default in that file but should be overridden per environment rather than relying on the checked-in defaults for anything beyond local experimentation.
 
-### Frontend dev-server variables (from `.vscode/launch.json` and `tasks.json`)
+### Frontend dev server (`openframe-frontend`)
 
-The Next.js frontend (`openframe/services/openframe-frontend`) and the legacy Vue UI (`openframe/services/openframe-ui`) read environment variables for local development:
+The frontend launch configurations in `.vscode/launch.json` run `npm run dev` inside `openframe/services/openframe-frontend` with environment variables that vary by target backend:
 
-```json
-{
-  "NODE_ENV": "development",
-  "PORT": "4000",
-  "NEXT_PUBLIC_API_URL": "https://localhost/api",
-  "NEXT_PUBLIC_GRAPHQL_ENDPOINT": "https://localhost/api/graphql",
-  "NEXT_PUBLIC_WS_ENDPOINT": "wss://localhost/api/ws",
-  "NEXT_PUBLIC_APP_TYPE": "openframe",
-  "NEXT_PUBLIC_CLIENT_ID": "openframe_web_dashboard",
-  "NEXT_PUBLIC_CLIENT_SECRET": "prod_secret"
-}
+- **Local K8s cluster** ("OpenFrame Frontend with Local K8s Cluster"): `NODE_ENV=development`, `PORT=4000`, `NEXT_PUBLIC_API_URL=https://localhost/api`, `NEXT_PUBLIC_GRAPHQL_ENDPOINT=https://localhost/api/graphql`, `NEXT_PUBLIC_WS_ENDPOINT=wss://localhost/api/ws`, `NEXT_PUBLIC_APP_TYPE=openframe`, `NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard`, `NEXT_PUBLIC_CLIENT_SECRET=prod_secret`.
+- **Dev/Stage/Prod configuration variants** set `NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER`, `NEXT_PUBLIC_AUTH_CHECK_INTERVAL`, `NEXT_PUBLIC_APP_MODE=saas-tenant`, `NEXT_PUBLIC_TENANT_HOST_URL`, `NEXT_PUBLIC_SHARED_HOST_URL`, and `NEXT_PUBLIC_FEATURE_ORG_IMAGES`, pointed at different hosts (for example `https://michael.openframe.build` for dev, `https://test.openframe.miami` for stage, `https://test.openframe.ai` for prod-style testing).
+
+The companion `start-vue` VS Code task (for the separate `openframe/services/openframe-ui`) sets `PORT=5177`, `VITE_API_URL=http://openframe-api.microservices:8090`, `VITE_GATEWAY_URL=http://openframe-gateway.microservices:8100`, `VITE_CLIENT_ID=openframe_web_dashboard`, `VITE_CLIENT_SECRET=prod_secret`, and `VITE_GRAFANA_URL=https://localhost:3000`.
+
+> The values above (for example `prod_secret`) are the literal defaults checked into `.vscode/launch.json` and `.vscode/tasks.json` for local development convenience — refer to your own environment configuration before using these against anything beyond a local or disposable development cluster.
+
+### Shared backend configuration (`configs/base/application.yml`)
+
+This file — loaded by services that import it from the Config Server — defines connection targets for MongoDB, Redis Cluster, Cassandra, and Pinot used across the platform, plus logging and tenant-isolation settings. Key values a developer should know when pointing a locally-run service at a shared or local datasource stack:
+
+```yaml
+spring:
+  mongodb:
+    uri: mongodb://openframe:password123456789@mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe?authSource=admin...
 ```
 
-Additional named profiles set a different combination of `NEXT_PUBLIC_*` variables for local, dev, stage, and prod-style tenant hosts, for example `NEXT_PUBLIC_TENANT_HOST_URL` and `NEXT_PUBLIC_SHARED_HOST_URL` pointing at `michael.openframe.build` / `openframe.build` (dev), `test.openframe.miami` / `openframe.miami` (stage), and `test.openframe.ai` / `openframe.ai` (prod-style), plus `NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER`, `NEXT_PUBLIC_AUTH_CHECK_INTERVAL`, `NEXT_PUBLIC_APP_MODE`, and `NEXT_PUBLIC_FEATURE_ORG_IMAGES`.
+and the explicit tenant-isolation flag that several services require to boot correctly:
 
-The `start-vue` task in `.vscode/tasks.json` sets its own set for the Vue-based UI:
-
-```json
-{
-  "PORT": "5177",
-  "VITE_API_URL": "http://openframe-api.microservices:8090",
-  "VITE_GATEWAY_URL": "http://openframe-gateway.microservices:8100",
-  "VITE_CLIENT_ID": "openframe_web_dashboard",
-  "VITE_CLIENT_SECRET": "prod_secret",
-  "VITE_GRAFANA_URL": "https://localhost:3000"
-}
+```yaml
+openframe:
+  tenant-isolation:
+    enabled: true
 ```
 
-> `NEXT_PUBLIC_CLIENT_SECRET` and `VITE_CLIENT_SECRET` are checked-in placeholder values (`prod_secret`) used purely to wire up local dev servers against routed backend services. Refer to your environment configuration for the actual client secret in any shared or deployed environment.
+As the comments in `configs/base/application.yml` explain, this flag must stay `true` for OSS single-tenant deployments: the shared library (`openframe-oss-lib` >= 6.16) registers tenant-aware repositories that are only wired up when tenant-isolation mode is active; with it disabled, dependent services fail to start with unsatisfiable bean errors.
 
-### Test-time overrides
+## Build, lint, and test tasks available in VS Code
 
-Test resources disable most external infrastructure so service tests run without a live cluster. `openframe/services/openframe-api/src/test/resources/application-test.yml` excludes MongoDB auto-configuration, disables Redis, Cassandra, Kafka, and Pinot, and sets a fixed `jwt.secret: test-secret-key` with `jwt.expiration: 3600000` — useful as a reference when writing or debugging unit tests for the API module.
+`.vscode/tasks.json` defines the following tasks, runnable via the VS Code task runner, which double as a reference for the equivalent shell commands:
 
-## Editor extensions/plugins
+| Task label | Command | Notes |
+|---|---|---|
+| `rust-build` (default build task) | `cargo build` | Run with working directory `client` (adjust per the note above if your checkout uses `clients/openframe-client`). |
+| `rust-build-release` | `cargo build --release` | |
+| `rust-test` (default test task) | `cargo test` | |
+| `rust-watch` | `cargo watch -x run` | Background task; requires `cargo-watch` installed. |
+| `rust-check` | `cargo check` | |
+| `rust-clippy` | `cargo clippy` | Matches the `rust-analyzer.checkOnSave.command` setting. |
+| `deploy-client` | `./deploy.sh` (from `client/scripts`) | |
+| `start-vue` | `npm run dev` (in `openframe/services/openframe-ui`) | Background task with `VITE_*` environment as listed above. |
+| `kill-port-4000` / `frontend-with-port-cleanup` | Frees port 4000 before launching the frontend dev server | Platform-specific commands for Windows/Linux are both defined. |
 
-Summarizing the extensions implied by the checked-in VS Code configuration:
+## Active code-review expectations for local changes
 
-- **Java** language support (for the `java.*` keys in `.vscode/settings.json` and the six `java`-type launch configurations).
-- **rust-analyzer** (for the `rust-analyzer.*` keys and the `[rust]` formatter override).
-- **CodeLLDB** (the `lldb` debugger type backing every Rust launch configuration).
-- **YAML** language support (for the `yaml.schemas` mapping, which validates Argo Workflows-style and `yamllint` schemas against `**/*.yml`).
+Before sending a pull request, be aware of the Maven dependency-management rules enforced on this repository's `pom.xml` files:
 
-If your IDE is not VS Code, replicate the equivalent capabilities: a Java language server with Lombok annotation-processing support and JDK 25 configured, a Rust language server with Clippy-on-save enabled, a debugger capable of attaching to native Rust binaries, and YAML schema validation for the Helm/Argo CD manifests under `manifests/`.
+- All `com.openframe.oss` library coordinates must reference the centralized `openframe.libs.version` property rather than a hardcoded version string.
+- When iterating on the shared `openframe-oss-lib` library locally, the expected workflow is a local `999-SNAPSHOT` install plus a temporary `openframe.libs.version` override — not a published snapshot release or a hand-edited dependency string — and that override should not be committed.
+- Services that depend on `pinot-java-client` must not override or remove the root POM's managed exclusions for log4j and server-side Pinot transitives.
 
-## Next steps
+See [Contributing Guidelines](../contributing/guidelines.md) for the full pull request process, and [Architecture](../architecture/README.md) for how these services fit together at a higher level.
 
-Once your tools and IDE are configured, proceed to [Local Development](./local-development.md) to bring up the services together, consult the [Architecture overview](../architecture/README.md) to understand how the services and datasources fit together, and review the [Contributing guidelines](../contributing/guidelines.md) before opening a pull request. Remember that this project does not use GitHub Issues or Discussions — development questions and discussion happen in the [OpenMSP Slack community](https://www.openmsp.ai/).
+## Where to go next
+
+- [Local Development](./local-development.md) walks through actually running and iterating on services day to day.
+- [Testing](../testing/README.md) covers how to run the Java and Rust test suites.
+- [Security](../security/README.md) documents security-relevant configuration (encryption keys, OAuth2 settings) referenced above.
+- The [Reference Architecture](../../reference/architecture/README.md) and its [ecosystem overview](../../reference/architecture/ecosystem.md) describe how `openframe-api`, `openframe-gateway`, `openframe-authorization-server`, and the other modules relate to each other and to the pinned `openframe-oss-lib` dependencies.

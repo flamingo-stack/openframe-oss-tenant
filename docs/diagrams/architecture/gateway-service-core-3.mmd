@@ -1,0 +1,12 @@
+flowchart TD
+    Request["Incoming request"] --> MatchSas{"Path starts with sas?"}
+    MatchSas -->|"Yes"| SasRoute["Proxy to authorization server"]
+    MatchSas -->|"No"| MatchDocs{"Documentation path?"}
+    MatchDocs -->|"Yes"| DocsRoute["Proxy to external API service"]
+    MatchDocs -->|"No"| MatchExternal{"Path starts with external API?"}
+    MatchExternal -->|"Yes"| ExternalRoute["Strip prefix and proxy"]
+    MatchExternal -->|"No"| MatchApi{"Path starts with api?"}
+    MatchApi -->|"Yes"| ApiRoute["Strip prefix and proxy"]
+    MatchApi -->|"No"| MatchClients{"Path starts with clients?"}
+    MatchClients -->|"Yes"| ClientRoute["Strip prefix and proxy"]
+    MatchClients -->|"No"| FrontendRoute["Proxy to frontend"]

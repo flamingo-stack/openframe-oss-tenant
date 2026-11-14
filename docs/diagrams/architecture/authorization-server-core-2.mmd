@@ -1,0 +1,11 @@
+flowchart LR
+    User["Browser or OAuth client"] --> Gateway["OpenFrame Gateway"]
+    Gateway -->|"Path /sas/**"| Authz["Authorization Server Core"]
+    Authz --> Mongo["MongoDB"]
+    Authz --> Redis["Redis cluster"]
+    Authz --> Mail["Configured mail provider"]
+    Authz --> Google["Google identity provider"]
+    Authz --> Microsoft["Microsoft identity provider"]
+    Gateway --> Api["OpenFrame API"]
+    Gateway --> Client["OpenFrame Client"]
+    Gateway --> External["External API"]

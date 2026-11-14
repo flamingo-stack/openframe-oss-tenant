@@ -1,0 +1,7 @@
+flowchart LR
+    Config["Tenant configuration"] -->|"configures"| ClientSvc["openframe-client service"]
+    ClientSvc -->|"starts with"| ClientCore["Client Service Core"]
+    ClientCore -->|"discovers"| KafkaProducer["Kafka producer components"]
+    ClientSvc -->|"connects using configuration"| KafkaBroker["Kafka"]
+    ClientSvc -->|"connects using configuration"| NatsBroker["NATS"]
+    ClientSvc -->|"uses shared settings"| SharedConfig["application.yml"]

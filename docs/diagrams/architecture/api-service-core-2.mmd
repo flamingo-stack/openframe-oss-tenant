@@ -1,0 +1,9 @@
+flowchart LR
+    ApiService["Api Service Core"] -->|"uses"| SpringBoot["Spring Boot"]
+    ApiService -->|"uses"| SpringContext["Spring component scanning"]
+    ApiService -->|"uses"| LombokLogging["Lombok logging"]
+    ApiService -->|"includes packages"| ApiComponents["API components"]
+    ApiService -->|"includes packages"| SharedComponents["Data and core components"]
+    ApiService -->|"includes packages"| IntegrationComponents["Notification and Kafka components"]
+    ApiService -->|"is deployed with"| GatewayService["Gateway service"]
+    GatewayService -->|"routes API traffic"| ApiService

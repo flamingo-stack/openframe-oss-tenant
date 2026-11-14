@@ -1,0 +1,6 @@
+flowchart TD
+    Receive["Receive Kafka record"] --> Delegate["Delegate to processor"]
+    Delegate --> Decision{{"Processing succeeds?"}}
+    Decision -->|"Yes"| Complete["Complete listener invocation"]
+    Decision -->|"No"| Log["Log error with type and exception"]
+    Log --> Complete

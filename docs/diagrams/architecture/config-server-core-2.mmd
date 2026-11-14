@@ -1,0 +1,7 @@
+flowchart LR
+    ParentPom["OpenFrame Parent POM"] -->|"sets Java 25 and library version"| ModulePom["OpenFrame Config Maven Module"]
+    ModulePom -->|"depends on"| ConfigLibrary["OpenFrame Config Core 7.0.11"]
+    ModulePom -->|"packages"| Application["ConfigServerApplication"]
+    Application -->|"starts"| SpringBoot["Spring Boot Application Context"]
+    SpringBoot -->|"activates"| ConfigLibrary
+    HelmChart["OpenFrame Config Helm Chart"] -->|"injects environment"| Application

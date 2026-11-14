@@ -1,0 +1,10 @@
+flowchart LR
+    Caller["API caller"] -->|"request"| Gateway["OpenFrame gateway"]
+    Gateway -->|"Path /api/**"| ApiRuntime["OpenFrame API runtime"]
+    ApiRuntime -->|"loads components from"| ApiLayer["API package"]
+    ApiRuntime -->|"loads components from"| SharedLayer["Data and core packages"]
+    ApiRuntime -->|"loads components from"| IntegrationLayer["Notification and Kafka packages"]
+    ApiRuntime -->|"configured connection"| Kafka["Kafka"]
+    ApiRuntime -->|"configured connection"| Nats["NATS"]
+    ApiRuntime -->|"response"| Gateway
+    Gateway -->|"response"| Caller

@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Consumer as Browser or API Consumer
+    participant Gateway as OpenFrame Gateway
+    participant Service as Tenant Service
+    participant Config as Config Server
+    participant Data as Data and Messaging Systems
+
+    Service->>Config: Request shared and service configuration
+    Config-->>Service: Return application properties
+    Consumer->>Gateway: Send request
+    Gateway->>Gateway: Apply routing and security policy
+    Gateway->>Service: Forward matching request
+    Service->>Data: Use configured datastore or message broker
+    Data-->>Service: Return data or processing result
+    Service-->>Gateway: Return response
+    Gateway-->>Consumer: Return response
