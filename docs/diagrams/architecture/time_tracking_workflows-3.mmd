@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Test as Time Tracking Test
+    participant Api as Time Tracking API
+    participant Service as Time Tracking Service
+    Test->>Api: startTimer with notes
+    Api->>Service: Start timer
+    Service-->>Api: Running time entry
+    Api-->>Test: Entry with RUNNING state
+    Test->>Api: currentTimer
+    Api->>Service: Get active timer
+    Service-->>Api: Started entry
+    Api-->>Test: Matching entry
+    Test->>Api: pauseTimer
+    Api->>Service: Pause active timer
+    Service-->>Api: Paused entry
+    Api-->>Test: Entry with PAUSED state
+    Test->>Api: resumeTimer
+    Api->>Service: Resume active timer
+    Service-->>Api: Running entry with break seconds
+    Api-->>Test: Entry with RUNNING state
+    Test->>Api: stopTimer with replacement notes
+    Api->>Service: Complete active timer
+    Service-->>Api: Completed entry with durations
+    Api-->>Test: Entry with COMPLETED state

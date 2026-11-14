@@ -1,0 +1,10 @@
+flowchart TD
+    Input["App identity and process list"] --> AppCheck{"Application identity?"}
+    AppCheck -->|"no"| ClearNoApp["Return clear"]
+    AppCheck -->|"yes"| UnderInstall["Keep processes under install directory"]
+    UnderInstall --> NonService["Exclude service processes"]
+    NonService --> RootOnly["Exclude same-image child processes"]
+    RootOnly --> MainImage["Match derived main images when known"]
+    MainImage --> Holders{"Any holders?"}
+    Holders -->|"no"| Clear["Return clear"]
+    Holders -->|"yes"| Blocked["Return running block with holders"]

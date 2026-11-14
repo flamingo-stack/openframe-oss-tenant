@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Agent as Client agent
+    participant Chat as Client dialog
+    participant Admin as Technician admin
+    participant Config as Client AI configuration
+    Agent->>Chat: Store unique reference code
+    Chat-->>Agent: Answer from original model
+    Agent-->>Admin: Release agent session
+    Admin->>Config: Apply alternate client model
+    Admin-->>Agent: Reopen agent session
+    Agent->>Chat: Request remembered code
+    Chat-->>Agent: Answer from alternate model
+    Admin->>Config: Restore original model

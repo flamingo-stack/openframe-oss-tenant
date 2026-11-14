@@ -1,0 +1,11 @@
+flowchart TD
+    DirectoryManager["Directory Manager"] -->|"secured directory"| Constructor["Initial Configuration Service constructor"]
+    Constructor -->|"ensures directories"| SecuredDir["secured directory"]
+    Constructor --> ConfigPath["initial_config.json path"]
+    ConfigPath --> ReadConfig["private JSON read and deserialize"]
+    ReadConfig --> Accessors["configuration accessors"]
+    ReadConfig --> Mutations["read modify write operations"]
+    Mutations --> WriteLock["shared mutex"]
+    WriteLock --> Save["serialize pretty JSON"]
+    Save --> AtomicWrite["atomic write utility"]
+    AtomicWrite --> ConfigPath

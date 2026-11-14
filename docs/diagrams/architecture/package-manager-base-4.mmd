@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Reporter as "Package reporting workflow"
+    participant Base as "Package Manager Base"
+    participant Host as "Host operating system"
+    participant Backend as "Backend bootstrap service"
+    Reporter->>Base: resolve manager and query presence
+    Base->>Host: probe manager and dependencies
+    Host-->>Base: presence outcomes
+    Base-->>Reporter: manager and availability state
+    Reporter->>Backend: report missing prerequisite
+    Backend-->>Reporter: bootstrap decision or action

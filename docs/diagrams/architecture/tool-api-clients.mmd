@@ -1,0 +1,6 @@
+flowchart LR
+    ToolInstallService["Tool Installation Service"] -->|"requests an asset"| ToolApiClient["Tool Api Client"]
+    ToolApiClient -->|"reads access token"| ConfigService["Agent Configuration Service"]
+    ToolApiClient -->|"GET with bearer token"| ToolApi["Tool API"]
+    ToolApiClient -->|"asset bytes"| ToolInstallService
+    ToolInstallService -->|"writes, installs, and runs"| ManagedTool["Managed Tool"]

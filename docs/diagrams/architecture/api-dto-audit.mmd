@@ -1,0 +1,9 @@
+flowchart LR
+    GraphQLClient["GraphQL Client"] -->|"filter and sort arguments"| LogDataFetcher["Log Data Fetcher"]
+    LogDataFetcher -->|"LogFilterInput"| GraphQLLogMapper["GraphQL Log Mapper"]
+    LogDataFetcher -->|"LogSortInput"| GraphQLLogMapper
+    GraphQLLogMapper -->|"LogFilterCriteria and SortInput"| LogService["Log Service"]
+    LogService -->|"tenant-scoped query"| PinotStore["Pinot Log Repository"]
+    PinotStore -->|"audit events"| LogService
+    LogService -->|"connection result"| LogDataFetcher
+    LogDataFetcher -->|"paginated response"| GraphQLClient

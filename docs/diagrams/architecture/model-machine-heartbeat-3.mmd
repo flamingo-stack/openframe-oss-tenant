@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Run manager starts"] --> Tick["Wait for interval tick"]
+    Tick --> Publish["Publish heartbeat with timeout"]
+    Publish --> Result{"Publish succeeded?"}
+    Result -->|"yes"| Tick
+    Result -->|"publisher error"| LogError["Log publish failure"]
+    Result -->|"timeout"| LogTimeout["Log NATS timeout"]
+    LogError --> Tick
+    LogTimeout --> Tick

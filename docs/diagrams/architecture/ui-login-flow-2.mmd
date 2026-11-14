@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Test as Test case
+    participant Flow as Ui Login Flow
+    participant Entry as Authentication entry page
+    participant Methods as Authentication method page
+    participant Sso as SSO login page
+    participant Auth as Authorization server
+    participant App as Frontend dashboard
+
+    Test->>Flow: login(email, password)
+    Flow->>Entry: navigate()
+    Entry->>App: Load authentication entry route
+    Flow->>Entry: switchToLogin()
+    Entry->>App: Render login email form
+    Flow->>Entry: submitEmail(email)
+    Entry->>Methods: Wait for OpenFrame provider
+    Flow->>Methods: clickSignInWithOpenFrameSso()
+    Methods->>Auth: Navigate to SSO login route
+    Flow->>Sso: login(email, password)
+    Sso->>Auth: Submit credentials
+    Auth-->>App: Redirect after successful authentication
+    Flow->>App: Wait until dashboard is loaded
+    App-->>Flow: Dashboard URL, sidebar, active Dashboard item
+    Flow-->>Test: Navigation sidebar

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Service as "Application service"
+    participant Repository as "Mongo repository"
+    participant Template as "Mongo template"
+    participant Database as "MongoDB"
+    participant Projection as "Publishing projection"
+
+    Service->>Repository: Read or update domain data
+    Repository->>Template: Build scoped query or update
+    Template->>Database: Execute MongoDB operation
+    Database-->>Template: Return result
+    Template-->>Repository: Return mapped document or count
+    Repository-->>Service: Return persistence result
+    Service->>Projection: Publish domain change when applicable
+    Projection->>Database: Update denormalized projection fields

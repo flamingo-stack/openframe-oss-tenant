@@ -1,0 +1,8 @@
+flowchart LR
+    NatsBroker["NATS broker"] -->|"remote-access event"| Subject["Machine-specific subject"]
+    Subject --> Listener["Remote Access Message Listener"]
+    ConfigService["Agent Configuration Service"] -->|"machine identity"| Listener
+    ConnectionManager["NATS Connection Manager"] -->|"active client and replacement signal"| Listener
+    Listener -->|"ensure graphical application"| ToolManager["Tool Run Manager"]
+    ToolManager --> ChatApp["Chat graphical application"]
+    ChatApp --> SessionSync["Current-session synchronization"]

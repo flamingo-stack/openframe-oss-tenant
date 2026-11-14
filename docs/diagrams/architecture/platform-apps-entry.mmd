@@ -1,0 +1,6 @@
+flowchart LR
+    ClientLifecycle["OpenFrame Client lifecycle"] -->|"register, refresh, or unregister"| AppsEntry["Platform Apps Entry"]
+    AppsEntry -->|"create or remove values"| Registry["Windows machine registry"]
+    Registry -->|"lists installed software"| WindowsUI["Apps and Features"]
+    WindowsUI -->|"runs uninstall command"| ElevatedShell["Elevated PowerShell"]
+    ElevatedShell -->|"invokes uninstall"| ClientBinary["OpenFrame Client binary"]

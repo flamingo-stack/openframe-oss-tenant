@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Config as Initial Configuration
+    participant Service as Mode Service
+    participant Model as Mode Model
+    participant Api as Remote Access Client
+    participant Backend as Backend
+    Config->>Service: Return optional persisted name
+    Service->>Model: Parse wire name
+    alt recognized mode
+        Service->>Api: Set device mode
+        Api->>Api: Load access token
+        Api->>Backend: Send authenticated mode request
+        Backend-->>Api: Return HTTP response
+        Api-->>Service: Return classified outcome or error
+    else unknown mode
+        Service->>Config: Clear remote access mode
+    end

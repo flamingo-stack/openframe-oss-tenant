@@ -1,0 +1,9 @@
+flowchart TD
+    Received["Message delivered"] --> Decode["Extract machine ID and decode JSON"]
+    Decode --> Valid{"Timezone is nonblank?"}
+    Valid -->|"yes"| Update["Update machine timezone"]
+    Update --> Ack["Acknowledge message"]
+    Valid -->|"no"| Ignore["Log and skip update"]
+    Ignore --> Ack
+    Decode -->|"exception"| Retry["Leave unacknowledged for redelivery"]
+    Update -->|"exception"| Retry

@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Listener as Command listener
+    participant Handler as Feature flags handler
+    participant Service as Feature Flags Service
+    participant Storage as State file
+    Listener->>Handler: Deliver feature flags command
+    Handler->>Service: Apply machine, delivery, sequence, payload
+    Service->>Service: Parse each raw flag entry
+    Service->>Service: Reject invalid entries
+    Service->>Service: Resolve flags for running version
+    alt effective flags unchanged
+        Service->>Storage: Atomically persist accepted state
+        Service-->>Handler: Unchanged
+        Handler-->>Listener: Done
+    else effective flags changed
+        Service->>Storage: Atomically persist state and pending delivery
+        Service-->>Handler: RestartRequired
+        Handler-->>Listener: Restart required
+    end

@@ -1,0 +1,9 @@
+flowchart TD
+    UninstallRequest["Windows uninstall request"] --> ServiceCleanup["Remove client service"]
+    ServiceCleanup --> Deregistration["Attempt device deregistration"]
+    Deregistration --> ToolCleanup["Uninstall integrated tools"]
+    ToolCleanup --> DirectoryCleanup["Remove logs and application support data"]
+    DirectoryCleanup --> EntryCleanup["Remove Apps and Features entry and PATH entry"]
+    EntryCleanup --> CleanupLaunch["Launch Platform Windows Cleanup"]
+    CleanupLaunch --> ClientExit["Client process exits"]
+    ClientExit --> ScriptCleanup["Script removes executable and empty directories"]

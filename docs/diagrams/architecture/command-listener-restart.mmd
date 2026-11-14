@@ -1,0 +1,10 @@
+flowchart LR
+    CommandListener["Command Listener"] -->|"admit work"| RestartGate["Restart Gate"]
+    CommandHandlers["Command Handlers"] -->|"hold read guard"| RestartGate
+    RestartRequester["Restart Requester"] -->|"drain and request"| RestartGate
+    RestartGate -->|"check activity"| ToolOps["Tool Operations"]
+    RestartGate -->|"check activity"| Scripts["Running Scripts"]
+    RestartGate -->|"check activity"| PackageUpgrades["Package Upgrades"]
+    RestartGate -->|"check activity"| ClientUpdate["Client Update Pending"]
+    RestartGate -->|"restart requested"| ServiceOwner["Service Restart Owner"]
+    ServiceOwner -->|"stop and start service"| SystemService["System Service"]

@@ -1,0 +1,10 @@
+flowchart LR
+    Agent["OpenFrame endpoint agent"] --> ClientServices["Client authentication services"]
+    ClientServices --> AuthClient["AuthClient"]
+    AuthClient --> HttpClient["Injected reqwest client"]
+    AuthClient --> Deactivation["DeactivationService"]
+    HttpClient --> Gateway["Gateway client token endpoint"]
+    Gateway --> TokenResponse["AgentTokenResponse"]
+    Gateway --> Status["HTTP status"]
+    Status --> Deactivation
+    TokenResponse --> ClientServices

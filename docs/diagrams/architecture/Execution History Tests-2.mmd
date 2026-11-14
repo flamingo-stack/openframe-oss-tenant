@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Test as Execution History Tests
+    participant Devices as Device API
+    participant Scripts as Script API
+    participant Agent as Online Windows Agent
+    participant History as Execution History Read Model
+    Test->>Devices: Find online Windows machines
+    alt Eligible machine exists
+        Devices-->>Test: Machine identifier
+        Test->>Scripts: Create owned script
+        Test->>Scripts: Dispatch script with ADMIN privilege
+        Scripts-->>Agent: Deliver script work
+        Agent-->>History: Report execution
+        loop Up to 180 seconds
+            Test->>Scripts: Read first execution page
+            Scripts->>History: Query script history
+            History-->>Scripts: Connection and filtered count
+            Scripts-->>Test: Execution connection
+        end
+        Test->>Scripts: Read execution facets
+        Scripts->>History: Query facets
+        History-->>Scripts: Initiator, status, and machine facets
+        Scripts-->>Test: Filter data
+    else No eligible machine
+        Test-->>Test: Abort through assumption
+    end

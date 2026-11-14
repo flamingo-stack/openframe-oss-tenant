@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Manager as "Heartbeat run manager"
+    participant Publisher as "Heartbeat publisher"
+    participant Config as "Agent configuration"
+    participant Nats as "NATS publisher"
+    participant Broker as "NATS broker"
+    participant Listener as "Heartbeat listener"
+    participant Status as "Machine status service"
+    Manager->>Manager: Wait for interval tick
+    Manager->>Publisher: Publish heartbeat with timeout
+    Publisher->>Config: Read machine identifier
+    Publisher->>Publisher: Create empty heartbeat message
+    Publisher->>Nats: Publish and flush subject
+    Nats->>Broker: Send machine heartbeat
+    Broker->>Listener: Deliver matching subject
+    Listener->>Listener: Extract machine identifier and timestamp event
+    Listener->>Status: Process heartbeat as online
+    Status->>Status: Update presence or transition status

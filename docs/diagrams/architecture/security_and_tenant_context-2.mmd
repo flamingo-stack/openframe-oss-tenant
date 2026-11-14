@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Browser
+    participant Filters as "Tenant Filters"
+    participant Session as "Redis Session"
+    participant Clients as "Dynamic Client Repository"
+    participant Provider as "External Provider"
+    Browser->>Filters: Start SSO login request
+    Filters->>Session: Read existing session state
+    Filters->>Filters: Resolve tenant context
+    Filters->>Clients: Find provider registration
+    Clients->>Clients: Resolve tenant from context or session
+    Clients->>Provider: Use tenant specific client configuration
+    Provider-->>Browser: Redirect with authorization response
+    Browser->>Filters: Return to callback
+    Filters->>Session: Recover tenant and authorization state
+    Filters->>Clients: Resolve the same tenant registration

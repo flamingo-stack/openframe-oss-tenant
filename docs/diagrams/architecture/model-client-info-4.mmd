@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Client Startup"] --> Load["Load Pending Update State"]
+    Load --> Present{"State Present?"}
+    Present -->|"no"| Interrupted["Report Interrupted Before Launch"]
+    Present -->|"yes"| Match{"Running Version Matches Target?"}
+    Match -->|"yes"| Success["Handle Successful Update"]
+    Match -->|"no"| Pending{"Phase Is Launching Or Verifying?"}
+    Pending -->|"yes"| Keep["Keep State For Next Boot"]
+    Pending -->|"no"| Failed["Set Failed Status"]
+    Failed --> Cleanup["Report Failure, Clean Up, Clear State"]

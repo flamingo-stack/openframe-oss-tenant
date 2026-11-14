@@ -1,0 +1,5 @@
+flowchart TD
+    TenantConfig["Tenant deployment configuration"] --> ClientConfig["Client initial configuration"]
+    ClientConfig --> Resolver["Tool Url Params Resolver"]
+    Resolver --> ResolvedEndpoint["Resolved tool endpoint"]
+    ResolvedEndpoint --> DownstreamWorkflow["Downstream tool workflow"]

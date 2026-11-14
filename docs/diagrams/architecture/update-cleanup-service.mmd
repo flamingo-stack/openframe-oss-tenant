@@ -1,0 +1,9 @@
+flowchart TD
+    UpdateFlow["Client update flow"] --> UpdateService["OpenFrame Client Update Service"]
+    UpdateService --> UpdateHandler["Update Handler Service"]
+    UpdateHandler --> CleanupService["Update Cleanup Service"]
+    CleanupService --> BinaryDir["Executable directory"]
+    CleanupService --> TempDir["System temporary directory"]
+    CleanupService --> StagingDir["Update staging directory"]
+    UpdateHandler --> UpdateState["Update state service"]
+    UpdateHandler --> LastKnownGood["Last known good service"]

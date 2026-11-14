@@ -1,0 +1,9 @@
+flowchart LR
+    Failure["Failed update detected"] --> Handler["Update Handler Service"]
+    Handler --> Cleanup["cleanup_all()"]
+    Cleanup --> Backups["Remove executable backup files"]
+    Cleanup --> TempSweep["Sweep aged updater artifacts"]
+    TempSweep --> Temp["System temporary directory"]
+    TempSweep --> Stage["Update staging directory"]
+    Cleanup --> Log["Info or warning logs"]
+    Handler --> StateClear["Clear update state"]

@@ -1,0 +1,9 @@
+flowchart LR
+    Criteria["Schedule Device Criteria"] --> Scope["Intersect Requested and Supported Operating Systems"]
+    Supported["Supported Platforms"] --> Scope
+    Scope --> EmptyCheck{"Empty Scope?"}
+    EmptyCheck -->|"yes"| NoDevices["Return No Devices"]
+    EmptyCheck -->|"no"| Filter["Build Machine Query Filter"]
+    Filter --> Repository["Query Tenant Machine Repository"]
+    ManagerConstraint["Package Manager Constraint"] --> Repository
+    Repository --> MachineIds["Eligible Machine IDs"]

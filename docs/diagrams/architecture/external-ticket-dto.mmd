@@ -1,0 +1,8 @@
+flowchart LR
+    TestSuite["External ticket integration tests"] --> Client["External API test client"]
+    Client --> TicketApi["External ticket API"]
+    TicketApi --> Payload["JSON ticket response payload"]
+    Payload --> Dtos["External Ticket Dto"]
+    Dtos --> Statistics["Status definition count"]
+    Dtos --> Attachment["Ticket attachment response"]
+    Dtos --> Owner["Ticket owner response"]

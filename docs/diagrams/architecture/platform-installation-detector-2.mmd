@@ -1,0 +1,10 @@
+flowchart TD
+    Detector["Platform Installation Detector"] --> ConfigModel["DownloadConfiguration"]
+    Detector --> InstallModel["Installation"]
+    Detector --> DirectoryApi["DirectoryManager"]
+    Detector --> MacRegistration["LaunchDaemon plist check"]
+    Detector --> WindowsService["Windows service existence check"]
+    DirectoryApi --> ExecutablePath["Expected tool executable path"]
+    MacRegistration --> InstallModel
+    WindowsService --> InstallModel
+    ExecutablePath --> InstallModel

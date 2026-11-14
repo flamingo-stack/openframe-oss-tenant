@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Caller
+    participant Runner as "Test Runner"
+    participant Loader as "Context Class Loader"
+    participant JUnit as "JUnit Launcher"
+    Caller->>Runner: Discover with tags and parallelism
+    Runner->>Runner: Build filters and execution parameters
+    Runner->>Loader: Find configured package resources
+    Loader->>Runner: Return resource URLs
+    Runner->>Runner: Build class selectors or package selector
+    Runner->>JUnit: Discover request
+    JUnit->>Runner: Return test plan
+    Runner->>Caller: Return test plan or test metadata
+    Caller->>Runner: Execute test plan
+    Runner->>JUnit: Execute plan

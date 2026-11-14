@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Update coordinator supplies process IDs"] --> Platform{"Target platform?"}
+    Platform -->|"Windows"| BuildArgs["Convert process IDs to script arguments"]
+    BuildArgs --> RunScript["Run PowerShell as user"]
+    RunScript --> FindProcess["Find each process"]
+    FindProcess --> CloseWindow["Request CloseMainWindow"]
+    CloseWindow --> ScriptResult{"Script returned zero?"}
+    ScriptResult -->|"No"| LogCloseWarning["Log close warning with return code and stderr"]
+    ScriptResult -->|"Yes"| CloseDone["Close request complete"]
+    Platform -->|"Non-Windows"| Refresh["Refresh process information"]
+    Refresh --> SignalTerm["Send SIGTERM to each known process"]
+    SignalTerm --> SignalResult{"Signal request refused?"}
+    SignalResult -->|"Yes"| LogSignalWarning["Log process-specific warning"]
+    SignalResult -->|"No"| CloseDone

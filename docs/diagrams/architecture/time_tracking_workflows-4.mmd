@@ -1,0 +1,9 @@
+flowchart TD
+    Begin["Obtain user identity from timer entry"] --> Create["Create manual entry"]
+    Create --> Complete["Receive completed entry"]
+    Complete --> CheckFields["Check source, user, duration, and end timestamp"]
+    CheckFields --> Update["Update notes and duration"]
+    Update --> Query["Query employee entries and period statistics"]
+    Query --> CheckReport["Verify entry and totals include update"]
+    CheckReport --> Delete["Delete entry"]
+    Delete --> VerifyDeleted["Verify second delete is false and lookup is empty"]

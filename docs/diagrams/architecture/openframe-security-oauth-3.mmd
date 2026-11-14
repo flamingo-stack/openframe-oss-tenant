@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client as "Browser or app"
+    participant Controller as "OAuth BFF Controller"
+    participant Bff as "OAuth BFF Service"
+    participant Auth as "Authorization Server"
+    Client->>Controller: GET /oauth/login
+    Controller->>Bff: Build authorize redirect
+    Bff->>Controller: State and authorize URL
+    Controller->>Client: Redirect and state cookie
+    Client->>Auth: Follow authorize URL
+    Auth->>Client: Redirect with code and state
+    Client->>Controller: GET /oauth/callback
+    Controller->>Bff: Handle callback
+    Bff->>Controller: Tokens and return target
+    Controller->>Client: Redirect, auth cookies, clear state

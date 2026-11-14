@@ -1,0 +1,14 @@
+flowchart LR
+    CommandListener["Command listener"] --> PackageHandler["Package update handler"]
+    PackageHandler --> OrderStore["Order store"]
+    OrderStore --> UpdateRunner["Package update runner"]
+    UpdateRunner --> UpdateGate["Update gate"]
+    UpdateGate --> PackageManager["Package manager"]
+    PackageHandler --> StatusReporter["Status reporter"]
+    OrderStore --> StatusReporter
+    UpdateRunner --> StatusReporter
+    StatusReporter --> ResultStore["Durable result store"]
+    ResultStore --> OutboxRunner["Result outbox runner"]
+    OutboxRunner --> Nats["NATS JetStream"]
+    StatusReporter --> Nats
+    Nats --> Backend["Client service status processing"]

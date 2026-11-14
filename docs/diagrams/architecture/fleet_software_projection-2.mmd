@@ -1,0 +1,10 @@
+flowchart TD
+    Incoming["Debezium host software event"] --> PayloadCheck{"Payload present?"}
+    PayloadCheck -->|"no"| Ignore["Ignore event"]
+    PayloadCheck -->|"yes"| RowSelect["Select after or before row"]
+    RowSelect --> HostCheck{"Host ID present?"}
+    HostCheck -->|"no"| Ignore
+    HostCheck -->|"yes"| ResolveCheck{"Fleet host resolvable?"}
+    ResolveCheck -->|"no"| Skip["Skip unresolved host"]
+    ResolveCheck -->|"yes"| HostRef["Resolve tenant and machine reference"]
+    HostRef --> Reconcile["Reconcile full host inventory"]

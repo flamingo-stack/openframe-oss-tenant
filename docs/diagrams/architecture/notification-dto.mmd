@@ -1,0 +1,9 @@
+classDiagram
+    class NotificationEdge {
+        +Notification node
+        +String cursor
+    }
+    class Notification {
+        <<test DTO>>
+    }
+    NotificationEdge --> Notification : contains

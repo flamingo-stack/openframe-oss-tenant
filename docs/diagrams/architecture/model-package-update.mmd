@@ -1,0 +1,11 @@
+flowchart LR
+    Backend["OpenFrame backend"] -->|"package update order"| Delivery["Delivery envelope"]
+    Delivery -->|"payload"| Message["PackageUpdateMessage"]
+    Message --> Package["PackageRef"]
+    Message --> Source["UpdateSource"]
+    Message --> Mode["UpdateMode"]
+    Message --> Countdown["Optional countdown"]
+    Message --> Handler["Package update command handler"]
+    Handler --> Runner["Package update run manager"]
+    Runner --> Status["Package update status message"]
+    Status --> Backend

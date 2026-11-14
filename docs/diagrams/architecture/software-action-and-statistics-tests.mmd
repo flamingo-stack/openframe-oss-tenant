@@ -1,0 +1,9 @@
+flowchart LR
+    BundleTest["Earlier Software Bundle Test"] -->|"creates completed install"| ActionApi["Software Action API"]
+    ActionApi -->|"action history, details, facets"| HistoryTest["Software Action History Test"]
+    HistoryTest -->|"validates rows and devices"| Result["Functional Test Result"]
+
+    TenantFile["Tenant Domain Resource"] -->|"provides domains"| StatsTest["Statistics Test"]
+    StatsTest -->|"queries devices and OS versions"| DeviceApi["Device API"]
+    DeviceApi -->|"fleet device data"| StatsTest
+    StatsTest -->|"writes aggregate"| StatsFile["stats.txt"]

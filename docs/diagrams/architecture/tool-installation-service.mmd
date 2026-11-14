@@ -1,0 +1,12 @@
+flowchart LR
+    CommandHandler["Tool installation command handler"] -->|"reserved install message"| InstallationService["Tool Installation Service"]
+    InstallationService -->|"select and download"| DownloadService["GitHub Download Service"]
+    InstallationService -->|"fetch Tool API asset"| ToolApiClient["Tool API Client"]
+    InstallationService -->|"paths and managed directories"| DirectoryManager["Directory Manager"]
+    InstallationService -->|"persist lifecycle record"| InstalledTools["Installed Tools Service"]
+    InstallationService -->|"stop processes and services"| ToolKill["Tool Kill Service"]
+    InstallationService -->|"expand command arguments"| CommandResolver["Tool Command Parameters Resolver"]
+    InstallationService -->|"expand asset URL"| UrlResolver["Tool URL Parameters Resolver"]
+    InstallationService -->|"start tool"| ToolRunManager["Tool Run Manager"]
+    InstallationService -->|"process connection"| ConnectionManager["Tool Connection Processing Manager"]
+    InstallationService -->|"publish installation"| InstalledPublisher["Installed Agent Message Publisher"]

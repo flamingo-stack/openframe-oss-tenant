@@ -1,0 +1,8 @@
+flowchart LR
+    RawTags["Raw tag strings"] --> Split["Split once on equals sign"]
+    Split --> Trim["Trim key and value"]
+    Trim --> Valid{"Nonempty key and value?"}
+    Valid -->|"no"| Skip["Discard tag"]
+    Valid -->|"yes"| Group["Group values by key"]
+    Group --> DeviceTags["DeviceTag list"]
+    DeviceTags --> Config["InitialConfiguration tags"]

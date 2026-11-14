@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Worker as Worker
+    participant Progress as InProgress
+    participant Guard as InProgressGuard
+    participant Observer as InProgressView
+    Worker->>Progress: begin()
+    Progress->>Progress: fetch_add(1, SeqCst)
+    Progress-->>Worker: guard
+    Observer->>Progress: is_active()
+    Progress->>Progress: load(SeqCst)
+    Progress-->>Observer: true while count is positive
+    Worker->>Guard: scope ends or panic unwinds
+    Guard->>Progress: Drop fetch_sub(1, SeqCst)
+    Observer->>Progress: is_active()
+    Progress-->>Observer: false after final guard drops

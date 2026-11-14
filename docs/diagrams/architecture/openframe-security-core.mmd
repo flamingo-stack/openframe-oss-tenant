@@ -1,0 +1,11 @@
+flowchart LR
+    Config["JWT configuration"] --> JwtConfig["JwtConfig key loader"]
+    JwtConfig --> PrivateKey["RSA private key"]
+    JwtConfig --> PublicKey["RSA public key"]
+    PrivateKey --> Encoder["Nimbus JWT encoder"]
+    PublicKey --> Decoder["Nimbus JWT decoder"]
+    Encoder --> TokenIssuer["Token issuing service"]
+    TokenIssuer --> Token["Signed JWT"]
+    Token --> Decoder
+    Decoder --> ProtectedService["Protected service"]
+    KeyConfig["KeyConfig PEM parser"] --> PublicKey

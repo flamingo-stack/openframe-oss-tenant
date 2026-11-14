@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Client starts remote access mode service"] --> ReadConfig["Read pending mode name"]
+    ReadConfig --> HasValue{"Mode name present?"}
+    HasValue -->|"no"| NoTask["Do not start task"]
+    HasValue -->|"yes"| ParseMode["Parse canonical wire name"]
+    ParseMode --> KnownMode{"Known mode?"}
+    KnownMode -->|"no"| ClearMode["Warn and clear pending value"]
+    KnownMode -->|"yes"| SpawnTask["Start asynchronous apply task"]
+    SpawnTask --> GetToken["Read access token"]
+    GetToken --> PutMode["Send authenticated mode request"]
+    PutMode --> Outcome["Classify device mode outcome"]

@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Read persisted machine info"] --> ReadOnce["Read platform store"]
+    ReadOnce --> Missing{"Store missing?"}
+    Missing -->|"yes"| Fresh["Return no record"]
+    Missing -->|"no"| Permission{"Permission denied?"}
+    Permission -->|"yes"| Repair["Repair storage permissions"]
+    Repair --> Retry["Read platform store once more"]
+    Retry --> RetryResult{"Valid complete record?"}
+    RetryResult -->|"yes"| Reuse["Return persisted record"]
+    RetryResult -->|"no"| ReadError["Return read error"]
+    Permission -->|"no"| Valid{"Valid complete record?"}
+    Valid -->|"yes"| Reuse
+    Valid -->|"no"| ReadError

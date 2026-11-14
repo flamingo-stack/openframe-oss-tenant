@@ -1,0 +1,20 @@
+flowchart TD
+    Begin["Read request"] --> OpenFile["Open configured log file"]
+    OpenFile --> FileReady{"File opened?"}
+    FileReady -->|"no"| ReadError["Return source error"]
+    FileReady -->|"yes"| CompareSize["Compare file length with committed offset"]
+    CompareSize --> ResetCheck{"File shorter than offset?"}
+    ResetCheck -->|"yes"| StartZero["Start at byte zero"]
+    ResetCheck -->|"no"| StartSaved["Start at committed offset"]
+    StartZero --> ReadLines["Read lines up to entry limit"]
+    StartSaved --> ReadLines
+    ReadLines --> ParseLine["Parse each line"]
+    ParseLine --> Parsed{"Entry produced?"}
+    Parsed -->|"yes"| Collect["Collect LogEntry"]
+    Parsed -->|"no"| ReadLines
+    Collect --> LimitReached{"Limit reached?"}
+    LimitReached -->|"no"| ReadLines
+    LimitReached -->|"yes"| SetPending["Set pending offset"]
+    ReadLines --> EndFile{"End of file?"}
+    EndFile -->|"yes"| SetPending
+    SetPending --> Result["Return entries"]

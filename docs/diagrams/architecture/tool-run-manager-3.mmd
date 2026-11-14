@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Manager as Tool Run Manager
+    participant Ops as Tool Operations
+    participant Registry as Installed Tools Registry
+    participant Killer as Tool Stop Service
+    participant Resolver as Parameter Resolver
+    participant Process as Tool Process
+
+    Manager->>Ops: Check whether the tool is busy
+    alt Tool operation is active
+        Manager->>Manager: Wait until the operation releases the tool
+    else Tool is available
+        Manager->>Registry: Refresh installation and stored arguments
+        Manager->>Killer: Stop leftover processes
+        Manager->>Resolver: Resolve command arguments
+        Manager->>Process: Spawn executable with arguments
+        Manager->>Process: Read standard output and error output
+        alt Process exits within one minute
+            Manager->>Manager: Record failed start and delay retry
+        else Process remains running
+            Manager->>Manager: Clear failed-start streak
+            Process-->>Manager: Eventually exits
+            Manager->>Manager: Delay then supervise again
+        end
+    end

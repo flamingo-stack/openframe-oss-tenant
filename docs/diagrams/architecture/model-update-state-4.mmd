@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Client starts"] --> Load["Load update state"]
+    Load --> Exists{"State exists?"}
+    Exists -->|"no"| NoState["Report interrupted before launch"]
+    Exists -->|"yes"| Match{"Running version matches target?"}
+    Match -->|"yes"| Success["Handle successful update"]
+    Match -->|"no"| Phase{"Phase is launch or verification?"}
+    Phase -->|"yes"| Keep["Keep state for next boot"]
+    Phase -->|"no"| Failure["Handle update failure"]
+    Failure --> Status["Set client status to failed"]
+    Status --> Report["Publish failed delivery result"]
+    Report --> Cleanup["Clean artifacts and clear state"]

@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Client as "Client update service"
+    participant Launcher as "Platform Updater Launcher"
+    participant Stage as "Update staging directory"
+    participant OS as "Operating system launcher"
+    Client->>Launcher: Provide prepared update parameters
+    Launcher->>Stage: Create staging directory
+    alt Windows
+        Launcher->>Stage: Write unique PowerShell script
+        Launcher->>OS: Start detached PowerShell with update arguments
+        Launcher->>Client: Return exit watcher
+    else macOS
+        Launcher->>Stage: Write unique shell script and plist
+        Launcher->>OS: Remove stale job and load plist
+        Launcher->>Client: Return completed handoff without watcher
+    else Linux
+        Launcher->>Client: Return not implemented error
+    end

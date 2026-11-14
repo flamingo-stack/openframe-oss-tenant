@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Bundle as "Software Bundle Test"
+    participant Api as "Software Action API"
+    participant History as "Software Action History Test"
+
+    Bundle->>Api: Submit package installation
+    Api-->>Bundle: Completed bundle action
+    History->>Api: List completed WINGET installs
+    Api-->>History: Newest-first action connection
+    History->>Api: Read selected action by ID
+    Api-->>History: Action detail
+    History->>Api: List action device executions
+    Api-->>History: Device execution rows
+    History->>Api: Request filter facets
+    Api-->>History: Status, action, and engine counts

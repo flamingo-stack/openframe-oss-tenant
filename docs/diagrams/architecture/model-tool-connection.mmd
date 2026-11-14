@@ -1,0 +1,10 @@
+flowchart LR
+    InstalledTool["Installed tool metadata"] --> Processor["Tool connection processing manager"]
+    Processor --> Record["ToolConnection record"]
+    Record --> Store["Client-local connection store"]
+    Processor --> Publisher["Tool connection message publisher"]
+    Publisher --> Nats["NATS subject machine ID tool connection"]
+    Nats --> Listener["Java tool connection listener"]
+    Listener --> PlatformService["Platform tool connection service"]
+    PlatformService --> PlatformStore["Platform connection data"]
+    PlatformStore --> ApiLoader["GraphQL tool connection data loader"]

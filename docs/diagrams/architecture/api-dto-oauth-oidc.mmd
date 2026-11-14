@@ -1,0 +1,7 @@
+flowchart LR
+    Client["Browser or application"] -->|"authorization request"| AuthServer["Authorization server"]
+    AuthServer -->|"authorization result"| AuthorizationResponse["AuthorizationResponse"]
+    Client -->|"code and PKCE verifier"| RequestDto["GoogleTokenRequest or SocialAuthRequest"]
+    RequestDto -->|"token exchange input"| ApiService["OpenFrame API service"]
+    ApiService -->|"issued token values"| TokenResponse["TokenResponse"]
+    TokenResponse -->|"access and refresh tokens"| Client

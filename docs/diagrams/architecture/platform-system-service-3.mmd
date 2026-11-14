@@ -1,0 +1,19 @@
+flowchart TD
+    Request["Stop requested"] --> StopCall["Request SCM stop"]
+    StopCall --> Stopped{"Stopped or absent?"}
+    Stopped -->|"yes"| Complete["Return success"]
+    Stopped -->|"no"| Force["Force-stop recovery"]
+    Force --> Pid{"SCM exposes process ID?"}
+    Pid -->|"yes"| Taskkill["Run taskkill for process tree"]
+    Pid -->|"no"| Image["Read service image path"]
+    Image --> Match["Find processes with exact executable path"]
+    Match --> Kill["Terminate matching process trees"]
+    Taskkill --> Recheck["Recheck SCM state"]
+    Kill --> Recheck
+    Recheck --> Cleared{"Stopped or absent?"}
+    Cleared -->|"yes"| Complete
+    Cleared -->|"no"| DeleteAllowed{"Deletion allowed?"}
+    DeleteAllowed -->|"no"| StopError["Return recovery error"]
+    DeleteAllowed -->|"yes"| Delete["Delete service through SCM"]
+    Delete --> Confirm["Poll until service is absent"]
+    Confirm --> Complete

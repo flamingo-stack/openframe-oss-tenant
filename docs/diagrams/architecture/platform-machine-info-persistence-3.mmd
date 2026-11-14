@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Registration as Agent Registration Service
+    participant Persistence as Platform Machine Info Persistence
+    participant Store as Platform Credential Store
+    participant Client as Registration Client
+    Registration->>Persistence: read()
+    Persistence->>Store: read record
+    Store-->>Persistence: record, absence, or error
+    Persistence-->>Registration: credentials or result
+    alt Saved credentials available
+        Registration->>Client: register with persisted credentials
+        Client-->>Registration: registration response
+    else No credentials available
+        Registration->>Client: register without persisted credentials
+        Client-->>Registration: registration response
+    end
+    Registration->>Persistence: write response identity and secret
+    Persistence->>Store: validate, serialize, secure, replace record
+    Store-->>Persistence: write result
+    Persistence-->>Registration: success or error

@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Directory query requested"] --> Collect["Recursively collect filesystem entries"]
+    Collect --> Limit{"Reached 1,024 paths?"}
+    Limit -->|"No"| More["Continue traversing entries"]
+    More --> Collect
+    Limit -->|"Yes"| Query["Register collected paths in one session"]
+    Collect --> Empty{"Any paths collected?"}
+    Empty -->|"Yes"| Query
+    Empty -->|"No"| Directory["Register directory path"]
+    Directory --> Query
+    Query --> Holders["Query Restart Manager holders"]
+    Holders --> Dedupe["Sort and deduplicate by process ID"]
+    Dedupe --> Result["Return LockHolder records"]

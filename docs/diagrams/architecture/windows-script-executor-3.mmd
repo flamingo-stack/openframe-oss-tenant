@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Service as Execution Service
+    participant Executor as Windows Script Executor
+    participant Disk as Application Support Directory
+    participant Runner as Selected Runner
+    Service->>Executor: execute script parameters
+    Executor->>Executor: resolve interpreter and privilege
+    Executor->>Disk: create directory and write temporary script
+    Executor->>Disk: attempt file open
+    alt file is readable
+        Executor->>Runner: invoke interpreter with script and parameters
+        Runner-->>Executor: execution result
+    else file remains locked
+        Executor-->>Executor: build start error result
+    end
+    Executor->>Disk: remove temporary script through cleanup guard
+    Executor-->>Service: execution result

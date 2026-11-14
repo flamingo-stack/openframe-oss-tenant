@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Healthy
+    Healthy --> Healthy: "Success or neutral outcome"
+    Healthy --> TrackingGone: "First 410 Gone"
+    TrackingGone --> TrackingGone: "410 count below five"
+    TrackingGone --> Healthy: "Successful response clears marker"
+    TrackingGone --> Suspended: "Fifth consecutive 410 Gone"
+    Suspended --> Suspended: "Further 410 Gone and backoff probe"
+    Suspended --> Healthy: "Successful response restarts tools"
+    Suspended --> UninstallRequested: "Two hour duration and one hour grace met"
+    UninstallRequested --> [*]

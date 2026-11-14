@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant Report as Doctor Reporting
+    participant Machine as Machine ID Service
+    participant Checks as Doctor Health Checks
+    participant Server as Configured Server
+    Report->>Machine: get or create local machine ID
+    Machine-->>Report: valid ID or no ID
+    Report->>Checks: check DNS resolution
+    Checks->>Server: resolve host
+    Server-->>Checks: DNS result
+    alt DNS failed
+        Checks-->>Report: failure result
+    else DNS passed
+        Checks-->>Report: pass result
+        Report->>Checks: check TCP reachability
+        Checks->>Server: connect with timeout
+        Server-->>Checks: connection result
+        Checks-->>Report: pass or warning result
+        Report->>Checks: check TLS handshake with machine ID
+        Checks->>Server: HTTPS request
+        Server-->>Checks: HTTP response or connection error
+        Checks-->>Report: pass or warning result
+        Report->>Checks: check WebSocket upgrade with machine ID
+        Checks->>Server: upgrade request to ws/nats
+        Server-->>Checks: upgrade response
+        Checks-->>Report: pass, warning, or failure result
+        Report->>Checks: inspect proxy environment
+        Checks-->>Report: optional proxy result
+    end

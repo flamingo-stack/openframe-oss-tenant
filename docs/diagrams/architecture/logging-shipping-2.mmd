@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Log producer calls send"] --> Queue["Await queue capacity and enqueue"]
+    Queue --> Receive["Background task receives log"]
+    Receive --> Add["Append log to batch"]
+    Add --> Full{"Batch has 100 entries?"}
+    Full -->|"yes"| Post["Create LogBatch and POST JSON"]
+    Full -->|"no"| Wait["Wait for next log or timeout"]
+    Wait -->|"log"| Receive
+    Wait -->|"timeout"| HasLogs{"Batch is non-empty?"}
+    HasLogs -->|"yes"| Post
+    HasLogs -->|"no"| Wait
+    Post --> Result{"Request succeeded?"}
+    Result -->|"yes"| Clear["Clear in-memory batch"]
+    Result -->|"no"| Report["Emit tracing error"]
+    Report --> Clear
+    Clear --> Wait

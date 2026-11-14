@@ -1,0 +1,9 @@
+flowchart LR
+    Gateway["OpenFrame Gateway"] -->|"HTTP status"| Observer["Gateway Status Observer"]
+    Observer -->|"on_gateway_status"| Service["Deactivation Service"]
+    Service -->|"atomic suspension flag"| Outbound["Client Outbound Call Gate"]
+    Service -->|"supervisor commands"| Supervisor["Asynchronous Command Supervisor"]
+    Supervisor -->|"stop or restart"| Tools["Tool Run Manager"]
+    Service -->|"tenant gone marker"| SecureDir["Secured Directory"]
+    Supervisor -->|"detached uninstall"| ClientService["OpenFrame Client Service"]
+    ClientService -->|"best effort deregistration"| Platform["OpenFrame Platform"]

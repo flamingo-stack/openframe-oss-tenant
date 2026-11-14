@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> ACCEPTED: "acceptance flow"
+    PENDING --> REVOKED: "revoke"
+    PENDING --> EXPIRED: "expiration time reached"
+    EXPIRED --> REVOKED: "resend replaces old invitation"

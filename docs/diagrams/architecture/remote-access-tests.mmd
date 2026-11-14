@@ -1,0 +1,22 @@
+flowchart LR
+    TestRunner["JUnit Test Runner"] --> PolicyTest["Remote Access Policy Test"]
+    TestRunner --> SessionTest["Remote Access Session Test"]
+
+    PolicyTest --> PolicyApi["Remote Access Policy API"]
+    PolicyTest --> OrganizationApi["Organization API"]
+    PolicyTest --> DeviceApi["Device API"]
+
+    SessionTest --> RemoteApi["Remote Access API"]
+    SessionTest --> MachineApi["Remote Access Machine API"]
+    SessionTest --> AuthApi["Agent Authentication API"]
+    SessionTest --> SshVerifier["SSH Machine Verifier"]
+    SessionTest --> DeviceApi
+
+    PolicyApi --> Platform["Remote Access Platform"]
+    OrganizationApi --> Platform
+    DeviceApi --> Platform
+    RemoteApi --> Platform
+    MachineApi --> Platform
+    AuthApi --> Platform
+    SshVerifier --> WindowsDevice["Enrolled Windows Device"]
+    MachineApi --> WindowsDevice

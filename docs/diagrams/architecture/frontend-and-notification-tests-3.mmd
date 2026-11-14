@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Test as "Notifications Test"
+    participant API as "Notification API"
+    participant Inbox as "Notification State"
+    Test->>API: List notifications and unread counts
+    API->>Inbox: Read inbox state
+    Inbox->>API: Pages and category totals
+    API->>Test: Assert consistent projections
+    Test->>API: Mark read or delete
+    API->>Inbox: Apply mutation
+    Inbox->>API: Updated state
+    API->>Test: Verify idempotence and counts

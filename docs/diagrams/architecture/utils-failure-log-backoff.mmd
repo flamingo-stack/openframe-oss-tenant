@@ -1,0 +1,8 @@
+flowchart LR
+    Caller["Agent task or retry loop"] -->|"should_log()"| Backoff["FailureLogBackoff"]
+    Caller -->|"attempt operation"| Operation["External or local operation"]
+    Operation -->|"failure"| Caller
+    Caller -->|"record_failure(logged)"| Backoff
+    Operation -->|"success"| Caller
+    Caller -->|"record_success()"| Backoff
+    Caller -->|"emit selected failure and recovery logs"| LogSink["Configured log sink"]

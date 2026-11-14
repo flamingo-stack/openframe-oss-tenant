@@ -1,0 +1,9 @@
+flowchart TD
+    ApplyFailure["Application phase fails"] --> Backup{"Backup path recorded?"}
+    Backup -->|"No"| Reinstall["Log reinstallation guidance"]
+    Backup -->|"Yes"| ResolveBundle["Resolve original app bundle"]
+    ResolveBundle --> BundleFound{"Bundle resolved?"}
+    BundleFound -->|"No"| RollbackError["Return rollback error"]
+    BundleFound -->|"Yes"| RemoveNew["Best effort remove replacement bundle"]
+    RemoveNew --> Restore["Rename backup to original bundle path"]
+    Restore --> Restored["Previous bundle restored"]

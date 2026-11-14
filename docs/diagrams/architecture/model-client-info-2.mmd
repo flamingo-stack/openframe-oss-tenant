@@ -1,0 +1,17 @@
+flowchart TD
+    Model["Model Client Info"]
+    InfoService["Client Information Service"]
+    UpdateService["Client Update Service"]
+    Handler["Update Handler Service"]
+    StateModel["Update State Model"]
+    Download["Download Service"]
+    LastKnownGood["Last Known Good Service"]
+    Tools["Tool Run Manager and Tool Operations"]
+
+    InfoService -->|"persists"| Model
+    UpdateService -->|"reads and changes"| InfoService
+    Handler -->|"reads and changes"| InfoService
+    UpdateService -->|"coordinates with"| StateModel
+    UpdateService -->|"downloads through"| Download
+    UpdateService -->|"prevents downgrade using"| LastKnownGood
+    UpdateService -->|"defers around"| Tools

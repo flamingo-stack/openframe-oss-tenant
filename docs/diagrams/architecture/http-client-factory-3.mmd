@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Service as Agent Service
+    participant Factory as Http Client Factory
+    participant Client as reqwest Client
+    participant Api as OpenFrame Endpoint
+    Service->>Factory: build_agent_http_client(machine ID, timeout, TLS mode)
+    Factory->>Factory: validate machine ID header value
+    Factory->>Client: build with default transport policy
+    Factory-->>Service: configured client or error
+    Service->>Client: create API request
+    Client->>Api: request with machine ID header
+    Api-->>Client: HTTP response or transport failure
+    Client-->>Service: response or error

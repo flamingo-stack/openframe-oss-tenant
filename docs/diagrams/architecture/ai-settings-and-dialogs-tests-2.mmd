@@ -1,0 +1,8 @@
+flowchart LR
+    TenantConfig["Tenant client configuration"] --> Inherited["Organization inherits defaults"]
+    Inherited --> InvalidModel["Reject unsupported model"]
+    Inherited --> Override["Create organization override"]
+    Override --> PartialUpdate["Update custom prompt only"]
+    PartialUpdate --> ResetActions["Reset quick actions"]
+    ResetActions --> ResetConfig["Reset full configuration"]
+    ResetConfig --> Inherited

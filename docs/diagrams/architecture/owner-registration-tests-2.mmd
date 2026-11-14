@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Suite as "Owner Registration Test"
+    participant Generator as "Registration Generator"
+    participant Registration as "Registration API"
+    participant Context as "Pipeline Context"
+    participant Auth as "Authentication Flow"
+    participant User as "User API"
+    participant Organization as "Organization API"
+
+    Suite->>Generator: Create new owner request
+    Generator-->>Suite: Registration request and expected response
+    Suite->>Registration: Register owner
+    Registration-->>Suite: Registration response
+    Suite->>Context: Record registered tenant after success
+    Suite->>Auth: Login generated user
+    Auth-->>Suite: Session cookies
+    Suite->>User: Read current user
+    User-->>Suite: Authenticated response
+    Suite->>Organization: List organizations
+    Organization-->>Suite: Default organization list

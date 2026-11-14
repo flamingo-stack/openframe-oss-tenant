@@ -1,0 +1,11 @@
+flowchart TD
+    NoActive["No active timer"] --> Pause["Attempt pause"]
+    Pause --> PauseError["GraphQL error naming no active timer"]
+    NoActive --> Cancel["Cancel timer"]
+    Cancel --> CancelFalse["Return false"]
+    Active["Active timer"] --> StartAgain["Attempt second start"]
+    StartAgain --> StartError["GraphQL error naming active timer"]
+    Active --> Edit["Attempt entry update"]
+    Edit --> EditError["GraphQL error requiring stop first"]
+    ManualInput["Manual entry without notes or ticket"] --> CreateManual["Attempt create"]
+    CreateManual --> ContentError["GraphQL error naming notes rule"]

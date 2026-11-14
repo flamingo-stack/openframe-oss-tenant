@@ -1,0 +1,4 @@
+flowchart TD
+    Create["Create or deserialize result"] --> Identify["Read tool agent identifier"]
+    Identify --> Serialize["Serialize for transport or storage"]
+    Serialize --> Consume["Consumer correlates with tool agent"]

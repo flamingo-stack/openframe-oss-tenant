@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller
+    participant Repository as Knowledgebase Repository
+    participant Database as MongoDB
+    Caller->>Repository: list request with filters and cursor
+    Repository->>Database: execute list query
+    Database-->>Repository: knowledge base items
+    Repository-->>Caller: ordered page
+    Caller->>Repository: count request with matching filters
+    Repository->>Database: execute count query
+    Database-->>Repository: total count
+    Repository-->>Caller: total count

@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Updater as Tool Updater
+    participant Migrator as Standard To Gui Application Migrator
+    participant Kill as Tool Kill Service
+    participant Platform as Platform Installation
+    participant Session as User Session
+
+    Updater->>Migrator: prepare(installed tool)
+    Migrator->>Kill: stop tool
+    Migrator->>Migrator: wait two seconds
+    Migrator-->>Updater: MigrationContext
+    Updater->>Migrator: migrate(installed tool, download configuration, context)
+    Migrator->>Platform: replace standard installation with GUI application
+    Platform-->>Migrator: GUI application path
+    Migrator-->>Updater: GuiApp installation record
+    Updater->>Migrator: finalize(installed tool, new installation, context)
+    Migrator->>Session: launch GUI application when start is needed
+    Migrator-->>Updater: completion or error

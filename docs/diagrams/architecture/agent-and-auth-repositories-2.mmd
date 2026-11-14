@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant AuthService as "Authentication Service"
+    participant AuthRepo as "CustomAuthUserRepository"
+    participant Mongo as "MongoDB"
+
+    AuthService->>AuthRepo: updateLastLogin(email, tenantId, instant)
+    AuthRepo->>Mongo: Match email and tenantId
+    AuthRepo->>Mongo: Set lastLogin and increment version by zero
+    Mongo-->>AuthRepo: Update result
+    AuthRepo-->>AuthService: Complete

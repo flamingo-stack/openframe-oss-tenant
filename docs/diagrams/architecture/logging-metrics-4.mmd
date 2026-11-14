@@ -1,0 +1,8 @@
+flowchart TD
+    CreateLayer["Create MetricsLayer and shared store"] --> InstallLayer["Install layer in tracing subscriber"]
+    InstallLayer --> EmitEvent["Emit tracing event"]
+    EmitEvent --> Recognized{"Recognized metric field?"}
+    Recognized -->|"No"| IgnoreEvent["Ignore for metrics"]
+    Recognized -->|"Yes"| VisitFields["Visit fields and collect labels"]
+    VisitFields --> WriteStore["Write record to MetricsStore"]
+    WriteStore --> ReadStore["Read metrics under read lock"]

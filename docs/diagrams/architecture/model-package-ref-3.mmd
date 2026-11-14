@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Server as "Control plane"
+    participant Client as "Endpoint client"
+    participant Update as "Package update runner"
+    participant Manager as "Selected package manager"
+    Server->>Client: Package update with PackageRef
+    Client->>Update: Submit update target
+    Update->>Manager: Resolve or install reference
+    Manager-->>Update: Report package identity
+    Update->>Update: Compare references with matches
+    Update-->>Client: Record update outcome

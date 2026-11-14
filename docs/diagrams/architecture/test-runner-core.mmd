@@ -1,0 +1,13 @@
+flowchart TD
+    Caller["Test Service Caller"] --> Config["Test Runner Configuration"]
+    Config --> Runner["Test Runner"]
+    Caller -->|"include, exclude, parallelism"| Runner
+    Runner --> Listener["JUnit Test Execution Listeners"]
+    Runner --> Discovery["Discovery Request Builder"]
+    Discovery --> Scan["Classpath Test Class Scan"]
+    Scan --> Selectors["Class Selectors"]
+    Scan -->|"no classes found"| Package["Package Selector"]
+    Selectors --> Plan["JUnit Test Plan"]
+    Package --> Plan
+    Plan --> Listing["Test Metadata List"]
+    Plan --> Execution["JUnit Launcher Execution"]

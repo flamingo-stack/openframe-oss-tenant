@@ -1,0 +1,6 @@
+flowchart LR
+    ClientHost["OpenFrame Client Agent"] --> Migration["Platform Windows Path Migration"]
+    Migration --> RegistryApi["Windows Registry API"]
+    RegistryApi --> MachinePath["Machine Path Registry Value"]
+    Migration --> Tracing["Tracing Logs"]
+    Tracing --> Operator["Agent Diagnostics"]

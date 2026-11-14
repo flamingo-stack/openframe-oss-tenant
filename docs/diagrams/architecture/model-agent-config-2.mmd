@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Installer
+    participant RegistrationService
+    participant ConfigService
+    participant AuthService
+    participant AuthClient
+    participant ConfigFile
+
+    Installer->>RegistrationService: Start registration
+    RegistrationService->>ConfigService: Save machine ID and client credentials
+    ConfigService->>ConfigFile: Persist merged configuration
+    RegistrationService->>AuthService: Request initial authentication
+    AuthService->>ConfigService: Read client ID and client secret
+    AuthService->>AuthClient: Request client credentials token
+    AuthClient-->>AuthService: Access and refresh tokens
+    AuthService->>ConfigService: Update token fields
+    ConfigService->>ConfigFile: Persist merged configuration

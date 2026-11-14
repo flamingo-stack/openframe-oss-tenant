@@ -1,0 +1,10 @@
+flowchart TD
+    PersistedConfig["Persisted initial configuration"] --> AuthFlow["Initial authentication"]
+    PersistedConfig --> LocalTls["Local TLS setup"]
+    PersistedConfig --> LogFlow["Log key acquisition and streaming"]
+    PersistedConfig --> RemoteFlow["Remote access mode synchronization"]
+    AuthFlow --> Credentials["Agent credential store"]
+    LocalTls --> TrustedClient["TLS client configuration"]
+    LogFlow --> UpdatedLogKey["Persisted log key"]
+    RemoteFlow --> ModeAck["Backend mode acknowledgement"]
+    ModeAck --> ClearedMode["Cleared pending remote access mode"]

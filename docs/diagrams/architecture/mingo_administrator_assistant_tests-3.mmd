@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Test as Test Case
+    participant Base as MingoBaseTest
+    participant Dialog as DialogFixture
+    participant Runner as AssistantRunner
+    participant Provider as Model Provider
+    Test->>Base: prompt text and approval policy
+    loop Up to three attempts
+        Base->>Dialog: Open fresh dialog
+        Base->>Runner: Ask in dialog
+        Runner->>Provider: Run assistant request
+        Provider-->>Runner: Run result
+        Runner-->>Base: Run result
+        alt Result is usable
+            Base-->>Test: Return result
+        else Retryable provider outage
+            Base->>Dialog: Clean up failed dialog
+            Base->>Base: Back off with jitter
+        end
+    end
+    Base-->>Test: Provider unavailable exception

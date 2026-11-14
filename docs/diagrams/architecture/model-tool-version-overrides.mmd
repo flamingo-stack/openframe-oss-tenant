@@ -1,0 +1,8 @@
+flowchart LR
+    BuildFeatures["Enabled Cargo features"] --> Lookup["Model Tool Version Overrides lookup"]
+    BuildEnvironment["Build environment version variables"] --> Lookup
+    ToolMessage["Tool installation message"] --> EffectiveVersion["Effective version resolution"]
+    Lookup --> EffectiveVersion
+    EffectiveVersion --> DownloadConfig["Download configuration version substitution"]
+    DownloadConfig --> Installer["Tool installation workflow"]
+    ToolMessage --> Installer

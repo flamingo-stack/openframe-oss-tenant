@@ -1,0 +1,9 @@
+flowchart LR
+    ClientStart["OpenFrame client startup"] --> NatsConnect["Connect to NATS"]
+    NatsConnect --> Watchdog["Start NATS connection watchdog"]
+    Watchdog --> TimezoneStart["Start Machine Timezone Run Manager"]
+    TimezoneStart --> Worker["Background timezone worker"]
+    Worker --> Publisher["Machine Timezone Publisher"]
+    Publisher --> JetStream["NATS JetStream"]
+    JetStream --> Listener["Server timezone listener"]
+    Listener --> MachineService["Machine timezone service"]

@@ -1,0 +1,8 @@
+flowchart TD
+    TestEnd["Test Class Completion"] --> RemoveTemps["Discard Recorded Temporary Attachments"]
+    RemoveTemps --> CheckTickets{"Run Owned Tickets Recorded?"}
+    CheckTickets -->|"Yes"| ResolveOpen["Resolve Tickets Not Yet Resolved or Archived"]
+    CheckTickets -->|"No"| DeleteStatuses["Delete Recorded Custom Statuses"]
+    ResolveOpen --> ArchiveTickets["Archive Tickets Not Yet Archived"]
+    ArchiveTickets --> DeleteStatuses
+    DeleteStatuses --> Done["Cleanup Complete"]

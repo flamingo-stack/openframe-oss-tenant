@@ -1,0 +1,7 @@
+flowchart TD
+    Consumer["Platform consumer"] --> ApiLayer["GraphQL and external API layers"]
+    ApiLayer --> Repository["Knowledgebase Repository"]
+    Repository --> MongoTemplate["MongoDB query implementation"]
+    MongoTemplate --> MongoDb["MongoDB knowledge base items"]
+    Library["OpenFrame OSS Library"] --> Repository
+    Tenant["OpenFrame OSS Tenant"] --> Library

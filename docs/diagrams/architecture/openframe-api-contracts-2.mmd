@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Log detail request"] --> Mode{"Configured store mode"}
+    Mode -->|"cassandra"| Cassandra["Cassandra log detail service"]
+    Mode -->|"loki"| Loki["Loki log detail service"]
+    Mode -->|"both"| Cutover{"Timestamp before Loki cutoff?"}
+    Cutover -->|"yes"| Cassandra
+    Cutover -->|"no"| Loki
+    Cassandra --> Result["Optional log details"]
+    Loki --> Result

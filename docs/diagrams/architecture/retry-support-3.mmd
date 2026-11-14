@@ -1,0 +1,8 @@
+flowchart TD
+    Close["Spring Retry calls close"] --> Tried{"Retry count greater than zero?"}
+    Tried -->|"no"| Silent["Return without log"]
+    Tried -->|"yes"| Terminal{"Terminal throwable present?"}
+    Terminal -->|"no"| Recovered["Info: retry succeeded"]
+    Terminal -->|"yes"| Relevant{"Optimistic lock or transient resource failure?"}
+    Relevant -->|"yes"| Exhausted["Error: OPTIMISTIC LOCK UPDATE NOT SAVED"]
+    Relevant -->|"no"| NoFalseAlert["Return without exhausted-update log"]

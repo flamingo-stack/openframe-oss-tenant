@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Replacement bytes received"] --> Parent["Create parent directory"]
+    Parent --> Create{"Target create succeeds?"}
+    Create -->|"yes"| Write["Write, flush, and bounded sync"]
+    Create -->|"no"| Recover["Try writable recovery"]
+    Recover --> WindowsAside["Windows may rename target to .old"]
+    WindowsAside --> Retry["Retry target creation"]
+    Retry --> Write
+    Write --> Close["Close writer handle"]
+    Close --> Mode["Set executable permissions"]
+    Mode --> Probe["Run candidate with --version"]
+    Probe --> Valid{"Output is openframe-client version?"}
+    Valid -->|"yes"| Version["Return semantic version"]
+    Valid -->|"no"| Unknown["Return no version and log context"]

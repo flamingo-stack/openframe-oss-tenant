@@ -1,0 +1,11 @@
+flowchart TD
+    RequestModel["AgentRegistrationRequest"] --> Transport["JSON over HTTP"]
+    Transport --> FreshRoute["Register endpoint"]
+    Transport --> ReinstallRoute["Reinstall endpoint"]
+    FreshRoute --> ValidateKey["Validate initial key"]
+    ReinstallRoute --> ValidateCredentials["Validate initial key and client credentials"]
+    ValidateKey --> CreateIdentity["Create machine and OAuth client"]
+    ValidateCredentials --> UpdateIdentity["Update existing machine"]
+    CreateIdentity --> ProcessEnrollment["Assign tags and process enrollment work"]
+    UpdateIdentity --> ProcessEnrollment
+    ProcessEnrollment --> Response["Return registration credentials"]

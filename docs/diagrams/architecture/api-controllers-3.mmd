@@ -1,0 +1,9 @@
+flowchart TD
+    Request["HTTP Request"] --> Route["Spring MVC Route Match"]
+    Route --> Bind["Bind Path, Query, or Request Body"]
+    Bind --> Validate["Validate Annotated Request DTO"]
+    Validate --> Principal["Resolve AuthPrincipal When Required"]
+    Principal --> Controller["Controller Method"]
+    Controller --> Service["Delegated Domain Service"]
+    Service --> Result["Response DTO, Empty Response, or Error"]
+    Result --> Status["HTTP Status and Response"]

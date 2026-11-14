@@ -1,0 +1,10 @@
+flowchart LR
+    ControlPlane["Control plane configuration"] --> CommandListener["OpenFrame Client command listener"]
+    CommandListener --> Handler["Feature flags handler"]
+    Handler --> Service["Feature Flags Service"]
+    Service --> Validator["Payload and version validation"]
+    Validator --> StateFile["Atomically persisted state file"]
+    Service --> EffectiveFlags["Effective flags for next start"]
+    EffectiveFlags --> Agent["OpenFrame Client agent"]
+    Service --> RestartDelivery["Pending restart delivery reference"]
+    RestartDelivery --> RestartFlow["Restart reporting flow"]

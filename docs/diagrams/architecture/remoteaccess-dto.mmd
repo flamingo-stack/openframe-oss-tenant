@@ -1,0 +1,7 @@
+flowchart LR
+    TestCase["Remote access session test"] -->|"queries audit history"| Api["Remote access API"]
+    Api -->|"returns connection payload"| Edge["RemoteAccessRequestEdge"]
+    Edge -->|"node"| Audit["RemoteAccessRequestAudit"]
+    Edge -->|"cursor"| Cursor["Pagination cursor"]
+    Audit -->|"technician"| Technician["RemoteAccessTechnician"]
+    Audit -->|"session"| Session["Remote session"]

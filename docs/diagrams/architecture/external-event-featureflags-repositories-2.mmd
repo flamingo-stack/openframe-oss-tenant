@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Service as "Application Service"
+    participant Repository as "Event Repository"
+    participant Mongo as "MongoDB"
+    Service->>Repository: Find events by user and time range
+    Repository->>Mongo: Derived user and timestamp query
+    Mongo-->>Repository: Matching event documents
+    Repository-->>Service: Event list

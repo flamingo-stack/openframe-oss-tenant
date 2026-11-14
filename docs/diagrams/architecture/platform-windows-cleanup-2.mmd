@@ -1,0 +1,10 @@
+flowchart LR
+    Uninstaller["Windows uninstaller"] --> Executor["execute binary cleanup script"]
+    Executor --> StagingDirectory["Update staging directory"]
+    Executor --> ScriptGenerator["generate binary cleanup script"]
+    ScriptGenerator --> PowerShellScript["Unique PowerShell cleanup script"]
+    Executor --> PowerShellResolver["PowerShell path resolver"]
+    PowerShellResolver --> PowerShell["Windows PowerShell process"]
+    PowerShell --> ProcessWait["Wait for client process"]
+    ProcessWait --> BinaryRemoval["Delete client executable"]
+    BinaryRemoval --> EmptyDirectoryRemoval["Remove empty binary and staging directories"]

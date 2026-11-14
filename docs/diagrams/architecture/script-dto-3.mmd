@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Test as "Script test"
+    participant Api as "Script API"
+    participant Scheduler as "Scheduler"
+    participant Device as "Assigned device"
+
+    Test->>Api: Create schedule request
+    Api->>Scheduler: Store schedule and actions
+    Test->>Api: Assign device
+    Api-->>Test: Assignment response counts
+    Scheduler->>Device: Run scheduled action
+    Device-->>Scheduler: Execution result
+    Test->>Api: Request execution history
+    Api-->>Test: Paginated history results

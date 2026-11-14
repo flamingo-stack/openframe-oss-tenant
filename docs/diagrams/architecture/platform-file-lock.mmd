@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["OpenFrame Client Update or File Operation"] -->|"path and operation"| Diagnostic["Platform File Lock"]
+    Diagnostic -->|"register resources"| RestartManager["Windows Restart Manager API"]
+    RestartManager -->|"process records"| Diagnostic
+    Diagnostic -->|"LockingProcess records"| FileResult["File Lock Diagnostics"]
+    Diagnostic -->|"LockHolder records"| DirectoryResult["Directory Lock Inspection"]
+    FileResult -->|"structured error message"| TraceLog["Tracing Error Log"]

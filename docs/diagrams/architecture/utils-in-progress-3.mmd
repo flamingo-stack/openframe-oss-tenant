@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Active: begin increments count
+    Active --> Active: additional begin
+    Active --> Active: guard drop and count remains positive
+    Active --> Idle: final guard drop

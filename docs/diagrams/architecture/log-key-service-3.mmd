@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Client as OpenFrame Client
+    participant Stream as Log Stream
+    participant Service as Log Key Service
+    participant Config as Initial Configuration
+    participant Auth as Agent Configuration
+    participant Api as Client API
+    participant Gate as Restart Gate
+    Client->>Stream: Start log stream
+    Client->>Service: Start after authentication
+    alt log key is missing
+        Service->>Service: Begin fetch loop
+    else log key is present
+        Service->>Config: Clear enrollment key
+        Stream->>Service: Notify connection failed
+    end
+    Service->>Auth: Read access token
+    Service->>Api: GET log-key with bearer token
+    Api-->>Service: JSON key response
+    Service->>Config: Compare and save changed key
+    Service->>Config: Clear enrollment key
+    Service->>Gate: Drain work and request restart
+    Gate-->>Client: Restart client process
+    Client->>Stream: Start stream with saved key

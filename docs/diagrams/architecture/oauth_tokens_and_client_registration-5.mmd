@@ -1,0 +1,14 @@
+flowchart TD
+    Request["Apple Native Discovery Request"] --> Verify["Verify Apple Identity Token and Nonce"]
+    Verify --> ValidToken{"Valid token?"}
+    ValidToken -->|"No"| Unauthorized["Return Unauthorized"]
+    ValidToken -->|"Yes"| VerifiedEmail{"Verified email present?"}
+    VerifiedEmail -->|"No"| Unauthorized
+    VerifiedEmail -->|"Yes"| LinkedUser["Find Active User by Apple Link"]
+    LinkedUser --> ActiveUser{"User found?"}
+    ActiveUser -->|"No"| EmailUser["Find Active User by Normalized Email"]
+    ActiveUser -->|"Yes"| TenantCheck["Load Active Tenant"]
+    EmailUser --> TenantCheck
+    TenantCheck --> ActiveTenant{"Tenant active?"}
+    ActiveTenant -->|"No"| Rejected["Return Not Found or Forbidden"]
+    ActiveTenant -->|"Yes"| TenantResponse["Return Tenant Identifier"]

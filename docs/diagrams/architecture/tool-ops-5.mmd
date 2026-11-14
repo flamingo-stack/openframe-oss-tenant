@@ -1,0 +1,7 @@
+flowchart LR
+    Update["Active tool update"] -->|"mark_busy"| Busy["Busy set contains tool ID"]
+    Runner["Deferred run loop"] -->|"checks"| Busy
+    Update -->|"ToolOpGuard drop"| Clear["Remove busy tool ID"]
+    Clear --> Release["Add released tool ID"]
+    Runner -->|"take_released"| Release
+    Release --> Relaunch["Re-evaluate and relaunch tool"]

@@ -1,0 +1,6 @@
+flowchart LR
+    Client["External Client"] --> ToolsApi["Tools Resource"]
+    ToolsApi --> Metadata["Tool Metadata"]
+    Client --> Proxy["Integration Proxy"]
+    Proxy --> RestProxy["Rest Proxy Service"]
+    RestProxy --> Target["Configured Tool Endpoint"]

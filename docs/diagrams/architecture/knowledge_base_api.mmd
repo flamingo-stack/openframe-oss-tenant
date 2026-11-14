@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant API as External API
+    participant Domain as Knowledge Base Domain
+    participant Storage as File Storage
+    Client->>API: Declare attachment metadata
+    API->>Domain: Create upload URL
+    Domain->>Storage: Create signed upload URL
+    Storage->>API: Attachment and URL
+    API->>Client: Attachment metadata and upload URL
+    Client->>Storage: PUT file bytes

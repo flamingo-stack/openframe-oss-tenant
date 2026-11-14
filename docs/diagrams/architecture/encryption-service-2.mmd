@@ -1,0 +1,11 @@
+flowchart TD
+    Input["Input string"] --> Bytes["UTF 8 bytes"]
+    Key["Fixed 32 byte key"] --> Cipher["Initialize AES 256 GCM"]
+    Random["Operating system random source"] --> Nonce["Generate 12 byte nonce"]
+    Bytes --> Encrypt["Encrypt plaintext"]
+    Cipher --> Encrypt
+    Nonce --> Encrypt
+    Nonce --> Prefix["Prefix nonce"]
+    Encrypt --> Prefix
+    Prefix --> Encode["Standard Base64 encode"]
+    Encode --> Result["Result string"]

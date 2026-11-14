@@ -1,0 +1,9 @@
+flowchart TD
+    Validate["Validate updater inputs"] -->|"failure"| PreSwap["Mark failed and reload untouched service"]
+    Validate -->|"success"| Stop["Unload client service"]
+    Stop -->|"failure"| PreSwap
+    Stop --> Swap["Move old binary and copy new binary"]
+    Swap --> Verify["Reload service and verify boot marker"]
+    Verify -->|"failure"| Restore["Restore reserve or previous binary"]
+    Restore --> Restart["Reload restored service"]
+    Verify -->|"success"| Cleanup["Set verifying and remove updater artifacts"]

@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Agent as Endpoint Agent
+    participant Fetcher as Device Data Fetcher
+    participant Publisher as Hostname Report Publisher
+    participant Nats as NATS JetStream
+    participant Listener as Machine Hostname Listener
+    participant Service as Machine Hostname Service
+
+    Agent->>Fetcher: Request hostname
+    Fetcher-->>Publisher: Valid hostname or no value
+    alt hostname available
+        Publisher->>Publisher: Serialize Model Hostname Report
+        Publisher->>Nats: Publish hostname event
+        Nats->>Listener: Deliver event
+        Listener->>Listener: Extract machine ID and parse JSON
+        alt hostname is nonblank
+            Listener->>Service: Update device hostname
+            Service-->>Listener: Update complete
+            Listener->>Nats: Acknowledge event
+        else hostname is blank
+            Listener->>Nats: Acknowledge without update
+        end
+    else hostname unavailable
+        Publisher->>Publisher: Log unresolved hostname
+    end

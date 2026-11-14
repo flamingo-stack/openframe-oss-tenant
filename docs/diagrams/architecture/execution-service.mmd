@@ -1,0 +1,8 @@
+flowchart LR
+    Request["Execution Request"] --> Listener["Execution Listener"]
+    Listener --> Service["Execution Service"]
+    Service --> Privilege["Privilege Resolution"]
+    Privilege --> Executor["Unix or Windows Script Executor"]
+    Executor --> Result["RMM Result"]
+    Result --> Listener
+    Listener --> Platform["OpenFrame Platform"]

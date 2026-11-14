@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller as Caller
+    participant Parser as Utils Jwt
+    participant Token as JWT Payload
+    Caller->>Parser: token_times_unix(token text)
+    Parser->>Parser: verify three token sections
+    Parser->>Token: decode payload section
+    Token-->>Parser: JSON claims
+    Parser-->>Caller: timing claims or no value
+    Note over Caller,Parser: Returned claims are not signature-verified
+    Caller->>Parser: ttl_secs(JwtTimes)
+    Parser-->>Caller: positive lifetime or no value

@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Core as "Tool Updater Core"
+    participant Factory as "Migration Factory"
+    participant Migrator as "Tool Migrator"
+    participant Platform as "Platform Services"
+
+    Core->>Factory: Request migrator for source and target types
+    Factory->>Core: Supported migrator or error
+    Core->>Migrator: Prepare installed tool
+    Migrator->>Platform: Stop current tool
+    Core->>Migrator: Migrate with download configuration
+    Migrator->>Platform: Install target GUI application
+    alt migration succeeds
+        Core->>Migrator: Finalize new installation
+        Migrator->>Platform: Launch in user session
+        Migrator->>Core: New installation record
+    else migration fails
+        Core->>Migrator: Roll back
+        Migrator->>Core: Original migration error
+    end

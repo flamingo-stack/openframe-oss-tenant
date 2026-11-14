@@ -1,0 +1,41 @@
+classDiagram
+    class DeviceWithConnections {
+        List toolConnections
+    }
+    class ToolConnection {
+        String id
+        String machineId
+        String toolType
+        ConnectionStatus status
+        String connectedAt
+        String disconnectedAt
+    }
+    class ConnectionStatus {
+        CONNECTED
+        DISCONNECTED
+        ERROR
+    }
+    class InstalledAgent {
+        String id
+        String machineId
+        String agentType
+        String version
+    }
+    class Tag {
+        String id
+        String key
+        List values
+        String color
+    }
+    class DeviceFilterOption {
+        String value
+        String label
+        Integer count
+    }
+    class TagFilterOption {
+        String key
+        String value
+        Integer count
+    }
+    DeviceWithConnections "1" --> "many" ToolConnection
+    ToolConnection --> ConnectionStatus

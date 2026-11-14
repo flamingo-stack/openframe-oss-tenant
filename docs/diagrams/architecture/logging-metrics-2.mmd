@@ -1,0 +1,35 @@
+classDiagram
+    class MetricValue {
+        Counter u64
+        Gauge f64
+        Histogram Vec f64
+    }
+    class Metric {
+        String name
+        MetricValue value
+        HashMap labels
+        DateTime timestamp
+    }
+    class MetricsStore {
+        HashMap metrics
+        new()
+        record_counter()
+        record_gauge()
+        record_histogram()
+        get_metrics()
+    }
+    class MetricsLayer {
+        Arc store
+        new()
+        on_event()
+    }
+    class MetricVisitor {
+        Option metric
+        record_u64()
+        record_f64()
+        record_debug()
+    }
+    MetricsStore --> Metric
+    Metric --> MetricValue
+    MetricsLayer --> MetricsStore
+    MetricsLayer --> MetricVisitor

@@ -1,0 +1,12 @@
+flowchart LR
+    ClientRuntime["OpenFrame Client Runtime"] --> Manager["Tool Connection Processing Manager"]
+    Registry["Installed Tools Service"] --> Manager
+    Operations["Tool Operations"] --> Manager
+    Resolver["Tool Command Parameters Resolver"] --> Manager
+    Configuration["Agent Configuration Service"] --> Manager
+    Manager --> Publisher["Tool Connection Message Publisher"]
+    Manager --> LocalStore["Tool Connection Service"]
+    Publisher --> Broker["NATS Messaging Layer"]
+    Broker --> ControlPlane["OpenFrame Control Plane"]
+    Manager --> LocalTool["Installed Integration Tool"]
+    Manager --> HelperCleanup["Orphan Helper Reaper"]

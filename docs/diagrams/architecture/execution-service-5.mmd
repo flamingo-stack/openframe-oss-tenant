@@ -1,0 +1,8 @@
+flowchart TD
+    ExecutorResult["Executor Result"] --> StartCheck{"Exit Code Is 85?"}
+    StartCheck -->|"Yes"| Warning["Write Start Failure Warning"]
+    Warning --> ErrorResult["Set Error to Standard Error"]
+    StartCheck -->|"No"| NormalResult["Leave Error Unset"]
+    ErrorResult --> Build["Build RMM Result"]
+    NormalResult --> Build
+    Build --> Return["Return Result"]

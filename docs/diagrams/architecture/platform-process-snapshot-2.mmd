@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Caller requests snapshot"] --> Refresh["Create system view and refresh process executable paths"]
+    Refresh --> Iterate["Iterate refreshed processes"]
+    Iterate --> ImageCheck{"Readable executable image?"}
+    ImageCheck -->|"No"| Skip["Exclude process"]
+    ImageCheck -->|"Yes"| Parent["Resolve parent executable image when available"]
+    Parent --> Service["Classify Windows service parent"]
+    Service --> Session["Resolve Windows session when supported"]
+    Session --> Record["Create RunningProcess record"]
+    Record --> Collect["Collect result vector"]
+    Skip --> Collect

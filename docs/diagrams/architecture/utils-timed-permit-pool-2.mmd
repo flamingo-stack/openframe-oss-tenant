@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Caller
+    participant Pool as Timed Permit Pool
+    participant Semaphore
+    participant Executor as Tokio Blocking Executor
+    participant Work as Blocking Closure
+    Caller->>Pool: call(what, timeout, closure)
+    Pool->>Semaphore: acquire owned permit
+    alt permit acquired before timeout
+        Semaphore-->>Pool: owned permit
+        Pool->>Executor: spawn blocking task with permit
+        Executor->>Work: run closure
+        alt closure returns before timeout
+            Work-->>Executor: value
+            Executor-->>Pool: task result
+            Pool-->>Caller: Ok(value)
+        else execution wait expires
+            Pool-->>Caller: TimedOut
+            Note over Work: Closure continues and retains permit until it returns
+        else task fails
+            Executor-->>Pool: join error
+            Pool-->>Caller: TaskFailed
+        end
+    else permit wait expires
+        Pool-->>Caller: Busy
+        Note over Caller: Closure was not scheduled
+    else semaphore is closed
+        Semaphore-->>Pool: acquire error
+        Pool-->>Caller: Closed
+    end

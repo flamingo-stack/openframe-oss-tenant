@@ -1,0 +1,10 @@
+flowchart TD
+    RunManager["Machine timezone run manager"] --> Publisher["Machine timezone publisher"]
+    RunManager --> Fetcher["Device data fetcher"]
+    RunManager --> Connection["NATS connection manager"]
+    Publisher --> Model["Model Machine Timezone"]
+    Publisher --> Config["Agent configuration service"]
+    Publisher --> Transport["NATS message publisher"]
+    Listener["Machine timezone listener"] --> Model
+    Listener --> Extractor["NATS topic machine ID extractor"]
+    Listener --> Service["Machine timezone service"]

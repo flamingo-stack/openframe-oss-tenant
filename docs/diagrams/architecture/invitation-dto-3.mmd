@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Test as Test case
+    participant Client as Test API client
+    participant Api as Invitation endpoint
+    participant Mapper as Jackson mapper
+    participant Page as InvitationPageResponse
+    Test->>Client: Request invitation page
+    Client->>Api: GET /invitations
+    Api-->>Client: Invitation page JSON
+    Client->>Mapper: Deserialize response
+    Mapper->>Page: Populate items and pagination fields
+    Page-->>Test: Typed page result

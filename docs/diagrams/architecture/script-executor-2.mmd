@@ -1,0 +1,8 @@
+flowchart TD
+    Requested["Requested privilege"] --> Choice{"Platform"}
+    Choice -->|"Unix"| UnixPolicy["Resolve supported run-as context"]
+    Choice -->|"Windows"| WinPolicy["Map to process elevation"]
+    UnixPolicy --> UnixAgent["Agent or user context"]
+    WinPolicy --> Agent["Agent: normal process"]
+    WinPolicy --> User["User: logged-on interactive user"]
+    WinPolicy --> Elevated["Elevated user: elevated interactive user"]

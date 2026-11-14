@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Handler as Command Handler
+    participant Installer as Tool Installation Service
+    participant Registry as Installed Tools Service
+    participant Source as Download Source
+    participant Runtime as Tool Run Manager
+    participant Connection as Connection Processing Manager
+    participant Events as Installed Agent Publisher
+    Handler->>Installer: install_reserved(message, operation guard)
+    Installer->>Registry: Get existing tool record
+    alt Healthy record and no reinstall
+        Installer->>Installer: Verify artifact is present
+        Installer-->>Handler: Complete without download
+    else Install, repair, or reinstall
+        Installer->>Installer: Resolve configuration for current OS
+        Installer->>Registry: Mark record Installing when present
+        Installer->>Installer: Stop holders and clear prior state
+        Installer->>Source: Download primary artifact and assets
+        Installer->>Installer: Run optional installation command
+        Installer->>Installer: Verify service when applicable
+        Installer->>Registry: Save InstalledTool in Installed state
+        Installer->>Runtime: Run new tool
+        Installer->>Connection: Start tool connection processing
+        Installer->>Events: Publish installed versions
+        Installer-->>Handler: Complete successfully
+    end

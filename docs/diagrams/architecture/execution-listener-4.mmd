@@ -1,0 +1,14 @@
+flowchart TD
+    Received["Parsed durable execution message"] --> Build["Build journal record for every request"]
+    Build --> Journal["Journal batch by execution ID"]
+    Journal --> Accepted{"Journal accepted?"}
+    Accepted -->|"already in flight"| Skip["Skip duplicate redelivery"]
+    Accepted -->|"storage error"| Direct["Execute and deliver best effort"]
+    Accepted -->|"accepted"| Wake["Wake result outbox"]
+    Wake --> Mark["Mark script as started"]
+    Mark --> Run["Execute script"]
+    Run --> Complete["Persist completed result"]
+    Complete --> Stored{"Stored?"}
+    Stored -->|"yes"| Signal["Wake result outbox"]
+    Stored -->|"no"| Publish["Publish raw result best effort"]
+    Publish --> Clear["Remove journal record after publish"]

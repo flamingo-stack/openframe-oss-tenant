@@ -1,0 +1,10 @@
+flowchart TD
+    CleanStart["Cancel leftover active timer"] --> Start["Start timer"]
+    Start --> Pause["Pause timer"]
+    Pause --> Resume["Resume timer"]
+    Resume --> Stop["Stop timer"]
+    Stop --> Query["Query own entries and entry by id"]
+    Query --> Manual["Create and update manual entry"]
+    Manual --> Stats["Query employee entries and statistics"]
+    Stats --> Delete["Delete manual entry"]
+    Delete --> Cleanup["Cancel timers and delete created entries"]

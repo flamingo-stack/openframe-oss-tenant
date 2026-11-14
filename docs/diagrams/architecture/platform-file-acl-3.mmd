@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Workflow as Update Workflow
+    participant Acl as Platform File Acl
+    participant Windows as Windows Command Tools
+    participant Binary as Target Executable
+    Workflow->>Acl: ensure writable target path
+    Acl->>Windows: clear attributes
+    Acl->>Windows: take ownership recursively
+    Acl->>Windows: grant Administrator and System control
+    Windows-->>Acl: command outcomes
+    Acl-->>Workflow: success with warnings when needed
+    Workflow->>Binary: replace or update executable
+    Workflow->>Acl: harden executable
+    Acl->>Windows: assign Administrators ownership
+    Acl->>Windows: replace inherited ACL entries
+    Windows-->>Acl: command outcomes
+    Acl-->>Workflow: success with warnings when needed

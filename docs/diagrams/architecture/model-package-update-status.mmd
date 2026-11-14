@@ -1,0 +1,9 @@
+flowchart LR
+    UpdateOrder["Package update order"] --> AgentRunner["Endpoint package update runner"]
+    AgentRunner --> StatusModel["Model Package Update Status"]
+    StatusModel --> NatsSubject["Machine scoped NATS subject"]
+    NatsSubject --> StatusListener["Server status listener"]
+    StatusListener --> StatusProcessor["Server status processor"]
+    StatusProcessor --> DeviceState["Per device update state"]
+    StatusProcessor --> RequestState["Request roll up state"]
+    StatusProcessor --> ExecutionHistory["Execution history"]

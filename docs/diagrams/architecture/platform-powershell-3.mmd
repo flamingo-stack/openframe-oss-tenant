@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Caller
+    participant Resolver as Platform Powershell
+    participant Env as Windows environment
+    participant FS as Windows filesystem
+    Caller->>Resolver: get_powershell_path()
+    Resolver->>Env: read WINDIR
+    alt WINDIR unavailable
+        Resolver->>Env: read SystemRoot
+    end
+    Resolver->>FS: check joined System32 executable path
+    alt File exists
+        Resolver-->>Caller: absolute executable path
+    else File unavailable
+        Resolver-->>Caller: powershell.exe fallback
+    end

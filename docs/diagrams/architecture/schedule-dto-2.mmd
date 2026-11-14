@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "Test Client"
+    participant API as "Schedule GraphQL API"
+    participant Edge as "ScriptScheduleEdge"
+    participant Criteria as "ScheduleDeviceCriteria"
+    Test->>API: Request script schedules
+    API->>Edge: Return node and cursor
+    Edge->>Criteria: Include criteria when schedule targeting is criteria based
+    Criteria-->>Test: Expose optional whitelist dimensions
+    Edge-->>Test: Expose schedule node and cursor

@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Start login"] --> EntryReady{"Entry form ready?"}
+    EntryReady -->|"no"| EntryTimeout["Fail on page-object wait"]
+    EntryReady -->|"yes"| ProviderReady{"OpenFrame provider visible?"}
+    ProviderReady -->|"no"| ProviderTimeout["Fail on visibility wait"]
+    ProviderReady -->|"yes"| SsoRoute{"SSO route reached?"}
+    SsoRoute -->|"no"| SsoRouteTimeout["Fail on URL wait"]
+    SsoRoute -->|"yes"| CredentialsAccepted{"Browser leaves SSO route?"}
+    CredentialsAccepted -->|"no"| CredentialFailure["Credential form remains or wait expires"]
+    CredentialsAccepted -->|"yes"| DashboardReady{"Dashboard predicate passes?"}
+    DashboardReady -->|"no"| DashboardTimeout["Fail before sidebar is returned"]
+    DashboardReady -->|"yes"| Success["Return navigation sidebar"]

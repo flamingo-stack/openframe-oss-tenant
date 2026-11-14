@@ -1,0 +1,6 @@
+flowchart TD
+    Query["Finished Winget Install Query"] --> Runs["Software Action Run Connection"]
+    Runs --> Detail["Action Detail by Identifier"]
+    Runs --> Devices["Target Device Executions"]
+    Runs --> Facets["Status Action and Engine Facets"]
+    Devices --> DeviceFilters["Status Customer and Search Filters"]

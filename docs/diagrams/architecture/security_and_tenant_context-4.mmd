@@ -1,0 +1,12 @@
+flowchart TD
+    Request["Incoming Request"] --> TenantKnown{"Tenant resolved?"}
+    TenantKnown -->|"no"| PassThrough["Do Not Change Headers"]
+    TenantKnown -->|"yes"| SasPath{"Authorization Server Path?"}
+    SasPath -->|"no"| PassThrough
+    SasPath -->|"yes"| ExistingPrefix{"Forwarded Prefix Exists?"}
+    ExistingPrefix -->|"yes"| PassThrough
+    ExistingPrefix -->|"no"| AlreadyPrefixed{"Path Already Has Tenant Prefix?"}
+    AlreadyPrefixed -->|"yes"| PassThrough
+    AlreadyPrefixed -->|"no"| AddPrefix["Add Tenant Forwarded Prefix"]
+    AddPrefix --> HeaderFilter["Forwarded Header Filter"]
+    PassThrough --> HeaderFilter

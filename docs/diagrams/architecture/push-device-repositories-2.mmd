@@ -1,0 +1,10 @@
+flowchart TD
+    Request["Registration request"] --> Cleanup["Remove same token from other tenants"]
+    Cleanup --> Upsert["Upsert by token in current tenant"]
+    Upsert --> Decision{{"New row created?"}}
+    Decision -->|"yes"| Created["Set creation time and return true"]
+    Decision -->|"no"| Rebound["Update user, platform, version, and update time"]
+    Rebound --> ReturnFalse["Return false"]
+    Upsert -->|"duplicate key"| Recovery["Update existing matching row"]
+    Recovery --> Settled["Return false when row matched"]
+    Recovery --> Retry["Retry upsert when no row matched"]

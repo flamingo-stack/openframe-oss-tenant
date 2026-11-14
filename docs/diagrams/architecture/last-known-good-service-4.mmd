@@ -1,0 +1,7 @@
+flowchart LR
+    LogsDirectory["Logs Directory"] --> Scan["Find updater log files"]
+    Scan --> Metadata["Read modification times"]
+    Metadata --> Count{"More than keep limit?"}
+    Count -->|"no"| Retain["Retain All Matching Logs"]
+    Count -->|"yes"| Sort["Sort Newest First"]
+    Sort --> Delete["Delete Entries Beyond Limit"]

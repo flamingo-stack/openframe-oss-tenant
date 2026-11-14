@@ -1,0 +1,14 @@
+flowchart LR
+    ClientAgent["OpenFrame Client agent"] -->|"starts"| SelfHeal["Mesh Self Heal Service"]
+    SelfHeal -->|"reads"| MeshLog["MeshCentral agent log"]
+    SelfHeal -->|"queries"| ToolRegistry["Installed Tools Service"]
+    SelfHeal -->|"resolves paths"| Directories["Directory Manager"]
+    SelfHeal -->|"reads URL"| InitialConfig["Initial Configuration Service"]
+    SelfHeal -->|"reads token"| AgentConfig["Agent Configuration Service"]
+    SelfHeal -->|"checks"| ToolOps["Tool Operations"]
+    SelfHeal -->|"checks"| Deactivation["Deactivation Service"]
+    SelfHeal -->|"fetches configuration"| MeshServer["MeshCentral server"]
+    SelfHeal -->|"restarts"| RestartService["Tool Restart Service"]
+    RestartService -->|"guards lifecycle"| MeshAgent["MeshCentral agent"]
+    SelfHeal -->|"fallback stop"| KillService["Tool Kill Service"]
+    KillService -->|"stops"| MeshAgent

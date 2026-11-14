@@ -1,0 +1,11 @@
+flowchart LR
+    TestCase["Ticket Test"] -->|"deserializes response"| TicketDto["Ticket Dto"]
+    TicketDto --> Owner["Ticket Owner"]
+    Owner --> User["Ticket User"]
+    Owner --> Machine["Ticket Machine"]
+    TicketDto --> Attachment["Ticket Attachment"]
+    TicketDto --> Image["Ticket Image"]
+    TicketDto --> PageInfo["Ticket Page Info"]
+    TicketDto --> StatusCount["Ticket Status Definition Count"]
+    TicketDto --> Dialog["Ticket Dialog"]
+    Dialog --> TokenUsage["Ticket Token Usage"]

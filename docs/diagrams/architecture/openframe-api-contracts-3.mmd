@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Api as "API service"
+    participant Dispatch as "Software dispatch service"
+    participant Devices as "Device service"
+    participant Executions as "Script execution service"
+    participant Nats as "NATS publisher"
+    participant Agent as "Managed agent"
+    Api->>Dispatch: Dispatch software action
+    Dispatch->>Devices: Verify targets are dispatchable
+    Dispatch->>Executions: Create execution rows
+    Dispatch->>Nats: Publish one message per machine
+    Nats->>Agent: Deliver script message

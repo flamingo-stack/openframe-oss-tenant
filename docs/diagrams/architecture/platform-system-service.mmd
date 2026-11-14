@@ -1,0 +1,22 @@
+flowchart TD
+    Caller["Agent lifecycle caller"] --> API["Platform System Service API"]
+    API --> Start["start service"]
+    API --> Stop["stop service"]
+    API --> Verify["verify service running"]
+    API --> InstallCheck["service clear for install"]
+    API --> Remove["remove service"]
+    Start --> MacStart["macOS launchctl load"]
+    Start --> LinuxStart["Linux systemctl start"]
+    Start --> WindowsStart["Windows SCM start and poll"]
+    Stop --> MacStop["macOS launchctl unload"]
+    Stop --> LinuxStop["Linux systemctl stop"]
+    Stop --> WindowsStop["Windows SCM stop and recovery"]
+    Verify --> WindowsVerify["Windows SCM query and start"]
+    InstallCheck --> WindowsCheck["Windows missing or stopped check"]
+    Remove --> WindowsRemove["Windows delete and confirm"]
+    WindowsStart --> Pool["Timed permit pool"]
+    WindowsStop --> Pool
+    WindowsVerify --> Pool
+    WindowsCheck --> Pool
+    WindowsRemove --> Pool
+    Pool --> SCM["Windows Service Control Manager"]

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Caller
+    participant Service as Encryption Service
+    participant Random as Operating System Random Source
+    participant Cipher as AES 256 GCM
+    Caller->>Service: encrypt plaintext
+    Service->>Cipher: initialize with fixed key
+    Service->>Random: request 12 random bytes
+    Random-->>Service: nonce
+    Service->>Cipher: encrypt nonce and plaintext bytes
+    Cipher-->>Service: encrypted payload or error
+    Service->>Service: prefix nonce and Base64 encode
+    Service-->>Caller: encoded value or error

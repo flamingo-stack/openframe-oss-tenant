@@ -1,0 +1,20 @@
+flowchart TD
+    Start["Start watchdog"] --> Tick["Wait fifteen seconds"]
+    Tick --> Gap{"Probe delay exceeds forty five seconds?"}
+    Gap -->|"yes"| Rearm["Record activity and re-arm"]
+    Rearm --> Tick
+    Gap -->|"no"| Suspend{"Client suspended or grace active?"}
+    Suspend -->|"yes"| Grace["Record activity and skip judgment"]
+    Grace --> Tick
+    Suspend -->|"no"| Client{"Current client available?"}
+    Client -->|"no"| Tick
+    Client -->|"yes"| Bytes{"Traffic counters changed?"}
+    Bytes -->|"yes"| Healthy["Record activity and possibly reset window"]
+    Healthy --> Tick
+    Bytes -->|"no"| Idle{"Idle duration reaches stall window?"}
+    Idle -->|"no"| Tick
+    Idle -->|"yes"| Replace["Connect and replace client"]
+    Replace --> ReplaceOk{"Replacement succeeded?"}
+    ReplaceOk -->|"yes"| Widen["Widen stall window"]
+    Widen --> Tick
+    ReplaceOk -->|"no"| Tick

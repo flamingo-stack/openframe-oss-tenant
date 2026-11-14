@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Agent as Device Agent
+    participant Controller as Agent Controller
+    participant Registration as Registration Service
+    participant Flags as Feature Flags Service
+    participant Config as Client Configuration Service
+    participant Router as Delivery Router
+
+    Agent->>Controller: POST register with initial key and request
+    Controller->>Registration: register initial key and request
+    Registration-->>Controller: registration response
+    Controller-->>Agent: registration response
+    Registration->>Flags: process machine identifier
+    Flags->>Config: read tenant client configuration
+    Config-->>Flags: feature flags
+    Flags->>Router: dispatch machine feature flag seed
+    Router-->>Agent: feature flag delivery

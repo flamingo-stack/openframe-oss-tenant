@@ -1,0 +1,20 @@
+flowchart LR
+    Scheduler["Scheduling trigger"] --> LocalService["Device Local Schedule Service"]
+    Scheduler --> ScriptDispatcher["Schedule Fire Dispatcher"]
+    Scheduler --> SoftwareDispatcher["Software Schedule Fire Dispatcher"]
+    OnlineEvent["Device online event"] --> BundleDispatcher["Software Bundle Online Dispatcher"]
+    LocalService --> TargetResolver["Schedule device target resolver"]
+    LocalService --> MachineRepo["Machine repository"]
+    LocalService --> LocalDispatchRepo["Local dispatch repository"]
+    LocalService --> ScriptDispatcher
+    ScriptDispatcher --> ScriptRepo["Script repository"]
+    ScriptDispatcher --> ExecutionRepos["Schedule and script execution repositories"]
+    ScriptDispatcher --> DeliveryRouter["Delivery router"]
+    ScriptDispatcher --> RetryStore["Script delivery retry store"]
+    SoftwareDispatcher --> PlatformResolver["Machine platform resolver"]
+    SoftwareDispatcher --> PackageServices["Package manager and update services"]
+    BundleDispatcher --> PackageServices
+    SoftwareDispatcher --> SoftwarePublisher["Software NATS publisher"]
+    BundleDispatcher --> SoftwarePublisher
+    SoftwarePublisher --> Agent["OpenFrame Client agent"]
+    DeliveryRouter --> Agent

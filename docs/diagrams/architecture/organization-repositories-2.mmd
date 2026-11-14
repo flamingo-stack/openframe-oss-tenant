@@ -1,0 +1,12 @@
+flowchart TD
+    Request["Query request"] --> BaseQuery["Build base filter and search query"]
+    BaseQuery --> CursorPresent{"Cursor present?"}
+    CursorPresent -->|"no"| Sort["Apply requested sort and limit"]
+    CursorPresent -->|"yes"| Resolve["Parse compound cursor or resolve legacy identifier"]
+    Resolve --> Direction{"Ascending order?"}
+    Direction -->|"yes"| AfterAsc["Select rows after the cursor"]
+    Direction -->|"no"| AfterDesc["Select rows before the cursor"]
+    AfterAsc --> Sort
+    AfterDesc --> Sort
+    Sort --> Execute["Query MongoDB"]
+    Execute --> Page["Organization page"]

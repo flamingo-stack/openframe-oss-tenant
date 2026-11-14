@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Start installation"] --> Validate["Validate server URL, initial key, and organization ID"]
+    Validate --> LocalMode{"Local mode enabled?"}
+    LocalMode -->|"yes"| ResolveCa["Run mkcert and locate root CA certificate"]
+    ResolveCa --> Build["Build Initial Configuration"]
+    LocalMode -->|"no"| Build
+    Build --> ParseTags["Parse valid key and value tag pairs"]
+    ParseTags --> Save["Serialize and atomically save JSON"]
+    Save --> Ready["Bootstrap configuration available"]

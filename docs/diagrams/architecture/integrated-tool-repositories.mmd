@@ -1,0 +1,8 @@
+flowchart LR
+    ManagementService["Management Service"] --> RepositoryContract["Custom Integrated Tool Repository"]
+    RepositoryContract --> RepositoryImplementation["Custom Integrated Tool Repository Implementation"]
+    RepositoryImplementation --> QueryBuilder["Mongo Query Builder"]
+    QueryBuilder --> MongoTemplate["Spring MongoTemplate"]
+    MongoTemplate --> ToolCollection[("Integrated Tool Collection")]
+    RepositoryImplementation --> FacetQueries["Distinct Metadata Queries"]
+    FacetQueries --> MongoTemplate

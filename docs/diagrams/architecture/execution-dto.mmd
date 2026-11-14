@@ -1,0 +1,8 @@
+flowchart LR
+    TestCase["Integration Test"] -->|"requests execution history"| GraphQL["GraphQL API"]
+    GraphQL -->|"connection response"| ScheduleEdge["ScheduleRunEdge"]
+    ScheduleEdge -->|"node"| ScheduleRun["ScheduleRun"]
+    GraphQL -->|"connection response"| ScriptEdge["ScriptExecutionEdge"]
+    ScriptEdge -->|"node"| ScriptExecution["ScriptExecution"]
+    ScheduleEdge -->|"cursor"| PageCursor["Pagination Cursor"]
+    ScriptEdge -->|"cursor"| PageCursor

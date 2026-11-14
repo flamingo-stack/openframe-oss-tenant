@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Agent as OpenFrame Client Agent
+    participant Migration as Platform Windows Path Migration
+    participant Registry as Windows Registry
+    participant Logs as Tracing
+    Agent->>Migration: run()
+    Migration->>Registry: Open environment key with read and write access
+    Registry-->>Migration: Key handle
+    Migration->>Registry: Read raw Path value
+    Registry-->>Migration: REG_SZ and UTF-16 bytes
+    Migration->>Migration: Decode and verify variable marker
+    Migration->>Logs: Log repair start
+    Migration->>Registry: Write Path as REG_EXPAND_SZ
+    Registry-->>Migration: Write complete
+    Migration->>Logs: Log repair success
+    Migration-->>Agent: Return

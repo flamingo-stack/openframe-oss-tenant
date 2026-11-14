@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Installer
+    participant Setup as Installation Config Service
+    participant Store as Initial Config Service
+    participant Auth as Initial Authentication Processor
+    participant AgentConfig as Agent Configuration Service
+    Installer->>Setup: provide bootstrap inputs
+    Setup->>Store: save Initial Configuration
+    Auth->>AgentConfig: read access token
+    alt no access token
+        Auth->>Auth: attempt initial authentication
+        Auth->>AgentConfig: store registration and tokens
+    else access token exists
+        Auth->>Auth: skip initial authentication
+    end
+    Store->>Store: save log key and clear initial key when applicable

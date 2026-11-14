@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Service as Service Management
+    participant Client as Client Application
+    participant Registration as Registration Processor
+    participant Auth as Authentication Processor
+    participant Nats as NATS Connection Manager
+    participant Listeners as Runtime Listeners
+
+    Service->>Client: Start endpoint agent
+    Client->>Registration: Register device when needed
+    Registration-->>Client: Registration complete
+    Client->>Auth: Authenticate agent
+    Auth-->>Client: Tokens persisted
+    Client->>Nats: Connect through gateway
+    Nats-->>Client: Active NATS client
+    Client->>Listeners: Start command and execution listeners
+    Listeners-->>Client: Receive endpoint work

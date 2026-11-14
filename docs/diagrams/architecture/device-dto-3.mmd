@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "Integration Test"
+    participant Api as "Device API"
+    participant Jackson as "Jackson"
+    participant Dto as "Device Dto"
+    Test->>Api: Query device, tags, or filters
+    Api->>Jackson: Return JSON response
+    Jackson->>Dto: Deserialize known fields
+    Note over Jackson,Dto: Unknown response fields are ignored
+    Dto->>Test: Provide typed data for assertions

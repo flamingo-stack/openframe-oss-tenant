@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Operator
+    participant Management as "Management service"
+    participant Scheduler as "IdpConfigurationScheduler"
+    participant Store as "Registered client store"
+    participant Gateway
+    participant Authorization as "Authorization server"
+    Operator->>Management: Deploy new gateway secret
+    Operator->>Gateway: Restart with new gateway secret
+    Management->>Scheduler: Run startup initialization
+    Scheduler->>Store: Verify stored hash against configured secret
+    Scheduler->>Store: Save encoded replacement if different
+    Gateway->>Authorization: Authenticate using Basic credentials
+    Authorization->>Store: Load client and verify secret

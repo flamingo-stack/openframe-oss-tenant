@@ -1,0 +1,9 @@
+flowchart LR
+    UpdateService["Update State Service"] -->|"uses"| DirectoryManager["Directory Manager"]
+    DirectoryManager -->|"provides"| SecuredDirectory["Secured directory"]
+    UpdateService -->|"stores"| StateFile["update_state.json"]
+    UpdateService -->|"serializes"| UpdateState["Update State model"]
+    UpdateService -->|"writes through"| AtomicWrite["Atomic write utility"]
+    UpdateService -->|"parses through"| JsonRecovery["JSON recovery utility"]
+    ClientUpdate["Client update service"] -->|"creates and saves checkpoint"| UpdateService
+    UpdateHandler["Update handler service"] -->|"loads and clears checkpoint"| UpdateService

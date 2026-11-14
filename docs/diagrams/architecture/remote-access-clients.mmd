@@ -1,0 +1,8 @@
+flowchart LR
+    InitialConfig["Initial Configuration Service"] -->|"pending mode"| ModeService["Remote Access Mode Service"]
+    ModeService -->|"set device mode"| Client["Remote Access Client"]
+    ConfigService["Agent Configuration Service"] -->|"access token"| Client
+    HttpClient["Configured HTTP Client"] -->|"transport and machine context"| Client
+    Client -->|"authenticated PUT"| ClientService["Tenant Client Service"]
+    Nats["NATS"] -->|"remote access messages"| Listener["Remote Access Message Listener"]
+    Listener -->|"tool coordination"| ToolManager["Tool Run Manager"]

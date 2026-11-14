@@ -1,0 +1,5 @@
+flowchart LR
+    TestCode["Test code"] -->|"deserializes or builds"| Edge["SoftwareActionRunEdge"]
+    Edge -->|"node"| Run["SoftwareActionRun"]
+    Edge -->|"cursor"| Cursor["Pagination cursor"]
+    Edge -->|"collection item"| Connection["Software action run connection"]

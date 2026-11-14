@@ -1,0 +1,5 @@
+flowchart LR
+    Operator["Installer or operator"] --> Arguments["Repeated key equals value arguments"]
+    Arguments --> Model["Model Device Tag"]
+    Model --> Serde["Serde serialization support"]
+    Model --> ClientFlow["OpenFrame client configuration or registration flow"]

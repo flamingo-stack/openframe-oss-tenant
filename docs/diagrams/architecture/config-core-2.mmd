@@ -1,0 +1,7 @@
+flowchart TD
+    DefaultCall["Configuration default call"] --> ConfigObject["Configuration"]
+    ConfigObject --> LoggingObject["LoggingConfig"]
+    LoggingObject --> Level["level: info"]
+    LoggingObject --> Json["json: true"]
+    LoggingObject --> Rotation["rotation size: 10 MB"]
+    LoggingObject --> Retention["maximum files: 5"]

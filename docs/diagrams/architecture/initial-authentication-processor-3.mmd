@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Process initial authentication"] --> ReadToken["Read persisted access token"]
+    ReadToken --> ReadOk{"Read succeeded?"}
+    ReadOk -->|"no"| ReturnReadError["Return contextual configuration error"]
+    ReadOk -->|"yes"| HasToken{"Token is nonempty?"}
+    HasToken -->|"yes"| Skip["Log skip and return success"]
+    HasToken -->|"no"| Attempt["Authenticate with stored client credentials"]
+    Attempt --> AttemptOk{"Authentication succeeded?"}
+    AttemptOk -->|"yes"| Persist["Persist tokens through auth service"]
+    Persist --> Success["Log success and return"]
+    AttemptOk -->|"no"| Warn["Log warning with failure"]
+    Warn --> Delay["Asynchronously wait 60 seconds"]
+    Delay --> Attempt

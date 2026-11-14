@@ -1,0 +1,9 @@
+flowchart LR
+    Config["Integrated Tool Agent Configuration"] --> Service["Integrated Tool Agent Service"]
+    Service --> Repository["Integrated Tool Agent Repository"]
+    Repository --> MongoEvents["Spring Data Mongo Save Events"]
+    MongoEvents --> Logger["Integrated Tool Agent Change Logger"]
+    Logger --> AppLogs["Application Information Logs"]
+    Repository --> Mongo["MongoDB Integrated Tool Agents Collection"]
+    Logger --> Agent["Integrated Tool Agent Document"]
+    Logger --> State["Publication State"]

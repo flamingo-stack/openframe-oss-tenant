@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Manager as Machine Timezone Run Manager
+    participant Fetcher as Device Data Fetcher
+    participant Publisher as Machine Timezone Publisher
+    participant Nats as NATS JetStream
+    participant Server as Server Timezone Listener
+
+    Manager->>Fetcher: get timezone
+    Fetcher-->>Manager: IANA timezone or no value
+    alt timezone available and report required
+        Manager->>Publisher: publish timezone
+        Publisher->>Nats: publish machine timezone subject
+        Nats-->>Publisher: JetStream acknowledgement
+        Publisher-->>Manager: success
+        Nats->>Server: deliver timezone message
+        Server->>Server: update machine timezone
+        Server->>Nats: acknowledge delivery
+    else timezone unavailable or unchanged tick
+        Manager->>Manager: log skip or suppress duplicate
+    end

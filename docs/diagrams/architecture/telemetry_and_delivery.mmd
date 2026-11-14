@@ -1,0 +1,21 @@
+flowchart LR
+    Agent["OpenFrame Client Agent"]
+    Nats["NATS and JetStream"]
+    Kafka["Kafka Dispatch Topic"]
+    Telemetry["Telemetry And Delivery"]
+    Status["Machine Status Service"]
+    Agents["Installed Agent Service"]
+    Tools["Tool Connection Service"]
+    Sink["Local Delivery Sink"]
+    Tracker["Delivery Tracker"]
+    Store["Mongo Delivery and Processed Command Records"]
+
+    Agent -->|"heartbeat, inventory, result"| Nats
+    Nats --> Telemetry
+    Kafka -->|"dispatch hand-off"| Telemetry
+    Telemetry --> Status
+    Telemetry --> Agents
+    Telemetry --> Tools
+    Telemetry --> Sink
+    Telemetry --> Tracker
+    Telemetry --> Store

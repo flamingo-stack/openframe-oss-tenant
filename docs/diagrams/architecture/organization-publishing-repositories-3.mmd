@@ -1,0 +1,9 @@
+flowchart TD
+    TicketViews["TicketOrganizationView batch"] --> Filter["Keep tickets with organization ID"]
+    Filter --> Sources["Load source organizations by tenant and organization IDs"]
+    Sources --> Compare["Compare source and copied names"]
+    Compare --> Match{"Names match?"}
+    Match -->|"yes"| Clean["No mismatch"]
+    Match -->|"no"| Mismatch["Report tenant, ticket, source ID, and difference"]
+    Sources --> Missing{"Source exists?"}
+    Missing -->|"no"| Retain["Keep copied value without mismatch"]

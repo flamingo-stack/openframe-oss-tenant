@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Caller
+    participant Service as Installed Tools Service
+    participant Store as JSON Inventory
+    Caller->>Service: save(record), set state, or delete
+    Service->>Service: acquire writer mutex
+    Service->>Store: read current inventory
+    Service->>Service: apply upsert, transition, or removal
+    Service->>Service: serialize formatted JSON
+    Service->>Store: write temporary file
+    Service->>Store: synchronize temporary file
+    Service->>Store: rename temporary file over inventory
+    Service-->>Caller: result

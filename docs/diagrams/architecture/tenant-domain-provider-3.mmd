@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Tenant Domain Requested"] --> Context{"Servlet request context?"}
+    Context -->|"no"| Empty["Return empty optional"]
+    Context -->|"yes"| Header{"X-Tenant-Domain present?"}
+    Header -->|"yes"| Value["Return header value"]
+    Header -->|"no"| Empty
+    Empty --> Fallback["TenantDomainService uses tenant record fallback"]

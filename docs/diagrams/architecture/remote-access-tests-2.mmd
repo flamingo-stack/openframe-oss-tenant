@@ -1,0 +1,15 @@
+flowchart TD
+    DevicePolicy{"Device override present?"}
+    OrganizationPolicy{"Organization override present?"}
+    TenantPolicy{"Tenant policy present?"}
+    DeviceMode["Use device mode"]
+    OrganizationMode["Use organization mode"]
+    TenantMode["Use tenant mode"]
+    DefaultMode["Use code default"]
+
+    DevicePolicy -->|"yes"| DeviceMode
+    DevicePolicy -->|"no"| OrganizationPolicy
+    OrganizationPolicy -->|"yes"| OrganizationMode
+    OrganizationPolicy -->|"no"| TenantPolicy
+    TenantPolicy -->|"yes"| TenantMode
+    TenantPolicy -->|"no"| DefaultMode

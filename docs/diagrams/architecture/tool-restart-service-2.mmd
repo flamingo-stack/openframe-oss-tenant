@@ -1,0 +1,20 @@
+flowchart TD
+    Start["Restart request with tool agent identifier"] --> Lock{"Tool lock available?"}
+    Lock -->|"no"| Busy["Return Busy"]
+    Lock -->|"yes"| MarkBusy["Mark operation busy"]
+    MarkBusy --> TimedCall["Run restart with 600 second cap"]
+    TimedCall --> Lookup{"Installed record found?"}
+    Lookup -->|"no"| Missing["Return Not Installed"]
+    Lookup -->|"yes"| Stop["Stop installed tool"]
+    Stop --> InstallType{"Installation is service?"}
+    InstallType -->|"yes"| StartService["Start operating system service"]
+    InstallType -->|"no"| Supervise["Request run manager supervision"]
+    StartService --> Restarted["Return Restarted"]
+    Supervise --> Restarted
+    TimedCall -->|"timeout"| Timeout["Return timeout error"]
+    TimedCall -->|"panic"| Panic["Return panic error"]
+    Busy --> Release["Return and release state"]
+    Missing --> Release
+    Restarted --> Release
+    Timeout --> Release
+    Panic --> Release

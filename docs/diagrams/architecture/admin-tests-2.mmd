@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Pipeline
+    participant AdminTests as "Admin Tests"
+    participant Generator as "Invitation Generator"
+    participant InvitationApi as "Invitation API"
+    participant Context as "Pipeline Context"
+    Pipeline->>AdminTests: Run admin setup
+    AdminTests->>Generator: Create user invitation request
+    Generator-->>AdminTests: Invitation request
+    AdminTests->>InvitationApi: Invite user
+    InvitationApi-->>AdminTests: Invitation
+    AdminTests->>Generator: Build acceptance request
+    Generator-->>AdminTests: Acceptance request
+    AdminTests->>InvitationApi: Accept invitation
+    InvitationApi-->>AdminTests: User identifier and email
+    AdminTests->>AdminTests: Assert identifier is present
+    AdminTests->>Context: Save fixture administrator
+    AdminTests-->>Pipeline: Fixture available

@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Caller
+    participant Alive as "alive"
+    participant Snapshot as "snapshot"
+    participant OS as "Process table"
+    Caller->>Alive: "PID list"
+    Alive->>Snapshot: "Collect fresh process records"
+    Snapshot->>OS: "Refresh executable metadata"
+    OS-->>Snapshot: "Readable process records"
+    Snapshot-->>Alive: "RunningProcess vector"
+    Alive-->>Caller: "Input PIDs still present"

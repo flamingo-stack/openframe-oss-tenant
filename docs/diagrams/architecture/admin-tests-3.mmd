@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Run administrator teardown"] --> Present{"Fixture administrator exists?"}
+    Present -->|"no"| NoFixture["Log absence and finish"]
+    Present -->|"yes"| ReadId["Read fixture user identifier"]
+    ReadId --> Delete["Delete user through User API"]
+    Delete --> Status["Log deletion status"]
+    Status --> Finish["Finish"]
+    NoFixture --> Finish

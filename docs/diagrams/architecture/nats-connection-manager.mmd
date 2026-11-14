@@ -1,0 +1,11 @@
+flowchart LR
+    AgentConfig["Agent Configuration Service"] -->|"access token and server machine ID"| Manager["Nats Connection Manager"]
+    InitialConfig["Initial Configuration Service"] -->|"local mode"| Manager
+    TlsProvider["Local TLS Config Provider"] -->|"TLS client config"| Manager
+    AuthService["Agent Auth Service"] -->|"reauthenticate"| Manager
+    Deactivation["Deactivation Service"] -->|"suspension state"| Manager
+    MachineId["Machine ID Service"] -->|"local machine ID"| Manager
+    Manager -->|"WebSocket NATS connection"| Gateway["Tenant Gateway"]
+    Gateway -->|"NATS protocol"| Nats["NATS Server"]
+    Manager -->|"current client watch value"| Consumers["Agent Listeners and Publishers"]
+    Manager -->|"reconnect broadcast"| ReconnectConsumers["Reconnect-Aware Services"]

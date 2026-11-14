@@ -1,0 +1,13 @@
+flowchart LR
+    InstalledRecord["Installed Tool Record"] --> ToolAgent["Tool Agent Identifier"]
+    InstalledRecord --> ToolType["Tool Type"]
+    InstalledRecord --> CommandArgs["Identifier Command Arguments"]
+    CommandArgs --> Resolver["Parameter Resolution"]
+    Resolver --> Command["Local Identifier Command"]
+    Command --> AgentTool["Agent-Side Tool Identifier"]
+    MachineConfig["Agent Configuration"] --> Machine["Machine Identifier"]
+    Machine --> Mapping["Connection Mapping"]
+    AgentTool --> Mapping
+    ToolType --> Mapping
+    Mapping --> Publish["NATS Publication"]
+    Mapping --> Persist["Local Tool Connection Record"]

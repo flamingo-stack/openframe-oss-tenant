@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Client removal begins"] --> Remove["Call unregister"]
+    Remove --> Delete["Delete uninstall registry subtree"]
+    Delete --> Exists{"Registry key exists?"}
+    Exists -->|"yes"| Removed["Entry removed and logged"]
+    Exists -->|"no"| Idempotent["Treat removal as successful"]
+    Delete -->|"other registry error"| Failure["Return contextual error"]

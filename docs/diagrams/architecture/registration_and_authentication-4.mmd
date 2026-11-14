@@ -1,0 +1,6 @@
+flowchart LR
+    ExistingAgent["Existing Device Agent"] -->|"initial key, machine ID, client secret"| Reinstall["Reinstall Endpoint"]
+    Reinstall --> RegistrationService["Agent Registration Service"]
+    ExistingAgent -->|"machine ID and client secret"| Uninstall["Uninstall Endpoint"]
+    Uninstall --> UninstallService["Agent Uninstall Service"]
+    UninstallService --> NoContent["HTTP 204"]

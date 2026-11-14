@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Service as Remote Access Mode Service
+    participant Retry as Shared Retry Helper
+    participant Client as Remote Access Client
+    participant Config as Agent Configuration Service
+    participant Backend as OpenFrame Backend
+    Service->>Retry: Apply selected mode
+    Retry->>Client: Set device mode
+    Client->>Config: Get access token
+    Config-->>Client: Access token
+    Client->>Backend: PUT device mode with bearer token
+    Backend-->>Client: Response status
+    Client-->>Retry: Applied, Not Supported, Override Exists, or error
+    Retry-->>Service: Settled outcome
+    Service->>Service: Clear pending mode

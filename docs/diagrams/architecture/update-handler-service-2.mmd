@@ -1,0 +1,13 @@
+flowchart TD
+    Handler["Update Handler Service"] --> StateService["Update State Service"]
+    Handler --> ClientInfo["OpenFrame Client Info Service"]
+    Handler --> Cleanup["Update Cleanup Service"]
+    Handler --> Lkg["Last-known-good Service"]
+    Handler --> InstalledPublisher["Installed-agent Message Publisher"]
+    Handler --> Config["Agent Configuration Service"]
+    Handler --> Results["Result Store"]
+    StateService --> StateFile["Update state file"]
+    Lkg --> Reserve["Reserve binary and anchor"]
+    Cleanup --> UpdateArtifacts["Staged update artifacts"]
+    Results --> DeliveryLedger["Delivery ledger"]
+    InstalledPublisher --> Nats["NATS notification"]

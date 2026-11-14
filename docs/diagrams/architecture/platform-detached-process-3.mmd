@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Service as OpenFrame Client Service
+    participant Uninstall as Uninstall Flow
+    participant Detached as Platform Detached Process
+    participant Child as Detached Client Process
+    participant Manager as Service Manager
+    Service->>Uninstall: Start self-uninstall
+    Uninstall->>Detached: Launch installed executable with uninstall subcommand
+    alt macOS
+        Detached->>Child: Spawn with new session and null streams
+    else Windows
+        Detached->>Child: Spawn with detached and no-window flags
+    else unsupported target
+        Detached-->>Uninstall: Return unsupported-platform error
+    end
+    Detached-->>Uninstall: Return child handle
+    Uninstall-->>Service: Log child process identifier and continue
+    Manager->>Service: Stop client service
+    Child->>Child: Continue independently

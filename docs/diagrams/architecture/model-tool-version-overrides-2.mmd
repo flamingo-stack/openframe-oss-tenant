@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Receive tool identifier and declared version"] --> Query["Call lookup with tool identifier"]
+    Query --> Match{"Enabled override matches?"}
+    Match -->|"Yes"| Embedded["Return embedded override version"]
+    Match -->|"No"| Declared["Keep declared message version"]
+    Embedded --> Resolved["Use resolved version for installation"]
+    Declared --> Resolved

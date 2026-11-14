@@ -1,0 +1,6 @@
+flowchart LR
+    TestFixtures["Test Fixtures and DTO Builders"] --> TenantPlan["TenantPlan"]
+    TestFixtures --> TenantStatus["TenantStatus"]
+    TenantPlan --> TestService["OpenFrame Test Service"]
+    TenantStatus --> TestService
+    TestService --> Platform["OpenFrame Tenant Platform"]

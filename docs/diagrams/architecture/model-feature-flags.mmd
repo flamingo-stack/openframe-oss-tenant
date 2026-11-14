@@ -1,0 +1,9 @@
+flowchart LR
+    Management["Management initialization"] --> ControlPlane["Client control plane"]
+    ControlPlane --> Delivery["Feature flag delivery"]
+    Delivery --> Handler["Feature Flags Handler"]
+    Handler --> Service["Feature Flags Service"]
+    Service --> State["Feature Flags State file"]
+    Service --> Resolver["Feature Flags resolver"]
+    Resolver --> Runtime["Running client feature set"]
+    Runtime --> DeliveryPaths["Delivery and package paths"]

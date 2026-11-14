@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Call should_log before an attempt"] --> Metadata{"Failure timestamps present?"}
+    Metadata -->|"no"| LogNow["Allow log"]
+    Metadata -->|"yes"| Early{"Recorded failures fewer than 5?"}
+    Early -->|"yes"| LogNow
+    Early -->|"no"| Long{"Failing for at least 1 hour?"}
+    Long -->|"no"| Throttled{"At least 2 minutes since last logged failure?"}
+    Long -->|"yes"| Slow{"At least 1 hour since last logged failure?"}
+    Throttled -->|"yes"| LogNow
+    Throttled -->|"no"| Suppress["Suppress this failure log"]
+    Slow -->|"yes"| LogNow
+    Slow -->|"no"| Suppress

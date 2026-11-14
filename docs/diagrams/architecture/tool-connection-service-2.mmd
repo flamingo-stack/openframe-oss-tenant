@@ -1,0 +1,30 @@
+classDiagram
+    class ToolConnectionService {
+        -PathBuf filePath
+        -Mutex writer
+        +new(directoryManager)
+        +save(connection)
+        +getAll()
+        +deleteByToolAgentId(toolAgentId)
+        -persist(connections)
+    }
+    class ToolConnection {
+        +String toolAgentId
+        +String agentToolId
+        +bool published
+    }
+    class DirectoryManager {
+        +securedDir()
+        +ensureDirectories()
+    }
+    class JsonFileReader {
+        +readJsonOrQuarantine()
+    }
+    class AtomicWriter {
+        +atomicWrite()
+    }
+
+    ToolConnectionService --> ToolConnection : stores
+    ToolConnectionService --> DirectoryManager : resolves path
+    ToolConnectionService --> JsonFileReader : reads
+    ToolConnectionService --> AtomicWriter : persists

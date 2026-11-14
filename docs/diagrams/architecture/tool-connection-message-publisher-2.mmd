@@ -1,0 +1,7 @@
+flowchart TD
+    Inputs["Machine ID, agent tool ID, and tool type"] --> Topic["Build machine-specific subject"]
+    Inputs --> Payload["Build Tool Connection Message"]
+    Topic --> Publish["Publish through NATS Message Publisher"]
+    Payload --> Publish
+    Publish --> Serialize["Serialize payload as JSON"]
+    Serialize --> Flush["Publish to NATS and flush"]

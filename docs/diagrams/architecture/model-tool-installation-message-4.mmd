@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Control as Control Plane
+    participant Listener as Command Listener
+    participant Message as Installation Message
+    participant Install as Installation Service
+    participant Download as Download Service
+    participant State as Installed Tools Service
+    Control->>Listener: Send tool installation request
+    Listener->>Message: Deserialize camel-case payload
+    Listener->>Message: Resolve effective versions and OS mappings
+    Listener->>Install: Submit validated installation intent
+    Install->>Download: Retrieve tool and selected assets
+    Install->>State: Persist installation state

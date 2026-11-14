@@ -1,0 +1,12 @@
+flowchart TD
+    Begin["Resolve tenant ID"] --> Type{"Enrichment type"}
+    Type -->|"pre enriched"| Existing{"Nonblank message tenant ID?"}
+    Existing -->|"yes"| UseMessage["Use message tenant ID"]
+    Existing -->|"no"| UseLocal["Use Tenant ID Provider"]
+    Type -->|"RMM results"| Resolver{"Cluster resolver available?"}
+    Resolver -->|"yes"| Cluster["Resolve message tenant ID with cluster resolver"]
+    Resolver -->|"no"| Local["Use Tenant ID Provider"]
+    UseMessage --> Stamp["Write tenant ID to message and enrichment"]
+    UseLocal --> Stamp
+    Cluster --> Stamp
+    Local --> Stamp

@@ -1,0 +1,8 @@
+flowchart LR
+    TicketService["Ticket application service"] --> QueryFilter["Ticket query filter"]
+    QueryFilter --> TicketRepository["Custom Ticket Repository"]
+    TicketRepository --> MongoRepository["Custom Ticket Repository Implementation"]
+    MongoRepository --> TenantTemplate["Tenant-aware Mongo template"]
+    TenantTemplate --> TicketCollection[("Tenant ticket collection")]
+    MongoRepository --> OutboxPublisher["Outbox publisher when available"]
+    OutboxPublisher --> TicketProjections["Ticket projections"]

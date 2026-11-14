@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Handler as Client update handler
+    participant Service as Client Update Service
+    participant Tools as Tool run manager
+    participant State as Update state service
+    participant Updater as Platform updater
+    participant OS as Operating system service
+
+    Handler->>Service: reserve update
+    Service->>Tools: mark update pending
+    Handler->>Service: apply message and guard
+    Service->>Service: download, stage, and verify binary
+    Service->>State: save updater launched state
+    Service->>Updater: launch with replacement parameters
+    Service->>Tools: signal shutdown
+    Updater->>OS: stop endpoint client service
+    Updater->>Updater: replace executable and restart service

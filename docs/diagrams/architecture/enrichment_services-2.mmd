@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Receive Deserialized Debezium Message"] --> NullCheck{"Message present?"}
+    NullCheck -->|"no"| Empty["Return empty enrichment"]
+    NullCheck -->|"yes"| Copy["Copy organization ID, organization name, and user ID"]
+    Copy --> TenantCheck{"Message tenant ID is nonblank?"}
+    TenantCheck -->|"yes"| MessageTenant["Use message tenant ID"]
+    TenantCheck -->|"no"| LocalTenant["Read tenant ID from Tenant ID Provider"]
+    MessageTenant --> Stamp["Set tenant ID on enrichment and message"]
+    LocalTenant --> Stamp
+    Stamp --> Return["Return pre enriched data"]

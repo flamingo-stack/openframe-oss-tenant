@@ -1,0 +1,21 @@
+flowchart TD
+    Argo["Argo CD App of Apps"] --> Platform["Platform Applications"]
+    Argo --> Datasources["Datasource Applications"]
+    Argo --> Tenant["Tenant Application"]
+
+    Platform --> NamespacePlatform["Platform Namespace"]
+    Platform --> Ingress["Ingress NGINX"]
+    Platform --> Config["OpenFrame Config"]
+    Platform --> Tools["Development Tools"]
+
+    Datasources --> Cassandra["Cassandra"]
+    Datasources --> Kafka["Kafka"]
+    Datasources --> Mongo["MongoDB"]
+    Datasources --> Nats["NATS"]
+    Datasources --> Pinot["Pinot"]
+    Datasources --> Redis["Redis Cluster"]
+
+    Tenant --> Services["OpenFrame Service Images"]
+    Tenant --> Fleet["Fleet MDM"]
+    Tenant --> Mesh["MeshCentral"]
+    Tenant --> Frontend["OpenFrame Frontend"]

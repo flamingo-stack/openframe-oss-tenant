@@ -1,0 +1,10 @@
+flowchart LR
+    ClientService["OpenFrame Client Service"] --> ToolLifecycle["Tool Lifecycle Logic"]
+    ToolLifecycle --> SessionModule["Platform User Session Macos"]
+    SessionModule --> ConsoleDevice["macOS Console Device"]
+    SessionModule --> ProcessTools["macOS Process Utilities"]
+    SessionModule --> LaunchControl["launchctl asuser"]
+    SessionModule --> SudoFallback["sudo User Fallback"]
+    LaunchControl --> UserDesktop["Active User Desktop Session"]
+    SudoFallback --> UserDesktop
+    UserDesktop --> GuiTool["GUI Application or Executable"]

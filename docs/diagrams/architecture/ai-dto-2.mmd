@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Test as "Integration Test"
+    participant Api as "AI Dialog API"
+    participant Mapper as "JSON Mapper"
+    participant Dto as "Ai Dto"
+
+    Test->>Api: Request dialog data
+    Api->>Mapper: Return JSON response
+    Mapper->>Dto: Deserialize dialog edge and message fields
+    Dto->>Test: Expose cursor, owner, context, and options
+    Test->>Test: Assert expected dialog behavior

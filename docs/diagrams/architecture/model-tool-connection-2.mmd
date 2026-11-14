@@ -1,0 +1,9 @@
+flowchart TD
+    SaveRequest["Save ToolConnection"] --> Lock["Acquire async writer lock"]
+    Lock --> Load["Read persisted connection list"]
+    Load --> Match{"Matching tool-agent ID?"}
+    Match -->|"yes"| Replace["Replace existing record"]
+    Match -->|"no"| Append["Append new record"]
+    Replace --> Persist["Persist complete list"]
+    Append --> Persist
+    Persist --> Release["Release writer lock"]

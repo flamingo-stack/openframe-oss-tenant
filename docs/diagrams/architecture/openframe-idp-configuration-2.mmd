@@ -1,0 +1,17 @@
+flowchart TD
+    Startup["Management service starts"] --> Wait["Wait five seconds"]
+    Wait --> Lock["Acquire distributed scheduler lock"]
+    Lock --> Lookup["Find registered client by configured client ID"]
+    Lookup --> Exists{"Client exists?"}
+    Exists -->|"no"| Create["Create configured registered client"]
+    Create --> Encode["Encode configured client secret"]
+    Encode --> SaveCreated["Save client record"]
+    Exists -->|"yes"| AddGrants["Add missing custom grants"]
+    AddGrants --> SyncAuth["Replace authentication methods if different"]
+    SyncAuth --> CheckSecret["Verify configured secret against stored hash"]
+    CheckSecret --> Changed{"Any field changed?"}
+    Changed -->|"yes"| SaveUpdated["Save reconciled client"]
+    Changed -->|"no"| LogCurrent["Log that client is current"]
+    SaveCreated --> Complete["Initialization completes"]
+    SaveUpdated --> Complete
+    LogCurrent --> Complete

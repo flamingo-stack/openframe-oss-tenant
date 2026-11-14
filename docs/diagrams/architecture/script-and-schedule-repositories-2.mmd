@@ -1,0 +1,6 @@
+flowchart TD
+    RunPage["Schedule run page"] --> RunIds["Execution identifiers on page"]
+    RunIds --> Match["Match tenant and terminal leaves"]
+    Match --> MachineGroup["Group by execution and machine"]
+    MachineGroup --> ExecutionGroup["Count machines by execution"]
+    ExecutionGroup --> Progress["Responded device counts"]

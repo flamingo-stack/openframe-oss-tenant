@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Runner as Doctor Reporting
+    participant Checks as Doctor Health Checks
+    participant DNS as DNS Resolver
+    participant Server as OpenFrame Server
+    Runner->>Checks: Run network checks with server URL and machine ID
+    Checks->>Checks: Inspect proxy environment variables
+    Checks->>DNS: Resolve host with configured or default port
+    DNS-->>Checks: Address availability
+    Checks->>Server: TCP connection with five-second timeout
+    Server-->>Checks: Connection success or failure
+    Checks->>Server: HTTPS request with machine ID header
+    Server-->>Checks: HTTP response or connection error
+    Checks->>Server: WebSocket upgrade request to ws/nats
+    Server-->>Checks: Upgrade-related HTTP status or connection error
+    Checks-->>Runner: Append structured check results

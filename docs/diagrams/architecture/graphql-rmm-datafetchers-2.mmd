@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant User as "GraphQL client"
+    participant Fetcher as "RMM data fetcher"
+    participant Codec as "Relay ID codec"
+    participant Service as "RMM service"
+    participant Loader as "Request DataLoader"
+
+    User->>Fetcher: Query a schedule execution connection
+    Fetcher->>Codec: Decode schedule global ID
+    Codec->>Fetcher: Raw schedule ID
+    Fetcher->>Service: List tenant scoped executions
+    Service->>Fetcher: Execution page
+    Fetcher->>User: Connection response
+    User->>Fetcher: Request initiator field
+    Fetcher->>Loader: Load user by raw ID
+    Loader->>Fetcher: User response
+    Fetcher->>User: Initiator field

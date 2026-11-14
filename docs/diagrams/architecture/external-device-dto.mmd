@@ -1,0 +1,6 @@
+flowchart LR
+    ExternalApi["External API device endpoints"] -->|"JSON responses"| Jackson["Jackson deserialization"]
+    Jackson --> DeviceTag["DeviceTagResponse"]
+    Jackson --> TagFilter["TagFilterItem"]
+    DeviceTag --> Tests["External device tests"]
+    TagFilter --> Tests

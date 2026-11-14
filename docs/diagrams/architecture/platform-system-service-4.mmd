@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Caller
+    participant ServiceModule
+    participant PermitPool
+    participant SCM
+    participant ProcessControl
+    Caller->>ServiceModule: stop service with deletion policy
+    ServiceModule->>PermitPool: run timed SCM stop call
+    PermitPool->>SCM: request stop
+    SCM-->>PermitPool: stop result
+    PermitPool-->>ServiceModule: result or timeout
+    alt service reaches stopped state
+        ServiceModule-->>Caller: success
+    else stop fails or remains active
+        ServiceModule->>PermitPool: run timed SCM status query
+        PermitPool->>SCM: query state and process ID
+        SCM-->>PermitPool: status
+        PermitPool-->>ServiceModule: status
+        alt process ID available
+            ServiceModule->>ProcessControl: terminate process tree
+        else image path fallback
+            ServiceModule->>PermitPool: query service configuration
+            PermitPool->>SCM: read executable path
+            SCM-->>PermitPool: executable path
+            PermitPool-->>ServiceModule: executable path
+            ServiceModule->>ProcessControl: terminate exact path matches
+        end
+        ServiceModule->>SCM: recheck stopped or absent state
+        SCM-->>ServiceModule: current state
+        ServiceModule-->>Caller: success or policy constrained error
+    end

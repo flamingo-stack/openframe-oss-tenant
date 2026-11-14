@@ -1,0 +1,16 @@
+flowchart TD
+    ApiService["OpenFrame API service"] --> Config["Core Config"]
+    Config --> Beans["Spring beans"]
+    Config --> MvcAuth["MVC principal resolver"]
+    Config --> DgsAuth["DGS principal resolver"]
+    Config --> Scalars["GraphQL scalar coercers"]
+    Config --> Bootstrap["OAuth client bootstrap"]
+    Config --> Security["Gateway auth security import"]
+
+    Beans --> Password["BCrypt password encoder"]
+    Beans --> Http["RestTemplate"]
+    MvcAuth --> RestHandlers["REST controllers"]
+    DgsAuth --> GraphqlHandlers["GraphQL data fetchers"]
+    Scalars --> GraphqlHandlers
+    Bootstrap --> OAuthRepository["OAuth client repository"]
+    Security --> GatewayAuth["Gateway auth security configuration"]

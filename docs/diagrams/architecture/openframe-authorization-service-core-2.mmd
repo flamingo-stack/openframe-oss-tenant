@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant User as "User Agent"
+    participant Gateway as "Gateway"
+    participant Auth as "Authorization Server"
+    participant Provider as "OIDC Provider"
+    participant Store as "MongoDB and Redis"
+
+    User->>Gateway: Request protected application resource
+    Gateway->>Auth: Start authorization request
+    Auth->>Store: Load tenant, session, and client context
+    alt Password login
+        User->>Auth: Submit login form
+        Auth->>Store: Load active tenant user
+    else Federated login
+        Auth->>Provider: Redirect to configured provider
+        Provider->>Auth: Return code and state
+        Auth->>Store: Resolve flow cookie, user, and identity link
+    else Mobile custom grant
+        User->>Auth: Present authenticated client grant request
+        Auth->>Auth: Verify native credential or signup ticket
+    end
+    Auth->>Auth: Mint tenant scoped access token
+    Auth->>Store: Save authorization and session state
+    Auth->>User: Continue with authorization response

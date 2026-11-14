@@ -1,0 +1,10 @@
+flowchart TD
+    Cli["Cli Entrypoint"] --> Agent["Agent workflow"]
+    Cli --> Install["Install workflow"]
+    Cli --> Auth["Authentication workflow"]
+    Cli --> Doctor["Doctor workflow"]
+    Cli --> Uninstall["Uninstall workflow"]
+    Cli --> Permissions["Permission workflow"]
+    Cli --> Restart["Restart workflow"]
+    Cli --> Platform["Platform console configuration"]
+    Cli --> Logging["Logging initialization"]

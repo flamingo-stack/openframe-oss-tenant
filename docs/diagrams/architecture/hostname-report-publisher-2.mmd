@@ -1,0 +1,35 @@
+sequenceDiagram
+    participant Startup as Client Startup
+    participant Publisher as Hostname Report Publisher
+    participant Fetcher as Device Data Fetcher
+    participant Config as Agent Configuration Service
+    participant NatsPublisher as NATS Message Publisher
+    participant Nats as NATS
+    participant Listener as Machine Hostname Listener
+
+    Startup->>Publisher: publish()
+    Publisher->>Fetcher: get_hostname()
+    alt hostname unavailable or invalid
+        Fetcher-->>Publisher: no hostname
+        Publisher->>Publisher: log warning and skip
+    else hostname resolved
+        Fetcher-->>Publisher: hostname
+        Publisher->>Config: get_machine_id()
+        alt configuration read fails
+            Config-->>Publisher: error
+            Publisher->>Publisher: log publication failure
+        else machine identifier available
+            Config-->>Publisher: machine identifier
+            Publisher->>Publisher: create hostname message
+            Publisher->>NatsPublisher: publish subject and payload
+            NatsPublisher->>Nats: publish and flush
+            alt publish or flush fails
+                Nats-->>NatsPublisher: error
+                NatsPublisher-->>Publisher: error
+                Publisher->>Publisher: log publication failure
+            else publish succeeds
+                Nats->>Listener: deliver hostname message
+                Listener->>Listener: validate hostname and update device
+            end
+        end
+    end

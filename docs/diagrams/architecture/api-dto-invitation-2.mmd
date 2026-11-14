@@ -1,0 +1,10 @@
+flowchart TD
+    RestClient["REST Client"] --> RestController["Invitation Controller"]
+    GraphqlClient["GraphQL Client"] --> DataFetcher["Invitation Data Fetcher"]
+    RestController --> InvitationService["Invitation Service"]
+    DataFetcher --> InvitationService
+    InvitationService --> Create["Create Invitation"]
+    InvitationService --> List["List or Query Invitations"]
+    InvitationService --> Revoke["Revoke Pending Invitation"]
+    InvitationService --> Resend["Resend Expired Invitation"]
+    Contract["Api Dto Invitation"] -. "currently unbound" .-> RestController

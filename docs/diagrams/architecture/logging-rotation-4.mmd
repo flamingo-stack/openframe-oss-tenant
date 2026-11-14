@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Writer as "Client logger"
+    participant Streamer as "Streaming loop"
+    participant Rotation as "Logging Rotation"
+    participant Disk as "Local filesystem"
+    participant Nats as "NATS JetStream"
+    Writer->>Disk: Append structured log records
+    Streamer->>Disk: Read records from saved position
+    Streamer->>Nats: Publish batch and await acknowledgment
+    Streamer->>Rotation: Check current position
+    Rotation->>Disk: Read file size
+    alt File fully streamed and at least 10 MiB
+        Rotation->>Disk: Replace gzip archive
+        Rotation->>Disk: Truncate active log
+        Rotation->>Disk: Save zero position
+        Rotation-->>Streamer: Continue at zero
+    else Not ready
+        Rotation-->>Streamer: Preserve file and position
+    end

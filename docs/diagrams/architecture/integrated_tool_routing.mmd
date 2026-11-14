@@ -1,0 +1,12 @@
+flowchart LR
+    Request["Tool request"] --> Plane{"Browser or agent plane?"}
+    Plane --> Browser["Browser proxy"]
+    Plane --> Agent["Agent proxy"]
+    Browser --> FleetCheck{"Fleet shared mode?"}
+    FleetCheck -->|"yes"| Allowlist["Check method and path allowlist"]
+    Allowlist --> FleetResolver["Resolve shared Fleet upstream"]
+    FleetCheck -->|"no"| Resolver["Resolve configured tool upstream"]
+    Agent --> Resolver
+    Resolver --> MeshResolver["Apply MeshCentral rules when selected"]
+    FleetResolver --> Upstream["Tool upstream"]
+    MeshResolver --> Upstream

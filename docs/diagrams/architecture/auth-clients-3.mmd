@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Caller as Token refresh manager
+    participant Auth as AuthClient
+    participant Gateway as Gateway token endpoint
+    participant Deactivation as DeactivationService
+    Caller->>Auth: authenticate_with_refresh_token(refresh token)
+    Auth->>Gateway: POST form with refresh token grant
+    Gateway-->>Auth: HTTP response
+    Auth->>Deactivation: on_gateway_status(status)
+    alt successful status
+        Auth->>Auth: Decode AgentTokenResponse
+        Auth-->>Caller: Refreshed token response
+    else unsuccessful status
+        Auth-->>Caller: Error with HTTP status
+    end

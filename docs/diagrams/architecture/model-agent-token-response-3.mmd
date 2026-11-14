@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Refresh manager starts"] --> Immediate["Schedule immediate refresh"]
+    Immediate --> Suspended{"Tenant suspended?"}
+    Suspended -->|"yes"| Delay["Wait for next probe delay"]
+    Delay --> Reauth["Reauthenticate"]
+    Suspended -->|"no"| Wait["Wait for scheduled refresh"]
+    Wait --> Reauth
+    Reauth --> Success{"Response received?"}
+    Success -->|"yes"| Persist["Persist token pair and update shared access token"]
+    Persist --> Schedule["Schedule next refresh from response timing"]
+    Schedule --> Suspended
+    Success -->|"no"| Retry["Wait for retry interval"]
+    Retry --> Suspended

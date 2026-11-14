@@ -1,0 +1,13 @@
+classDiagram
+    class InvitationPageResponse {
+        List~Invitation~ items
+        int page
+        int size
+        long totalElements
+        int totalPages
+        boolean hasNext
+    }
+    class Invitation {
+        Individual invitation test DTO
+    }
+    InvitationPageResponse --> "many" Invitation : "items"

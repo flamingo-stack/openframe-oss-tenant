@@ -1,0 +1,14 @@
+flowchart LR
+    Command["Tool Update Command"] --> Handler["Tool Agent Update Service"]
+    Handler --> Runner["Updater Runner"]
+    Runner --> Prepare["Prepare Service Update"]
+    Prepare --> Stop["Stop Service and Tool Processes"]
+    Stop --> Backup["Create Binary Backup When Eligible"]
+    Backup --> Apply["Apply Download Configuration"]
+    Apply --> Binary["Write Replacement Binary"]
+    Apply --> Bundle["Extract macOS Application Bundle"]
+    Binary --> Finalize["Finalize Service Update"]
+    Bundle --> Finalize
+    Finalize --> Start["Start Operating System Service"]
+    Start --> Cleanup["Remove Backup"]
+    Apply -->|"apply failure"| Rollback["Restore Backup and Restart Service"]

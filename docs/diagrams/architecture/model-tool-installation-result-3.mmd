@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Sender as "Result producer"
+    participant Model as "ToolInstallationResult"
+    participant Serde as "Serde"
+    participant Receiver as "Result consumer"
+    Sender->>Model: Create with tool agent identifier
+    Model->>Serde: Serialize
+    Serde-->>Receiver: JSON with tool_agent_id
+    Receiver->>Model: Deserialize when required

@@ -1,0 +1,7 @@
+flowchart TD
+    Request["Batch request with known and unknown device"] --> Validate["Validate all device identifiers"]
+    Validate --> Valid{"All devices valid?"}
+    Valid -->|"No"| Error["Return DEVICE_NOT_FOUND"]
+    Error --> NoDispatch["Create no execution rows"]
+    Valid -->|"Yes"| Dispatch["Dispatch to distinct devices"]
+    Dispatch --> AgentResult["Record agent result"]

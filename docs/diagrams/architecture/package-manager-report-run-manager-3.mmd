@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Background Task Starts"] --> Wait["Wait for Tick or Wake Signal"]
+    Wait --> Attempt["Call Publisher Publish"]
+    Attempt --> Deadline{"Completed Before Deadline?"}
+    Deadline -->|"No"| Timeout["Log Report Timeout"]
+    Deadline -->|"Yes"| Result{"Publish Succeeded?"}
+    Result -->|"Yes"| Resume["Resume Waiting"]
+    Result -->|"No"| Failure["Log Publish Failure"]
+    Timeout --> Resume
+    Failure --> Resume
+    Resume --> Wait

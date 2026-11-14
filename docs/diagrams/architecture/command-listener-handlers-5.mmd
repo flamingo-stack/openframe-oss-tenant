@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Listener as Command Listener
+    participant Uninstall as Client Uninstall Handler
+    participant Broker as NATS
+    participant RemovalService as Deactivation Service
+    participant OS as Supported Operating System
+
+    Listener->>Uninstall: run(uninstall command)
+    alt macOS or Windows
+        Uninstall-->>Listener: Done
+        Listener-->>Broker: Publish done result
+        Listener->>Uninstall: remove agent
+        Uninstall->>RemovalService: Request uninstall
+        RemovalService->>OS: Begin removal workflow
+    else unsupported platform
+        Uninstall-->>Listener: Failed
+        Listener-->>Broker: Publish failure result
+    end

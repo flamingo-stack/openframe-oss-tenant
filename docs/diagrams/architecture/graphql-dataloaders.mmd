@@ -1,0 +1,12 @@
+flowchart LR
+    Client["GraphQL client"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> Api["OpenFrame API service"]
+    Api --> Fetcher["GraphQL data fetcher"]
+    Fetcher --> Registry["DGS DataLoader registry"]
+    Registry --> Loader["Graphql Dataloaders"]
+    Loader --> Service["Domain service"]
+    Loader --> Repository["Mongo repository"]
+    Service --> Store[("MongoDB")]
+    Repository --> Store
+    Loader --> Result["Ordered field values"]
+    Result --> Fetcher

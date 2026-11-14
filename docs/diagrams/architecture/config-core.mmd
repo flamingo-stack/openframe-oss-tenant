@@ -1,0 +1,11 @@
+flowchart LR
+    ClientRuntime["OpenFrame Client runtime"]
+    ConfigCore["Config Core"]
+    UpdatePaths["Tool and service update paths"]
+    Platform["Platform process and service controls"]
+    LegacyConsumers["Legacy configuration consumers"]
+
+    ClientRuntime -->|"uses"| ConfigCore
+    ConfigCore -->|"timing and retry policy"| UpdatePaths
+    UpdatePaths -->|"invokes"| Platform
+    ConfigCore -->|"default logging shape"| LegacyConsumers

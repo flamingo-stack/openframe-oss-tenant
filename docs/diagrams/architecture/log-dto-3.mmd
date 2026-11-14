@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Test as Test code
+    participant Mapper as Jackson mapper
+    participant Dto as OrganizationFilterOption
+    Test->>Mapper: Deserialize organization option
+    Mapper->>Dto: Create empty instance
+    Mapper->>Dto: Set id
+    Mapper->>Dto: Set name
+    alt Known property
+        Dto-->>Mapper: Property accepted
+    else Unknown property
+        Dto-->>Mapper: Property ignored
+    end
+    Mapper-->>Test: Return populated DTO

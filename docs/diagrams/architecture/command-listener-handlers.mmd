@@ -1,0 +1,16 @@
+flowchart LR
+    Server["OpenFrame control plane"] --> Nats["NATS machine command subject"]
+    Nats --> Listener["Command listener core"]
+    Listener --> Handlers["Command Listener Handlers"]
+    Handlers --> Flags["Feature flags service"]
+    Handlers --> Install["Tool installation service"]
+    Handlers --> ToolUpdate["Tool agent update service"]
+    Handlers --> ClientUpdate["Client update service"]
+    Handlers --> Deactivation["Deactivation service"]
+    Install --> LocalState["Tool records, files, processes"]
+    ToolUpdate --> LocalState
+    ClientUpdate --> LocalState
+    Flags --> LocalState
+    Deactivation --> LocalState
+    Listener --> Result["Delivery result and recovery state"]
+    Result --> Nats

@@ -1,0 +1,19 @@
+flowchart TD
+    Endpoint["Managed Endpoint"] --> Service["Service Management"]
+    Service --> Client["Openframe Client Core"]
+
+    Client --> LocalState["Local Configuration and Secured State"]
+    Client --> Registration["Registration and Authentication"]
+    Client --> Transport["HTTP and NATS Transport"]
+    Client --> Listeners["Command and Execution Listeners"]
+    Client --> Tools["Tool Lifecycle Services"]
+    Client --> Reporting["Logs, Metrics, Heartbeats, and Results"]
+
+    Registration --> Gateway["OpenFrame Gateway"]
+    Transport --> Gateway
+    Gateway --> Platform["OpenFrame Platform Services"]
+
+    Listeners --> Execution["Execution Service"]
+    Listeners --> Tools
+    Execution --> Reporting
+    Tools --> Reporting

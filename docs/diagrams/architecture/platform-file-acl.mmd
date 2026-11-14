@@ -1,0 +1,7 @@
+flowchart LR
+    ClientRuntime["OpenFrame Client Runtime"] --> UpdateWorkflow["Installer or Update Workflow"]
+    UpdateWorkflow --> FileAcl["Platform File Acl"]
+    UpdateWorkflow --> BinaryWriter["Binary Writer"]
+    FileAcl --> WindowsTools["Windows attrib, takeown, and icacls"]
+    BinaryWriter --> TargetBinary["Target Executable"]
+    WindowsTools --> TargetBinary

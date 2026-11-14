@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Monitoring task starts"] --> Wait["Wait for interval tick"]
+    Wait --> Timestamp["Record check timestamp gauge"]
+    Timestamp --> Check["Run directory health check"]
+    Check --> Decision{"Health check passed?"}
+    Decision -->|"yes"| Success["Log successful check"]
+    Success --> Wait
+    Decision -->|"no"| ErrorMetric["Record permission error"]
+    ErrorMetric --> Fix["Attempt permission repair"]
+    Fix --> Fixed{"Repair succeeded?"}
+    Fixed -->|"yes"| FixMetric["Record repair count"]
+    Fixed -->|"no"| FixError["Log repair failure"]
+    FixMetric --> Wait
+    FixError --> Wait

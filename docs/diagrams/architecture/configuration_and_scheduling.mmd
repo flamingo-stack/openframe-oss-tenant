@@ -1,0 +1,5 @@
+flowchart LR
+    Scheduler["Scheduled Method"] --> LockConfig["ShedLock Configuration"]
+    LockConfig --> KeyBuilder["Tenant Redis Key Builder"]
+    KeyBuilder --> Redis["Tenant Scoped Lock Key"]
+    Redis --> Execute["Single Scheduler Execution"]

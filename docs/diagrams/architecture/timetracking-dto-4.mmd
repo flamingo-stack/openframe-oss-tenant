@@ -1,0 +1,7 @@
+flowchart LR
+    Connection["Time-entry connection response"] -->|"contains"| EdgeOne["TimeEntryEdge"]
+    Connection -->|"contains"| EdgeTwo["TimeEntryEdge"]
+    EdgeOne -->|"contains"| NodeOne["TimeEntry node"]
+    EdgeOne -->|"contains"| CursorOne["Cursor"]
+    EdgeTwo -->|"contains"| NodeTwo["TimeEntry node"]
+    EdgeTwo -->|"contains"| CursorTwo["Cursor"]

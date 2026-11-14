@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller as "Package Manager Caller"
+    participant State as "State Classifier"
+    participant Manager as "Manager Identity"
+    participant Support as "Support Policy"
+
+    Caller->>State: Classify manager and console-user context
+    State->>Manager: Resolve presence asynchronously
+    State->>Support: Evaluate host compatibility
+    Support-->>State: Supported or unsupported
+    Manager-->>State: Present, absent, or unknown
+    State-->>Caller: Return manager state

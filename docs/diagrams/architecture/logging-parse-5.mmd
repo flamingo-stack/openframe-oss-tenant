@@ -1,0 +1,9 @@
+flowchart TD
+    Config["Logging Configuration"] --> Setup["Logging Setup"]
+    Setup --> File["Active Client Log File"]
+    File --> Parse["Logging Parse"]
+    Parse --> Rotation["Rotation and Offset Management"]
+    Parse --> Shipping["Log Shipping"]
+    Parse --> Streaming["NATS Log Streaming"]
+    Shipping --> Receiver["Platform Log Ingestion"]
+    Streaming --> Receiver

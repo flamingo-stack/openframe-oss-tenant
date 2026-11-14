@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Caller as "Calling service"
+    participant Mail as "HubspotApiEmailService"
+    participant Api as "HubSpot API"
+    Caller->>Mail: Request notification email
+    Mail->>Mail: Build link or custom properties
+    Mail->>Api: POST single-send request with bearer token
+    alt successful response
+        Api-->>Mail: 2xx response
+        Mail-->>Caller: Return after response body release
+    else unsuccessful response
+        Api-->>Mail: Error response body
+        Mail-->>Caller: Throw IllegalStateException
+    end

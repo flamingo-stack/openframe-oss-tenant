@@ -1,0 +1,10 @@
+flowchart TD
+    Received["Delivery Received"] --> Accepted["Ledger Accepts Delivery"]
+    Accepted --> Working["Handler Performs Work"]
+    Working --> Success{"Work Succeeded?"}
+    Success -->|"yes"| Completed["Create DONE Result"]
+    Success -->|"no"| Failed["Create FAILED Result"]
+    Completed --> Settled["Settle Result in Ledger"]
+    Failed --> Settled
+    Restart["Client Restart"] --> Recover["Recover In Flight Deliveries"]
+    Recover --> Interrupted["Settle Interrupted Delivery as FAILED"]

@@ -1,0 +1,9 @@
+flowchart LR
+    AgentConfig["Agent Configuration Service"] -->|"machine ID"| HeartbeatPublisher["Machine Heartbeat Publisher"]
+    HeartbeatModel["Machine Heartbeat Message"] -->|"serialized heartbeat"| HeartbeatPublisher
+    HeartbeatRunner["Machine Heartbeat Run Manager"] -->|"triggers"| HeartbeatPublisher
+    HeartbeatPublisher -->|"machine.{machineId}.heartbeat"| Nats["NATS"]
+    Nats -->|"machine.*.heartbeat"| HeartbeatListener["Machine Heartbeat Listener"]
+    HeartbeatListener -->|"machine ID and service timestamp"| StatusService["Machine Status Service"]
+    StatusService -->|"updates presence"| DeviceState["Device State"]
+    OfflineScheduler["Offline Detection Scheduler"] -->|"evaluates stale devices"| DeviceState

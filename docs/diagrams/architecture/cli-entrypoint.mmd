@@ -1,0 +1,10 @@
+flowchart TD
+    Process["OpenFrame Client process"] --> Console["Configure platform console"]
+    Console --> Parse["Parse Cli arguments"]
+    Parse --> Runtime["Create Tokio runtime"]
+    Runtime --> Select{"Command supplied?"}
+    Select -->|"no"| Legacy["Run legacy agent path"]
+    Select -->|"yes"| Dispatch["Dispatch selected workflow"]
+    Dispatch --> Install["Install or authenticate"]
+    Dispatch --> Health["Run doctor health check"]
+    Dispatch --> Service["Manage service or agent execution"]

@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Spring as "Spring application context"
+    participant Infra as "Mongo Infra Config"
+    participant Convert as "Conversion configuration"
+    participant Repo as "Repository configuration"
+    participant Indexes as "Mongo Index Config"
+    participant Database as "MongoDB"
+
+    Spring->>Infra: Evaluate Mongo enabled property
+    Infra->>Convert: Import custom conversions
+    Convert->>Convert: Register Decimal128, UTC dates, contributors
+    Infra->>Infra: Build mapping converter
+    Spring->>Repo: Select standard or tenant-aware repositories
+    Spring->>Indexes: Start at lifecycle phase zero
+    Indexes->>Database: Ensure required indexes and remove stale indexes
+    Database->>Indexes: Confirm index operations

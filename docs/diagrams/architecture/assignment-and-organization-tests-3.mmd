@@ -1,0 +1,11 @@
+flowchart TD
+    Create["Create organization"] --> ValidateCreate["Validate generated fields and addresses"]
+    ValidateCreate --> PublishDecision{"Later pipeline phase?"}
+    PublishDecision -->|"yes"| PublishContext["Publish organization and registration key"]
+    PublishDecision -->|"no"| TenantScope["Keep later lookups tenant-wide"]
+    ValidateCreate --> ListRead["List and retrieve organizations"]
+    ListRead --> Update["Update organization"]
+    Update --> Archive["Archive selected organization"]
+    ListRead --> QueryChecks["Sort and filter by last activity"]
+    ListRead --> ArchiveEligibility["Check archive eligibility"]
+    ListRead --> GlobalLookup["Resolve present and missing global identifiers"]

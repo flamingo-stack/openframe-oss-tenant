@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant ModeService as Remote Access Mode Service
+    participant Client as Remote Access Client
+    participant Config as Agent Configuration Service
+    participant Server as Tenant Client Service
+    ModeService->>Client: set_device_mode(mode)
+    Client->>Config: get_access_token()
+    Config-->>Client: access token
+    Client->>Server: PUT device mode with bearer token and mode JSON
+    Server-->>Client: HTTP status
+    Client-->>ModeService: terminal outcome or retryable error

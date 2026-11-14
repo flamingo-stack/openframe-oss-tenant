@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Service as "Application Service"
+    participant Context as "Tenant Context"
+    participant Repository as "Feature Flags Repository"
+    participant Mongo as "MongoDB"
+    Service->>Repository: findFirstBy
+    Context->>Repository: Apply current tenant criterion
+    Repository->>Mongo: Tenant-scoped feature flag lookup
+    Mongo-->>Repository: Overrides document or no document
+    Repository-->>Service: Optional feature flags

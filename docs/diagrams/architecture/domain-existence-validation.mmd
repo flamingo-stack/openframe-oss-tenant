@@ -1,0 +1,6 @@
+flowchart LR
+    ApiService["OpenFrame API Service"] --> Contract["DomainExistenceValidator contract"]
+    Contract --> DefaultValidator["DefaultDomainExistenceValidator"]
+    CustomValidator["Deployment specific validator bean"] -.->|"replaces default bean"| Contract
+    DefaultValidator --> DefaultResult["Always returns false"]
+    CustomValidator --> CustomResult["Deployment defined existence result"]

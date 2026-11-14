@@ -1,0 +1,7 @@
+flowchart TD
+    Bootstrap["Config Server Application"] --> Core["Openframe Config Core"]
+    Core --> CloudConfig["Spring Cloud Config Server"]
+    Core --> Logback["Logging XML Resources"]
+    CloudConfig --> GitRepo["Tenant Git Repository"]
+    CloudConfig --> SharedConfig["Base and Profile Configuration"]
+    Logback --> Consumers["Openframe Service Applications"]

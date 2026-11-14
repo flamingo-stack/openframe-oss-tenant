@@ -1,0 +1,11 @@
+flowchart TD
+    Payload["Incoming JSON payload"] --> Parse["Deserialize execution message"]
+    Parse --> Variant{"Message variant?"}
+    Variant -->|"Command"| CommandRequest["Create one command request"]
+    Variant -->|"Script or routed script"| ScriptRequest["Create one script request"]
+    Variant -->|"Scheduled script"| Items["Iterate scheduled script items"]
+    Items --> ManyRequests["Create one request per script"]
+    CommandRequest --> Normalized["Normalized execution request"]
+    ScriptRequest --> Normalized
+    ManyRequests --> Normalized
+    Normalized --> Execute["Execution service"]

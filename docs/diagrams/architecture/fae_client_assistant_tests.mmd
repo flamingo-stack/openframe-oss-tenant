@@ -1,0 +1,17 @@
+flowchart TD
+    TestRunner["JUnit test runner"] --> Base["FaeBaseTest"]
+    Base --> AgentSession["Agent session"]
+    AgentSession --> Credentials["Target machine credentials"]
+    Credentials --> ChatApi["Client chat API"]
+    Base --> Dialog["Client dialog"]
+    Dialog --> Runner["Assistant runner"]
+    Runner --> Fae["Fae client assistant"]
+    Fae --> ClientTools["Client tool providers"]
+    ClientTools --> Rmm["RMM command execution"]
+    ClientTools --> Fleet["Fleet query execution"]
+    ClientTools --> Search["Web search"]
+    TestRunner --> Ssh["Independent SSH verifier"]
+    TestRunner --> AdminApis["ADMIN verification APIs"]
+    Rmm --> Endpoint["Bound endpoint"]
+    Ssh --> Endpoint
+    AdminApis --> Tenant["Tenant entities and settings"]

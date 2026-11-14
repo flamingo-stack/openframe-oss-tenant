@@ -1,0 +1,8 @@
+flowchart LR
+    Caller["Organization query caller"] --> Contract["Custom Organization Repository"]
+    Contract --> Implementation["Custom Organization Repository Implementation"]
+    Implementation --> QueryBuilder["Filter and search query builder"]
+    Implementation --> CursorPaging["Keyset pagination and sorting"]
+    QueryBuilder --> MongoTemplate["Spring Mongo Template"]
+    CursorPaging --> MongoTemplate
+    MongoTemplate --> Organizations[("Organization collection")]

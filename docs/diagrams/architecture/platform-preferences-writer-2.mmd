@@ -1,0 +1,17 @@
+flowchart TD
+    Start["Receive Bundle ID and Preference Iterable"] --> Collect["Collect Preference Pairs"]
+    Collect --> Empty{"Pairs Empty?"}
+    Empty -->|"yes"| Complete["Return Success"]
+    Empty -->|"no"| User["Resolve Console User"]
+    User --> UserFound{"User Found?"}
+    UserFound -->|"no"| UserError["Return Contextual Error"]
+    UserFound -->|"yes"| NextPair["Select Next Pair"]
+    NextPair --> Primary["Run launchctl asuser Write"]
+    Primary --> PrimaryResult{"Primary Exit Success?"}
+    PrimaryResult -->|"yes"| MorePairs{"More Pairs?"}
+    PrimaryResult -->|"no"| Retry["Run sudo User Write"]
+    Retry --> RetryResult{"Fallback Exit Success?"}
+    RetryResult -->|"yes"| MorePairs
+    RetryResult -->|"no"| WriteError["Return Write Error"]
+    MorePairs -->|"yes"| NextPair
+    MorePairs -->|"no"| Complete

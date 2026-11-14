@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Test plan starts"] --> Reset{"Previous report sent?"}
+    Reset -->|"yes"| Clear["Clear counters and detail records"]
+    Reset -->|"no"| Collect["Receive execution events"]
+    Clear --> Collect
+    Collect --> Status{"Outcome status"}
+    Status -->|"successful test"| Pass["Increment passed and append pass detail"]
+    Status -->|"failed"| Fail["Increment failed and append failure detail"]
+    Status -->|"aborted"| Abort["Count affected cases and append skip detail"]
+    Status -->|"skipped"| Skip["Count affected cases and append skip detail"]
+    Pass --> Collect
+    Fail --> Collect
+    Abort --> Collect
+    Skip --> Collect

@@ -1,0 +1,8 @@
+flowchart LR
+    Service["Application Service"] --> AgentRepo["AgentLogKeyRepository"]
+    Service --> AuthRepo["CustomAuthUserRepository"]
+    AuthRepo --> AuthImpl["CustomAuthUserRepositoryImpl"]
+    AgentRepo --> Mongo["MongoDB"]
+    AuthImpl --> Mongo
+    Mongo --> LogKey["AgentLogKey documents"]
+    Mongo --> AuthUser["AuthUser documents"]

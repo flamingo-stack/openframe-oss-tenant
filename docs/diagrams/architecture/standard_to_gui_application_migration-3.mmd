@@ -1,0 +1,15 @@
+flowchart TD
+    Start["Begin macOS migration"] --> OldPath["Resolve old agent path"]
+    OldPath --> Exists{"Old binary exists?"}
+    Exists -->|"yes"| Remove["Attempt to remove old binary"]
+    Exists -->|"no"| Download
+    Remove --> Download["Download and extract artifact into Applications"]
+    Download --> Resolve["Resolve application bundle or executable path"]
+    Resolve --> Record["Return GuiApp installation record"]
+    Record --> Preferences{"Bundle identifier present?"}
+    Preferences -->|"yes"| WritePrefs["Resolve arguments and write preferences"]
+    Preferences -->|"no"| ConsoleUser
+    WritePrefs --> ConsoleUser{"Console user available?"}
+    ConsoleUser -->|"no"| Complete["Leave application installed"]
+    ConsoleUser -->|"yes"| Launch["Launch as console user"]
+    Launch --> Complete

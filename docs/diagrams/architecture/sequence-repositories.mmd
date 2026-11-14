@@ -1,0 +1,11 @@
+flowchart TD
+    Application["Service code"] --> Contract["SequenceRepository contract"]
+    Property["Tenant isolation property"] --> Selection{"Tenant isolation enabled?"}
+    Selection -->|"false or missing"| DefaultRepository["Default Sequence Repository"]
+    Selection -->|"true"| TenantRepository["Tenant Sequence Repository"]
+    Contract --> DefaultRepository
+    Contract --> TenantRepository
+    DefaultRepository --> MongoTemplate["MongoTemplate"]
+    TenantRepository --> TenantTemplate["Tenant Aware Mongo Template"]
+    MongoTemplate --> Collection["TenantSequence collection"]
+    TenantTemplate --> Collection

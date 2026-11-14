@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Caller
+    participant Extractor as "Platform Dmg Extractor"
+    participant Filesystem as "Temporary filesystem"
+    participant Hdiutil as "macOS hdiutil"
+    participant Copy as "macOS cp"
+    Caller->>Extractor: extract_all(bytes, target, source path)
+    Extractor->>Filesystem: Write uniquely named temporary DMG
+    Extractor->>Hdiutil: Attach read-only image at temporary mount point
+    Hdiutil-->>Extractor: Mounted volume
+    Extractor->>Extractor: Select mounted root or configured source
+    Extractor->>Filesystem: Remove existing destination item when applicable
+    Extractor->>Copy: Copy selected source recursively to target
+    Copy-->>Extractor: Copy result
+    Extractor->>Hdiutil: Detach mount point
+    Extractor->>Filesystem: Remove temporary DMG
+    Extractor-->>Caller: Original copy result

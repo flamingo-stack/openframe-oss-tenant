@@ -1,0 +1,11 @@
+flowchart LR
+    ToolWorkflow["Tool workflow"] --> Detector["Platform Installation Detector"]
+    DownloadConfig["DownloadConfiguration"] --> Detector
+    DirectoryManager["DirectoryManager"] --> Detector
+    Detector --> InstallType{"Service installation type?"}
+    InstallType -->|"no"| NoResult["None"]
+    InstallType -->|"yes"| ServiceName{"Service name present?"}
+    ServiceName -->|"no"| NoResult
+    ServiceName -->|"yes"| PlatformCheck["Platform-specific registration check"]
+    PlatformCheck -->|"detected"| ServiceResult["Installation Service metadata"]
+    PlatformCheck -->|"not detected"| NoResult

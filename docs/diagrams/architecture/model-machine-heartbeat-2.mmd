@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Runner as "Heartbeat Run Manager"
+    participant Publisher as "Heartbeat Publisher"
+    participant Config as "Agent Configuration Service"
+    participant Nats as "NATS"
+    participant Listener as "Heartbeat Listener"
+    participant Status as "Machine Status Service"
+    Runner->>Publisher: interval tick
+    Publisher->>Config: get machine ID
+    Config-->>Publisher: machine ID
+    Publisher->>Publisher: create empty heartbeat message
+    Publisher->>Nats: publish machine ID heartbeat subject
+    Nats-->>Listener: deliver matching message
+    Listener->>Listener: extract machine ID and capture server time
+    Listener->>Status: process heartbeat

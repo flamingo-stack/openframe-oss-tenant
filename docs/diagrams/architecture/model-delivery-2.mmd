@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Platform as Platform Service
+    participant Broker as NATS Broker
+    participant Client as Endpoint Client
+    participant Store as Result Store
+    Platform->>Broker: Publish delivery
+    Broker->>Client: Deliver machine instruction
+    Client->>Store: Record acknowledgement result
+    Store->>Broker: Publish ACKED result
+    Client->>Client: Execute delivery work
+    Client->>Store: Record DONE or FAILED result
+    Store->>Broker: Publish final result
+    Broker->>Platform: Deliver machine result message

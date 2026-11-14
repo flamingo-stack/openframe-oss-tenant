@@ -1,0 +1,7 @@
+flowchart TD
+    Setup["Test Setup"] --> SelectPlan["Select TenantPlan"]
+    Setup --> SelectStatus["Select TenantStatus"]
+    SelectPlan --> BuildDto["Build Tenant Test DTO"]
+    SelectStatus --> BuildDto
+    BuildDto --> ExerciseFlow["Exercise Test Flow"]
+    ExerciseFlow --> AssertResult["Assert Tenant-Aware Result"]

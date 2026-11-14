@@ -1,0 +1,12 @@
+flowchart TD
+    Request["Client update message"] --> UpdateService["OpenFrame Client Update Service"]
+    UpdateService --> State["UpdateState"]
+    UpdateService --> StateService["Update State Service"]
+    StateService --> StateFile["Secured update_state.json"]
+    UpdateService --> Updater["Platform updater"]
+    Updater --> StateFile
+    Startup["Client startup"] --> Handler["Update Handler Service"]
+    Handler --> StateService
+    Handler --> ClientInfo["Client information service"]
+    Handler --> Cleanup["Update cleanup service"]
+    Handler --> KnownGood["Last-known-good service"]

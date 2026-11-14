@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> Acked: acknowledge matching dispatch
+    Pending --> Failed: failure or terminal error
+    Pending --> Cancelled: cancellation
+    Acked --> Done: completion matching dispatch
+    Acked --> Failed: reported failure
+    Pending --> Pending: postpone or republish
+    Acked --> Pending: schedule rerun
+    Failed --> Pending: schedule rerun
+    Done --> [*]
+    Cancelled --> [*]
+    Failed --> [*]

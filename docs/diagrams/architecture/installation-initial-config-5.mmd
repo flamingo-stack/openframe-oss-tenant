@@ -1,0 +1,6 @@
+flowchart LR
+    Install["Install client agent"] --> Initial["Installation Initial Config"]
+    Initial --> Persisted["Persisted bootstrap configuration"]
+    Persisted --> Auth["Initial authentication"]
+    Auth --> Registration["Agent registration"]
+    Registration --> Runtime["Running client services"]

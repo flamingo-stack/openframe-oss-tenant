@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Caller
+    participant Publisher as Nats Message Publisher
+    participant Manager as NATS Connection Manager
+    participant JetStream
+    Caller->>Publisher: publish acknowledged subject and bytes
+    Publisher->>Manager: get client
+    Manager-->>Publisher: Active client
+    Publisher->>JetStream: Publish bytes to subject
+    JetStream-->>Publisher: Publish acknowledgement future
+    Publisher->>JetStream: Await acknowledgement
+    JetStream-->>Publisher: Acknowledged or error
+    Publisher-->>Caller: Success or contextual error

@@ -1,0 +1,16 @@
+flowchart TD
+    Input["Script parameters"] --> Shell{"Supported shell?"}
+    Shell -->|"powershell"| PowerShell["PowerShell interpreter"]
+    Shell -->|"cmd"| Cmd["Command prompt interpreter"]
+    Shell -->|"other"| StartError["Start error result"]
+    PowerShell --> TempFile["Create temporary script"]
+    Cmd --> TempFile
+    TempFile --> Readable{"File readable?"}
+    Readable -->|"no"| StartError
+    Readable -->|"yes"| Privilege{"Requested privilege"}
+    Privilege -->|"agent"| NormalRun["Normal process runner"]
+    Privilege -->|"user or elevated user"| InteractiveRun["Interactive user runner"]
+    NormalRun --> ExecResult["Execution result"]
+    InteractiveRun --> ExecResult
+    StartError --> ExecResult
+    ExecResult --> Cleanup["Temporary-file cleanup guard"]

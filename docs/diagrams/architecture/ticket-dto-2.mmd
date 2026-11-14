@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Test as "Ticket Test"
+    participant Api as "Ticket API"
+    participant Json as "JSON Response"
+    participant Dto as "Ticket Dto"
+
+    Test->>Api: Request ticket data
+    Api->>Json: Return ticket response
+    Json->>Dto: Deserialize known fields
+    Note over Dto: Unknown fields are ignored
+    Dto->>Test: Provide typed assertions

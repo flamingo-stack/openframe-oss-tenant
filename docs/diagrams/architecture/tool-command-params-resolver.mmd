@@ -1,0 +1,9 @@
+flowchart LR
+    ToolDefinition["Tool command definition"] --> Resolver["Tool Command Params Resolver"]
+    InitialConfig["Initial Configuration Service"] --> Resolver
+    AgentConfig["Agent Configuration Service"] --> Resolver
+    DirectoryManager["Directory Manager"] --> Resolver
+    Resolver --> ResolvedArgs["Resolved command arguments"]
+    ResolvedArgs --> ToolRuntime["Tool runtime and process launch"]
+    DirectoryManager --> ToolAssets["Per-tool asset directory"]
+    DirectoryManager --> SecuredStorage["Secured client storage"]

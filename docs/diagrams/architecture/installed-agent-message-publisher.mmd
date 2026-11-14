@@ -1,0 +1,7 @@
+flowchart LR
+    ToolUpdateService["Tool Agent Update Service"] -->|"publishes installed versions"| Publisher["Installed Agent Message Publisher"]
+    Publisher -->|"builds message"| Payload["Installed Agent Message"]
+    Publisher -->|"delegates publish"| NatsPublisher["NATS Message Publisher"]
+    NatsPublisher -->|"publishes and flushes"| Nats["NATS subject"]
+    Nats -->|"machine.*.installed-agent"| Listener["Installed Agent Listener"]
+    Listener -->|"records installed agent"| ClientService["Client service"]

@@ -1,0 +1,13 @@
+flowchart TD
+    Request["Launch Request"] --> Exists{"Executable exists?"}
+    Exists -->|"no"| Missing["Return executable not found error"]
+    Exists -->|"yes"| Bundle{"Path is inside an app bundle?"}
+    Bundle -->|"yes"| OpenBundle["Launch with launchctl and open"]
+    Bundle -->|"no"| LaunchBinary["Launch executable with launchctl"]
+    OpenBundle --> LaunchctlResult{"Launchctl spawned?"}
+    LaunchBinary --> LaunchctlResult
+    LaunchctlResult -->|"yes"| Started["Return child process"]
+    LaunchctlResult -->|"no"| Fallback["Launch with sudo as username"]
+    Fallback --> FallbackResult{"Fallback spawned?"}
+    FallbackResult -->|"yes"| Started
+    FallbackResult -->|"no"| LaunchError["Return contextual launch error"]

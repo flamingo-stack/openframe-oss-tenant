@@ -1,0 +1,7 @@
+flowchart LR
+    Mutation["Ticket transition"] --> Resolve["Resolve source and destination status"]
+    Resolve --> Update["Persist ticket current status"]
+    Update --> History["Build status history snapshot"]
+    History --> Save["Attempt history save"]
+    Save -->|"success"| Complete["Transition complete"]
+    Save -->|"failure"| Complete

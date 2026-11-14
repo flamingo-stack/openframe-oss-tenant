@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Test as "Test client"
+    participant API as "External API"
+    participant Mapper as "Jackson mapper"
+    participant DTO as "External Tool Dto"
+
+    Test->>API: Request tool configuration
+    API->>Test: Return JSON response
+    Test->>Mapper: Deserialize response body
+    Mapper->>DTO: Populate recognized fields
+    DTO-->>Test: Response object for assertions
+    Note over Mapper,DTO: Unknown JSON fields are ignored

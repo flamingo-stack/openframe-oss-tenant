@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Service as "Service Application"
+    participant Logging as "Logging Controller"
+    participant Resource as "Classpath XML Resource"
+    Service->>Logging: GET /logging/file.xml
+    Logging->>Logging: Validate file name
+    Logging->>Resource: Read logging file
+    Resource-->>Logging: XML content
+    Logging->>Logging: Rewrite logging includes as server URLs
+    Logging-->>Service: application/xml response

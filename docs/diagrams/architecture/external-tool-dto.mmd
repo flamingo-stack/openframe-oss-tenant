@@ -1,0 +1,7 @@
+flowchart LR
+    ExternalApi["External API tool endpoint"] -->|"JSON response"| Jackson["Jackson deserialization"]
+    Jackson --> Credentials["Tool Credentials Response"]
+    Jackson --> Endpoint["Tool Url Response"]
+    Credentials --> ApiKey["Tool API Key Response"]
+    TestService["OpenFrame test service"] -->|"uses"| Credentials
+    TestService -->|"uses"| Endpoint

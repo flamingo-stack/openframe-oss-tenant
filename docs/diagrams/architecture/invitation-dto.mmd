@@ -1,0 +1,7 @@
+flowchart LR
+    TestCase["Invitation-focused test"] --> ApiClient["Test API client"]
+    ApiClient --> Endpoint["GET /invitations"]
+    Endpoint --> Response["Invitation page JSON"]
+    Response --> Dto["InvitationPageResponse"]
+    Dto --> Items["List of Invitation items"]
+    Dto --> Metadata["Pagination metadata"]

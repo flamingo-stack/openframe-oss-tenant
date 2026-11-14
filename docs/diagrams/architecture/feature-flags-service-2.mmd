@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Agent starts"] --> ReadState["Read feature flag state file"]
+    ReadState --> ParseState{"State readable?"}
+    ParseState -->|"yes"| Resolve["Resolve each supported feature"]
+    ParseState -->|"no"| DefaultState["Use empty default state"]
+    DefaultState --> Resolve
+    Resolve --> EntryPresent{"Matching flag entry exists?"}
+    EntryPresent -->|"no"| DefaultOff["Use disabled default"]
+    EntryPresent -->|"yes"| MeetsVersion{"Enabled and minimum version met?"}
+    MeetsVersion -->|"yes"| Enable["Include feature in effective flags"]
+    MeetsVersion -->|"no"| DefaultOff
+    Enable --> Running["Expose immutable running flags"]
+    DefaultOff --> Running

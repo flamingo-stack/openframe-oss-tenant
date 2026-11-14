@@ -1,0 +1,8 @@
+flowchart LR
+    TestCode["Test code"] -->|"deserializes AI dialog response"| AiDto["Ai Dto"]
+    AiDto --> DialogEdge["DialogEdge"]
+    DialogEdge --> DialogResponse["Dialog response node"]
+    DialogResponse --> MessageOwner["MessageOwner"]
+    DialogResponse --> AskOption["AskOption list for questions"]
+    DialogResponse --> ContextReference["ContextItemReference"]
+    ContextReference --> ContextType["ContextItemType"]

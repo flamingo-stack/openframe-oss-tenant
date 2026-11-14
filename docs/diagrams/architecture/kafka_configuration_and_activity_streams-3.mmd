@@ -1,0 +1,6 @@
+flowchart TD
+    Receive["Receive Kafka record"] --> Decode["Bind Debezium payload"]
+    Decode --> Convert["Convert message type header"]
+    Convert --> Delegate["Call generic JSON message processor"]
+    Unknown["Unknown header value"] --> NullType["Use null message type"]
+    NullType --> Delegate

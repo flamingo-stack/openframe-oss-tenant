@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Executor as "Execution Service"
+    participant Store as "Result Store Core"
+    participant Runner as "Result Outbox Run Manager"
+    participant Broker as "NATS"
+    Executor->>Store: Journal scheduled batch
+    Executor->>Store: Mark item started
+    Executor->>Executor: Run script
+    Executor->>Store: Complete with serialized result
+    Note over Store: Write outbox entry and remove journal record in one transaction
+    Runner->>Store: Read pending keys
+    Runner->>Store: Load payload
+    Runner->>Broker: Publish raw or acknowledged result
+    Broker-->>Runner: Publish succeeds
+    Runner->>Store: Remove metadata and payload

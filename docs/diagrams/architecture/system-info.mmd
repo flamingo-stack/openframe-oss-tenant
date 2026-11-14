@@ -1,0 +1,10 @@
+flowchart LR
+    Caller["Client Agent Caller"] -->|"collect_metrics()"| Collector["System Info"]
+    Collector -->|"lock and refresh"| Sysinfo["sysinfo System"]
+    Collector -->|"read capacity"| DiskInfo["sys_info Disk Info"]
+    Sysinfo --> CpuMemory["CPU and Memory Values"]
+    DiskInfo --> DiskValues["Disk Values or Zeroes"]
+    CpuMemory --> Metrics["System Metrics"]
+    DiskValues --> Metrics
+    Collector -->|"timestamp sample"| Metrics
+    Metrics --> Caller

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Runtime as Client Runtime
+    participant Info as Client Info Service
+    participant Store as Local JSON Record
+    Runtime->>Info: reconcile version with running binary version
+    Info->>Store: read client record
+    alt stored version differs
+        Info->>Info: set running version and timestamp
+        Info->>Store: atomically save updated record
+        Info-->>Runtime: reconciliation complete
+    else versions match
+        Info-->>Runtime: no write required
+    end

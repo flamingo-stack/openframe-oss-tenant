@@ -1,0 +1,14 @@
+flowchart TD
+    Constructor["Construct Service"] --> EnsureDirs["Ensure Secured Directory Exists"]
+    EnsureDirs --> ResolvePath["Resolve Client Info Record Path"]
+    ResolvePath --> Ready["Service Ready"]
+
+    Caller["Client Runtime or Update Flow"] --> ReadInfo["Read Client Info"]
+    ReadInfo --> ReadFile["Read JSON or Detect Missing File"]
+    ReadFile --> ValidFile{"Valid Record?"}
+    ValidFile -->|"yes"| ExistingInfo["Use Persisted Record"]
+    ValidFile -->|"no or missing"| DefaultInfo["Use Default Record or Quarantine Invalid File"]
+    ExistingInfo --> Mutate["Apply Requested Change"]
+    DefaultInfo --> Mutate
+    Mutate --> Serialize["Serialize Formatted JSON"]
+    Serialize --> Persist["Atomically Replace Record"]

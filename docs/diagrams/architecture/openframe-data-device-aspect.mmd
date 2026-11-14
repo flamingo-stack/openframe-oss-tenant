@@ -1,0 +1,21 @@
+flowchart LR
+    Repository["Repository or Machine Writer"]
+    Aspect["Machine Tag Event Aspect"]
+    Service["Machine Tag Event Service Implementation"]
+    MachineRepo["Machine Repository"]
+    TagAssignmentRepo["Tag Assignment Repository"]
+    TagRepo["Tag Repository"]
+    TenantProvider["Tenant ID Provider"]
+    Producer["Retrying Kafka Producer"]
+    Topic["Outbound Devices Topic"]
+    Consumer["Device Projection Consumer"]
+
+    Repository -->|"save, saveAll, update, or delete"| Aspect
+    Aspect -->|"delegates event handling"| Service
+    Service -->|"loads machine"| MachineRepo
+    Service -->|"loads assignments"| TagAssignmentRepo
+    Service -->|"loads tags"| TagRepo
+    Service -->|"adds tenant context"| TenantProvider
+    Service -->|"publishes complete snapshot"| Producer
+    Producer --> Topic
+    Topic --> Consumer

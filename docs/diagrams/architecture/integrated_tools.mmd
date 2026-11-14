@@ -1,0 +1,7 @@
+flowchart TD
+    AllTools["Unfiltered Tool List"] --> Facets["Distinct Sorted Facets"]
+    AllTools --> Enabled["Enabled and Disabled Partitions"]
+    Facets --> FacetQuery["Facet Filter Query"]
+    FacetQuery --> ExactSet["Exact Matching Tool Set"]
+    AllTools --> Search["Case Insensitive Search"]
+    Search --> Combined["Search and Filter Intersection"]

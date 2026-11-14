@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Caller
+    participant Publisher as Nats Message Publisher
+    participant Manager as NATS Connection Manager
+    participant Nats as NATS server
+    Caller->>Publisher: publish subject and serializable value
+    Publisher->>Publisher: Serialize payload as JSON
+    Publisher->>Manager: get client
+    Manager-->>Publisher: Active client or error
+    Publisher->>Nats: Publish subject and JSON bytes
+    Publisher->>Nats: Flush client
+    Nats-->>Publisher: Flush complete or error
+    Publisher-->>Caller: Success or contextual error

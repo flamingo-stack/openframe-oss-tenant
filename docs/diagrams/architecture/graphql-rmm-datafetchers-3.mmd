@@ -1,0 +1,7 @@
+flowchart TD
+    Mutation["Software install or update mutation"] --> Identity["Authenticated user ID"]
+    Mutation --> Management["Software management service"]
+    Management --> Dispatch["Device dispatch"]
+    Dispatch --> Results["Software action and execution records"]
+    Results --> ActionQuery["Software action query"]
+    Results --> ExecutionQuery["Software execution query"]

@@ -1,0 +1,8 @@
+flowchart LR
+    Request["Execution request"] --> Service["Execution service"]
+    Service --> Params["Script parameters"]
+    Params --> Executor["Windows Script Executor"]
+    Executor --> Result["Execution result"]
+    Result --> Service
+    Service --> RmmResult["RMM result"]
+    RmmResult --> Delivery["Result delivery path"]

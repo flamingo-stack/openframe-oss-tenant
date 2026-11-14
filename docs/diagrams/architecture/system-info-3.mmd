@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant A as Agent Task A
+    participant S as System Info
+    participant B as System Backend
+    participant D as Disk Provider
+    participant M as Metrics Value
+    A->>S: collect_metrics()
+    S->>S: Acquire mutex
+    S->>B: Refresh CPU and memory
+    B-->>S: Current CPU and memory
+    S->>D: Read disk information
+    D-->>S: Capacity or error
+    S->>M: Create timestamped sample
+    M-->>A: Result<SystemMetrics>

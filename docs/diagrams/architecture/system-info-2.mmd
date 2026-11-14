@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Caller Requests Metrics"] --> Lock["Lock System Snapshot"]
+    Lock --> RefreshCpu["Refresh CPU Data"]
+    RefreshCpu --> RefreshMemory["Refresh Memory Data"]
+    RefreshMemory --> ReadCore["Read CPU and Memory"]
+    ReadCore --> ReadDisk["Attempt Disk Discovery"]
+    ReadDisk --> DiskOk{"Disk Data Available?"}
+    DiskOk -->|"yes"| Convert["Convert Disk Values to Bytes"]
+    DiskOk -->|"no"| DefaultDisk["Use Zero Disk Values"]
+    Convert --> Timestamp["Read Unix Timestamp"]
+    DefaultDisk --> Timestamp
+    Timestamp --> Build["Build System Metrics"]
+    Build --> Return["Return Result"]

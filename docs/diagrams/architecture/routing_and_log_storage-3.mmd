@@ -1,0 +1,12 @@
+flowchart TD
+    Event["Deserialized Debezium message"] --> Tenant{"Tenant ID present?"}
+    Tenant -->|"no"| Reject["Log error and drop event"]
+    Tenant -->|"yes"| Destination{"Selected destination"}
+    Destination --> CassandraRoute["Cassandra route"]
+    Destination --> LokiRoute["Loki route"]
+    Destination --> KafkaRoute["Kafka and Pinot route"]
+    KafkaRoute --> Visible{"Visible flag true?"}
+    Visible -->|"no"| KafkaDrop["Drop event"]
+    Visible -->|"yes"| KafkaMap["Map and publish"]
+    CassandraRoute --> StorageMap["Map and save"]
+    LokiRoute --> StorageMap

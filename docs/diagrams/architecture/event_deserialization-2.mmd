@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Kafka
+    participant Deserializer
+    participant Mapper
+    participant Output
+    Kafka->>Deserializer: Common Debezium message
+    Deserializer->>Deserializer: Read after payload
+    alt Missing after payload
+        Deserializer-->>Output: No normalized event
+    else Event payload present
+        Deserializer->>Deserializer: Extract source fields and effective timestamp
+        Deserializer->>Deserializer: Build stable event identifier
+        Deserializer->>Mapper: Map source type to unified type
+        Mapper-->>Deserializer: Unified event type
+        Deserializer->>Deserializer: Assemble details and raw payload
+        Deserializer-->>Output: Deserialized Debezium message
+    end

@@ -1,0 +1,8 @@
+flowchart LR
+    Operator["Platform Operator"] --> Management["Openframe Management Service"]
+    Management --> Mongo["MongoDB Data Services"]
+    Management --> Redis["Redis Distributed Locks"]
+    Management --> Nats["NATS JetStream"]
+    Management --> Fleet["Fleet MDM"]
+    Management --> Catalogs["Homebrew and winget Catalogs"]
+    Management --> Pinot["Device Event Projection"]

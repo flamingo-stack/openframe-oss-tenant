@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Worker as "Host Facts Backfill Worker"
+    participant Repository as "Machine Repositories"
+    participant Mongo as "MongoDB"
+    Worker->>Repository: Find due machines for tenant
+    Repository->>Mongo: Query live machines with missing host facts
+    Mongo-->>Repository: Ordered limited machine page
+    Repository-->>Worker: Machines requiring enrichment
+    Worker->>Repository: Mark host facts checked
+    Repository->>Mongo: Direct timestamp update
+    Note over Repository,Mongo: No machine save or publishing event

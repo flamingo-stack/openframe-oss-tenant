@@ -1,0 +1,13 @@
+flowchart LR
+    TestRunner["JUnit Test Runner"] --> Harness["Assistant Test Harness"]
+    Harness --> Fae["Fae Client Assistant"]
+    Harness --> Mingo["Mingo Admin Assistant"]
+    Fae --> AgentSession["Machine Bound AGENT Session"]
+    Mingo --> AdminSession["ADMIN Session"]
+    Fae --> ProductApi["OpenFrame Product APIs"]
+    Mingo --> ProductApi
+    ProductApi --> AssistantServices["Assistant Services and Tools"]
+    AssistantServices --> ManagedDevice["Managed Device"]
+    TestRunner --> Verification["Independent Verification"]
+    Verification --> ManagedDevice
+    Verification --> ProductApi

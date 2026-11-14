@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Caller as "Tool management caller"
+    participant Ops as "Tool Ops"
+    participant Lock as "Tool mutex"
+    participant State as "Operation state"
+    Caller->>Ops: try_lock(tool agent ID)
+    Ops->>Lock: try_lock_owned()
+    alt lock unavailable
+        Lock-->>Ops: contention
+        Ops-->>Caller: Busy
+    else lock acquired
+        Lock-->>Ops: owned guard
+        Ops-->>Caller: ToolLock
+        Caller->>Ops: mark_busy()
+        Ops->>State: insert busy tool ID
+        Ops-->>Caller: ToolOpGuard
+        Note over Caller: Execute installation, update, or restart work
+        Caller->>Ops: drop ToolOpGuard
+        Ops->>State: remove busy tool ID
+        Ops->>State: insert released tool ID
+        Note over Ops,Lock: Guard drop releases the owned mutex
+    end

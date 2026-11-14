@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Publisher as "Publishing Framework"
+    participant Spec as "OrganizationAggregateSpec"
+    participant Projection as "OrganizationOnTicketsProjection"
+    participant Tickets as "TicketProjectionRepository"
+    Publisher->>Spec: Convert organization to event
+    Spec->>Publisher: OrganizationEvent and projection list
+    Publisher->>Projection: Apply tenant-scoped published record
+    Projection->>Tickets: Update stale ticket organization names
+    Tickets->>Projection: Modified ticket count

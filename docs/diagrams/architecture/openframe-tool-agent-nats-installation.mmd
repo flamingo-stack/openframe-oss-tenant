@@ -1,0 +1,12 @@
+flowchart LR
+    CommandDefinition["Tool command arguments"] --> Resolver["Tool Command Params Resolver"]
+    Resolver -->|"placeholder present"| Retriever["Fleet MDM Secret Retriever"]
+    Resolver -->|"no placeholder"| ResolvedArgs["Unchanged arguments"]
+    Retriever --> ToolConfig["Integrated Tool Service"]
+    Retriever --> ToolUrl["Tool URL Service"]
+    ToolConfig --> FleetClient["Fleet MDM Client"]
+    ToolUrl --> FleetClient
+    FleetClient --> FleetApi["Fleet MDM API"]
+    FleetApi --> Secret["Enrollment secret"]
+    Secret --> Resolver
+    Resolver --> ResolvedArgs

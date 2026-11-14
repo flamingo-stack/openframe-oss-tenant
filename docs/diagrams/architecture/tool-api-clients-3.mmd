@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Get tool asset"] --> BuildUrl["Build asset URL"]
+    BuildUrl --> ReadToken["Read access token"]
+    ReadToken --> TokenReady{"Token available?"}
+    TokenReady -->|"no"| TokenError["Return configuration error"]
+    TokenReady -->|"yes"| SendRequest["Send authenticated GET request"]
+    SendRequest --> RequestReady{"Request completed?"}
+    RequestReady -->|"no"| RequestError["Return request error"]
+    RequestReady -->|"yes"| StatusOk{"Success status?"}
+    StatusOk -->|"no"| StatusError["Read error text and return error"]
+    StatusOk -->|"yes"| ReadBody["Read response bytes"]
+    ReadBody --> Complete["Return asset bytes"]

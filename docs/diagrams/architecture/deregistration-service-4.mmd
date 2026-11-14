@@ -1,0 +1,10 @@
+flowchart TD
+    Invoke["deregister_best_effort"] --> Credentials{"Credentials available?"}
+    Credentials -->|"no"| SkipReport["Log and continue uninstall"]
+    Credentials -->|"yes"| Request["Send authenticated uninstall request"]
+    Request --> Outcome{"Response outcome"}
+    Outcome -->|"success"| MarkReported["Set reported flag"]
+    Outcome -->|"already absent"| MarkReported
+    Outcome -->|"error and attempts remain"| Wait["Wait five seconds"]
+    Wait --> Request
+    Outcome -->|"final error"| LogFailure["Log warning and continue uninstall"]

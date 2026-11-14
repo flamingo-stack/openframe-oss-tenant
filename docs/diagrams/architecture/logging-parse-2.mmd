@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Read one line"] --> Trace{"Valid tracing format?"}
+    Trace -->|"yes"| TraceEntry["Create client log entry"]
+    Trace -->|"no"| Normalize["Remove optional stdout prefix"]
+    Normalize --> Tool{"Tool fields present?"}
+    Tool -->|"yes"| ToolEntry["Create tool log entry"]
+    Tool -->|"no"| Skip["Ignore line"]
+    TraceEntry --> Next["Continue reading"]
+    ToolEntry --> Next
+    Skip --> Next

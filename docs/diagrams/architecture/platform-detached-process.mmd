@@ -1,0 +1,8 @@
+flowchart LR
+    TenantRepo["OpenFrame OSS Tenant"] -->|"consumes openframe_agent_lib"| ClientLibrary["OpenFrame Client Library"]
+    ClientLibrary -->|"contains"| DetachedProcess["Platform Detached Process"]
+    ClientService["OpenFrame Client Service"] -->|"requests detached launch"| DetachedProcess
+    DetachedProcess -->|"starts"| ClientExecutable["Installed Client Executable"]
+    ClientExecutable -->|"runs"| Subcommand["Client Subcommand"]
+    ServiceManager["Service Manager"] -->|"stops"| ClientService
+    ServiceManager -. "does not own detached child" .-> Subcommand

@@ -1,0 +1,9 @@
+flowchart TD
+    Prepare["Create two run-owned tickets"] --> AssignOne["Assign one ticket to caller"]
+    Prepare --> LeaveOne["Leave one ticket unassigned"]
+    AssignOne --> ResolveBoth["Resolve both tickets"]
+    LeaveOne --> ResolveBoth
+    ResolveBoth --> Filter["Filter by organization and caller assignee"]
+    Filter --> Archive["Bulk archive resolved tickets"]
+    Archive --> VerifyMine["Verify assigned ticket is archived"]
+    Archive --> VerifyOther["Verify unassigned ticket remains resolved"]

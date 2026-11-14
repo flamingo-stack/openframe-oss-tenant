@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Test as "Integration Test"
+    participant Api as "External Ticket API"
+    participant Mapper as "Jackson Mapper"
+    participant Dto as "External Ticket Dto"
+    Test->>Api: Request ticket or statistics data
+    Api->>Test: JSON response payload
+    Test->>Mapper: Deserialize payload
+    Mapper->>Dto: Populate known fields
+    Note over Mapper,Dto: Unknown fields are ignored
+    Dto->>Test: Typed response for assertions

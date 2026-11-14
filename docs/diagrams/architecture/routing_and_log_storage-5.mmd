@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Stream as OpenFrame Stream Service
+    participant Handler as Destination Handler
+    participant Validator as Tenant ID Validator
+    participant Mapper as Log Event Mapper
+    participant Store as Cassandra or Loki Store
+    Stream->>Handler: handle(message, enrichedData)
+    Handler->>Validator: isValid(message)
+    alt tenant ID missing
+        Validator-->>Handler: false
+        Handler-->>Stream: return without storage
+    else tenant ID available
+        Validator-->>Handler: true
+        Handler->>Mapper: map message and enrichment
+        Mapper-->>Handler: destination event
+        Handler->>Store: save event for create, read, or update
+        Store-->>Handler: persistence result
+        Handler-->>Stream: handling complete
+    end

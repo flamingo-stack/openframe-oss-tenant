@@ -1,0 +1,16 @@
+flowchart TD
+    TestRunner["Test Runner"] --> CreateTest["Create Policy Test"]
+    TestRunner --> TriggerTest["Trigger Policy Test"]
+    TestRunner --> DeleteTest["Delete Policy Test"]
+
+    CreateTest --> MonitoringApi["Monitoring API"]
+    CreateTest --> DeviceApi["Device API"]
+    TriggerTest --> MonitoringApi
+    TriggerTest --> DeviceApi
+    DeleteTest --> MonitoringApi
+
+    MonitoringApi --> Fleet["Fleet Policy Service"]
+    DeviceApi --> Fleet
+    Fleet --> Host["Online Managed Host"]
+    Host --> Fleet
+    Fleet --> PolicyCounts["Policy Compliance Counts"]

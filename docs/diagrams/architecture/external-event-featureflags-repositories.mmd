@@ -1,0 +1,6 @@
+flowchart LR
+    Application["Application service"] -->|"repository call"| EventRepository["External Application Event Repository"]
+    Application -->|"repository call"| FlagsRepository["Feature Flags Repository"]
+    EventRepository -->|"Spring Data MongoDB"| Mongo["MongoDB"]
+    FlagsRepository -->|"Spring Data MongoDB"| Mongo
+    TenantContext["Tenant context"] -->|"automatic tenant criterion"| FlagsRepository

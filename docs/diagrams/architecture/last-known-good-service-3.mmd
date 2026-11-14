@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Seed Last Known Good"] --> Load["Load Version Anchor"]
+    Load --> AnchorReserve{"Anchor and reserve present?"}
+    AnchorReserve -->|"yes"| Ready["Keep Existing Protection"]
+    AnchorReserve -->|"no"| AnchorMatches{"Anchor matches running version?"}
+    AnchorMatches -->|"yes"| Rebuild["Promote Running Binary"]
+    AnchorMatches -->|"no"| HasAnchor{"Anchor exists?"}
+    HasAnchor -->|"yes"| Degraded["Leave Reserve Unset and Warn"]
+    HasAnchor -->|"no"| Seed["Promote Running Binary"]

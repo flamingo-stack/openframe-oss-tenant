@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Emitter as "Tracing event emitter"
+    participant Layer as "MetricsLayer"
+    participant Visitor as "MetricVisitor"
+    participant Store as "MetricsStore"
+    Emitter->>Layer: Emit event
+    Layer->>Visitor: Record event fields
+    Visitor->>Visitor: Recognize counter, gauge, or histogram
+    Visitor->>Visitor: Attach eligible debug fields as labels
+    Layer->>Store: Acquire blocking write lock
+    alt Counter value
+        Layer->>Store: Replace counter record
+    else Gauge value
+        Layer->>Store: Replace gauge record
+    else Histogram value
+        Layer->>Store: Append histogram sample
+    end

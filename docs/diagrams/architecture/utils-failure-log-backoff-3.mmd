@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Caller
+    participant Backoff as FailureLogBackoff
+    participant Target as Operation
+    participant Logs as Log Sink
+    Caller->>Backoff: should_log()
+    Backoff-->>Caller: true or false
+    Caller->>Target: attempt operation
+    alt operation fails
+        Target-->>Caller: error
+        opt logging was allowed and emitted
+            Caller->>Logs: write failure message
+        end
+        Caller->>Backoff: record_failure(logged)
+        Backoff-->>Caller: consecutive failure count
+    else operation succeeds
+        Target-->>Caller: success
+        Caller->>Backoff: record_success()
+        Backoff-->>Caller: prior streak or none
+        opt prior streak exists
+            Caller->>Logs: write recovery message
+        end
+    end

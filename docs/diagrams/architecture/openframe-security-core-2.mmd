@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Issuer as "Token issuing service"
+    participant Encoder as "JwtEncoder"
+    participant Consumer as "Protected service"
+    participant Decoder as "JwtDecoder"
+
+    Issuer->>Encoder: Create signed JWT
+    Encoder->>Issuer: Return signed JWT
+    Issuer->>Consumer: Send JWT with request
+    Consumer->>Decoder: Decode and verify JWT
+    Decoder->>Consumer: Return verified claims or fail

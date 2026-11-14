@@ -1,0 +1,18 @@
+flowchart TD
+    Task[Task]
+    Build[BuildPermissions]
+    Apply[Apply]
+    Check{Unix}
+    Posix[SetPosixMode]
+    Approximate[UseReadonlyState]
+    Verify[Verify]
+    Result[Result]
+
+    Task --> Build
+    Build --> Apply
+    Apply --> Check
+    Check -->|yes| Posix
+    Check -->|no| Approximate
+    Posix --> Verify
+    Approximate --> Verify
+    Verify --> Result

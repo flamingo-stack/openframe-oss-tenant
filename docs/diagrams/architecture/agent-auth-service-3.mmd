@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Reauthentication Requested"] --> Refresh["Read Persisted Refresh Token"]
+    Refresh --> Request["Request Refresh Token Grant"]
+    Request --> Decision{"Refresh Succeeded?"}
+    Decision -->|"yes"| PersistRefresh["Persist and Share New Tokens"]
+    PersistRefresh --> ReturnRefresh["Return Token Response"]
+    Decision -->|"no"| Credentials["Read Client Credentials"]
+    Credentials --> SecretRequest["Request Client Credentials Grant"]
+    SecretRequest --> PersistSecret["Persist and Share New Tokens"]
+    PersistSecret --> ReturnSecret["Return Token Response"]

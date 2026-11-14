@@ -1,0 +1,9 @@
+flowchart LR
+    InstallArgs["Installation arguments"] --> Builder["Installation Initial Config Service"]
+    DeviceTags["Device Tag parser"] --> Builder
+    Builder --> ConfigModel["Initial Configuration"]
+    ConfigModel --> ConfigService["Initial Configuration Service"]
+    ConfigService --> ConfigFile["Persisted JSON configuration"]
+    ConfigFile --> AuthFlow["Initial Authentication Processor"]
+    ConfigFile --> RemoteAccess["Remote Access Mode Service"]
+    AuthFlow --> AgentConfig["Agent Configuration Service"]

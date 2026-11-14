@@ -1,0 +1,9 @@
+flowchart LR
+    CommandHandler["Package Update Command Handler"] -->|"submits orders"| OrderStore["Order Store"]
+    OrderStore -->|"pending orders and change notification"| Runner["Package Manager Update Runner"]
+    Config["Agent Configuration Service"] -->|"machine identifier"| Runner
+    RestartSignals["Client Update Pending and Restart Latch"] -->|"pause signal"| Runner
+    Runner -->|"evaluate and install"| Worker["Worker and Machine Abstraction"]
+    Worker -->|"package manager interaction"| OperatingSystem["Managed Operating System"]
+    Runner -->|"state transitions"| StatusReporter["Status Reporter"]
+    StatusReporter -->|"status messages"| ControlPlane["OpenFrame Control Plane"]

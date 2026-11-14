@@ -1,0 +1,10 @@
+flowchart TD
+    Target["Runtime AssignableTarget Value"] --> CheckOrg{"Organization?"}
+    CheckOrg -->|"yes"| Org["Return Organization"]
+    CheckOrg -->|"no"| CheckMachine{"Machine?"}
+    CheckMachine -->|"yes"| Machine["Return Machine"]
+    CheckMachine -->|"no"| CheckTicket{"Ticket?"}
+    CheckTicket -->|"yes"| Ticket["Return Ticket"]
+    CheckTicket -->|"no"| CheckKb{"KnowledgeBaseItem?"}
+    CheckKb -->|"yes"| KnowledgeBase["Return KnowledgeBaseItem"]
+    CheckKb -->|"no"| Failure["Throw IllegalArgumentException"]

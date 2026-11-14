@@ -1,0 +1,4 @@
+flowchart LR
+    TestService["OpenFrame test service core"] --> LogDto["Log Dto"]
+    LogDto --> TestModel["Log filter organization model"]
+    TestModel --> Assertions["Response assertions"]

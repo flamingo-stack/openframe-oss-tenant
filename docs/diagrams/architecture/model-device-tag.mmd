@@ -1,0 +1,5 @@
+flowchart LR
+    CliArgs["Raw command-line tag arguments"] --> Parser["DeviceTag parse from CLI"]
+    Parser --> TagMap["Hash map keyed by tag name"]
+    TagMap --> Tags["Vector of Device Tag records"]
+    Tags --> ClientConfig["Client configuration and registration consumers"]

@@ -1,0 +1,12 @@
+flowchart TD
+    InstallationMessage["Tool installation message"] --> ToolFields["Tool identity, version, commands, service metadata"]
+    InstallationMessage --> ToolDownloads["Primary download configurations"]
+    InstallationMessage --> Assets["Optional assets"]
+    ToolFields --> ToolVersion["Effective tool version"]
+    ToolVersion --> Overrides["Tool version overrides lookup"]
+    Assets --> AssetFields["Asset identity, source, path, executable flag"]
+    Assets --> FilenameMappings["Local filename configurations"]
+    Assets --> AssetDownloads["Optional asset download configurations"]
+    AssetFields --> AssetVersion["Effective asset version"]
+    AssetVersion --> Overrides
+    FilenameMappings --> OsMatch["Current OS match"]

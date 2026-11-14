@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Server as "Control plane"
+    participant Broker as "NATS or JetStream"
+    participant Agent as "OpenFrame Client"
+    participant Store as "Result store"
+    participant History as "Execution history"
+    Server->>Broker: Dispatch execution payload
+    Broker->>Agent: Deliver route message
+    Agent->>Broker: Publish execution acknowledgement
+    Agent->>Agent: Execute normalized request
+    Agent->>Store: Persist result for delivery
+    Store->>Broker: Publish result
+    Broker->>History: Deliver command or script result
+    History->>History: Correlate and update status

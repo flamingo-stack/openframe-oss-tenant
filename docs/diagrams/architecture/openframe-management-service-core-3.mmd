@@ -1,0 +1,8 @@
+flowchart LR
+    Schedule["Scheduled Catalog Task"] --> Lock["Acquire Global Redis Lock"]
+    Lock --> Fetch["Fetch Manager Catalog"]
+    Fetch --> Normalize["Map Valid Entries"]
+    Normalize --> Upsert["Upsert Timestamped Snapshot"]
+    Upsert --> Prune["Prune Older Manager Entries"]
+    Prune --> Metric["Record Success Metric"]
+    Fetch -.-> Failure["Keep Previous Snapshot and Record Failure"]

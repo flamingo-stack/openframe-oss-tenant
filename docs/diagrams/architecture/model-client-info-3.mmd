@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Listener as Command Listener
+    participant Update as Client Update Service
+    participant Info as Client Information Service
+    participant State as Update State Service
+    participant Handler as Update Handler Service
+    participant Binary as Client Binary
+
+    Listener->>Update: Reserve update request
+    Update->>Update: Reject duplicate or defer around busy tools
+    Update->>Update: Validate and canonicalize requested version
+    Update->>Info: Set Updating and target version
+    Update->>State: Create and persist update phase state
+    Update->>Binary: Launch updater process
+    Binary->>Handler: Start updated client
+    Handler->>State: Load pending update state
+    alt Running version matches target
+        Handler->>Info: Reconcile and record successful running version
+    else Update failed
+        Handler->>Info: Set Failed and target version
+        Handler->>State: Clear update state after cleanup
+    else Verification pending
+        Handler->>State: Retain state for later boot handling
+    end

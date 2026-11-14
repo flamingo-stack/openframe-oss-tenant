@@ -1,0 +1,9 @@
+flowchart TD
+    Response["Log filter response payload"] --> Mapper["Jackson mapper"]
+    Mapper --> BeanConstructor["No-argument constructor"]
+    BeanConstructor --> Setters["Generated property setters"]
+    Setters --> Instance["OrganizationFilterOption instance"]
+    TestFixture["Test fixture"] --> Builder["Generated builder"]
+    Builder --> Instance
+    DirectSetup["Direct test setup"] --> AllArgsConstructor["Two-property constructor"]
+    AllArgsConstructor --> Instance

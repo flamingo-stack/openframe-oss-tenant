@@ -1,0 +1,21 @@
+flowchart TD
+    Start["Apply reserved update"] --> Validate{"Version format valid?"}
+    Validate -->|"no"| Fail["Set failed status and clear stale state"]
+    Validate -->|"yes"| Current{"Already running requested version?"}
+    Current -->|"yes"| Skip["Clear pending marker and skip"]
+    Current -->|"no"| Downgrade{"Lower than last known good anchor?"}
+    Downgrade -->|"yes"| DowngradeSkip["Clear pending marker and skip"]
+    Downgrade -->|"no or allowed"| Updating["Record updating status"]
+    Updating --> Select["Select current operating system download"]
+    Select --> Download["Download and extract binary"]
+    Download --> Stage["Write uniquely named staged binary"]
+    Stage --> Verify["Probe staged binary version"]
+    Verify --> Ready{"Version mismatch?"}
+    Ready -->|"yes"| Remove["Remove staged binary and fail"]
+    Ready -->|"no or unavailable"| Recheck["Recheck update admission gate"]
+    Recheck --> LaunchGate{"Work became active?"}
+    LaunchGate -->|"yes"| Defer["Remove staged binary and fail for redelivery"]
+    LaunchGate -->|"no"| Persist["Save updater launched state"]
+    Persist --> Launch["Launch platform updater"]
+    Launch --> Shutdown["Signal tool-run shutdown"]
+    Shutdown --> Launched["Return launched"]

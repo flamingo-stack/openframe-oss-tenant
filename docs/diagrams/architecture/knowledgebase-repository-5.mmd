@@ -1,0 +1,10 @@
+flowchart TD
+    Request["Receive article list request"] --> Scope["Apply parent, search, and item identifier filters"]
+    Scope --> StatusCheck{"Statuses supplied?"}
+    StatusCheck -->|"yes"| StatusFilter["Filter to requested statuses"]
+    StatusCheck -->|"no"| ActiveFilter["Exclude archived articles"]
+    StatusFilter --> Cursor["Apply article cursor when present"]
+    ActiveFilter --> Cursor
+    Cursor --> Sort["Sort by updated time then identifier"]
+    Sort --> Limit["Apply result limit"]
+    Limit --> Result["Return article page"]

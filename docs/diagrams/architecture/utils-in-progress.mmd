@@ -1,0 +1,9 @@
+flowchart LR
+    WorkerA["Worker A"] -->|"begin"| Counter["Shared AtomicUsize counter"]
+    WorkerB["Worker B"] -->|"begin"| Counter
+    Counter -->|"guard owns shared reference"| GuardA["InProgressGuard"]
+    Counter -->|"guard owns shared reference"| GuardB["InProgressGuard"]
+    Observer["Observer"] -->|"view"| View["InProgressView"]
+    View -->|"load and compare"| Counter
+    GuardA -->|"drop decrements"| Counter
+    GuardB -->|"drop decrements"| Counter

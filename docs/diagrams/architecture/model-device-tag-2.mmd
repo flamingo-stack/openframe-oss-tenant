@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Receive raw tag vector"] --> Iterate["Read next raw argument"]
+    Iterate --> Split{"Contains equals sign?"}
+    Split -->|"No"| Skip["Ignore argument"]
+    Split -->|"Yes"| Trim["Trim key and value"]
+    Trim --> Valid{"Key and value non-empty?"}
+    Valid -->|"No"| Skip
+    Valid -->|"Yes"| Group["Append value under key"]
+    Group --> More{"More arguments?"}
+    Skip --> More
+    More -->|"Yes"| Iterate
+    More -->|"No"| Build["Create one Device Tag per map entry"]
+    Build --> Finish["Return Device Tag vector"]

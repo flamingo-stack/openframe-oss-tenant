@@ -1,0 +1,11 @@
+flowchart TD
+    UpdateRequest["Update or restart request"] --> AcquireGuard["Acquire tool update guard"]
+    AcquireGuard --> StopAttempt["Request graceful stop"]
+    StopAttempt --> Stopped{"Process or service stopped?"}
+    Stopped -->|"yes"| ReplaceBinary["Replace and synchronize executable"]
+    Stopped -->|"no"| Escalate["Force-kill within retry budget"]
+    Escalate --> Recheck["Poll process or service state"]
+    Recheck --> Stopped
+    ReplaceBinary --> WaitUnlock["Wait for executable unlock"]
+    WaitUnlock --> StartService["Start process or service with retry backoff"]
+    StartService --> ReleaseGuard["Release tool lock and updating flag"]

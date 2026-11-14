@@ -1,0 +1,11 @@
+flowchart LR
+    UpgradeFlow["Client update workflow"] -->|"process IDs and image path"| AppClose["Platform App Close"]
+    AppClose -->|"Windows close request"| PowerShell["PowerShell user script"]
+    AppClose -->|"Unix close request"| SysInfo["sysinfo process signal API"]
+    AppClose -->|"macOS relaunch"| MacSession["macOS console-user launcher"]
+    AppClose -->|"Windows relaunch"| WindowsSession["Windows session launcher"]
+    PowerShell --> WindowsApps["Windows GUI applications"]
+    SysInfo --> UnixApps["Unix GUI applications"]
+    MacSession --> MacApps["macOS application"]
+    WindowsSession --> WindowsApps
+    AppClose --> Telemetry["Structured tracing events"]

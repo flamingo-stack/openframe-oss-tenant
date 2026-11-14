@@ -1,0 +1,9 @@
+flowchart LR
+    Caller["OpenFrame service calling EmailService"] --> Contract["EmailService contract"]
+    Contract --> Selection{"Mail provider"}
+    Selection -->|"smtp or unset"| Smtp["SmtpEmailService"]
+    Selection -->|"hubspot-api"| Hubspot["HubspotApiEmailService"]
+    Smtp --> MailSender["Spring JavaMailSender"]
+    MailSender --> SmtpServer["Configured SMTP server"]
+    Hubspot --> WebClient["Spring WebClient"]
+    WebClient --> HubspotApi["HubSpot single-send API"]

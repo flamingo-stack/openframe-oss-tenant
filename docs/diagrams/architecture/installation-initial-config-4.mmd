@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant I as Installer
+    participant S as Installation Initial Config
+    participant M as mkcert
+    participant C as Initial Configuration Service
+    participant F as Secured Configuration File
+    I->>S: build_and_save(params)
+    S->>S: validate required fields
+    S->>S: build InitialConfiguration
+    alt local mode enabled
+        S->>M: run mkcert CAROOT query
+        M-->>S: CA root directory
+        S->>S: verify rootCA.pem exists
+    else local mode disabled
+        S->>S: skip CA resolution
+    end
+    S->>C: save(configuration)
+    C->>F: atomic JSON write
+    F-->>C: write complete
+    C-->>S: success
+    S-->>I: success

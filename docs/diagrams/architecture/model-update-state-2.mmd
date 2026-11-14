@@ -1,0 +1,10 @@
+flowchart LR
+    Create["Create UpdateState"] --> Validating["validating"]
+    Validating --> Downloading["downloading"]
+    Downloading --> Extracting["extracting"]
+    Extracting --> Preparing["preparing_updater"]
+    Preparing --> Launched["updater_launched"]
+    Launched --> Verifying["verifying"]
+    Verifying --> Completed["completed"]
+    Verifying --> Failed["failed"]
+    Failed --> RolledBack["rolled_back"]

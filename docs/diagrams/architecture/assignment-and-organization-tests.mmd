@@ -1,0 +1,28 @@
+flowchart TD
+    TestRunner["JUnit ordered test classes"] --> Assignments["Assignments Test"]
+    TestRunner --> Organizations["Organizations Test"]
+    TestRunner --> Invitations["User Invitations Test"]
+
+    Assignments --> AssignmentApi["Assignment API facade"]
+    Assignments --> KnowledgeApi["Knowledge Base API facade"]
+    Assignments --> TicketApi["Ticket API facade"]
+    Assignments --> DeviceApi["Device API facade"]
+
+    Organizations --> OrganizationApi["Organization API facade"]
+    Organizations --> AgentApi["Agent API facade"]
+    Organizations --> PipelineContext["Pipeline Context"]
+
+    Invitations --> InvitationApi["Invitation API facade"]
+    Invitations --> UserApi["User API facade"]
+    Invitations --> TestCollections["Test database collections"]
+    Invitations --> PipelineContext
+
+    AssignmentApi --> TenantApi["Running tenant API"]
+    KnowledgeApi --> TenantApi
+    TicketApi --> TenantApi
+    DeviceApi --> TenantApi
+    OrganizationApi --> TenantApi
+    AgentApi --> TenantApi
+    InvitationApi --> TenantApi
+    UserApi --> TenantApi
+    TestCollections --> TenantDatabase["Tenant database"]

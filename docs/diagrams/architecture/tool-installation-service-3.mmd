@@ -1,0 +1,18 @@
+flowchart TD
+    Start["Receive installation request"] --> Existing{"Existing record?"}
+    Existing -->|"no"| Resolve["Resolve current OS configuration"]
+    Existing -->|"yes"| Reinstall{"Reinstall requested?"}
+    Reinstall -->|"no"| Artifact{"Artifact present and record installed?"}
+    Artifact -->|"yes"| Noop["Return successful no-op"]
+    Artifact -->|"no"| Resolve
+    Reinstall -->|"yes"| MarkInstalling["Mark existing record Installing"]
+    MarkInstalling --> StopOld["Stop tool, uninstall, clear directory and connection"]
+    StopOld --> Resolve
+    Resolve --> ClearService{"Service holder cleared?"}
+    ClearService -->|"no"| Retry["Fail and retain Installing state for retry"]
+    ClearService -->|"yes"| Download["Download, write assets, and run installer"]
+    Download --> Verify{"Service verification required?"}
+    Verify -->|"yes"| VerifyRun["Verify service is running"]
+    Verify -->|"no"| Persist["Persist Installed record"]
+    VerifyRun --> Persist
+    Persist --> Activate["Start tool and connection processing"]

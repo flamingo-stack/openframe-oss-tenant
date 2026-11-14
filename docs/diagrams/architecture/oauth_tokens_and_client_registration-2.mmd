@@ -1,0 +1,11 @@
+flowchart TD
+    KeyProperties["Key Generator Properties"] --> Generator["RSA Authentication Key Pair Generator"]
+    Generator --> Random["Configured Secure Random"]
+    Generator --> KeyPair["Generated RSA Key Pair"]
+    KeyPair --> PemEncoder["PEM Utility"]
+    PemEncoder --> PublicPem["Public Key PEM"]
+    PemEncoder --> PrivatePem["Private Key PEM"]
+    Generator --> KeyId["Generated Key Identifier"]
+    PublicPem --> AuthenticationPair["Authentication Key Pair"]
+    PrivatePem --> AuthenticationPair
+    KeyId --> AuthenticationPair

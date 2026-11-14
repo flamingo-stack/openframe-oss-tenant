@@ -1,0 +1,8 @@
+flowchart TD
+    ApiService["API service"] --> UserRepository["Custom user repository"]
+    ApiService --> InvitationRepository["Custom invitation repository"]
+    UserRepository --> UserFilter["User filters and cursors"]
+    InvitationRepository --> InvitationFilter["Invitation filters and cursor"]
+    UserRepository --> MongoTemplate["Tenant-aware Mongo template"]
+    InvitationRepository --> MongoTemplate
+    MongoTemplate --> MongoDb[("MongoDB")]

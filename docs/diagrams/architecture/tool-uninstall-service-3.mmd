@@ -1,0 +1,23 @@
+flowchart TD
+    Start["Load installed tools"] --> HasTools{"Any installed tools?"}
+    HasTools -->|"no"| Complete["Complete successfully"]
+    HasTools -->|"yes"| NextTool["Select next tool"]
+    NextTool --> Stop["Stop recorded tool process"]
+    Stop --> Fleet{"Fleet tool identifier?"}
+    Fleet -->|"yes"| StopOsquery["Stop osqueryd asset"]
+    Fleet -->|"no"| HasCommand{"Uninstall command present?"}
+    StopOsquery --> HasCommand
+    HasCommand -->|"no"| GuiCleanup["Clean GUI artifacts if applicable"]
+    HasCommand -->|"yes"| Resolve["Resolve command arguments"]
+    Resolve --> Exists{"Executable exists?"}
+    Exists -->|"no"| GuiCleanup
+    Exists -->|"yes"| Execute["Run uninstall command"]
+    Execute --> Success{"Exited successfully within 90 seconds?"}
+    Success -->|"yes"| ProcessCleanup["Stop remaining executable processes"]
+    ProcessCleanup --> GuiCleanup
+    Success -->|"no"| ToolFailure["Log tool failure"]
+    GuiCleanup --> ServiceCleanup["Remove residual service if applicable"]
+    ToolFailure --> ServiceCleanup
+    ServiceCleanup --> More{"More tools?"}
+    More -->|"yes"| NextTool
+    More -->|"no"| Complete

@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> RUNNING: start timer
+    RUNNING --> PAUSED: pause timer
+    PAUSED --> PAUSED: pause again
+    PAUSED --> RUNNING: resume timer
+    RUNNING --> RUNNING: resume again
+    RUNNING --> COMPLETED: stop timer
+    RUNNING --> CANCELLED: cancel timer
+    PAUSED --> CANCELLED: cancel timer
+    COMPLETED --> [*]
+    CANCELLED --> [*]

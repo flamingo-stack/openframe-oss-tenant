@@ -1,0 +1,7 @@
+flowchart LR
+    Request["Invitation list request"] --> Pending["Require pending status"]
+    Pending --> Filters["Apply expiry role and email filters"]
+    Filters --> Cursor["Apply created time and identifier boundary"]
+    Cursor --> Sort["Sort created time descending then identifier descending"]
+    Sort --> Result["Return limited invitation page"]
+    Filters --> Count["Count matching invitations"]

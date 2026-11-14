@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Caller as "Service Layer"
+    participant Repo as "Policy Repository"
+    participant Mongo as "MongoDB"
+    Caller->>Repo: Enable template for machine identifiers
+    Repo->>Repo: Remove duplicate machine identifiers
+    Repo->>Mongo: Bulk unordered upserts by composite key
+    Mongo-->>Repo: Bulk write completion
+    Repo-->>Caller: Enable operation completes
+    Caller->>Repo: Disable tenant software policies
+    Repo->>Mongo: Update enabled records matching tenant and software
+    Mongo-->>Repo: Modified document count
+    Repo-->>Caller: Return modified count

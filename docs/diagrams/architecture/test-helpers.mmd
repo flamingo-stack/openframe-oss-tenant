@@ -1,0 +1,9 @@
+flowchart LR
+    TestSuite["Rest Assured Test Suite"] --> Filters["Test Helpers Filters"]
+    Filters --> RateFilter["Rate Limit Retry Filter"]
+    Filters --> GatewayFilter["Transient Gateway Retry Filter"]
+    RateFilter --> Gateway["OpenFrame Gateway"]
+    GatewayFilter --> Gateway
+    Gateway --> Service["Target OpenFrame Service"]
+    Gateway --> RateHeaders["Rate Limit Response Headers"]
+    RateHeaders --> RateFilter

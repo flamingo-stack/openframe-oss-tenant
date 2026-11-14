@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Runner as Endpoint runner
+    participant Nats as NATS
+    participant Listener as Status listener
+    participant Processor as Status processor
+    participant Store as Device state store
+    participant History as Execution history
+    Runner->>Nats: Publish status event
+    Nats->>Listener: Deliver machine status event
+    Listener->>Listener: Validate identifiers and state
+    Listener->>Processor: Process machine and event
+    Processor->>Store: Load device request state
+    Processor->>Processor: Ignore duplicate or stale event
+    Processor->>Store: Apply current state and save
+    Processor->>History: Record execution outcome
+    Processor->>Store: Recompute request roll up
+    Listener->>Nats: Acknowledge processed event

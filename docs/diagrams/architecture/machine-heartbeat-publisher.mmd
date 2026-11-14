@@ -1,0 +1,9 @@
+flowchart LR
+    RunManager["Machine Heartbeat Run Manager"] -->|"calls"| Publisher["Machine Heartbeat Publisher"]
+    Config["Agent Configuration Service"] -->|"machine identifier"| Publisher
+    Publisher -->|"creates"| Message["Machine Heartbeat Message"]
+    Publisher -->|"publishes"| NatsPublisher["NATS Message Publisher"]
+    NatsPublisher -->|"flushes message"| Nats["NATS subject machine.{machineId}.heartbeat"]
+    Nats -->|"wildcard subscription"| Listener["Machine Heartbeat Listener"]
+    Listener -->|"receipt timestamp"| Status["Machine Status Service"]
+    Status -->|"liveness state"| OfflineDetection["Offline Detection Service"]

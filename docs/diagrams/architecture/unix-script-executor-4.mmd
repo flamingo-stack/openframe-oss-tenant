@@ -1,0 +1,13 @@
+flowchart TD
+    Code["Script code"] --> Normalize["Normalize line endings"]
+    Normalize --> File["Temporary .sh file"]
+    Args["Script arguments"] --> Command["Direct process command"]
+    File --> Command
+    Environment["Environment variable entries"] --> Command
+    Privilege["Requested privilege"] --> Identity["Resolved run-as"]
+    Identity --> Ownership["File ownership"]
+    Identity --> Preexec["Child pre-exec configuration"]
+    Command --> Preexec
+    Ownership --> Runner["Timeout-aware execution"]
+    Preexec --> Runner
+    Runner --> Result["Output, error, code, timeout"]

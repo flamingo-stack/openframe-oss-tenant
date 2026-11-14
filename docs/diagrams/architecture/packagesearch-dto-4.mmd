@@ -1,0 +1,8 @@
+flowchart TD
+    CatalogSources["Package manager catalogs"] --> CatalogSync["Management catalog synchronization"]
+    CatalogSync --> CatalogStore["Package catalog storage"]
+    CatalogStore --> SearchService["Package Search Service"]
+    SearchService --> DataFetcher["Package Search Data Fetcher"]
+    DataFetcher --> GraphQL["GraphQL connection"]
+    GraphQL --> TestDtos["Packagesearch Dto"]
+    TestDtos --> IntegrationTest["Package search integration test"]

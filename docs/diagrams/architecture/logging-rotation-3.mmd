@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Streaming loop checks rotation"] --> Metadata["Read active-file metadata"]
+    Metadata --> MetadataOk{"Metadata available?"}
+    MetadataOk -->|"no"| Return["Return without changes"]
+    MetadataOk -->|"yes"| Ready{"Offset at end and size at least 10 MiB?"}
+    Ready -->|"no"| Return
+    Ready -->|"yes"| Remove["Remove prior archive when present"]
+    Remove --> Read["Read active log bytes"]
+    Read --> Compress["Write gzip archive"]
+    Compress --> Truncate["Create empty active log"]
+    Truncate --> Reset["Set memory offset and saved offset to zero"]
+    Reset --> Done["Continue streaming"]
+    Compress --> Failure["Log error and keep current offset"]

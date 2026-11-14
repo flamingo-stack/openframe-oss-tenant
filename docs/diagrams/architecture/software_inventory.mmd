@@ -1,0 +1,8 @@
+flowchart LR
+    Fleet["Fleet MDM Data"] --> SoftwareList["Fleet Software Titles"]
+    SoftwareList --> SoftwareDetail["Software Detail"]
+    SoftwareDetail --> Holders["Software on Device"]
+    SoftwareList --> Cves["Fleet CVE List"]
+    Cves --> CveDetail["CVE Detail"]
+    CveDetail --> AffectedDevices["Affected Devices"]
+    AffectedDevices --> DeviceViews["Device Software and CVEs"]

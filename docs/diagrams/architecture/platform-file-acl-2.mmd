@@ -1,0 +1,9 @@
+flowchart TD
+    Caller["Privileged Caller"] --> EnsureWritable["ensure writable"]
+    EnsureWritable --> Attributes["Clear restrictive attributes"]
+    EnsureWritable --> Ownership["Attempt ownership acquisition"]
+    EnsureWritable --> WritableAcl["Grant writable ACL entries"]
+    Caller --> HardenExecutable["harden executable"]
+    HardenExecutable --> AdminOwner["Attempt Administrators ownership"]
+    HardenExecutable --> ReplaceAcl["Replace inherited ACL entries"]
+    ReplaceAcl --> RuntimeBinary["Restricted Executable"]

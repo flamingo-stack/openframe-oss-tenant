@@ -1,0 +1,12 @@
+flowchart LR
+    ControlPlane["Control plane"] -->|"publishes work"| Nats["NATS"]
+    Nats -->|"machine ID and message kind"| Listener["Execution Listener"]
+    Config["Agent Configuration Service"] -->|"machine ID"| Listener
+    Connection["NATS Connection Manager"] -->|"client and replacement signal"| Listener
+    Listener -->|"execution requests"| Execution["Execution Service"]
+    Execution -->|"RMM result"| Listener
+    Listener -->|"acknowledgement and results"| Store["Result Store"]
+    Store -->|"flush signal"| Outbox["Result Outbox Run Manager"]
+    Outbox -->|"publishes pending records"| Nats
+    Listener -->|"fallback publish"| Publisher["NATS Message Publisher"]
+    Publisher -->|"best effort delivery"| Nats

@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Compare two package references"] --> BothWinget{"Both Winget?"}
+    BothWinget -->|"yes"| WingetCompare["Compare identifiers ignoring ASCII case"]
+    BothWinget -->|"no"| ExactCompare["Compare variants and fields exactly"]
+    WingetCompare --> Result["Return match result"]
+    ExactCompare --> Result

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Tracker as "Mongo Recreation Tracker"
+    participant Events as "Connector Recreation Event Repository"
+    participant Mongo as "MongoDB"
+    Tracker->>Events: Count events by base name after cutoff
+    Events->>Mongo: Count matching recreation records
+    Mongo-->>Events: Count
+    Events-->>Tracker: Recent recreation count
+    Tracker->>Events: Delete events before cutoff
+    Events->>Mongo: Delete expired recreation records
+    Mongo-->>Events: Deleted count
+    Events-->>Tracker: Cleanup result

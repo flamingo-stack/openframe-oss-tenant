@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Caller
+    participant Parser as Logging Parse
+    participant File as Log File
+    Caller->>Parser: read path, position, maximum count
+    Parser->>File: open and read metadata
+    alt file length is below position
+        Parser->>Parser: use position zero
+    else file has retained position
+        Parser->>Parser: use supplied position
+    end
+    Parser->>File: seek and read lines
+    Parser->>Parser: parse supported lines
+    Parser-->>Caller: entries and new position

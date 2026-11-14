@@ -1,0 +1,11 @@
+flowchart TD
+    SourceKind["SourceKind"] --> Source["UpdateSource"]
+    SourceOrigin["SourceOrigin"] --> Source
+    Source --> Predicate["is_user()"]
+    PackageRef["PackageRef"] --> Request["PackageUpdateMessage"]
+    Source --> Request
+    UpdateMode["UpdateMode"] --> Request
+    Countdown["Optional countdown seconds"] --> Request
+    Request --> Handler["Package update handler"]
+    Predicate --> Handler
+    Handler --> Status["Status reporter"]

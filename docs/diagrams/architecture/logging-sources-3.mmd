@@ -1,0 +1,18 @@
+flowchart TD
+    Start["read_all with total limit"] --> Initialize["Mark every source active"]
+    Initialize --> Capacity{"Capacity and active sources remain?"}
+    Capacity -->|"no"| Deduplicate["Deduplicate collected entries"]
+    Capacity -->|"yes"| Divide["Compute per-source quota"]
+    Divide --> ReadSource["Read each active source"]
+    ReadSource --> SourceResult{"Source returned entries?"}
+    SourceResult -->|"error"| DisableError["Log error and deactivate source"]
+    SourceResult -->|"empty"| DisableEmpty["Deactivate source"]
+    SourceResult -->|"entries"| Append["Append entries and reduce capacity"]
+    DisableError --> NextRound["Continue registry scan"]
+    DisableEmpty --> NextRound
+    Append --> ShortBatch{"Returned fewer than requested?"}
+    ShortBatch -->|"yes"| DisableShort["Deactivate source"]
+    ShortBatch -->|"no"| NextRound
+    DisableShort --> NextRound
+    NextRound --> Capacity
+    Deduplicate --> Return["Return combined entries"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller
+    participant Aspect as "Machine Tag Event Aspect"
+    participant Service as "Machine Tag Event Service"
+    participant Data as "Repositories"
+    participant Kafka as "Retrying Kafka Producer"
+    Caller->>Aspect: Delete device tag assignment
+    Aspect->>Service: Process deletion before repository delete
+    Service->>Data: Load machine and current assignments
+    Service->>Service: Exclude deleting tag from snapshot inputs
+    Service->>Kafka: Publish snapshot without removed tag
+    Aspect->>Caller: Proceed with repository delete

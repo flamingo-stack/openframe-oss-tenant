@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Pipeline as Stream Pipeline
+    participant Handler as Script Execution Handler
+    participant Repository as Script Execution Repository
+    participant Classifier as Outcome Classifier
+    participant Aggregator as Schedule Aggregator
+    participant Dispatch as Device Online Dispatch Repository
+    Pipeline->>Handler: Result event with payload after state
+    Handler->>Repository: Find by machine, execution, and script identifiers
+    Repository-->>Handler: Script execution record
+    Handler->>Handler: Reject final record or parse agent result
+    Handler->>Classifier: Classify exit code, timeout, error, and failure reason
+    Classifier-->>Handler: Status and failure reason
+    Handler->>Repository: Save terminal execution state and bounded output
+    Handler->>Aggregator: Aggregate when schedule identifier exists
+    Handler->>Dispatch: Mark dispatched device-online row processed when applicable

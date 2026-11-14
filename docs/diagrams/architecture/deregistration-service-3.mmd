@@ -1,0 +1,9 @@
+flowchart TD
+    Construct["Construct Deregistration Service"] --> ReadConfig["Read agent configuration credentials"]
+    ReadConfig --> Valid{"Both values present?"}
+    Valid -->|"yes"| Snapshot["Store machine ID and client secret in memory"]
+    Valid -->|"no"| ReadFallback["Read persisted machine info"]
+    ReadConfig -->|"read error"| ReadFallback
+    ReadFallback --> Available{"Persisted credentials available?"}
+    Available -->|"yes"| Snapshot
+    Available -->|"no"| NoCredentials["Service skips deregistration"]

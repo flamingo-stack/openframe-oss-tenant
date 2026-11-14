@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Handler as Tool Update Handler
+    participant Service as Tool Agent Update Service
+    participant Registry as Installed Tools Service
+    participant Updater as Tool Updater
+    participant Disk as Managed Files
+    participant NATS as NATS Publisher
+    Handler->>Service: process_update_locked(message, guard)
+    Service->>Registry: Load installed tool
+    Service->>Service: Validate state, artifact, versions, and assets
+    Service->>Updater: Prepare update
+    Updater->>Disk: Stop tool and apply replacement
+    Updater->>Updater: Finalize update
+    Service->>Disk: Verify prior executable is no longer held aside
+    Service->>Registry: Save installation and version
+    Service->>NATS: Publish installed tool version

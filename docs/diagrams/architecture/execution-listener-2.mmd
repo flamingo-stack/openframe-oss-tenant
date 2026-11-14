@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Starting
+    Starting --> Subscribed: current client and machine ID available
+    Starting --> Waiting: listener error
+    Subscribed --> Handling: execution message received
+    Handling --> Subscribed: handler task continues
+    Subscribed --> Waiting: client replaced
+    Subscribed --> Waiting: stream ended
+    Waiting --> Starting: reconnection delay elapsed

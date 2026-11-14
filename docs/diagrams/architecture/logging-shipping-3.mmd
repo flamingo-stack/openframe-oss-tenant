@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph Library["OpenFrame OSS Library artifact"]
+        Shipping["Logging Shipping"]
+        Parser["Logging Parse"]
+        Sources["Logging Sources"]
+        Rotation["Logging Rotation"]
+        Streaming["Logging NATS Streaming"]
+        KeyService["Log Key Service"]
+    end
+    Parser -->|"parsed entries"| Sources
+    Sources -->|"source reads"| Rotation
+    Shipping -->|"HTTP JSON batches"| HttpEndpoint["Configured endpoint"]
+    Streaming -->|"NATS publish path"| Nats["NATS"]
+    KeyService -->|"retrieves log key"| HttpEndpoint

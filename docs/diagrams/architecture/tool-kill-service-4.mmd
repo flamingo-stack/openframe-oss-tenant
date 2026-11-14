@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Installer as Tool Installation Service
+    participant Killer as Tool Kill Service
+    participant Inspector as Process Inspector
+    participant Process as Tool Process
+    Installer->>Killer: stop_for_installation(tool identifier, standard installation)
+    Killer->>Inspector: find matches for executable path
+    Inspector-->>Killer: matching process identifiers
+    Killer->>Process: request normal termination
+    Killer->>Inspector: poll for process exit
+    alt Process exits during graceful timeout
+        Inspector-->>Killer: process absent
+    else Process remains present
+        Killer->>Process: send forced kill signal
+        Killer->>Inspector: poll for process exit
+        Inspector-->>Killer: process absent or retry required
+    end
+    Killer->>Inspector: find matches for tool command pattern
+    Inspector-->>Killer: matching process identifiers or none
+    Killer-->>Installer: success or stop failure

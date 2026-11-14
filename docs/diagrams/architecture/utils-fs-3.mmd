@@ -1,0 +1,10 @@
+flowchart TD
+    ReadStart["Read requested JSON path"] --> ReadFile{"Read succeeded?"}
+    ReadFile -->|"not found"| Missing["Return Missing"]
+    ReadFile -->|"other error"| ReadError["Return contextual read error"]
+    ReadFile -->|"bytes read"| Decode["Deserialize JSON bytes"]
+    Decode --> Valid{"Valid JSON for target type?"}
+    Valid -->|"yes"| ParsedValue["Return Parsed value"]
+    Valid -->|"no"| Rename["Rename source to sibling corrupt file"]
+    Rename --> Warn["Emit warning with size and parse error"]
+    Warn --> Corrupt["Return Corrupt"]

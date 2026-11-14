@@ -1,0 +1,7 @@
+flowchart TD
+    Begin["Installed tool"] --> InstallType{"Installation type?"}
+    InstallType -->|"Standard"| Standard["Standard tool updater"]
+    InstallType -->|"Service"| Service["Service tool updater"]
+    InstallType -->|"Graphical application"| GuiCheck{"macOS build?"}
+    GuiCheck -->|"Yes"| Gui["Graphical application updater"]
+    GuiCheck -->|"No"| Fallback["Standard tool updater fallback"]

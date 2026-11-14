@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as Time-tracking test
+    participant Api as API query layer
+    participant Mapper as JSON mapper
+    participant Edge as Timetracking Dto
+    Test->>Api: Request first time-entry page
+    Api-->>Mapper: Return connection payload
+    Mapper->>Edge: Populate node and cursor
+    Edge-->>Test: Expose entry and opaque cursor
+    Test->>Api: Request next page with cursor

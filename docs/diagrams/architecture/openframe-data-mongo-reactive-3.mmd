@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant App as "WebFlux Application"
+    participant Repo as "Reactive Onboarding Repository"
+    participant Mongo as "MongoDB"
+    App->>Repo: Find progress with explicit identifiers
+    Repo->>Mongo: Execute derived query
+    Mongo-->>Repo: Return document or no result
+    Repo-->>App: Complete Mono result

@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Manager as Tool Connection Processing Manager
+    participant Publisher as Tool Connection Message Publisher
+    participant Nats as NATS
+    participant Listener as Tool Connection Listener
+    participant Service as Backend Tool Connection Service
+
+    Manager->>Manager: Load installed tools
+    Manager->>Manager: Skip tool with empty tool type
+    Manager->>Publisher: Publish machine ID, agent tool ID, tool type
+    Publisher->>Nats: Publish camel case JSON on machine-specific subject
+    Nats->>Listener: Deliver message on machine.*.tool-connection
+    Listener->>Listener: Extract machine ID and deserialize payload
+    Listener->>Service: Add tool connection
+    Service-->>Listener: Processing completes
+    Listener->>Nats: Acknowledge successful delivery

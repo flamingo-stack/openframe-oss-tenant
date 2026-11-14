@@ -1,0 +1,12 @@
+flowchart LR
+    TestRunner["OpenFrame Test Runner"] --> ScriptTests["Script And Schedule Tests"]
+    ScriptTests --> ScriptApi["Script API"]
+    ScriptTests --> ScheduleApi["Script Schedule API"]
+    ScriptTests --> DeviceApi["Device API"]
+    ScriptApi --> GraphQL["OpenFrame GraphQL API"]
+    ScheduleApi --> GraphQL
+    DeviceApi --> GraphQL
+    GraphQL --> Dispatch["Execution Dispatch"]
+    Dispatch --> Agent["Enrolled Device Agent"]
+    Agent --> Results["Execution Results"]
+    Results --> GraphQL

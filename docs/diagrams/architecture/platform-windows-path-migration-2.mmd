@@ -1,0 +1,8 @@
+flowchart TD
+    Run["run()"] --> Registry["winreg Registry Access"]
+    Run --> Errors["anyhow Result Boundary"]
+    Run --> Logs["tracing Events"]
+    Registry --> RawValue["Raw Path Value"]
+    RawValue --> Decision["Type and Content Decision"]
+    Decision --> Write["Corrected Registry Value"]
+    Errors --> Logs

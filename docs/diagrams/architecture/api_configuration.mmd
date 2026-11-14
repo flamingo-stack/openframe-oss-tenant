@@ -1,0 +1,5 @@
+flowchart LR
+    Gateway["Validated Gateway Request"] --> Headers["Trusted Identity Headers"]
+    Headers --> Resolver["ApiCaller Argument Resolver"]
+    Resolver --> Controller["REST Controller"]
+    Controller --> Principal["Domain Principal Resolution"]

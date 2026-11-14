@@ -1,0 +1,7 @@
+flowchart TD
+    RecoveryManager["Connector Recovery Manager"] -->|"reads and writes alerts"| AlertRepository["Connector Alert Repository"]
+    AlertRepository -->|"persists"| AlertsCollection[("connector_alerts")]
+    RecreationTracker["Mongo Recreation Tracker"] -->|"records and prunes events"| EventRepository["Connector Recreation Event Repository"]
+    EventRepository -->|"persists"| EventsCollection[("connector_recreation_events")]
+    AlertsCollection -->|"tenant-scoped alert records"| MongoDB[("MongoDB")]
+    EventsCollection -->|"recreation event records"| MongoDB

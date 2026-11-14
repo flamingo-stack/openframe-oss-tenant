@@ -1,0 +1,13 @@
+flowchart TD
+    Register["register"] --> RegisterAt["register at registry root"]
+    RegisterAt --> EntryValues["build entry values"]
+    EntryValues --> PowerShellPath["resolve PowerShell path"]
+    EntryValues --> UninstallCommand["build elevated uninstall command"]
+    RegisterAt --> UninstallKey["uninstall registry key"]
+
+    Refresh["refresh"] --> InstalledCheck["verify current installed binary"]
+    InstalledCheck -->|"matching path"| Register
+    InstalledCheck -->|"not matching"| Skip["skip registry update"]
+
+    Unregister["unregister"] --> UnregisterAt["remove registry subtree"]
+    UnregisterAt --> UninstallKey

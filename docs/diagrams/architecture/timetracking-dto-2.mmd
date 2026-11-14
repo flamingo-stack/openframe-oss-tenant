@@ -1,0 +1,6 @@
+flowchart TD
+    TestService["OpenFrame test service"] -->|"uses"| TestLibrary["OpenFrame test service core library"]
+    TestLibrary -->|"contains"| TimetrackingDto["Timetracking Dto"]
+    TimetrackingDto -->|"models edge from"| ApiLayer["API time-entry query"]
+    ApiLayer -->|"reads through"| RepositoryLayer["Time-entry repository support"]
+    RepositoryLayer -->|"stores"| MongoDb["MongoDB"]

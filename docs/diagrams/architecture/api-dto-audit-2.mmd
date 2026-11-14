@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Client as "GraphQL Client"
+    participant Fetcher as "Log Data Fetcher"
+    participant Mapper as "GraphQL Log Mapper"
+    participant Service as "Log Service"
+    participant Store as "Pinot Log Repository"
+    Client->>Fetcher: logs(filter, cursor arguments, search, sort)
+    Fetcher->>Mapper: Convert filter and sort
+    Mapper->>Fetcher: Criteria, pagination, storage sort
+    Fetcher->>Service: Query tenant audit logs
+    Service->>Store: Find or search matching log events
+    Store->>Service: Events and page boundary item
+    Service->>Fetcher: Connection result
+    Fetcher->>Client: Edges, cursors, page information

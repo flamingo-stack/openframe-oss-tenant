@@ -1,0 +1,18 @@
+flowchart LR
+    Api["Software Inventory API Response"] --> SoftwareConnection["Software Connection"]
+    SoftwareConnection --> SoftwareEdge["Software Edge"]
+    SoftwareEdge --> SoftwareNode["Software Node"]
+    SoftwareEdge --> CursorA["Cursor"]
+
+    DeviceConnection["Software On Device Connection"] --> DeviceEdge["Software On Device Edge"]
+    DeviceEdge --> DeviceNode["Software On Device Node"]
+    DeviceEdge --> CursorB["Cursor"]
+
+    VulnerabilityConnection["Vulnerability Connections"] --> AssociationEdge["Software Vulnerability Edge"]
+    VulnerabilityConnection --> VulnerabilityEdge["Vulnerability Edge"]
+    AssociationEdge --> AssociationNode["Software Vulnerability Node"]
+    VulnerabilityEdge --> VulnerabilityNode["Vulnerability Node"]
+
+    SoftwareNode --> Summary["Software Vulnerability Summary"]
+    Summary --> Severity["Highest Severity"]
+    Summary --> CveCount["CVE Count"]

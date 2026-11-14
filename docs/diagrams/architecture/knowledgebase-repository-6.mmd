@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Request a folder subtree"] --> Links["Load folder identifiers and parent identifiers"]
+    Links --> Graph["Build in-memory parent graph"]
+    Graph --> Roots["Locate requested folder"]
+    Roots --> Descendants["Traverse descendant links"]
+    Descendants --> ItemIds["Produce descendant item identifiers"]
+    ItemIds --> Listing["Use identifiers in a folder or article query"]

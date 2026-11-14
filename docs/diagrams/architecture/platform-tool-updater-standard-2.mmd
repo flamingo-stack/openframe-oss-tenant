@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Installed tool"] --> InstallationType{"Installation type?"}
+    InstallationType -->|"Standard"| StandardUpdater["Standard tool updater"]
+    InstallationType -->|"Service"| ServiceUpdater["Service tool updater"]
+    InstallationType -->|"GUI application on macOS"| GuiUpdater["GUI application updater"]
+    InstallationType -->|"GUI application on other systems"| FallbackUpdater["Standard tool updater fallback"]

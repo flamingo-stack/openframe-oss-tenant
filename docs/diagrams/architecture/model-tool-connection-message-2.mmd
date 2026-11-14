@@ -1,0 +1,9 @@
+flowchart TD
+    Model["Model Tool Connection Message"] --> Serde["Serde Serialize and Deserialize"]
+    Model --> Publisher["Tool Connection Message Publisher"]
+    Publisher --> NatsPublisher["NATS Message Publisher"]
+    Processing["Tool Connection Processing Manager"] --> Publisher
+    Processing --> ConnectionState["Tool Connection Service"]
+    Listener["Java Tool Connection Listener"] --> ModelContract["Camel Case JSON Contract"]
+    Listener --> SubjectIdentity["Machine ID From NATS Subject"]
+    Listener --> Backend["Backend Tool Connection Service"]

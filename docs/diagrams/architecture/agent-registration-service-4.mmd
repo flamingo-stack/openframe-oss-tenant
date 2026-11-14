@@ -1,0 +1,7 @@
+flowchart TD
+    Read["Read persisted machine info"] --> Result{"Read succeeds?"}
+    Result -->|"yes"| UseRecord["Use returned record or no record"]
+    Result -->|"no"| RetryLeft{"Delay remains?"}
+    RetryLeft -->|"yes"| Wait["Wait 1, 3, or 5 seconds"]
+    Wait --> Read
+    RetryLeft -->|"no"| FreshPath["Log error and use fresh registration"]

@@ -1,0 +1,6 @@
+flowchart LR
+    Caller["API Key Owner"] --> Principal["Resolved Principal"]
+    Principal --> TicketService["Ticket Domain Services"]
+    TicketService --> Lifecycle["Lifecycle and Validation"]
+    Lifecycle --> Notifications["Assignment Notifications"]
+    TicketService --> Response["Mapped REST Response"]

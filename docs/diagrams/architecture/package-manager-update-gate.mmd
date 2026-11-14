@@ -1,0 +1,11 @@
+flowchart LR
+    PackageUpdate["Package update request"] --> Resolver["Identity resolver"]
+    PackageUpdate --> Snapshot["Process snapshot"]
+    Resolver --> Identity["App identity"]
+    Snapshot --> Processes["Running processes"]
+    Identity --> Gate["Package Manager Update Gate"]
+    Processes --> Gate
+    Gate --> Clear["Clear decision"]
+    Gate --> Blocked["Blocked decision"]
+    Blocked --> Status["Update status reporting"]
+    Clear --> Runner["Package update runner"]

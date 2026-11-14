@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Caller
+    participant Repository as "Custom Notification Repository"
+    participant Mongo as "Tenant-Aware Mongo Template"
+
+    Caller->>Repository: Request recipient page and filters
+    Repository->>Repository: Build tenant and recipient criteria
+    Repository->>Repository: Apply status, metadata, entity, search, and cursor filters
+    Repository->>Mongo: Query read states in effective direction
+    Mongo->>Repository: Ordered notification IDs and statuses
+    Repository->>Mongo: Load notification documents by IDs
+    Mongo->>Repository: Notification documents
+    Repository->>Repository: Restore read-state order and attach status
+    Repository->>Caller: Notification page

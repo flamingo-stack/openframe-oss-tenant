@@ -1,0 +1,17 @@
+flowchart TD
+    Start["Repository Save Requested"] --> Before["Before Save Event"]
+    Before --> Read["Read Agent Summary Fields"]
+    Read --> Format{"Publication State Present?"}
+    Format -->|"no"| None["Format As none"]
+    Format -->|"yes"| Published{"Published?"}
+    Published -->|"yes"| PublishedText["Format As published"]
+    Published -->|"no"| Attempts{"Attempts Equal Zero?"}
+    Attempts -->|"yes"| Pending["Format As pending"]
+    Attempts -->|"no"| Retrying["Format Pending With Attempts"]
+    None --> BeforeLog["Write Before Save Information Log"]
+    PublishedText --> BeforeLog
+    Pending --> BeforeLog
+    Retrying --> BeforeLog
+    BeforeLog --> Persist["MongoDB Persists Document"]
+    Persist --> After["After Save Event"]
+    After --> AfterLog["Write After Save Information Log"]

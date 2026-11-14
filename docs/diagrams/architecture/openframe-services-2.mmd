@@ -1,0 +1,8 @@
+flowchart TD
+    TenantApps["Tenant application entry points"] --> LibraryModules["OpenFrame OSS Library modules"]
+    LibraryModules --> ApiCore["API, authorization, client, gateway, management, and stream cores"]
+    LibraryModules --> DataCore["Mongo, Redis, device, and shared data modules"]
+    TenantApps --> TenantConfig["Tenant configuration files"]
+    TenantConfig --> Runtime["Kubernetes services and data sources"]
+    ApiCore --> Runtime
+    DataCore --> Runtime

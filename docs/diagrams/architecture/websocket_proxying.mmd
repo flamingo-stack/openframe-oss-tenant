@@ -1,0 +1,10 @@
+flowchart TD
+    Browser["Browser WebSocket frame"] --> Path{"Mesh control path?"}
+    Path -->|"no"| Relay["Relay unchanged"]
+    Path -->|"yes"| Enabled{"Filter enabled?"}
+    Enabled -->|"no"| Relay
+    Enabled -->|"yes"| Parse["Parse action from frame"]
+    Parse --> Allowed{"Action allowlisted?"}
+    Allowed -->|"yes"| Relay
+    Allowed -->|"no and observe"| Observe["Log and relay"]
+    Allowed -->|"no and enforce"| Drop["Release buffer and drop"]

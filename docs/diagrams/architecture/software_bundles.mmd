@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> Pending: "Assign or remove devices"
+    Pending --> Pending: "Rejected submission"
+    Pending --> Deleted: "Delete draft"
+    Pending --> Completed: "Submit valid immediate install"
+    Completed --> Completed: "Idempotent resubmission"
+    Deleted --> [*]
+    Completed --> [*]

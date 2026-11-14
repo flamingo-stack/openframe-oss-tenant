@@ -1,0 +1,26 @@
+flowchart TD
+    Start["Start diagnostic flow"] --> Mode{"Diagnostic mode?"}
+    Mode -->|"Pre-install"| Required["Validate required arguments"]
+    Mode -->|"Authentication"| AuthRequired["Validate required arguments"]
+    Mode -->|"Health check"| Admin["Validate administrator privileges"]
+    Required --> RequiredOk{"Arguments valid?"}
+    AuthRequired --> AuthRequiredOk{"Arguments valid?"}
+    RequiredOk -->|"No"| PreReport["Return pre-install report"]
+    AuthRequiredOk -->|"No"| AuthReport["Return authentication report"]
+    RequiredOk -->|"Yes"| PreAdmin["Validate administrator privileges"]
+    AuthRequiredOk -->|"Yes"| AuthAdmin["Validate administrator privileges"]
+    PreAdmin --> PreAdminOk{"Privileges valid?"}
+    AuthAdmin --> AuthAdminOk{"Privileges valid?"}
+    Admin --> HealthAdminOk{"Privileges valid?"}
+    PreAdminOk -->|"No"| PreReport
+    AuthAdminOk -->|"No"| AuthReport
+    HealthAdminOk -->|"No"| HealthReport["Return health report"]
+    PreAdminOk -->|"Yes"| PreChecks["Run runtime, disk, and network checks"]
+    AuthAdminOk -->|"Yes"| AuthChecks["Run runtime, disk, and network checks"]
+    HealthAdminOk -->|"Yes"| LoadConfig["Load initial configuration"]
+    LoadConfig --> ConfigOk{"Configuration usable?"}
+    ConfigOk -->|"No or absent"| HealthReport
+    ConfigOk -->|"Yes"| HealthChecks["Run runtime and network checks"]
+    PreChecks --> PreReport
+    AuthChecks --> AuthReport
+    HealthChecks --> HealthReport

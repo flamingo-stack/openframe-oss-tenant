@@ -1,0 +1,9 @@
+flowchart TD
+    Input["Parsed Log Entry"] --> Client{"Preserve as client log?"}
+    Client -->|"yes"| Keep["Append unchanged"]
+    Client -->|"no"| Seen{"Message seen before?"}
+    Seen -->|"no"| First["Store first entry index and append"]
+    Seen -->|"yes"| Count["Increment retained entry count"]
+    Keep --> Output["Ordered Deduplicated Entries"]
+    First --> Output
+    Count --> Output

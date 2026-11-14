@@ -1,0 +1,8 @@
+flowchart TD
+    Checks["Doctor health checks"] -->|"CheckResult values"| Report["Doctor report"]
+    Report -->|"results with remediation"| Pending["pending()"]
+    Pending -->|"unique remediations"| Heal["heal()"]
+    Heal -->|"InstallWebview2"| Installer["WebView2 installer"]
+    Installer -->|"HealOutcome"| Results["HealResult collection"]
+    Installer -->|"re-check runtime"| WebViewCheck["WebView2 runtime check"]
+    Heal --> Logs["Tracing logs"]

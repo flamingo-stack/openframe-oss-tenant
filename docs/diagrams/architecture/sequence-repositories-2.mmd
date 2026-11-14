@@ -1,0 +1,11 @@
+flowchart LR
+    Caller["Caller requests next value"] --> Name["Sequence name"]
+    Name --> ActiveRepository["Active sequence repository"]
+    ActiveRepository --> Query["Match sequence name"]
+    ActiveRepository --> Increment["Increment value by one"]
+    TenantRepository["Tenant-aware mode"] -.-> Scope["Template adds tenant scope"]
+    Scope -.-> Query
+    Query --> AtomicOperation["Find and modify with upsert"]
+    Increment --> AtomicOperation
+    AtomicOperation --> UpdatedDocument["Updated TenantSequence"]
+    UpdatedDocument --> ReturnedValue["Return incremented value"]

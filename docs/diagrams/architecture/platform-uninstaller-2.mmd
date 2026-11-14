@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Caller as Client Process
+    participant Uninstaller as Platform Uninstaller
+    participant Service as Service Manager
+    participant Remote as Deregistration Service
+    participant Tools as Tool Uninstall Service
+    participant Files as Local Filesystem
+    Caller->>Uninstaller: Invoke operating system uninstall
+    Uninstaller->>Service: Uninstall client service
+    Service-->>Uninstaller: Service result
+    Uninstaller->>Remote: Deregister best effort
+    Remote-->>Uninstaller: Registration outcome
+    Uninstaller->>Tools: Uninstall all integrated tools
+    Tools-->>Uninstaller: Tool teardown outcome
+    Uninstaller->>Files: Remove logs and application support
+    Uninstaller->>Files: Remove Orbit state and update residue
+    Uninstaller->>Remote: Retry unreported deregistration
+    Uninstaller->>Files: Remove binary or schedule binary cleanup

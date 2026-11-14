@@ -1,0 +1,10 @@
+flowchart TD
+    Callers["Tenant-scoped application services"] --> Contract["Custom Machine Repository"]
+    Contract --> Implementation["Custom Machine Repository Implementation"]
+    Implementation --> Filters["Machine query filter"]
+    Implementation --> Tags["Tag and tag-assignment collections"]
+    Implementation --> Mongo["MongoDB machine collection"]
+    Implementation --> Aggregations["MongoDB aggregations"]
+    Aggregations --> Mongo
+    Maintenance["Heartbeat and host-fact maintenance"] --> Implementation
+    Implementation -.->|"direct update without publishing"| Mongo

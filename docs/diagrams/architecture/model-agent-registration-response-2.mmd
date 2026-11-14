@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Agent as Endpoint agent
+    participant Service as Registration service
+    participant Client as Registration client
+    participant Api as Registration API
+    participant Storage as Local secure storage
+    Agent->>Service: Start registration
+    Service->>Client: Register with initial key and device request
+    Client->>Api: POST register or reinstall
+    Api-->>Client: Agent registration response JSON
+    Client-->>Service: Parsed response
+    Service->>Storage: Persist machine ID and client secret
+    Service->>Storage: Save machine ID, client ID, and client secret
+    Service-->>Agent: Registration complete

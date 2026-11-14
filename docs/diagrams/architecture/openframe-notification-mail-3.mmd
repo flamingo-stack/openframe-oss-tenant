@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Notification requested"] --> Provider{"Selected provider"}
+    Provider -->|"SMTP"| Supported{"Operation supported"}
+    Supported -->|"yes"| SendSmtp["Create and send plain-text message"]
+    Supported -->|"no"| Unsupported["Throw UnsupportedOperationException"]
+    Provider -->|"HubSpot"| BuildPayload["Select template and construct payload"]
+    BuildPayload --> SendApi["POST to HubSpot API"]
+    SendApi --> Success{"Response is 2xx"}
+    Success -->|"yes"| Complete["Log success and complete"]
+    Success -->|"no"| Failure["Throw IllegalStateException"]

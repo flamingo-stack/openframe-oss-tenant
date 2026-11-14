@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Receive doctor check results"] --> Collect["Collect attached remediations"]
+    Collect --> Unique["Keep first occurrence of each remediation"]
+    Unique --> Next["Select next remediation"]
+    Next --> Run["Run mapped healing action"]
+    Run --> Status{"Action healed?"}
+    Status -->|"yes"| RecordSuccess["Record Healed result"]
+    Status -->|"no"| RecordFailure["Record failure message"]
+    RecordSuccess --> More{"More remediations?"}
+    RecordFailure --> More
+    More -->|"yes"| Next
+    More -->|"no"| Finish["Return all healing results"]

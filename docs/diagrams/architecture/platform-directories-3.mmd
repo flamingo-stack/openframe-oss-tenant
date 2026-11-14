@@ -1,0 +1,9 @@
+flowchart LR
+    TargetOS["Target operating system"] --> Windows["Windows"]
+    TargetOS --> MacOS["macOS"]
+    TargetOS --> Linux["Linux"]
+    Windows --> WinPolicy["Use inherited system permissions"]
+    MacOS --> MacRegular["Regular paths: root admin and 0755"]
+    MacOS --> MacSecure["Secured path: root ownership"]
+    Linux --> LinuxRegular["Regular paths: root root and 0755"]
+    Linux --> LinuxSecure["Secured path: root root and 0700"]

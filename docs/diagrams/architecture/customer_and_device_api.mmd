@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Device List Request"] --> Criteria["Build Filter Criteria"]
+    Criteria --> Query["Device Service Query"]
+    Query --> Results["Paginated Machines"]
+    Results --> IncludeTags{"Include Tags?"}
+    IncludeTags -->|"yes"| Tags["Batch Tag Lookup"]
+    IncludeTags -->|"no"| Response["Device Response"]
+    Tags --> Response

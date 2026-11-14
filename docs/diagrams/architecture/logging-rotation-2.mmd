@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Reading
+    Reading --> Reading: "offset below file size"
+    Reading --> Eligible: "offset reaches file size, size at least 10 MiB"
+    Eligible --> Archived: "gzip archive succeeds"
+    Archived --> Reading: "truncate log, set offset to zero"
+    Eligible --> Reading: "archive operation fails"

@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph ClientService["OpenFrame Client Service"]
+        Spring["Spring scheduler"]
+        LockConfig["ShedLock configuration"]
+        OnlineScheduler["Device online dispatch scheduler"]
+        ScheduleScheduler["Script schedule scheduler"]
+        WatchdogScheduler["Script execution watchdog scheduler"]
+        Metrics["Device online dispatch metrics"]
+    end
+    Redis["Redis"]
+    OnlineService["Device online dispatch service"]
+    ScheduleService["Schedule script execution service"]
+    WatchdogService["Script execution watchdog service"]
+    DispatchRepository["Device online dispatch repository"]
+    Registry["Micrometer registry"]
+
+    Spring --> OnlineScheduler
+    Spring --> ScheduleScheduler
+    Spring --> WatchdogScheduler
+    Spring --> Metrics
+    LockConfig --> Redis
+    OnlineScheduler --> OnlineService
+    ScheduleScheduler --> ScheduleService
+    WatchdogScheduler --> WatchdogService
+    Metrics --> DispatchRepository
+    Metrics --> Registry

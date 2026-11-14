@@ -1,0 +1,5 @@
+flowchart LR
+    ToolDefinition["Tool URL template"] --> Resolver["Tool Url Params Resolver"]
+    InitialConfig["Initial Configuration Service"] -->|"get_server_url()"| Resolver
+    StoredConfig["Persisted initial configuration"] --> InitialConfig
+    Resolver -->|"resolved URL"| ToolRuntime["Tool connection or launch workflow"]

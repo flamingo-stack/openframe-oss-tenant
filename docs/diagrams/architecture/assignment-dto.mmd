@@ -1,0 +1,8 @@
+flowchart LR
+    AssignmentQuery["Assignment query response"] --> Edge["ItemAssignmentEdge"]
+    Edge -->|"node"| Assignment["ItemAssignment"]
+    Edge -->|"cursor"| Cursor["Pagination cursor"]
+    Assignment --> Target["AssignmentTarget"]
+    Target --> TypeName["GraphQL typename"]
+    Target --> TargetFields["Target identity and display fields"]
+    TestCode["Integration test code"] --> Edge

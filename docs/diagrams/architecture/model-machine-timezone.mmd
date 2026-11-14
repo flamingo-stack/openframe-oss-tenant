@@ -1,0 +1,7 @@
+flowchart LR
+    EndpointOs["Endpoint operating system"] -->|"time-zone lookup"| Fetcher["Device data fetcher"]
+    Fetcher -->|"time-zone string"| RunManager["Machine timezone run manager"]
+    RunManager -->|"publish request"| Publisher["Machine timezone publisher"]
+    Publisher -->|"serialized message"| Nats["NATS JetStream"]
+    Nats -->|"machine ID subject"| Listener["Machine timezone listener"]
+    Listener -->|"timezone update"| Service["Machine timezone service"]

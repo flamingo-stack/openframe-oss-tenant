@@ -1,0 +1,6 @@
+flowchart LR
+    Repository["Tenant-aware repository fragment"] --> Template["Tenant Aware Mongo Template"]
+    Template --> Provider["Tenant ID provider"]
+    Provider --> Tenant["Current tenant identifier"]
+    Template --> Query["Tenant-scoped Mongo operation"]
+    Query --> Database[("MongoDB")]

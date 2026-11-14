@@ -1,0 +1,9 @@
+flowchart LR
+    Client["GraphQL client"] --> Gateway["OpenFrame gateway"]
+    Gateway --> Api["OpenFrame API service"]
+    Api --> Dgs["DGS GraphQL runtime"]
+    Dgs --> Fetchers["Graphql Datafetchers"]
+    Fetchers --> Services["Domain services"]
+    Fetchers --> Loaders["GraphQL DataLoaders"]
+    Services --> Stores["Tenant data stores and integrations"]
+    Loaders --> Stores

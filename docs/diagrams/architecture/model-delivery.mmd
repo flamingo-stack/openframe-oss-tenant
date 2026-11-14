@@ -1,0 +1,9 @@
+flowchart LR
+    Platform["Platform Delivery Services"] --> Broker["NATS Broker"]
+    Broker --> Listener["Endpoint Delivery Listener"]
+    Listener --> Handler["Operation Handler"]
+    Handler --> Model["Model Delivery"]
+    Model --> Store["Result Store and Ledger"]
+    Store --> Outbox["Result Outbox"]
+    Outbox --> Broker
+    Broker --> ResultListener["Platform Result Listener"]

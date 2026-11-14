@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Test as ScriptScheduleTest
+    participant ScriptApi as Script API
+    participant Generator as Schedule generator
+    participant ScheduleApi as Script schedule API
+    participant Api as GraphQL API
+
+    Test->>ScriptApi: Create prerequisite script
+    ScriptApi->>Api: Create script request
+    Api-->>ScriptApi: Script with ID
+    ScriptApi-->>Test: Script
+    Test->>Generator: Calculate nearest slot
+    Generator-->>Test: 30-minute start time
+    Test->>ScheduleApi: Create hourly date-time schedule
+    ScheduleApi->>Api: Create schedule request
+    Api-->>ScheduleApi: Active schedule
+    ScheduleApi-->>Test: Created schedule
+    Test->>Test: Assert defaults and script association

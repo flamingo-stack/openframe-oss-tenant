@@ -1,0 +1,15 @@
+flowchart TD
+    Receive["Receive delivery envelope"] --> Decode["Deserialize package update message"]
+    Decode --> Validate["Resolve package and update source"]
+    Validate --> ModeCheck{"Force mode?"}
+    ModeCheck -->|"no"| Wait["Wait for application to stop"]
+    ModeCheck -->|"yes"| UserCheck{"User origin?"}
+    UserCheck -->|"yes"| Countdown["Apply permitted countdown"]
+    UserCheck -->|"no"| Policy["Apply non-user update policy"]
+    Countdown --> Close["Close application when required"]
+    Policy --> Close
+    Wait --> Install["Install package update"]
+    Close --> Install
+    Install --> Relaunch["Relaunch application when required"]
+    Relaunch --> Report["Publish update status"]
+    Install --> Report

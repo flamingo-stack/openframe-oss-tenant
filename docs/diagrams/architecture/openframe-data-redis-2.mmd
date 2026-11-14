@@ -1,0 +1,9 @@
+flowchart TD
+    CacheCall["Application cache operation"] --> KeyBuilder["Openframe Redis key builder"]
+    KeyBuilder --> Prefix["Tenant-aware prefix"]
+    Prefix --> CacheKey["Prefixed cache key"]
+    CacheKey --> CacheManager["Redis cache manager"]
+    CacheManager --> DefaultTtl["Six-hour default TTL"]
+    CacheManager --> FleetTtl["One-hour Fleet cache TTL"]
+    DefaultTtl --> RedisCluster[("Redis cluster")]
+    FleetTtl --> RedisCluster

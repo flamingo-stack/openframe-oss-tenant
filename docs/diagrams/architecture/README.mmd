@@ -1,0 +1,33 @@
+flowchart LR
+    User["Browser, API Client, or Managed Endpoint"] --> Gateway["OpenFrame Gateway"]
+
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> Api["OpenFrame API"]
+    Gateway --> ExternalApi["External API"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> Frontend["OpenFrame Frontend"]
+
+    Api --> Mongo["MongoDB"]
+    Api --> Redis["Redis Cluster"]
+    Api --> Cassandra["Cassandra"]
+    Api --> Pinot["Pinot"]
+
+    ClientService --> Nats["NATS"]
+    ClientService --> Kafka["Kafka"]
+    ClientService --> Mongo
+
+    Management["Management Service"] --> Nats
+    Management --> Mongo
+    Management --> Redis
+
+    Stream["Stream Service"] --> Kafka
+    Stream --> Cassandra
+    Stream --> Pinot
+    Stream --> Mongo
+
+    Config["Config Service"] --> Api
+    Config --> ClientService
+    Config --> Gateway
+    Config --> Stream
+
+    TenantTools["Fleet MDM and MeshCentral"] --> Mongo

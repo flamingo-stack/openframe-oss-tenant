@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant User as "Authenticated User"
+    participant ImageApi as "Knowledge Base Image Controller"
+    participant ImageService as "Knowledge Base Image Service"
+    participant Storage as "Object Storage"
+    User->>ImageApi: POST image metadata
+    ImageApi->>ImageService: Create upload
+    ImageService->>Storage: Create signed PUT URL
+    ImageService->>ImageApi: Image ID, upload URL, constraints
+    ImageApi->>User: 201 upload instructions
+    User->>Storage: Upload image bytes
+    User->>ImageApi: GET permanent image URL
+    ImageApi->>ImageService: Generate signed download URL
+    ImageService->>Storage: Create signed GET URL
+    ImageApi->>User: 302 redirect with private cache policy

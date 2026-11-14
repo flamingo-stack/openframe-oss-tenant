@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Service starts after authentication"] --> HasKey{"Stored log key missing?"}
+    HasKey -->|"yes"| Fetch["Fetch a log key"]
+    HasKey -->|"no"| ClearInitial["Clear enrollment key"]
+    ClearInitial --> WaitFailure["Wait for stream failure"]
+    WaitFailure --> Fetch
+    Fetch --> Retry["Retry retrieval until settled"]
+    Retry --> Response{"Different nonempty key returned?"}
+    Response -->|"no"| Delay["Wait maximum retry interval"]
+    Delay --> WaitFailure
+    Response -->|"yes"| Save["Save log key"]
+    Save --> ClearSavedInitial["Clear enrollment key"]
+    ClearSavedInitial --> Restart["Drain work and request restart"]

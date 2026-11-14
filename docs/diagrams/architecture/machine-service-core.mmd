@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["Service or feature gate"] --> VersionService["AgentVersionService"]
+    VersionService --> Repository["InstalledAgentRepository"]
+    Repository --> Records[("Installed-agent records")]
+    VersionService --> CurrentVersion["Reported OpenFrame client version"]
+    CurrentVersion --> Comparator["AgentVersion"]
+    Comparator --> Decision["Version eligibility decision"]

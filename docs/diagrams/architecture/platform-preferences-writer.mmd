@@ -1,0 +1,13 @@
+flowchart LR
+    Caller["OpenFrame Client Caller"] --> Parser["args_to_pairs"]
+    Caller --> Writer["write"]
+    Parser --> Pairs["Preference Pairs"]
+    Pairs --> Writer
+    Writer --> PlatformCheck{"macOS Build?"}
+    PlatformCheck -->|"yes"| ConsoleUser["Console User Lookup"]
+    ConsoleUser --> Launchctl["launchctl asuser defaults write"]
+    Launchctl --> Success{"Command Successful?"}
+    Success -->|"yes"| DefaultsDomain["User Defaults Domain"]
+    Success -->|"no"| Fallback["sudo -u defaults write"]
+    Fallback --> DefaultsDomain
+    PlatformCheck -->|"no"| NoOp["Successful No-op"]

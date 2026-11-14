@@ -1,0 +1,9 @@
+flowchart TD
+    Startup["Client startup or new tool"] --> InstalledTools["Load installed tools"]
+    InstalledTools --> ValidType{"Tool type present?"}
+    ValidType -->|"no"| Skip["Skip connection publication"]
+    ValidType -->|"yes"| Process["Process tool connection"]
+    Process --> PersistedState["Read or save connection state"]
+    Process --> PublishConnection["Publish tool connection message"]
+    PublishConnection --> Broker["NATS subject for machine"]
+    Broker --> Backend["Backend connection listener"]

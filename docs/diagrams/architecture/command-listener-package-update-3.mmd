@@ -1,0 +1,14 @@
+flowchart TD
+    Receive["Receive package update command"] --> HasSequence{"Delivery sequence present?"}
+    HasSequence -->|"no"| FailCommand["Return failed command outcome"]
+    HasSequence -->|"yes"| Supported{"Manager supported locally?"}
+    Supported -->|"no"| RejectStatus["Publish NotSupported status"]
+    RejectStatus --> DoneRejected["Return done outcome"]
+    Supported -->|"yes"| Normalize["Normalize countdown"]
+    Normalize --> Submit["Submit durable order"]
+    Submit --> Submitted{"Submission result"}
+    Submitted -->|"accepted"| DoneAccepted["Return done outcome"]
+    Submitted -->|"stale"| DoneStale["Log and return done"]
+    Submitted -->|"superseded"| SupersededStatus["Publish Superseded status for old order"]
+    SupersededStatus --> DoneSuperseded["Return done outcome"]
+    Submitted -->|"storage error"| FailedStorage["Return failed command outcome"]

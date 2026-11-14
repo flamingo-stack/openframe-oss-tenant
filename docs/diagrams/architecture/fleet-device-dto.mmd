@@ -1,0 +1,8 @@
+flowchart LR
+    FleetApi["Fleet MDM payload"] --> Jackson["Jackson deserialization"]
+    Jackson --> Software["FleetSoftware"]
+    Jackson --> User["FleetUser"]
+    Software --> Vulnerability["FleetVulnerability list"]
+    Software --> TestService["OpenFrame test service"]
+    User --> TestService
+    Vulnerability --> TestService

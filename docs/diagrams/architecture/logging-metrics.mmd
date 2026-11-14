@@ -1,0 +1,8 @@
+flowchart LR
+    ClientRuntime["OpenFrame Client runtime"] --> LoggingSetup["Logging setup"]
+    LoggingSetup --> TracingSubscriber["Tracing subscriber"]
+    TracingSubscriber --> MetricsLayer["MetricsLayer"]
+    MetricsLayer --> SharedStore["Arc RwLock MetricsStore"]
+    SharedStore --> InProcessReader["In-process metric reader"]
+    ClientRuntime --> PermissionMonitoring["Permission monitoring"]
+    PermissionMonitoring --> InProcessReader

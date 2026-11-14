@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Handler as Tool installation handler
+    participant Installer as Tool installation service
+    participant Record as Installed Tool record
+    participant Store as Installed tools service
+    participant Runner as Tool run manager
+    Handler->>Installer: Submit installation work
+    Installer->>Record: Create record with installing state
+    Installer->>Store: Save reserved record
+    Installer->>Record: Set installation metadata and assets
+    Installer->>Record: Set installed state
+    Installer->>Store: Save completed record
+    Runner->>Store: Load installed record
+    Runner->>Record: Inspect variant and launch arguments

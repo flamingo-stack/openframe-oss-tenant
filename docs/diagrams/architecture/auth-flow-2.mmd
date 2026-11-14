@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Test as Test
+    participant Flow as AuthFlowOSS
+    participant Tenant as TenantApi
+    participant Api as AuthApi
+
+    Test->>Flow: discoverTenant()
+    Flow->>Tenant: Discover tenant for user
+    Tenant-->>Flow: Tenant identifier
+    Test->>Flow: startFlow()
+    Flow->>Api: Start OAuth flow
+    Api-->>Flow: 302 with state, challenge, cookies
+    Test->>Flow: initAuth()
+    Flow->>Api: Initiate authorization
+    Api-->>Flow: 302 with cookies
+    Test->>Flow: postCredentials()
+    Flow->>Api: Submit credentials
+    Api-->>Flow: 302 with cookies
+    Test->>Flow: getAuthCode()
+    Flow->>Api: Follow authorization redirect
+    Api-->>Flow: 302 with authorization code
+    Test->>Flow: extractTokens()
+    Flow->>Api: Exchange code for tokens
+    Api-->>Flow: 302 with token cookies

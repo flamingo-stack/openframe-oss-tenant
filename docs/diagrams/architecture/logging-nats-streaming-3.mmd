@@ -1,0 +1,14 @@
+flowchart TD
+    Tick["60 second tick"] --> Drain["Register discovered sources"]
+    Drain --> Read["Read up to 50 logs"]
+    Read --> HasLogs{"Logs available?"}
+    HasLogs -->|"no"| Rotate["Check log rotation"]
+    Rotate --> Tick
+    HasLogs -->|"yes"| Build["Build log batch"]
+    Build --> Publish["Publish to agents.logs"]
+    Publish --> Ack{"Acknowledged?"}
+    Ack -->|"yes"| Commit["Commit all source cursors"]
+    Commit --> Save["Save main log offset"]
+    Save --> Tick
+    Ack -->|"no"| Rollback["Roll back all source cursors"]
+    Rollback --> Tick

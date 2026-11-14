@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Request as "Authenticated request"
+    participant Security as "Spring Security context"
+    participant Entry as "REST handler or DGS fetcher"
+    participant Resolver as "Principal resolver"
+
+    Request->>Security: Establish authentication
+    Entry->>Resolver: Resolve AuthPrincipal parameter
+    Resolver->>Security: Read current authentication
+    Security-->>Resolver: JWT authentication or no JWT
+    Resolver-->>Entry: AuthPrincipal or null

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant OsManager as "Operating system service manager"
+    participant Service as "Service Management"
+    participant Config as "Initial Configuration Service"
+    participant Client as "OpenFrame Client"
+    OsManager->>Service: "Start service"
+    Service->>Service: "Validate directories and permissions"
+    Service->>Config: "Check configuration"
+    alt "Configuration is absent"
+        loop "Until configured"
+            Service->>Config: "Poll configuration state"
+        end
+    end
+    Service->>Client: "Construct client"
+    Service->>Client: "Start client"

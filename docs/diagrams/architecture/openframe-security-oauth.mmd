@@ -1,0 +1,9 @@
+flowchart LR
+    Browser["Browser or native application"] --> Gateway["Openframe Gateway"]
+    Gateway --> Bff["Openframe Security Oauth BFF"]
+    Bff --> AuthServer["Authorization Server"]
+    AuthServer --> Identity["Identity provider or local login"]
+    Bff --> Cookies["Authentication cookies"]
+    Bff --> TicketStore["One-time ticket store"]
+    Cookies --> Browser
+    TicketStore --> Browser

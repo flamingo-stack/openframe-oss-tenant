@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Start listener task"] --> Attempt["Obtain active NATS client"]
+    Attempt --> Identity["Read machine identity"]
+    Identity --> Subscribe["Subscribe to machine remote-access subject"]
+    Subscribe --> Active["Wait for event or client replacement"]
+    Active -->|"Event received"| Dispatch["Spawn chat application check"]
+    Dispatch --> Active
+    Active -->|"Stream closed"| Retry["Wait reconnection delay"]
+    Active -->|"Client replaced"| Retry
+    Attempt -->|"Failure"| Retry
+    Identity -->|"Failure"| Retry
+    Subscribe -->|"Failure"| Retry
+    Retry --> Attempt

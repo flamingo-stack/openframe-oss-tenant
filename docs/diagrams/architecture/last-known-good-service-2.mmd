@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Update as Update Lifecycle
+    participant Lkg as Last Known Good Service
+    participant Binary as Current Executable
+    participant Reserve as Reserve Binary
+    participant Anchor as Version Anchor
+    Update->>Lkg: promote(target version)
+    Lkg->>Binary: copy to temporary reserve
+    Lkg->>Reserve: flush temporary reserve data
+    Lkg->>Reserve: rename temporary reserve into place
+    Lkg->>Anchor: atomically write version JSON
+    Lkg-->>Update: promotion complete

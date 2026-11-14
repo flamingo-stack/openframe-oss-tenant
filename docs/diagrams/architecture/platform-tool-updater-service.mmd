@@ -1,0 +1,10 @@
+flowchart TD
+    UpdateService["Tool Agent Update Service"] -->|"creates dependencies"| UpdateRunner["Updater Runner"]
+    UpdateRunner -->|"selects Service installation"| Factory["Updater Factory"]
+    Factory -->|"creates"| ServiceUpdater["Platform Tool Updater Service"]
+    ServiceUpdater -->|"implements"| UpdaterContract["Tool Updater Contract"]
+    ServiceUpdater -->|"stops processes"| ToolKill["Tool Kill Service"]
+    ServiceUpdater -->|"resolves paths"| Directories["Directory Manager"]
+    ServiceUpdater -->|"downloads assets"| DownloadService["GitHub Download Service"]
+    ServiceUpdater -->|"controls"| SystemService["Operating System Service Manager"]
+    ServiceUpdater -->|"backs up and swaps"| FileSystem["Tool Executable and Backup"]

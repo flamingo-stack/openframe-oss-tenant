@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Caller as Gateway Status Observer
+    participant Service as Deactivation Service
+    participant Supervisor as Command Supervisor
+    participant Tools as Tool Run Manager
+    participant Client as Detached Client Uninstall
+    Caller->>Service: "410 Gone"
+    Service->>Service: "Persist first timestamp and increment count"
+    Caller->>Service: "Fifth consecutive 410 Gone"
+    Service->>Supervisor: "Queue StopTools"
+    Supervisor->>Tools: "stop_all()"
+    Caller->>Service: "Fresh 410 after duration and grace"
+    Service->>Supervisor: "Queue Uninstall"
+    Supervisor->>Client: "Launch uninstall process"
+    Client->>Client: "Best effort deregistration and platform cleanup"

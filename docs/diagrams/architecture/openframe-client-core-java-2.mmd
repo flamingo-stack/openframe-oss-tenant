@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Agent
+    participant Controller as "Agent Controller"
+    participant Registration as "Registration Service"
+    participant Store as "Persistent State"
+    participant Router as "Delivery Router"
+
+    Agent->>Controller: POST /api/agents/register
+    Controller->>Registration: Register with initial key and device details
+    Registration->>Store: Create or update machine and credentials
+    Registration->>Router: Send current flags, client update, and tool work
+    Registration->>Controller: Registration response
+    Controller->>Agent: Machine identity and credentials

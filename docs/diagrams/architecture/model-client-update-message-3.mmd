@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> Received
+    Received --> Reserved: update guard acquired
+    Received --> Deferred: update or tool work active
+    Reserved --> Skipped: running version or downgrade rejected
+    Reserved --> Updating: version and assets accepted
+    Updating --> Launching: state persisted and updater started
+    Updating --> Failed: download or update failure
+    Launching --> Verifying: client restarts
+    Verifying --> Updated: running version equals target
+    Verifying --> Failed: terminal verification failure
+    Deferred --> Received: redelivery
+    Skipped --> [*]
+    Updated --> [*]
+    Failed --> [*]

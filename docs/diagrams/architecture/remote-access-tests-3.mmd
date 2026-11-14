@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Tester as "Test Runner"
+    participant RemoteApi as "Remote Access API"
+    participant DeviceApi as "Machine Endpoint"
+    participant Device as "Enrolled Device"
+
+    Tester->>RemoteApi: Create remote-access request
+    alt Approval required
+        RemoteApi-->>Tester: PENDING request
+        Tester->>DeviceApi: Acknowledge request
+        DeviceApi->>Device: Deliver approval action
+        Tester->>DeviceApi: Approve request
+        DeviceApi-->>Tester: APPROVED response
+    else Policy settles request
+        RemoteApi-->>Tester: APPROVED or DENIED request
+        Tester->>DeviceApi: Attempt approval
+        DeviceApi-->>Tester: 409 settled status
+    end
+    Tester->>RemoteApi: Read active session
+    RemoteApi-->>Tester: ACTIVE session
+    Tester->>RemoteApi: End session
+    RemoteApi-->>Tester: ENDED session and expired request

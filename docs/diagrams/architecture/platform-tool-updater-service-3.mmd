@@ -1,0 +1,15 @@
+flowchart TD
+    Begin["Begin Finalization"] --> WindowsCheck{"Running on Windows?"}
+    WindowsCheck -->|"no"| StartService["Start Named Service"]
+    WindowsCheck -->|"yes"| ClearOld["Clear Aside Binary"]
+    ClearOld -->|"cleared"| ServiceState{"Service Already Active?"}
+    ClearOld -->|"still locked"| Remediate["Stop Service and Matching Processes"]
+    Remediate --> ProcessAlive{"Tool Process Still Running?"}
+    ProcessAlive -->|"yes"| LeaveStopped["Leave Service Stopped"]
+    ProcessAlive -->|"no"| WaitUnlock["Wait for Executable Unlock"]
+    WaitUnlock --> StartService
+    ServiceState -->|"yes"| StartService
+    ServiceState -->|"no"| WaitReady["Wait for Executable Unlock"]
+    WaitReady --> StartService
+    StartService --> Cleanup["Remove Backup"]
+    LeaveStopped --> Cleanup

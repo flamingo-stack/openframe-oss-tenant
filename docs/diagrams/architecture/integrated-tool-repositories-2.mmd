@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Query Request"] --> FilterPresent{"Filter present?"}
+    FilterPresent -->|"yes"| AddFilters["Add non-null equality criteria"]
+    FilterPresent -->|"no"| SearchPresent{"Nonblank search?"}
+    AddFilters --> SearchPresent
+    SearchPresent -->|"yes"| QuoteSearch["Quote search text"]
+    QuoteSearch --> SearchFields["Match name or description, case-insensitively"]
+    SearchPresent -->|"no"| QueryReady["Query Ready"]
+    SearchFields --> QueryReady

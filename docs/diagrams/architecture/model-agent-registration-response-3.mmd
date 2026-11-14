@@ -1,0 +1,9 @@
+flowchart TD
+    Begin["Registration processor starts"] --> Existing{"Machine ID configured?"}
+    Existing -->|"yes"| Registered["Skip registration"]
+    Existing -->|"no"| Attempt["Call registration service"]
+    Attempt --> Result{"Response parsed and saved?"}
+    Result -->|"yes"| Persist["Persist identity and credentials"]
+    Persist --> Complete["Client is registered"]
+    Result -->|"no"| Wait["Wait 60 seconds"]
+    Wait --> Attempt

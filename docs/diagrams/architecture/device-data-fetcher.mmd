@@ -1,0 +1,11 @@
+flowchart LR
+    Kernel["Operating system hostname API"] --> Fetcher["Device Data Fetcher"]
+    MacSystem["macOS system configuration"] --> Fetcher
+    TimezoneApi["IANA timezone library"] --> Fetcher
+    BuildMetadata["Compile-time agent version"] --> Fetcher
+    Fetcher --> Identity["Hostname and operating system facts"]
+    Fetcher --> Timezone["Timezone fact"]
+    Fetcher --> Version["Agent version fact"]
+    Identity --> ClientServices["OpenFrame client services"]
+    Timezone --> ClientServices
+    Version --> ClientServices

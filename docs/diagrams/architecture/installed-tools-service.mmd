@@ -1,0 +1,8 @@
+flowchart LR
+    ToolInstall["Tool Installation Service"] -->|"save and set state"| Inventory["Installed Tools Service"]
+    ToolUpdate["Tool Agent Update Service"] -->|"read and save"| Inventory
+    ToolUninstall["Tool Uninstall Service"] -->|"read and delete"| Inventory
+    ToolRuntime["Tool Run and Kill Services"] -->|"use installed metadata"| Inventory
+    Inventory -->|"secured directory"| Directories["Directory Manager"]
+    Inventory -->|"JSON inventory"| Disk["Local secured storage"]
+    Inventory -->|"InstalledTool records"| Model["Installed Tool model"]

@@ -1,0 +1,11 @@
+flowchart LR
+    AgentProcess["OpenFrame endpoint agent"] --> RegistrationProcessor["Registration Processor"]
+    RegistrationProcessor --> RegistrationService["Agent Registration Service"]
+    RegistrationService --> RegistrationClient["Registration Client"]
+    RegistrationService --> MachineStore["Persisted machine information"]
+    RegistrationService --> AgentConfig["Agent configuration service"]
+    RegistrationClient --> ClientApi["Client service agent API"]
+    ClientApi --> RegistrationBackend["Registration and reinstall handlers"]
+    ClientApi --> UninstallBackend["Uninstall handler"]
+    RegistrationBackend --> MachineRecord["Platform machine record"]
+    UninstallBackend --> MachineRecord

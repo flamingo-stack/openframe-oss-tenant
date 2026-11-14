@@ -1,0 +1,5 @@
+flowchart LR
+    Response["Token Response"] --> ConfigUpdate["Update Configuration Token Pair"]
+    ConfigUpdate --> Encrypt["Encrypt Access Token"]
+    Encrypt --> AtomicWrite["Atomically Write Shared Token"]
+    AtomicWrite --> Consumers["Local Token Consumers"]

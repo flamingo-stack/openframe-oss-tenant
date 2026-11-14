@@ -1,0 +1,12 @@
+flowchart TD
+    Event["Command Result Event"] --> Validate{"Execution and Machine Identifiers Present?"}
+    Validate -->|"no"| LogInvalid["Log and Skip"]
+    Validate -->|"yes"| Find["Find Command Execution"]
+    Find --> Found{"Tracked Open Record?"}
+    Found -->|"no"| LogUnmatched["Log and Preserve Existing State"]
+    Found -->|"yes"| Classify["Classify Agent Outcome"]
+    Classify --> Persist["Save Terminal Command Execution"]
+    Persist --> Metric["Record Command Completion Metric"]
+    Event --> CassandraGate{"Cassandra Handler Enabled?"}
+    CassandraGate -->|"yes"| Retain["Store Agent Result JSON"]
+    CassandraGate -->|"no"| SkipRetention["Skip Cassandra Retention"]

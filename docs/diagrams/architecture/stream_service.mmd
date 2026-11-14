@@ -1,0 +1,11 @@
+flowchart LR
+    Kafka["Kafka topics"] --> Listeners["Kafka listeners"]
+    Listeners --> Processor["Generic JSON message processor"]
+    Processor --> Deserializer["Message-type deserializer"]
+    Deserializer --> Enrichment["Data enrichment service"]
+    Enrichment --> Router["Destination router"]
+    Router --> History["Mongo execution history"]
+    Router --> Logs["Cassandra or Loki event logs"]
+    Router --> Events["Kafka integrated-tool events"]
+    Router --> Software["Mongo device software projection"]
+    Streams["Kafka Streams activity enrichment"] --> Kafka

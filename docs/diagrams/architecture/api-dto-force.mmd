@@ -1,0 +1,8 @@
+flowchart LR
+    Caller["Authenticated API caller"] --> Request["Force request DTO"]
+    Request --> Controller["Force agent controller"]
+    Controller --> Service["Force update service"]
+    Service --> Delivery["Update delivery workflow"]
+    Delivery --> Agent["Target machine agent"]
+    Service --> Response["Force tool update response DTO"]
+    Response --> Caller

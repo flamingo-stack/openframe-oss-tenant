@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Locked: "try_lock succeeds"
+    Idle --> BusyResponse: "try_lock conflicts"
+    BusyResponse --> Idle
+    Locked --> Updating: "mark_busy"
+    Locked --> Idle: "ToolLock dropped"
+    Updating --> Released: "ToolOpGuard dropped"
+    Released --> Idle: "lock released"

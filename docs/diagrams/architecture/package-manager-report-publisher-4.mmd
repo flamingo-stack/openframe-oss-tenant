@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Run manager starts"] --> Wait["Wait for interval or wake notification"]
+    Wait --> Publish["Call publisher with timeout"]
+    Publish --> Outcome{"Publish completed?"}
+    Outcome -->|"success"| Wait
+    Outcome -->|"error"| LogError["Log publish failure"]
+    LogError --> Wait
+    Outcome -->|"timeout"| LogTimeout["Log report timeout"]
+    LogTimeout --> Wait

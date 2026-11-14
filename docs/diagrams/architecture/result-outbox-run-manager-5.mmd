@@ -1,0 +1,6 @@
+flowchart TD
+    Auth["Authenticate client"] --> Connect["Connect NATS and start watchdog"]
+    Connect --> Recover["Recover interrupted scheduled results"]
+    Recover --> StartOutbox["Start Result Outbox Run Manager"]
+    StartOutbox --> Listeners["Start execution listeners"]
+    Listeners --> Produce["New executions can persist results"]

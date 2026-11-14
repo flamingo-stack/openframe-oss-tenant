@@ -1,0 +1,7 @@
+flowchart LR
+    Doctor["Doctor command"] --> Checks["Diagnostic check results"]
+    Checks --> Pending{"Pending remediation?"}
+    Pending -->|"no"| Complete["Return diagnostic result"]
+    Pending -->|"yes"| Heal["Run asynchronous healing"]
+    Heal --> Report["Print healing outcomes"]
+    Report --> Complete

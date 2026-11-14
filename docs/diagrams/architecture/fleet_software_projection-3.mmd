@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Resolved Fleet host event"] --> Fetch["Fetch complete Fleet software inventory"]
+    Fetch --> Existing["Load stored machine inventory"]
+    Existing --> Upsert["Upsert each current Fleet software title"]
+    Upsert --> Track["Collect affected titles and CVEs"]
+    Track --> Compare["Compare stored titles with current titles"]
+    Compare --> Delete["Delete titles no longer present"]
+    Delete --> NotifyTitles["Notify changed software titles"]
+    NotifyTitles --> NotifyCves["Notify changed CVEs"]
+    NotifyCves --> Finish["Projection complete"]

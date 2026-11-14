@@ -1,0 +1,10 @@
+flowchart TD
+    TokenRequest["Token Request"] --> GrantCheck{"Supported grant and credentials?"}
+    GrantCheck -->|"no"| Unauthorized["HTTP 401 Message"]
+    GrantCheck -->|"yes"| AuthService["Agent Auth Service"]
+    AuthService --> AccessGenerator["Access Token Generator"]
+    AuthService --> RefreshGenerator["Refresh Token Generator"]
+    AccessGenerator --> JwtSigner["JWT Service"]
+    RefreshGenerator --> JwtSigner
+    JwtSigner --> TokenResponse["Agent Token Response"]
+    TokenResponse --> Agent["Device Agent"]

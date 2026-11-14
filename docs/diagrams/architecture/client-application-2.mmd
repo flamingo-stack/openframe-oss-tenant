@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Bootstrap as Client Construction
+    participant Files as Local State
+    participant Http as HTTP Clients
+    participant Auth as Auth Services
+    participant Bus as NATS Services
+    participant Runtime as Runtime Services
+    Bootstrap->>Files: Create directories and run health check
+    Bootstrap->>Files: Load initial configuration and agent configuration
+    Bootstrap->>Files: Get or create machine ID
+    Bootstrap->>Http: Build normal and download clients
+    Bootstrap->>Auth: Compose registration, token, and encryption services
+    Bootstrap->>Bus: Compose connection manager and publisher
+    Bootstrap->>Runtime: Compose listeners, tool services, result store, and managers
+    Runtime-->>Bootstrap: Return initialized Client

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller as "Ticket caller"
+    participant Repository as "Ticket repository"
+    participant Mongo as "MongoDB"
+    participant Outbox as "Outbox publisher"
+
+    Caller->>Repository: Update ticket title
+    Repository->>Outbox: Publish changed ticket when configured
+    Outbox->>Mongo: Find and modify title
+    Mongo-->>Outbox: Updated ticket
+    Outbox-->>Repository: Persist change and publication
+    Repository-->>Caller: Complete update

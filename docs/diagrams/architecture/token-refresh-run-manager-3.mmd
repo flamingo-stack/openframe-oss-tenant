@@ -1,0 +1,14 @@
+flowchart TD
+    TokenResponse["Successful token response"] --> ExpiresIn{"Positive expires in?"}
+    TokenResponse --> JwtClaims{"Valid JWT lifetime?"}
+    ExpiresIn --> LifetimeChoice["Choose available lifetime"]
+    JwtClaims --> LifetimeChoice
+    LifetimeChoice --> BothAvailable{"Both values available?"}
+    BothAvailable -->|"yes"| ShorterLifetime["Use shorter lifetime"]
+    BothAvailable -->|"no"| SingleLifetime["Use available lifetime"]
+    ShorterLifetime --> CapLifetime["Cap lifetime at 24 hours"]
+    SingleLifetime --> CapLifetime
+    CapLifetime --> Lead["Subtract refresh lead"]
+    Lead --> IntervalFloor["Apply 60 second minimum interval"]
+    ExpiresIn -->|"no"| JwtClaims
+    JwtClaims -->|"no"| Fallback["Use 30 minute fallback interval"]

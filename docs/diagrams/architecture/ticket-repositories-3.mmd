@@ -1,0 +1,12 @@
+flowchart TD
+    PageRequest["Query, cursor, limit, and sort"] --> CursorPresent{"Cursor supplied?"}
+    CursorPresent -->|"no"| ApplySort["Apply primary sort and ID tie-breaker"]
+    CursorPresent -->|"yes"| ParseCursor{"Valid ObjectId?"}
+    ParseCursor -->|"no"| ApplySort
+    ParseCursor -->|"yes"| SortById{"Sort by ID?"}
+    SortById -->|"yes"| IdBound["Add ID cursor bound"]
+    SortById -->|"no"| LoadCursor["Load cursor ticket"]
+    LoadCursor --> BuildBound["Add sort-value and ID cursor bound"]
+    IdBound --> ApplySort
+    BuildBound --> ApplySort
+    ApplySort --> Limit["Apply limit and fetch tickets"]

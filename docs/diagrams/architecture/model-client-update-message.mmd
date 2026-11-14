@@ -1,0 +1,10 @@
+flowchart LR
+    ControlPlane["Control Plane"] -->|"client update message"| CommandHandler["Client Update Handler"]
+    CommandHandler -->|"deserializes"| UpdateMessage["Model Client Update Message"]
+    UpdateMessage -->|"version and download configurations"| UpdateService["Client Update Service"]
+    UpdateService -->|"selects current operating system asset"| DownloadService["GitHub Download Service"]
+    UpdateService -->|"records progress"| UpdateState["Update State Service"]
+    UpdateService -->|"sets status"| ClientInfo["Client Info Service"]
+    UpdateService -->|"coordinates"| ToolRuntime["Tool Run Manager and Tool Operations"]
+    UpdateService -->|"launches"| PlatformUpdater["Platform Updater"]
+    PlatformUpdater -->|"next startup verification"| StartupHandler["Update Handler Service"]

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Publisher as "Publishing framework"
+    participant Projection as "Ticket on Time Entries Projection"
+    participant TimeEntries as "Time Entry Projection Repository"
+
+    Publisher->>Projection: Count changes for ticket event
+    Projection->>TimeEntries: Count entries with stale title
+    TimeEntries->>Projection: Bounded change count
+    Projection->>Publisher: Change count
+    loop "Each batch"
+        Publisher->>Projection: Apply batch with cursor and batch size
+        Projection->>TimeEntries: Update matching ticket title batch
+        TimeEntries->>Projection: Next cursor
+        Projection->>Publisher: Next cursor
+    end

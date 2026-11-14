@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Caller invokes pooled call"] --> Acquire["Wait for an owned permit"]
+    Acquire --> AcquireDecision{{"Permit acquired before timeout?"}}
+    AcquireDecision -->|"no"| Busy["Return Busy and do not start closure"]
+    AcquireDecision -->|"yes"| Spawn["Spawn blocking closure with permit"]
+    Spawn --> Await["Wait for task result"]
+    Await --> CompleteDecision{{"Task completed before timeout?"}}
+    CompleteDecision -->|"yes"| ReturnValue["Return value or TaskFailed"]
+    CompleteDecision -->|"no"| ReturnTimeout["Return TimedOut to caller"]
+    ReturnTimeout --> Continue["Closure continues with permit"]
+    Continue --> Release["Closure returns and releases permit"]
+    ReturnValue --> Release

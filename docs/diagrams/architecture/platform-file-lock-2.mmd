@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Caller
+    participant LockModule as "Platform File Lock"
+    participant RestartManager as "Windows Restart Manager"
+    Caller->>LockModule: Request holder query
+    LockModule->>RestartManager: RmStartSession
+    LockModule->>RestartManager: RmRegisterResources
+    LockModule->>RestartManager: RmGetList count query
+    RestartManager-->>LockModule: Required record count or ERROR_MORE_DATA
+    alt holders found
+        LockModule->>RestartManager: RmGetList data query
+        RestartManager-->>LockModule: RM_PROCESS_INFO records
+        LockModule-->>Caller: Lock holder records
+    else no holders
+        LockModule-->>Caller: Empty holder list
+    end
+    LockModule->>RestartManager: RmEndSession on scope exit

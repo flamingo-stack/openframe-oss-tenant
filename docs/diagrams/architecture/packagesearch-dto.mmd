@@ -1,0 +1,9 @@
+flowchart LR
+    TestCase["Package Search Test"] -->|"calls search query"| ApiClient["Test GraphQL client"]
+    ApiClient -->|"searchPackages"| DataFetcher["Package Search Data Fetcher"]
+    DataFetcher -->|"delegates search"| SearchService["Package Search Service"]
+    SearchService -->|"connection response"| ApiClient
+    ApiClient -->|"deserializes edges"| EdgeDto["Packagesearch Dto"]
+    EdgeDto -->|"contains"| ItemDto["Package Search Item"]
+    EdgeDto -->|"provides"| Cursor["Opaque cursor"]
+    Cursor -->|"after value"| ApiClient

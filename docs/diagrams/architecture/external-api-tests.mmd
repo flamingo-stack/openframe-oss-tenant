@@ -1,0 +1,9 @@
+flowchart LR
+    Runner["OpenFrame Test Service"] --> Suite["External Api Tests"]
+    Suite --> KeySetup["API Key Setup and Cleanup"]
+    Suite --> Gateway["OpenFrame Gateway"]
+    Gateway --> KeyGate["API Key Authentication Filter"]
+    KeyGate --> ExternalApi["External API Service"]
+    ExternalApi --> Resources["Customers, Devices, Logs, Tickets, Tools, Knowledge Base"]
+    Resources --> Tenant["Shared QA Tenant"]
+    Suite --> Cleanup["Archive or Restore Test Data"]

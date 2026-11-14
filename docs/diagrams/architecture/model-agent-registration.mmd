@@ -1,0 +1,10 @@
+flowchart LR
+    InitialConfig["Initial configuration"] --> RegistrationService["Agent registration service"]
+    DeviceData["Endpoint data collector"] --> RegistrationService
+    RegistrationService --> RequestModel["AgentRegistrationRequest"]
+    RequestModel --> RegistrationClient["Registration client"]
+    RegistrationClient --> Gateway["OpenFrame gateway"]
+    Gateway --> AgentController["Client service agent controller"]
+    AgentController --> RegistrationBackend["Agent registration service"]
+    RegistrationBackend --> MachineStore["Machine and OAuth client stores"]
+    RegistrationBackend --> PostProcessing["Tags, tools, flags, and updates"]

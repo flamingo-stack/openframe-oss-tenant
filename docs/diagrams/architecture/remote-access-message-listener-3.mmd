@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Broker as NATS broker
+    participant Listener as Remote Access Message Listener
+    participant Manager as Tool Run Manager
+    participant App as Chat graphical application
+    Broker->>Listener: Remote-access message on machine subject
+    Listener->>Listener: Log message subject
+    Listener->>Manager: Spawn application check
+    Listener-->>Broker: Continue receiving messages
+    Manager->>Manager: Check whether chat tool is being updated
+    alt Tool update in progress
+        Manager->>Manager: Leave launch to updater
+    else Launchable graphical tool
+        Manager->>App: Start if not already running
+    else Not installed as graphical tool
+        Manager->>Manager: Take no action
+    end

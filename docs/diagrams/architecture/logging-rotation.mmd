@@ -1,0 +1,10 @@
+flowchart LR
+    Client["OpenFrame Client"] --> Setup["Logging setup"]
+    Setup --> ActiveLog["Active openframe log"]
+    Streamer["NATS streaming run manager"] --> Rotation["Logging Rotation manager"]
+    ActiveLog --> Streamer
+    Offset["Persisted byte offset"] --> Rotation
+    Rotation --> Archive["Compressed log archive"]
+    Rotation --> ActiveLog
+    Rotation --> Offset
+    Streamer --> Nats["NATS JetStream"]

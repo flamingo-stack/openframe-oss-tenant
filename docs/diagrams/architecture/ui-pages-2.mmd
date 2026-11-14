@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Test as Test Case
+    participant AuthMethod as Auth Method Page
+    participant SsoLogin as SSO Login Page
+    participant Browser as Browser
+    Test->>AuthMethod: Click OpenFrame SSO
+    AuthMethod->>Browser: Wait for /sas/login
+    AuthMethod-->>Test: Return SSO Login Page
+    Test->>SsoLogin: Enter credentials and submit
+    SsoLogin->>Browser: Wait until URL leaves /sas/login
+    SsoLogin-->>Test: Return dashboard page object

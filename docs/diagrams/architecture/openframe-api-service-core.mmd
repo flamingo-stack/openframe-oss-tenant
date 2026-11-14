@@ -1,0 +1,10 @@
+flowchart LR
+    Client["Browser, API Client, or GraphQL Client"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> ApiService["OpenFrame API Service"]
+    ApiService --> Rest["REST Controllers"]
+    ApiService --> Graphql["GraphQL Data Fetchers"]
+    Graphql --> Loaders["GraphQL DataLoaders"]
+    Rest --> Services["Tenant Scoped Domain Services"]
+    Graphql --> Services
+    Loaders --> Services
+    Services --> Data["MongoDB and Supporting Integrations"]

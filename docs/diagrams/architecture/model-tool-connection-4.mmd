@@ -1,0 +1,8 @@
+flowchart TD
+    NewTool["Newly installed tool"] --> TypeCheck{"Tool type present?"}
+    TypeCheck -->|"no"| Skip["Log warning and skip publication"]
+    TypeCheck -->|"yes"| LockCheck{"Processing loop already running?"}
+    LockCheck -->|"no"| StartLoop["Start tool connection processing"]
+    LockCheck -->|"yes"| WakeCheck{"Wake signal available?"}
+    WakeCheck -->|"yes"| Notify["Notify existing loop for immediate republish"]
+    WakeCheck -->|"no"| Ignore["Avoid duplicate processing"]

@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Caller as "Registration or invitation flow"
+    participant Checker as "DisposableDomainChecker"
+    participant Client as "DisposableDomainHttpClient"
+    participant Endpoint as "Disposable-domain endpoint"
+
+    Caller->>Checker: Check lowercase domain
+    alt External check enabled
+        Checker->>Client: Check domain
+        Client->>Endpoint: GET domain path
+        Endpoint-->>Client: Disposable response
+        Client-->>Checker: Disposable flag
+        Checker-->>Caller: True only for positive result
+    else External check disabled
+        Checker-->>Caller: False
+    end
+    Note over Checker,Caller: Timeout or client failure returns false

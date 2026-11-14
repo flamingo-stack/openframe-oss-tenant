@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant Service as Tool Agent Update Service
+    participant Core as Common Update Orchestrator
+    participant Standard as Standard Tool Updater
+    participant Kill as Tool Kill Service
+    participant Files as Tool File System
+    participant Download as Download Service
+    participant Runner as Tool Run Manager
+    Service->>Core: run update for installed tool and configuration
+    Core->>Standard: prepare tool
+    Standard->>Kill: stop tool by agent identifier
+    Standard->>Files: resolve executable, clear aside, create backup
+    Standard-->>Core: update context with backup and restart required
+    Core->>Standard: apply tool and configuration
+    Standard->>Download: download and write executable
+    alt application succeeds
+        Standard-->>Core: unchanged installation metadata
+        Core->>Standard: finalize tool and context
+        Standard->>Files: remove backup
+        Standard-->>Core: success
+        Core-->>Service: update complete
+        Service->>Runner: resume supervised tool execution
+    else application fails
+        Standard-->>Core: application error
+        Core->>Standard: rollback tool and context
+        Standard->>Files: restore executable from backup
+        Standard-->>Core: rollback result
+        Core-->>Service: application error
+    end

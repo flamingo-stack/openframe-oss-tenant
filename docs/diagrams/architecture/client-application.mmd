@@ -1,0 +1,12 @@
+flowchart TD
+    Endpoint["Managed endpoint"] --> Client["Client Application"]
+    Client --> LocalState["Directory and secured local state"]
+    Client --> Http["Authenticated HTTP clients"]
+    Client --> Nats["NATS connection over WebSocket"]
+    Client --> Runtime["Listeners and run managers"]
+    Client --> Tools["Integrated tools and platform operations"]
+    Http --> Gateway["OpenFrame Gateway and client services"]
+    Nats --> ControlPlane["OpenFrame message control plane"]
+    Runtime --> Results["Result store and outbox"]
+    Results --> Nats
+    Tools --> Endpoint

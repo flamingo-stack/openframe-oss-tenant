@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "Integration Test"
+    participant Collection as "Db Collections"
+    participant Helper as "MongoDB Helper"
+    participant Database as "MongoDB"
+    Test->>Collection: Request organization or tenant lookup
+    Collection->>Helper: Get typed collection
+    Helper->>Database: Run equality filter
+    Database-->>Collection: First document or matching documents
+    Collection-->>Test: Typed DTO, ID list, or null

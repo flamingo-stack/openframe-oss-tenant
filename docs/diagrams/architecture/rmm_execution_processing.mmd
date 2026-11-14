@@ -1,0 +1,14 @@
+flowchart LR
+    Agent["OpenFrame Client Agent"] -->|"execution result event"| Stream["OpenFrame Stream Service"]
+    Stream --> Enrichment["RMM Enrichment Service"]
+    Enrichment --> ScriptHandler["Script Execution Handler"]
+    Enrichment --> CommandHandler["Command Execution Handler"]
+    Enrichment --> CassandraHandler["Command Result Cassandra Handler"]
+    ScriptHandler --> ScriptRepo["Script Execution Repository"]
+    ScriptHandler --> ScheduleAggregator["Schedule Execution Aggregator"]
+    ScriptHandler --> DispatchRepo["Device Online Dispatch Repository"]
+    CommandHandler --> CommandRepo["Command Execution Repository"]
+    CassandraHandler --> Cassandra["Cassandra Command Results"]
+    ScriptHandler --> Metrics["RMM Execution Metrics"]
+    CommandHandler --> Metrics
+    Enrichment --> MachineCache["Machine and Organization Cache"]

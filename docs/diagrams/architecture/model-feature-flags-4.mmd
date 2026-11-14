@@ -1,0 +1,11 @@
+flowchart TD
+    Load["Load persisted state"] --> Valid{"State readable?"}
+    Valid -->|"no"| Defaults["Empty state and all features disabled"]
+    Valid -->|"yes"| Resolve["Resolve flags for current version"]
+    Delivery["Receive flag delivery"] --> Validate["Validate each map value"]
+    Validate --> Persist["Persist machine, sequence, and valid flags"]
+    Persist --> Changed{"Effective flags differ from running set?"}
+    Changed -->|"yes"| Pending["Record delivery awaiting restart"]
+    Changed -->|"no"| Settled["No restart marker"]
+    Pending --> Restarted["Restart completion reported"]
+    Restarted --> Clear["Clear restart marker"]

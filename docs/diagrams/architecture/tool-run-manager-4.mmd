@@ -1,0 +1,11 @@
+flowchart TD
+    UpdateStart["Client update begins"] --> Signal["Signal supervisor shutdown"]
+    Signal --> Pending["Mark client update pending"]
+    Pending --> Outcome{"Update outcome?"}
+    Outcome -->|"service stops"| Restart["New client instance starts supervision"]
+    Outcome -->|"update aborts"| Resume["Clear shutdown signal"]
+    Resume --> Deactivated{"Tools stopped by deactivation?"}
+    Deactivated -->|"yes"| KeepStopped["Keep tools stopped"]
+    Deactivated -->|"no"| Relaunch["Relaunch missing non-service supervisors"]
+    Outcome -->|"tenant deactivation"| StopAll["Stop every installed tool"]
+    StopAll --> KeepStopped

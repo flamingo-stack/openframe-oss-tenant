@@ -1,0 +1,11 @@
+flowchart LR
+    TestCase["Notification integration test"] --> TestApi["Notification API test client"]
+    TestApi --> GraphqlApi["Notification GraphQL API"]
+    GraphqlApi --> JsonResponse["Connection response JSON"]
+    JsonResponse --> ConnectionDto["Notification connection DTO"]
+    ConnectionDto --> NotificationDto["Notification Dto"]
+    NotificationDto --> NodeDto["Notification test DTO"]
+    NotificationDto --> CursorValue["Opaque cursor"]
+    NodeDto --> Assertions["Notification assertions"]
+    CursorValue --> NextQuery["Next-page query"]
+    NextQuery --> TestApi

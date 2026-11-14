@@ -1,0 +1,10 @@
+flowchart TD
+    TestRunner["Test Runner"] -->|"runs tagged class"| HistoryTests["Execution History Tests"]
+    HistoryTests -->|"creates and dispatches"| ScriptApi["Script API"]
+    HistoryTests -->|"creates and reads"| ScheduleApi["Script Schedule API"]
+    HistoryTests -->|"finds eligible target"| DeviceApi["Device API"]
+    DeviceApi -->|"online Windows machine"| Agent["Enrolled OpenFrame Client"]
+    ScriptApi -->|"dispatch request"| Agent
+    Agent -->|"reports execution"| HistoryReadModel["Execution History Read Model"]
+    ScriptApi -->|"execution connection and facets"| HistoryReadModel
+    ScheduleApi -->|"execution and run connections"| HistoryReadModel

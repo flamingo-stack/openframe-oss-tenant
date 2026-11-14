@@ -1,0 +1,9 @@
+flowchart TD
+    TestCase["End-to-end test case"] --> UiPages["Ui Pages"]
+    UiPages --> Playwright["Playwright Page and Locator APIs"]
+    UiPages --> Frontend["OpenFrame web interface"]
+    Frontend --> Auth["Authentication screens"]
+    Frontend --> Devices["Device and remote-access screens"]
+    Frontend --> Monitoring["Monitoring screens"]
+    Frontend --> Scripts["Script management screens"]
+    Devices --> Mesh["MeshCentral-backed remote sessions"]

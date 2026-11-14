@@ -1,0 +1,11 @@
+flowchart TD
+    IoError["I/O error during file operation"] --> Sharing{"Windows error 32?"}
+    Sharing -->|"No"| NotHandled["Return false"]
+    Sharing -->|"Yes"| Lookup["Get locking processes"]
+    Lookup --> Found{"Processes found?"}
+    Found -->|"Yes"| Details["Log process names and PIDs"]
+    Found -->|"No"| Unknown["Log unidentified lock holder"]
+    Lookup -->|"Query error"| QueryError["Log holder query failure"]
+    Details --> Handled["Return true"]
+    Unknown --> Handled
+    QueryError --> Handled

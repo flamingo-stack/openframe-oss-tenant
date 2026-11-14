@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Reporter as Status reporter
+    participant Store as Result store
+    participant Notify as Flush notification
+    participant Flusher as Outbox runner
+    participant Nats as NATS JetStream
+    Reporter->>Reporter: Serialize status event as JSON
+    alt Durable store enabled
+        Reporter->>Store: Enqueue ordered subject and payload
+        Reporter->>Notify: Wake flusher
+        Flusher->>Store: Read pending keys in key order
+        Flusher->>Nats: Publish and await acknowledgement
+        Nats-->>Flusher: Acknowledgement
+        Flusher->>Store: Remove delivered entry
+    else Durable store disabled
+        Reporter->>Nats: Publish and await acknowledgement
+        Nats-->>Reporter: Acknowledgement or error
+    end

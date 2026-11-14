@@ -1,0 +1,10 @@
+flowchart TD
+    Caller["Application service or GraphQL data fetcher"] --> Repository["Notification Repositories"]
+    Repository --> TenantSupport["TenantAwareRepositorySupport"]
+    TenantSupport --> MongoTemplate["TenantAwareMongoTemplate"]
+    MongoTemplate --> ReadState["Notification read-state documents"]
+    MongoTemplate --> Notification["Notification documents"]
+    MongoTemplate --> Settings["Notification settings documents"]
+    ReadState --> Page["Notification page with recipient status"]
+    Notification --> Page
+    Settings --> PreferenceResult["Stored user preferences"]

@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Test as "Integration Test"
+    participant Api as "Software API"
+    participant Mapper as "Jackson Mapper"
+    participant Dto as "Software Dto"
+
+    Test->>Api: Request software inventory or vulnerabilities
+    Api->>Test: Return paginated JSON response
+    Test->>Mapper: Deserialize response payload
+    Mapper->>Dto: Populate edge nodes and cursors
+    Dto->>Test: Provide typed values for assertions

@@ -1,0 +1,5 @@
+flowchart TD
+    Setup["Create fixture or organization"] --> Verify["Run ordered assertions"]
+    Verify --> Reset["Reset local overrides"]
+    Reset --> Archive["Archive throwaway records"]
+    Verify --> SessionCleanup["Release agent session after each case"]

@@ -1,0 +1,20 @@
+flowchart TD
+    Start["Restart requested"] --> Close["Set closing latch"]
+    Close --> Deadline["Calculate idle deadline"]
+    Deadline --> Drain["Wait for write lock until deadline"]
+    Drain --> DrainResult{"All command guards drained?"}
+    DrainResult -->|"no"| DrainWarning["Log command-drain warning"]
+    DrainResult -->|"yes"| BusyCheck["Check tracked activity"]
+    DrainWarning --> BusyCheck
+    BusyCheck --> BeforeDeadline{"Busy before deadline?"}
+    BeforeDeadline -->|"yes"| Poll["Sleep for idle poll interval"]
+    Poll --> BusyCheck
+    BeforeDeadline -->|"no"| ClientWait["Evaluate pending client update"]
+    BusyCheck --> AfterDeadline{"Deadline reached and busy?"}
+    AfterDeadline -->|"yes"| BusyWarning["Log activity warning"]
+    BusyWarning --> ClientWait
+    AfterDeadline -->|"no"| ClientWait
+    ClientWait --> UpdatePending{"Client update pending and no tool busy?"}
+    UpdatePending -->|"yes"| UpdatePoll["Sleep for idle poll interval"]
+    UpdatePoll --> ClientWait
+    UpdatePending -->|"no"| Notify["Notify restart owner"]

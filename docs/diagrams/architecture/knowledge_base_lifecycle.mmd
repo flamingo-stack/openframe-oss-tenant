@@ -1,0 +1,10 @@
+flowchart TD
+    Root["Create Root Folder"] --> Child["Create Child Folder"]
+    Root --> Draft["Create Draft Article"]
+    Draft --> Tagged["Tag and Update Article"]
+    Tagged --> Published["Publish Article"]
+    Published --> Unpublished["Unpublish Article"]
+    Unpublished --> Archived["Archive Article"]
+    Archived --> Restored["Restore Article"]
+    Restored --> Attachment["Upload, Download, Delete Attachment"]
+    Attachment --> FolderDelete["Delete Folder with Archive Action"]

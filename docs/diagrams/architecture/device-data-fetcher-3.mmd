@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Request hostname"] --> Kernel["Read kernel hostname"]
+    Kernel --> ValidKernel{"Valid hostname?"}
+    ValidKernel -->|"yes"| ReturnKernel["Return kernel hostname"]
+    ValidKernel -->|"no"| MacBuild{"macOS build?"}
+    MacBuild -->|"no"| Missing["Return unavailable"]
+    MacBuild -->|"yes"| LocalName["Read LocalHostName with scutil"]
+    LocalName --> ValidLocal{"Valid local hostname?"}
+    ValidLocal -->|"yes"| ReturnLocal["Append local suffix and return"]
+    ValidLocal -->|"no"| ComputerName["Read ComputerName with scutil"]
+    ComputerName --> ValidComputer{"Valid computer hostname?"}
+    ValidComputer -->|"yes"| ReturnComputer["Return computer hostname"]
+    ValidComputer -->|"no"| Missing

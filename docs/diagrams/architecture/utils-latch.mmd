@@ -1,0 +1,10 @@
+flowchart LR
+    Producer["Owner that can signal"] -->|"calls set()"| Latch["Latch"]
+    Latch -->|"Arc clone"| AtomicState["Shared AtomicBool"]
+    Latch -->|"calls view()"| View["LatchView"]
+    View -->|"Arc clone"| AtomicState
+    ConsumerA["Latch holder"] -->|"calls is_set()"| Latch
+    ConsumerB["Read-only consumer"] -->|"calls is_set()"| View
+    Latch -->|"stores true"| AtomicState
+    AtomicState -->|"loads current state"| Latch
+    AtomicState -->|"loads current state"| View

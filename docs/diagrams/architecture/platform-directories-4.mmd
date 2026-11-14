@@ -1,0 +1,8 @@
+flowchart LR
+    ToolRequest["Tool identifier and asset metadata"] --> DirectoryManager["DirectoryManager"]
+    DirectoryManager --> ToolFolder["Application support/tool identifier"]
+    ToolFolder --> AgentPath["Default or configured agent executable"]
+    ToolFolder --> AssetPath["Asset path"]
+    AssetPath --> WindowsCheck{"Windows executable?"}
+    WindowsCheck -->|"yes"| ExecutableAsset["Append exe when missing"]
+    WindowsCheck -->|"no"| OriginalAsset["Preserve asset filename"]

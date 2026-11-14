@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Agent starts"] --> Enabled{"Durable result store enabled?"}
+    Enabled -->|"no"| Skip["Return without recovery"]
+    Enabled -->|"yes"| Scan["Select in-flight ledger records"]
+    Scan --> Found{"Records found?"}
+    Found -->|"no"| Finish["Recovery complete"]
+    Found -->|"yes"| Failure["Create failed result with restart interruption error"]
+    Failure --> Queue["Write outbox payload and settled record"]
+    Queue --> Prune["Apply Result Store capacity pruning"]
+    Prune --> Finish

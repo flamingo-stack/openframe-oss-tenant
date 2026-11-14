@@ -1,0 +1,7 @@
+flowchart LR
+    DownloadService["Download and installation workflow"] -->|"DMG bytes and extraction settings"| Extractor["Platform Dmg Extractor"]
+    Extractor -->|"write temporary image"| TempStorage["System temporary directory"]
+    Extractor -->|"read-only attach and detach"| Hdiutil["macOS hdiutil"]
+    Hdiutil -->|"mounted volume"| MountPoint["Temporary mount point"]
+    Extractor -->|"recursive copy"| CopyTool["macOS cp"]
+    CopyTool -->|"installed files"| TargetDirectory["Caller-selected target directory"]

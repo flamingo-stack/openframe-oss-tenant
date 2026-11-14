@@ -1,0 +1,7 @@
+flowchart LR
+    Application["Application Service or GraphQL Layer"] --> Contract["Custom Item Assignment Repository"]
+    Contract --> Implementation["Custom Item Assignment Repository Implementation"]
+    Implementation --> Template["Tenant Aware Mongo Template"]
+    Template --> MongoDB[("MongoDB item assignments")]
+    Implementation --> Aggregation["Tenant Scoped Aggregation"]
+    Aggregation --> MongoDB

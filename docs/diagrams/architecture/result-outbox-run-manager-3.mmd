@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Producer
+    participant Store as Result Store
+    participant Manager as Outbox Manager
+    participant Publisher
+    participant Broker as NATS or JetStream
+
+    Producer->>Store: Persist key, subject, and payload
+    Producer->>Manager: Notify pending work
+    Manager->>Store: Read pending keys
+    Store-->>Manager: Key and subject pairs
+    Manager->>Store: Load payload for each key
+    Manager->>Publisher: Read maximum payload
+    Manager->>Publisher: Publish with timeout
+    Publisher->>Broker: Raw publish or acknowledged publish
+    Broker-->>Publisher: Flush or acknowledgement
+    Publisher-->>Manager: Success
+    Manager->>Store: Remove delivered key and payload

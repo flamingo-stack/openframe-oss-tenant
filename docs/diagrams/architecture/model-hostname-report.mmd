@@ -1,0 +1,17 @@
+flowchart LR
+    Device["Managed Device"]
+    Fetcher["Device Data Fetcher"]
+    Publisher["Hostname Report Publisher"]
+    Model["Model Hostname Report"]
+    Nats["NATS JetStream"]
+    Listener["Machine Hostname Listener"]
+    Service["Machine Hostname Service"]
+    Record["Device Record"]
+
+    Device -->|"local hostname"| Fetcher
+    Fetcher -->|"validated hostname"| Publisher
+    Publisher -->|"creates"| Model
+    Model -->|"serialized payload"| Nats
+    Nats -->|"hostname event"| Listener
+    Listener -->|"machine ID and hostname"| Service
+    Service -->|"updates"| Record

@@ -1,0 +1,8 @@
+flowchart LR
+    SavedConfig["Configuration saved"] --> Installed{"Service installed?"}
+    Installed -->|"no"| Return["Return without action"]
+    Installed -->|"yes"| Stop["Stop service"]
+    Stop --> Stopped{"Stop succeeded?"}
+    Stopped -->|"no"| Poll["Leave service running for configuration poll"]
+    Stopped -->|"yes"| Start["Start service"]
+    Start --> Reload["Client starts with new configuration"]

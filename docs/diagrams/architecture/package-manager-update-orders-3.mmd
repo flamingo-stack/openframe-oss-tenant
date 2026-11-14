@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Worker as Package Update Worker
+    participant Store as Order Store
+    participant Gate as Update Gate
+    participant Manager as Package Manager
+    participant Status as Status Reporter
+
+    Worker->>Store: Read pending orders for machine
+    Store-->>Worker: Manual first, then automatic
+    Worker->>Store: Mark selected request installing
+    Store-->>Worker: Selected request still pending
+    Worker->>Gate: Check execution eligibility
+    Gate-->>Worker: Allow or block decision
+    alt Update is allowed
+        Worker->>Manager: Execute package update
+        Manager-->>Worker: Execution outcome
+        Worker->>Status: Publish outcome
+    else Update is blocked
+        Worker->>Status: Publish waiting or failed state
+    end
+    Worker->>Store: Finish request
+    Store-->>Worker: Queue changed notification

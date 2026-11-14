@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller as "Service Layer"
+    participant Repository as "Tool Repository"
+    participant Mongo as "MongoTemplate"
+    participant Database as "MongoDB"
+    Caller->>Repository: Request filtered tool list
+    Repository->>Repository: Build filter and search query
+    Repository->>Mongo: Execute find query
+    Mongo->>Database: Query IntegratedTool records
+    Database-->>Mongo: Matching records
+    Mongo-->>Repository: IntegratedTool list
+    Repository-->>Caller: Filtered tool list

@@ -1,0 +1,9 @@
+flowchart LR
+    Inventory["Installed tool inventory"] --> ToolUninstall["Tool Uninstall Service"]
+    ToolUninstall --> Params["Parameter resolver"]
+    Params --> Configuration["Client configuration"]
+    ToolUninstall --> Paths["Directory Manager"]
+    Paths --> Executable["Tool executable"]
+    ToolUninstall --> Kill["Process cleanup"]
+    ToolUninstall --> Service["Residual service cleanup"]
+    ToolUninstall --> Gui["GUI bundle or autorun cleanup"]

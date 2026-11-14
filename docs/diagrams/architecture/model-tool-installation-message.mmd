@@ -1,0 +1,9 @@
+flowchart LR
+    ControlPlane["Control plane"] -->|"installation request"| Message["Model Tool Installation Message"]
+    Message --> Handler["Tool installation handler"]
+    Handler --> Installer["Tool installation service"]
+    Installer --> Downloads["Download service"]
+    Installer --> Storage["Installed tools service"]
+    Installer --> Runtime["Tool run manager"]
+    Message --> VersionOverrides["Tool version overrides"]
+    Message --> DownloadModel["Download configuration"]

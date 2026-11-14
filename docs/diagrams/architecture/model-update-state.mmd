@@ -1,0 +1,23 @@
+classDiagram
+    class UpdateState {
+        +String target_version
+        +UpdatePhase phase
+        +u32 boot_attempts
+        +Option started_at
+        +Option last_error
+        +new(target_version)
+        +set_phase(phase)
+    }
+    class UpdatePhase {
+        <<enumeration>>
+        Validating
+        Downloading
+        Extracting
+        PreparingUpdater
+        UpdaterLaunched
+        Completed
+        Verifying
+        RolledBack
+        Failed
+    }
+    UpdateState --> UpdatePhase : "records"

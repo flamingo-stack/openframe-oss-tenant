@@ -1,0 +1,5 @@
+flowchart LR
+    ApiClient["API Client"] -->|"sort field"| GraphQLApi["OpenFrame API"]
+    GraphQLApi -->|"binds input"| SortField["OrganizationSortField"]
+    SortField -->|"LAST_ACTIVITY"| OrganizationQuery["Organization Query Handling"]
+    OrganizationQuery -->|"ordered results"| ApiClient

@@ -1,0 +1,6 @@
+flowchart TD
+    Candidate["Identify Sortable Organization Attribute"] --> Semantics["Define Stable Sort Semantics"]
+    Semantics --> QuerySupport["Implement Query and Mapping Support"]
+    QuerySupport --> Tests["Add Contract and Integration Tests"]
+    Tests --> EnumChange["Add Enum Constant"]
+    EnumChange --> Release["Release Updated API Contract"]

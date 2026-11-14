@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Test as Fae test
+    participant Session as Agent session
+    participant Dialog as Client dialog
+    participant Runner as Assistant runner
+    participant Provider as AI provider
+    participant Tools as Client tools
+    participant Host as Bound endpoint
+    Test->>Session: Open from target credentials
+    Test->>Dialog: Create client dialog
+    Test->>Runner: Ask with approval policy
+    Runner->>Provider: Generate Fae response
+    Provider->>Tools: Request permitted tool call
+    Tools->>Host: Operate on token-bound machine
+    Host-->>Tools: Command or query outcome
+    Tools-->>Runner: Tool outcome
+    Runner-->>Test: Run result
+    Test->>Host: Verify independently through SSH

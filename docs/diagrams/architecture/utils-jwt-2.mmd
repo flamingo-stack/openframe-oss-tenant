@@ -1,0 +1,7 @@
+flowchart TD
+    Start["JwtTimes value"] --> HasIat{"Issued-at claim present?"}
+    HasIat -->|"no"| NoTtl["Return no value"]
+    HasIat -->|"yes"| Subtract["Compute exp minus iat with overflow check"]
+    Subtract --> ValidTtl{"Positive result?"}
+    ValidTtl -->|"yes"| ReturnTtl["Return lifetime in seconds"]
+    ValidTtl -->|"no or overflow"| NoTtl

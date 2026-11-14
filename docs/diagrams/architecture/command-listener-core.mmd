@@ -1,0 +1,10 @@
+flowchart LR
+    NatsBroker["NATS broker"] -->|"command message"| Listener["Command Listener Core"]
+    Listener -->|"typed command"| Handler["Command Handler"]
+    Handler -->|"local action"| AgentServices["Agent services"]
+    Handler -->|"outcome"| Delivery["Delivery coordination"]
+    Delivery -->|"durable result"| ResultStore["Result store"]
+    Delivery -->|"publish result"| NatsBroker
+    ConnectionManager["NATS connection manager"] -->|"client connection"| Listener
+    ConfigService["Agent configuration service"] -->|"machine identity"| Listener
+    RestartGate["Restart gate"] -->|"lifecycle coordination"| Listener

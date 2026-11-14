@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["Client agent caller"] -->|"plaintext string"| Service["Encryption Service"]
+    Service -->|"create cipher"| Cipher["AES 256 GCM"]
+    Service -->|"generate nonce"| Random["Operating system random source"]
+    Cipher -->|"ciphertext"| Combine["Nonce plus encrypted payload"]
+    Random -->|"12 byte nonce"| Combine
+    Combine -->|"Base64 encode"| Output["Encrypted string"]

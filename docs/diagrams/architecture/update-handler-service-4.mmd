@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Client startup"] --> Load["Load update state"]
+    Load --> Exists{"State exists?"}
+    Exists -->|"No"| Done["No boot accounting"]
+    Exists -->|"Yes"| Relevant{"Phase is unresolved?"}
+    Relevant -->|"No"| Done
+    Relevant -->|"Yes"| TargetMatches{"Target equals running version?"}
+    TargetMatches -->|"Yes"| Done
+    TargetMatches -->|"No"| Limit{"Boot limit reached?"}
+    Limit -->|"No"| Increment["Increment and save boot attempts"]
+    Increment --> Done
+    Limit -->|"Yes"| Failed["Handle update failure"]
+    Failed --> Rollback["Launch reserve rollback on Windows or macOS"]
+    Rollback --> Done

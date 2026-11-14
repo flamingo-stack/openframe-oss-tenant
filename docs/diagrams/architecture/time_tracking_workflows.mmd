@@ -1,0 +1,7 @@
+flowchart LR
+    TestRunner["JUnit Time Tracking Test"] -->|"invokes"| ApiFacade["Time Tracking API facade"]
+    ApiFacade -->|"GraphQL requests"| GraphqlApi["OpenFrame GraphQL API"]
+    GraphqlApi -->|"timer and entry operations"| TimeDomain["Time tracking domain"]
+    TimeDomain -->|"stores and reads"| EntryStore["Time entry persistence"]
+    GraphqlApi -->|"entries, stats, errors"| ApiFacade
+    ApiFacade -->|"asserted results"| TestRunner

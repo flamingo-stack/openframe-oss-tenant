@@ -1,0 +1,13 @@
+flowchart TD
+    Incoming["Decoded Native RMM Event"] --> MachineId["Read Agent Machine Identifier"]
+    MachineId --> CacheLookup["Resolve Machine from Cache"]
+    CacheLookup --> OrgLookup["Resolve Organization from Cache"]
+    Incoming --> ExecutionFields["Read Tenant and Execution Identifiers"]
+    ExecutionFields --> ExecutionLookup["Find Script Execution"]
+    ExecutionLookup --> Origin["Set Initiator and Execution Source"]
+    ExecutionLookup --> ScriptLookup["Find Script Creation Source"]
+    ExecutionLookup --> TestRun{"Test Run?"}
+    TestRun -->|"yes"| Exclude["Exclude Event Log and Pinot Destinations"]
+    TestRun -->|"no"| Tenant["Resolve Tenant Context"]
+    Exclude --> Tenant
+    Tenant --> Enriched["Enriched Event and Routing Metadata"]

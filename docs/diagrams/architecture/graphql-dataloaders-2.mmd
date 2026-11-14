@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Resolver as "Nested field resolver"
+    participant DGS as "DGS DataLoader registry"
+    participant Loader as "Batch loader"
+    participant Source as "Service or repository"
+
+    Resolver->>DGS: Queue field key
+    Resolver->>DGS: Queue more field keys
+    DGS->>Loader: Dispatch key list
+    Loader->>Source: Perform bulk lookup
+    Source-->>Loader: Return matching records
+    Loader-->>DGS: Return values aligned to keys
+    DGS-->>Resolver: Complete field values

@@ -1,0 +1,6 @@
+flowchart LR
+    Client["API Client"] -->|"status payload"| Boundary["Validated API Boundary"]
+    Boundary -->|"UpdateInvitationStatusRequest"| Contract["Api Dto Invitation"]
+    Contract -->|"requested status"| InvitationService["Invitation Service"]
+    InvitationService -->|"load and transition"| Repository["Invitation Repository"]
+    Repository -->|"store invitation"| Database["Tenant Data Store"]

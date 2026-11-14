@@ -1,0 +1,11 @@
+flowchart LR
+    Request["Execution request"] --> Service["Execution Service"]
+    Service --> Params["Script Params"]
+    Params --> Executor["Script Executor"]
+    Executor --> Unix["Unix executor"]
+    Executor --> Windows["Windows executor"]
+    Unix --> Process["Operating system process"]
+    Windows --> Process
+    Process --> Result["Execution result"]
+    Result --> Service
+    Service --> Rmm["RMM result"]

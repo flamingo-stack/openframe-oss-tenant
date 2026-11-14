@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Test as "Integration Test"
+    participant Api as "Assignment API"
+    participant Jackson as "Jackson Mapper"
+    participant Edge as "ItemAssignmentEdge"
+    participant Target as "AssignmentTarget"
+    Test->>Api: Request assignment connection
+    Api->>Jackson: Return JSON edge payload
+    Jackson->>Edge: Populate node and cursor
+    Jackson->>Target: Map __typename and target fields
+    Edge-->>Test: Expose assignment node and cursor
+    Target-->>Test: Expose typed target details

@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> NoState
+    NoState --> AwaitingLaunch: "Update request persists state"
+    AwaitingLaunch --> UpdaterLaunched: "Updater starts"
+    UpdaterLaunched --> Verifying: "Replacement requires verification"
+    UpdaterLaunched --> Success: "Running version equals target"
+    Verifying --> Success: "Running version equals target"
+    AwaitingLaunch --> Failure: "Client restarts before updater launch"
+    UpdaterLaunched --> Failure: "Crash-loop limit reached"
+    Verifying --> Failure: "Crash-loop limit reached"
+    Success --> Cleaned
+    Failure --> Cleaned
+    Cleaned --> [*]

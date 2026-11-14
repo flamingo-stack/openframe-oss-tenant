@@ -1,0 +1,20 @@
+flowchart LR
+    AgentRuntime["OpenFrame Client Runtime"] --> Factory["Http Client Factory"]
+    Factory --> HeaderMap["Default Machine ID Header"]
+    Factory --> Timeout["Request Timeout"]
+    Factory --> Tls["TLS Validation Mode"]
+    Factory --> Proxy["Proxy Bypass"]
+    Factory --> Pool["No Idle Connection Pool"]
+    HeaderMap --> HttpClient["Configured reqwest Client"]
+    Timeout --> HttpClient
+    Tls --> HttpClient
+    Proxy --> HttpClient
+    Pool --> HttpClient
+    HttpClient --> AuthClient["Authentication Client"]
+    HttpClient --> RegistrationClient["Registration Client"]
+    HttpClient --> RemoteAccessClient["Remote Access Client"]
+    HttpClient --> ToolClient["Tool API Client"]
+    AuthClient --> Gateway["OpenFrame Gateway"]
+    RegistrationClient --> Gateway
+    RemoteAccessClient --> Gateway
+    ToolClient --> Gateway

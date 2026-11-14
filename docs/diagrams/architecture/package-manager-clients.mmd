@@ -1,0 +1,14 @@
+flowchart LR
+    ApiService["OpenFrame API Service"] --> Contract["Package Manager Client"]
+    Contract --> BrewClient["Brew Package Client"]
+    Contract --> ChocoClient["Choco Package Client"]
+    Contract --> WingetClient["Winget Package Client"]
+
+    BrewClient --> Catalog["Package Catalog Repository"]
+    WingetClient --> Catalog
+    ChocoClient --> ChocoFeed["Chocolatey Community Feed"]
+    WingetClient --> WingetCdn["WinGet CDN"]
+
+    BrewClient --> Results["Normalized Package DTOs"]
+    ChocoClient --> Results
+    WingetClient --> Results

@@ -1,0 +1,9 @@
+flowchart TD
+    Receive["Receive feature flags delivery"] --> Sequence{"Sequence present?"}
+    Sequence -->|"no"| Fail["Fail command"]
+    Sequence -->|"yes"| Apply["Validate, resolve, and persist flags"]
+    Apply --> Changed{"Effective flags changed?"}
+    Changed -->|"no"| Done["Return done"]
+    Changed -->|"yes"| Await["Persist awaiting restart delivery"]
+    Await --> Restart["Return restart required"]
+    Restart --> Report["Restart completion settles delivery"]

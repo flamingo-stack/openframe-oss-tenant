@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Resolver as "Tool Command Params Resolver"
+    participant Retriever as "Fleet MDM Secret Retriever"
+    participant Tools as "Integrated Tool Service"
+    participant Urls as "Tool URL Service"
+    participant Fleet as "Fleet MDM API"
+    Resolver->>Retriever: Request secret for fleetmdm-server
+    Retriever->>Tools: Find integrated tool configuration
+    Tools-->>Retriever: API key
+    Retriever->>Urls: Find API tool URL
+    Urls-->>Retriever: Host and port
+    Retriever->>Fleet: Get enrollment secret
+    Fleet-->>Retriever: Enrollment secret
+    Retriever-->>Resolver: Registration secret

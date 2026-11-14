@@ -1,0 +1,13 @@
+flowchart TD
+    AssetStart["Select next eligible asset"] --> ChooseConfig["Choose current operating system configuration"]
+    ChooseConfig --> Download["Download and extract payload"]
+    Download --> Executable{"Executable asset?"}
+    Executable -->|"yes"| StopAsset["Stop asset on macOS"]
+    StopAsset --> Replace["Replace executable"]
+    Executable -->|"no"| Write["Write asset file"]
+    Replace --> Record["Update asset version in registry"]
+    Write --> Record
+    Record --> Publish["Publish installed asset version"]
+    Publish --> More{"More selected assets?"}
+    More -->|"yes"| AssetStart
+    More -->|"no"| Complete["Complete update batch"]

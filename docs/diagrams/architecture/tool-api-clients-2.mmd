@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Installer as Tool Installation Service
+    participant Client as Tool Api Client
+    participant Config as Agent Configuration Service
+    participant Api as Tool API
+    Installer->>Client: get tool asset
+    Client->>Client: build asset URL
+    Client->>Config: get access token
+    Config-->>Client: access token
+    Client->>Api: GET asset with bearer authorization
+    alt successful response
+        Api-->>Client: successful response body
+        Client-->>Installer: bytes
+    else token lookup fails
+        Config-->>Client: configuration error
+        Client-->>Installer: contextual error
+    else request or response fails
+        Api-->>Client: failure status or transport error
+        Client-->>Installer: contextual error
+    end

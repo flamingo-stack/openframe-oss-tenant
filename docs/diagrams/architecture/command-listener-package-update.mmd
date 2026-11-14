@@ -1,0 +1,11 @@
+flowchart LR
+    ControlPlane["Control plane"] -->|"package update command"| Nats["NATS subject for one machine"]
+    Nats --> CommandListener["Command listener core"]
+    CommandListener --> Handler["Package update handler"]
+    Handler --> Manager["Package manager support check"]
+    Handler --> Orders["Durable order store"]
+    Handler --> Status["Status reporter"]
+    Orders --> Worker["Package update run manager"]
+    Worker --> PackageManager["Operating system package manager"]
+    Worker --> Status
+    Status --> ControlPlane

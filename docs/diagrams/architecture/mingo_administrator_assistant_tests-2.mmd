@@ -1,0 +1,10 @@
+flowchart LR
+    Suite["Mingo Administrator Assistant Tests"] --> TestCore["OpenFrame test service core"]
+    TestCore --> ChatApi["Chat and dialog APIs"]
+    TestCore --> DomainApis["Domain verification APIs"]
+    TestCore --> Ssh["SSH machine verifier"]
+    ChatApi --> Mingo["Mingo administrator assistant"]
+    Mingo --> ToolLayer["Assistant tool layer"]
+    ToolLayer --> Tenant["Tenant services and managed devices"]
+    DomainApis --> Tenant
+    Ssh --> Devices["Managed target devices"]

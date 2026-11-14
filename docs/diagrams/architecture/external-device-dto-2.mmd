@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "External device test"
+    participant Api as "External API"
+    participant FilterDto as "TagFilterItem"
+    participant TagDto as "DeviceTagResponse"
+    Test->>Api: Request devices or filters
+    Api->>FilterDto: Deserialize tag filter entries
+    Api->>TagDto: Deserialize included device tags
+    FilterDto-->>Test: Key, value, and matching count
+    TagDto-->>Test: Assigned tag metadata and values

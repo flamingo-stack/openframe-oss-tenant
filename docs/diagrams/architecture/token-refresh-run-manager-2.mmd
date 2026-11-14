@@ -1,0 +1,10 @@
+flowchart LR
+    RefreshManager["Token Refresh Run Manager"] --> AuthService["Agent Auth Service"]
+    RefreshManager --> Deactivation["Deactivation Service"]
+    RefreshManager --> JwtUtility["JWT timing utility"]
+    AuthService --> AuthClient["Auth Client"]
+    AuthService --> ConfigService["Agent Configuration Service"]
+    AuthService --> SharedToken["Shared Token Service"]
+    AuthClient --> TokenEndpoint["Client token endpoint"]
+    ConfigService --> AgentConfig["Persisted agent configuration"]
+    SharedToken --> EncryptedToken["shared_token.enc"]

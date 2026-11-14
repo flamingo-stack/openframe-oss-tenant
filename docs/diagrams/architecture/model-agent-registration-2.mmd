@@ -1,0 +1,9 @@
+flowchart TD
+    MachineFacts["Hostname, agent version, and OS type"] --> BuildRequest["Build AgentRegistrationRequest"]
+    InstallContext["Organization, user, and tags"] --> BuildRequest
+    BuildRequest --> OptionalFields{"Optional values empty?"}
+    OptionalFields -->|"yes"| OmitFields["Omit organizationId, userId, or tags"]
+    OptionalFields -->|"no"| SerializeFields["Serialize camel-case JSON fields"]
+    OmitFields --> JsonPayload["JSON request body"]
+    SerializeFields --> JsonPayload
+    JsonPayload --> HttpPost["POST registration request"]

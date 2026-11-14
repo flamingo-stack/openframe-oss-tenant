@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Caller as Client authentication service
+    participant Auth as AuthClient
+    participant Gateway as Gateway token endpoint
+    participant Deactivation as DeactivationService
+    Caller->>Auth: authenticate_with_secret(client ID, client secret)
+    Auth->>Gateway: POST form with client credentials grant
+    Gateway-->>Auth: HTTP response
+    Auth->>Deactivation: on_gateway_status(status)
+    alt successful status
+        Auth->>Auth: Decode AgentTokenResponse
+        Auth-->>Caller: Token response
+    else unsuccessful status
+        Auth->>Auth: Read response body
+        Auth-->>Caller: Error with status and body
+    end

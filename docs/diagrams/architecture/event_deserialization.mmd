@@ -1,0 +1,17 @@
+flowchart LR
+    Kafka["Kafka record"] --> Input["Common Debezium message"]
+    Input --> Selector["Message type selects deserializer"]
+    Selector --> Shared["Integrated Tool Event Deserializer"]
+    Selector --> Cloud["Cloud audit deserializers"]
+    Shared --> Rmm["RMM result base deserializer"]
+    Rmm --> Command["Command result deserializer"]
+    Rmm --> Script["Script result deserializer"]
+    Shared --> Fleet["Fleet event deserializer"]
+    Cloud --> Google["Google Workspace audit deserializer"]
+    Cloud --> Microsoft["Microsoft 365 audit deserializer"]
+    Command --> Normalized["Deserialized Debezium message"]
+    Script --> Normalized
+    Fleet --> Normalized
+    Google --> Normalized
+    Microsoft --> Normalized
+    Normalized --> Handlers["Stream handlers and storage sinks"]

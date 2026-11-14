@@ -1,0 +1,8 @@
+flowchart LR
+    TenantRepo["OpenFrame OSS Tenant"] --> ClientRuntime["OpenFrame client runtime"]
+    ClientRuntime --> AgentLibrary["openframe agent library"]
+    AgentLibrary --> ProcessSnapshot["Platform Process Snapshot"]
+    ProcessSnapshot --> Sysinfo["sysinfo process table"]
+    ProcessSnapshot --> WindowsApi["Windows session API"]
+    UpdateGate["Package update gate"] --> ProcessSnapshot
+    UpdateGate --> Decision["Clear or blocked decision"]

@@ -1,0 +1,12 @@
+flowchart LR
+    TestRunner["OpenFrame Test Runner"] --> TicketsTest["TicketsTest"]
+    TicketsTest --> TicketApi["Ticket API test client"]
+    TicketsTest --> DeviceApi["Device API test client"]
+    TicketsTest --> UserApi["User API test client"]
+    TicketsTest --> TagApi["Tag API test client"]
+    TicketApi --> Graphql["OpenFrame GraphQL API"]
+    DeviceApi --> Graphql
+    UserApi --> Graphql
+    TagApi --> Graphql
+    Graphql --> TicketStore["Ticket and status data"]
+    Graphql --> Policy["Transition policy"]

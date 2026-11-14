@@ -1,0 +1,11 @@
+flowchart LR
+    ControlPlane["OpenFrame control plane"] -->|"execution message"| Nats["NATS and JetStream"]
+    Nats --> Listener["Execution listener"]
+    Listener --> Model["Model Execution"]
+    Model --> Service["Execution service"]
+    Service --> Executor["Unix or Windows executor"]
+    Executor --> Result["RMM result"]
+    Result --> Outbox["Durable result outbox"]
+    Outbox -->|"result or acknowledgement"| Nats
+    Nats --> ClientCore["Client service result listeners"]
+    ClientCore --> Stream["Stream execution handlers"]

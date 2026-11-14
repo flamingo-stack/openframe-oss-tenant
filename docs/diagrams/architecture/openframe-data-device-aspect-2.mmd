@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Writer as "Repository or Machine Writer"
+    participant Aspect as "Machine Tag Event Aspect"
+    participant Service as "Machine Tag Event Service"
+    participant Data as "Machine and Tag Repositories"
+    participant Kafka as "Retrying Kafka Producer"
+    Writer->>Aspect: Save machine or device assignment
+    Aspect->>Writer: Continue and receive successful result
+    Aspect->>Service: Process affected machine
+    Service->>Data: Load machine tags and assignments
+    Data->>Service: Return current projection inputs
+    Service->>Kafka: Publish complete machine snapshot

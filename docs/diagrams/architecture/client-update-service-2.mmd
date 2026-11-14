@@ -1,0 +1,9 @@
+flowchart TD
+    Receive["Receive update message"] --> Acquire{"Update slot available?"}
+    Acquire -->|"no"| Duplicate["Reject duplicate for redelivery"]
+    Acquire -->|"yes"| Running{"Requested version is running?"}
+    Running -->|"yes"| ReservedSkip["Return guard without parking tools"]
+    Running -->|"no"| MarkPending["Mark client update pending"]
+    MarkPending --> Busy{"Tool operation or package upgrade active?"}
+    Busy -->|"yes"| Defer["Reject for redelivery"]
+    Busy -->|"no"| Reserved["Return update guard"]

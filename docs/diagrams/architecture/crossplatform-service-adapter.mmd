@@ -1,0 +1,11 @@
+flowchart LR
+    ServiceModule["Client Service Management"] --> Adapter["Crossplatform Service Adapter"]
+    Adapter --> Config["ServiceConfig"]
+    Adapter --> NativeManager["Native Service Manager"]
+    NativeManager --> MacOS["macOS launchd"]
+    NativeManager --> Windows["Windows SCM"]
+    NativeManager --> Linux["Linux or Unix Service Manager"]
+    Config --> ClientProcess["OpenFrame Client run-as-service"]
+    MacOS --> ClientProcess
+    Windows --> ClientProcess
+    Linux --> ClientProcess

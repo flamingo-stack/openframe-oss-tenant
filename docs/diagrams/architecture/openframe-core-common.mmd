@@ -1,0 +1,19 @@
+flowchart TD
+    Services["OpenFrame service modules"] --> Core["Openframe Core Common"]
+
+    subgraph CoreAreas["Openframe Core Common areas"]
+        Email["Email-domain support"]
+        Json["Jackson compatibility"]
+        Extension["Assets URL contract"]
+        Utilities["Utilities and validation"]
+    end
+
+    Core --> Email
+    Core --> Json
+    Core --> Extension
+    Core --> Utilities
+
+    Email --> RemoteCheck["Optional disposable-domain endpoint"]
+    Extension --> Resolver["Downstream assets URL resolver"]
+    Json --> Mapper["Spring JsonMapper"]
+    Utilities --> Consumers["Controllers, services, and message handlers"]

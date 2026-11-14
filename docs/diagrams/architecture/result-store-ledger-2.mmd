@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> InFlight: accept
+    InFlight --> AwaitingRestart: mark awaiting restart
+    InFlight --> Settled: startup recovery failed
+    InFlight --> Settled: settle result
+    AwaitingRestart --> Settled: settle matching delivery type
+    Settled --> [*]: expire or prune

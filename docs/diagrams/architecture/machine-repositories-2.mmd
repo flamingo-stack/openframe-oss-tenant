@@ -1,0 +1,8 @@
+flowchart LR
+    Request["List request with filter, sort, and cursor"] --> Tenant["Add tenant and device predicates"]
+    Tenant --> SortCheck{"Supported ranked sort?"}
+    SortCheck -->|"status or connectivity"| Ranked["Add rank field and aggregate"]
+    SortCheck -->|"another allowed field"| Standard["Apply keyset criteria and MongoDB sort"]
+    Ranked --> Page["Limit result page"]
+    Standard --> Page
+    Page --> Machines["Machine documents"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller as "API Caller"
+    participant Controller as "Force Agent Controller"
+    participant Service as "Force Update Service"
+    participant Delivery as "Delivery Workflow"
+
+    Caller->>Controller: POST force client update or tool agent update
+    Controller->>Service: Deserialize DTO and process request
+    Service->>Delivery: Create update delivery work
+    Delivery-->>Service: Return per-target outcome
+    Service-->>Controller: Return operation response
+    Controller-->>Caller: Serialize response

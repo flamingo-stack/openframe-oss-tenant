@@ -1,0 +1,7 @@
+flowchart LR
+    ConfigRepo["Tenant Configuration Repository"] --> ConfigServer["Openframe Config Service"]
+    ConfigServer --> GitCache["Local Git Cache"]
+    ConfigCore["Openframe Config Core"] --> ConfigServer
+    ConfigCore --> LoggingEndpoint["Logging XML Endpoint"]
+    ServiceApps["Openframe Service Applications"] --> ConfigServer
+    ServiceApps --> LoggingEndpoint

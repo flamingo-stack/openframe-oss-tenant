@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant Startup as Client Startup
+    participant Service as Agent Registration Service
+    participant Store as Machine Info Store
+    participant Config as Initial Configuration Service
+    participant Client as Registration Client
+    participant Server as Client Service
+
+    Startup->>Service: register agent
+    Service->>Config: read initial key
+    Service->>Store: read persisted credentials
+    alt Credentials are available
+        Service->>Config: resolve configured user ID
+        Service->>Client: register with machine credentials
+        Client->>Server: POST reinstall
+        alt Saved secret is valid
+            Server-->>Client: registration response
+        else Saved secret is invalid
+            Server-->>Client: credential rejection
+            Service->>Client: register without machine credentials
+            Client->>Server: POST register
+            Server-->>Client: registration response
+        end
+    else Credentials are absent or unrecoverable
+        Service->>Config: resolve configured user ID
+        Service->>Client: register without machine credentials
+        Client->>Server: POST register
+        Server-->>Client: registration response
+    end
+    Service->>Store: persist machine ID, secret, user ID
+    Service->>Service: save response in agent configuration
+    Service-->>Startup: registration response

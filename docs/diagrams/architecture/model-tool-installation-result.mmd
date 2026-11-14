@@ -1,0 +1,6 @@
+flowchart LR
+    CommandMessage["Tool installation command"] --> Handler["Tool installation handler"]
+    Handler --> InstallationService["Tool installation service"]
+    InstallationService --> InstalledTools["Installed tools service"]
+    InstallationService --> ResultModel["Model Tool Installation Result"]
+    ResultModel --> ResultPayload["Serialized tool agent identifier"]

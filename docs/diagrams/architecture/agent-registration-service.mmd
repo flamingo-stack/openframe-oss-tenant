@@ -1,0 +1,10 @@
+flowchart LR
+    Installer["Installer or client startup"] --> InitialConfig["Initial Configuration Service"]
+    Installer --> RegistrationService["Agent Registration Service"]
+    RegistrationService --> DeviceData["Device Data Fetcher"]
+    RegistrationService --> MachineStore["Persisted Machine Info Store"]
+    RegistrationService --> RegistrationClient["Registration Client"]
+    RegistrationService --> AgentConfig["Agent Configuration Service"]
+    RegistrationClient --> Gateway["OpenFrame Gateway"]
+    Gateway --> ClientService["OpenFrame Client Service"]
+    ClientService --> RegistrationEndpoint["Agent registration endpoints"]

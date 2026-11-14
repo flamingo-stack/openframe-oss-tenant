@@ -1,0 +1,12 @@
+flowchart TD
+    Failed["Failed device state"] --> Automatic{"Automatic update source?"}
+    Automatic -->|"No"| NoRetry["Keep terminal result"]
+    Automatic -->|"Yes"| Eligible{"Retryable reason and attempts remain?"}
+    Eligible -->|"No"| CheckRemoved{"Package not installed?"}
+    Eligible -->|"Yes"| CurrentPolicy{"Current enabled policy and execution match?"}
+    CurrentPolicy -->|"No"| NoRetry
+    CurrentPolicy -->|"Yes"| Mark["Mark retry scheduled"]
+    Mark --> Dispatch["Schedule delayed delivery"]
+    Dispatch --> Reset["Increment retries and clear deadline"]
+    CheckRemoved -->|"Yes"| Disable["Disable current policy"]
+    CheckRemoved -->|"No"| NoRetry

@@ -1,0 +1,10 @@
+flowchart LR
+    Command["Tool command or update"]
+    Installer["Tool installation or update service"]
+    Record["Installed Tool record"]
+    Store["Installed tools service"]
+    Runtime["Run, restart, kill, or uninstall service"]
+    Command --> Installer
+    Installer -->|"creates or updates"| Record
+    Record -->|"saved and loaded"| Store
+    Store -->|"supplies record"| Runtime

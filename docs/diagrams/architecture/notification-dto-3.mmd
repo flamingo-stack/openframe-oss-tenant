@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant TestCase as Notification Test
+    participant ApiClient as Notification API Client
+    participant ApiService as Notification GraphQL API
+    participant Mapper as JSON Mapper
+    participant EdgeDto as Notification Dto
+    TestCase->>ApiClient: Request notification page
+    ApiClient->>ApiService: Execute GraphQL query
+    ApiService-->>ApiClient: Return connection JSON
+    ApiClient->>Mapper: Deserialize response
+    Mapper->>EdgeDto: Set node and cursor
+    EdgeDto-->>TestCase: Return parsed edge
+    TestCase->>TestCase: Assert node data
+    TestCase->>ApiClient: Reuse cursor for next page

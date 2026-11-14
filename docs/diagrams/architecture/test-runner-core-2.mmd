@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Discovery Request"] --> Decision{{"Parallelism greater than 1?"}}
+    Decision -->|"no"| Sequential["Default Sequential Plan"]
+    Decision -->|"yes"| Parameters["Set JUnit Parallel Parameters"]
+    Parameters --> Classes["Concurrent Test Classes"]
+    Classes --> Methods["Methods Stay Same Thread"]
+    Sequential --> Plan["Test Plan"]
+    Methods --> Plan
+    Plan --> Execute["Execute Plan"]

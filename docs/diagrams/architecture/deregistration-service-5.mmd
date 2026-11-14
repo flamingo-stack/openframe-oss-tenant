@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Service as Client Service
+    participant Uninstaller as Platform Uninstaller
+    participant Dereg as Deregistration Service
+    participant Config as Local Configuration
+    participant Api as Registration API
+    Service->>Dereg: Create with directory manager
+    Dereg->>Config: Read server mode and credentials
+    Dereg->>Dereg: Snapshot usable credentials
+    Service->>Uninstaller: Start operating-system uninstall
+    Uninstaller->>Uninstaller: Stop and remove agent service
+    Uninstaller->>Dereg: deregister_best_effort()
+    Dereg->>Api: POST authenticated uninstall request
+    alt Accepted or already absent
+        Api-->>Dereg: Deregistered or AlreadyGone
+        Dereg->>Dereg: Set reported flag
+    else Request fails
+        Dereg->>Dereg: Retry within bounded attempt limit
+    end
+    Uninstaller->>Uninstaller: Remove tools and local files
+    Uninstaller->>Dereg: retry_if_unreported()

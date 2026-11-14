@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> Acked: Client accepts delivery
+    Acked --> Done: Work completes
+    Pending --> Failed: Acceptance fails
+    Acked --> Failed: Work fails
+    Done --> [*]
+    Failed --> [*]

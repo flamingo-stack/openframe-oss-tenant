@@ -1,0 +1,11 @@
+flowchart TD
+    Request["Incoming request"] --> VersionMetrics["Client Version Metrics Filter"]
+    VersionMetrics --> UpgradeGate["Client Upgrade Gate Filter"]
+    UpgradeGate --> Eligible{"Request eligible?"}
+    Eligible -->|"no"| Continue["Continue gateway chain"]
+    Eligible -->|"yes"| Supported{"Mobile bundle supported?"}
+    Supported -->|"no"| Upgrade["Return 426 response"]
+    Supported -->|"yes"| External{"External API route?"}
+    External -->|"yes"| ApiKey["Validate key and enforce rate limits"]
+    External -->|"no"| Continue
+    ApiKey --> Continue

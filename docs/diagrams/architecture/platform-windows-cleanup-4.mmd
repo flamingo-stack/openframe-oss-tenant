@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Cleanup script starts"] --> WaitLoop["Poll original process for up to 30 seconds"]
+    WaitLoop --> ProcessGone{"Process gone?"}
+    ProcessGone -->|"yes"| Verify["Verify process is absent"]
+    ProcessGone -->|"no"| ForceStop["Force stop process and wait two seconds"]
+    ForceStop --> Verify
+    Verify --> StillRunning{"Process still running?"}
+    StillRunning -->|"yes"| ScriptDeleteFailure["Delete script and exit with failure"]
+    StillRunning -->|"no"| RemoveBinary["Attempt executable removal"]
+    RemoveBinary --> RetryRemoval["Retry up to five times with bounded backoff"]
+    RetryRemoval --> OwnershipFallback{"Executable remains?"}
+    OwnershipFallback -->|"yes"| Ownership["Attempt ownership and ACL adjustment, then remove"]
+    OwnershipFallback -->|"no"| SelfDelete["Delete cleanup script"]
+    Ownership --> SelfDelete
+    SelfDelete --> EmptyDirs["Remove empty binary and staging directories"]
+    EmptyDirs --> Finish["Exit successfully"]

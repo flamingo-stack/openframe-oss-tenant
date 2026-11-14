@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Receive locked update message"] --> Lookup["Load installed tool record"]
+    Lookup --> Found{"Record found?"}
+    Found -->|"no"| SkipOrphan["Log orphaned request and wait for installation"]
+    Found -->|"yes"| Inspect["Inspect record state and expected artifact"]
+    Inspect --> Repair{"Repair required?"}
+    Repair -->|"yes"| MarkInstalling["Use installing state for repair"]
+    Repair -->|"no"| Compare["Compare tool versions"]
+    MarkInstalling --> Compare
+    Compare --> SelectAssets["Select eligible changed assets"]
+    SelectAssets --> Needed{"Tool or asset work needed?"}
+    Needed -->|"no"| PublishCurrent["Publish recorded tool and asset versions"]
+    Needed -->|"yes"| Execute["Run tool update and asset updates"]
+    Execute --> Finalize["Persist state and publish updated versions"]

@@ -1,0 +1,14 @@
+flowchart LR
+    Client[Client]
+    Operations[Operations]
+    Permissions[Permissions]
+    Unix[Unix]
+    Windows[Windows]
+    Resources[Resources]
+
+    Client --> Operations
+    Operations --> Permissions
+    Permissions -->|Unix| Unix
+    Permissions -->|Windows| Windows
+    Unix --> Resources
+    Windows --> Resources

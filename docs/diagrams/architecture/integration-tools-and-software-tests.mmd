@@ -1,0 +1,15 @@
+flowchart LR
+    TestRunner["Test Runner"] --> TestModule["Integration Tools And Software Tests"]
+    TestModule --> ToolApi["Tool API"]
+    TestModule --> BundleApi["Software Bundle API"]
+    TestModule --> ActionApi["Software Action API"]
+    TestModule --> InventoryApi["Software Inventory API"]
+    ToolApi --> GraphQL["OpenFrame GraphQL API"]
+    BundleApi --> GraphQL
+    ActionApi --> GraphQL
+    InventoryApi --> GraphQL
+    GraphQL --> ToolRegistry["Integrated Tool Registry"]
+    GraphQL --> Rmm["Remote Management Services"]
+    Rmm --> Device["Enrolled Windows Test Device"]
+    Rmm --> Fleet["Fleet MDM Inventory"]
+    Fleet --> InventoryApi

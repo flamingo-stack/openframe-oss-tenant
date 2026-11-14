@@ -1,0 +1,10 @@
+flowchart LR
+    InstalledTools["Installed Tools Service"] --> ProcessingManager["Tool Connection Processing Manager"]
+    Parameters["Tool Command Parameters Resolver"] --> ProcessingManager
+    LocalConnections["Tool Connection Service"] --> ProcessingManager
+    ProcessingManager --> Publisher["Tool Connection Message Publisher"]
+    Publisher --> Message["Model Tool Connection Message"]
+    Message --> Nats["NATS subject: machine.*.tool-connection"]
+    Nats --> Listener["Tool Connection Listener"]
+    Listener --> BackendService["Backend Tool Connection Service"]
+    BackendService --> PlatformState["Machine Tool Connection State"]

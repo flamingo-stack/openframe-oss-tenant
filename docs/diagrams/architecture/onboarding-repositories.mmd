@@ -1,0 +1,7 @@
+flowchart TD
+    Caller["Onboarding workflow or service"] -->|"tenant ID"| TenantRepository["Tenant Onboarding Progress Repository"]
+    Caller -->|"user ID and tenant ID"| UserRepository["User Onboarding Progress Repository"]
+    TenantRepository -->|"Spring Data MongoRepository"| MongoDB[("MongoDB")]
+    UserRepository -->|"Spring Data MongoRepository"| MongoDB
+    TenantRepository -->|"persists"| TenantProgress["Tenant onboarding progress"]
+    UserRepository -->|"persists"| UserProgress["User onboarding progress"]

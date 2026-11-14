@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Clean
+    Clean --> InProgress: Complete Step
+    InProgress --> InProgress: Complete Another Step
+    InProgress --> Finished: Finish
+    InProgress --> Skipped: Skip
+    Clean --> TourStarted: Start Mingo Tour
+    TourStarted --> TourStarted: Replace Dialog
+    Finished --> Clean: Reset
+    Skipped --> Clean: Reset
+    TourStarted --> Clean: Reset

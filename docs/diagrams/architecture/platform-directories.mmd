@@ -1,0 +1,11 @@
+flowchart TD
+    ClientRuntime["OpenFrame Client runtime"] --> DirectoryManager["DirectoryManager"]
+    DirectoryManager --> PathResolution["Platform path resolution"]
+    DirectoryManager --> DirectoryLifecycle["Directory lifecycle"]
+    DirectoryManager --> ToolLayout["Tool and asset paths"]
+    DirectoryLifecycle --> Permissions["Permissions helper"]
+    DirectoryLifecycle --> Filesystem["Local filesystem"]
+    PathResolution --> Logs["Logs directory"]
+    PathResolution --> AppSupport["Application support directory"]
+    PathResolution --> Secured["Secured directory"]
+    ToolLayout --> AppSupport

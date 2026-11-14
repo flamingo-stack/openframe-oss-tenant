@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Manager as Tool connection manager
+    participant Installed as Installed tools service
+    participant Store as Connection store
+    participant Publisher as NATS publisher
+    participant Listener as Java connection listener
+    participant Platform as Platform connection service
+
+    Manager->>Installed: Load installed tools
+    Installed-->>Manager: Installed tool list
+    loop Each eligible installed tool
+        Manager->>Store: Load or save connection state
+        Manager->>Publisher: Publish machine ID, agent-tool ID, tool type
+        Publisher-->>Listener: Deliver NATS message
+        Listener->>Platform: Add machine tool connection
+        Platform-->>Listener: Processed connection
+        Listener-->>Publisher: Acknowledge delivery
+    end

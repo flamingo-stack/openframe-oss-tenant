@@ -1,0 +1,13 @@
+flowchart LR
+    ApiLayer["API and service consumers"] --> Repositories["Software And Aggregation Repositories"]
+    Repositories --> ActionRepo["Software action aggregation"]
+    Repositories --> TitleRepo["Software title query"]
+    Repositories --> DeviceRepo["Device software aggregation"]
+    ActionRepo --> ActionResults["Software action results"]
+    ActionRepo --> Executions["Script executions"]
+    TitleRepo --> SoftwareTitles["Software titles"]
+    DeviceRepo --> DeviceSoftware["Device software observations"]
+    ActionResults --> MongoDB[("MongoDB")]
+    Executions --> MongoDB
+    SoftwareTitles --> MongoDB
+    DeviceSoftware --> MongoDB

@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Agent as Client agent
+    participant Dialog as Client dialog
+    participant Admin as Technician admin
+    participant Ticket as Dialog ticket
+    Agent->>Dialog: Open client dialog
+    Dialog->>Ticket: Create client-owned ticket
+    Agent->>Dialog: Send greeting to title ticket
+    Agent-->>Admin: Release agent session
+    Admin->>Ticket: Resolve ticket
+    Admin->>Ticket: Attempt reopen
+    Ticket-->>Admin: Reject non-agent caller
+    Admin-->>Agent: Reopen agent session
+    Agent->>Ticket: Request reopen
+    Ticket-->>Agent: Return Tech Required status
+    Agent-->>Admin: Release agent session
+    Admin->>Ticket: Verify persisted status and archive

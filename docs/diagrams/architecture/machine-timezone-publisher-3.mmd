@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Timezone supplied to publisher"] --> MachineId["Read machine identifier"]
+    MachineId --> IdCheck{"Identifier available?"}
+    IdCheck -->|"no"| ConfigError["Return configuration error"]
+    IdCheck -->|"yes"| Build["Create timezone message"]
+    Build --> Serialize["Serialize JSON bytes"]
+    Serialize --> Subject["Build machine-specific subject"]
+    Subject --> Publish["Publish with JetStream acknowledgement"]
+    Publish --> AckCheck{"Acknowledgement received?"}
+    AckCheck -->|"no"| PublishError["Return publish error"]
+    AckCheck -->|"yes"| Log["Log successful report"]
+    Log --> Complete["Complete successfully"]

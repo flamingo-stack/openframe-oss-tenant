@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Caller as Token Caller
+    participant Shared as Shared Token Service
+    participant Dirs as Directory Manager
+    participant Crypto as Encryption Service
+    participant Disk as Secured Directory
+
+    Caller->>Shared: update(access token)
+    Shared->>Dirs: secured_dir()
+    Dirs-->>Shared: secured directory path
+    Shared->>Crypto: encrypt(access token)
+    Crypto-->>Shared: Base64 encoded ciphertext
+    Shared->>Disk: atomically persist shared_token.enc
+    Disk-->>Shared: write result
+    Shared-->>Caller: success or error

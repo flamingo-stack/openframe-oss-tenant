@@ -1,0 +1,11 @@
+flowchart LR
+    TestRunner["JUnit Test Runner"] --> PackageTest["Package Search Test"]
+    TestRunner --> TagsTest["Tags Test"]
+    PackageTest --> PackageApi["Package Search API Helper"]
+    TagsTest --> TagApi["Tag API Helper"]
+    PackageApi --> GraphqlApi["GraphQL API"]
+    TagApi --> GraphqlApi
+    GraphqlApi --> Catalog["Package Catalog Services"]
+    GraphqlApi --> TagStore["Tenant Tag Data"]
+    Catalog --> Brew["Homebrew Catalog"]
+    Catalog --> Winget["Winget Catalog"]

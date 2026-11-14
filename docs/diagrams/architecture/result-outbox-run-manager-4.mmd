@@ -1,0 +1,10 @@
+flowchart TD
+    Load["Load payload"] --> Present{{"Payload present?"}}
+    Present -->|"no"| RemoveOrphan["Attempt to remove orphan"]
+    Present -->|"yes"| Size{{"Within payload limit?"}}
+    Size -->|"no"| KeepOversize["Keep entry and warn"]
+    Size -->|"yes"| Publish["Publish with timeout"]
+    Publish --> Outcome{{"Publish succeeded?"}}
+    Outcome -->|"yes"| Remove["Remove entry"]
+    Outcome -->|"no"| KeepRetry["Keep entry for next wake-up"]
+    Load -->|"store read error"| StopCycle["Stop processing this cycle"]

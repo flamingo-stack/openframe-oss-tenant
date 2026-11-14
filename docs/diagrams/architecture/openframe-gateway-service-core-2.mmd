@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Incoming request"] --> Metrics["Record client version metrics"]
+    Metrics --> Gate{"Upgrade required?"}
+    Gate -->|"yes"| Upgrade["Return 426 response"]
+    Gate -->|"no"| ApiPath{"External API path?"}
+    ApiPath -->|"yes"| ApiKey["Validate API key and rate limit"]
+    ApiKey --> Forward["Authorize and route upstream"]
+    ApiPath -->|"no"| Forward

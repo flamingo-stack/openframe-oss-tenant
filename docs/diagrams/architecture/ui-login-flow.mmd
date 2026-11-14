@@ -1,0 +1,12 @@
+flowchart LR
+    TestCase["End-to-end test"] --> UiLoginFlow["Ui Login Flow"]
+    UiLoginFlow --> PlaywrightPage["Playwright Page"]
+    UiLoginFlow --> AuthEntryPage["Authentication entry page"]
+    AuthEntryPage --> AuthMethodPage["Authentication method page"]
+    AuthMethodPage --> SsoLoginPage["SSO login page"]
+    SsoLoginPage --> DashboardPage["Dashboard page"]
+    DashboardPage --> NavigationSidebar["Navigation sidebar"]
+    PlaywrightPage --> Gateway["OpenFrame gateway"]
+    Gateway --> Frontend["OpenFrame frontend"]
+    Gateway --> AuthorizationServer["Authorization server"]
+    AuthorizationServer --> OAuthBff["OAuth backend for frontend"]

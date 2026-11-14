@@ -1,0 +1,5 @@
+flowchart TD
+    Input["Machine identifier collection"] --> Query["Query installed agents by identifiers and agent type"]
+    Query --> Filter["Discard blank versions"]
+    Filter --> Deduplicate["Keep first version per machine"]
+    Deduplicate --> Result["Map of machine identifier to version"]

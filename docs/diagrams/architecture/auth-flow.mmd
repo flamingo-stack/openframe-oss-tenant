@@ -1,0 +1,11 @@
+flowchart LR
+    TestRunner["Integration Test"] -->|"creates"| AuthContract["IAuthFlow"]
+    AuthContract -->|"implemented by"| OssFlow["AuthFlowOSS"]
+    AuthContract -->|"implemented by"| SaasFlow["AuthFlowSAAS"]
+    OssFlow -->|"discovers tenant"| TenantApi["TenantApi"]
+    SaasFlow -->|"discovers tenant"| TenantApi
+    OssFlow -->|"redirect steps"| AuthApi["AuthApi"]
+    SaasFlow -->|"redirect steps"| AuthServer["Authorization Server"]
+    AuthApi -->|"issues cookies"| TokenCookies["Access and Refresh Token Cookies"]
+    AuthServer -->|"issues cookies"| TokenCookies
+    TokenCookies -->|"used by"| TestRunner

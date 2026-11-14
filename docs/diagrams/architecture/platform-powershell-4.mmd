@@ -1,0 +1,11 @@
+flowchart TD
+    Request["Script execution request"] --> Validate["Validate requested shell"]
+    Validate --> Temp["Create temporary script file"]
+    Temp --> Privilege{"Privilege mode"}
+    Privilege -->|"agent"| Normal["Normal process launch"]
+    Privilege -->|"user"| UserLaunch["Logged-on user launch"]
+    Privilege -->|"elevated user"| ElevatedLaunch["Elevated user launch"]
+    Resolver["Platform Powershell resolver"] --> InterpreterPath["PowerShell executable path"]
+    InterpreterPath --> Normal
+    InterpreterPath --> UserLaunch
+    InterpreterPath --> ElevatedLaunch

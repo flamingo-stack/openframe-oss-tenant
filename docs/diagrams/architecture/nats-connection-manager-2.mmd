@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Caller as Agent Startup
+    participant Manager as Nats Connection Manager
+    participant Config as Agent Configuration Service
+    participant Machine as Machine ID Service
+    participant Tls as Local TLS Config Provider
+    participant Gateway as Tenant Gateway
+    participant Nats as NATS Server
+    Caller->>Manager: connect()
+    Manager->>Config: get machine ID and access token
+    Manager->>Machine: get local machine ID
+    Manager->>Manager: Build WebSocket URL
+    alt local mode enabled
+        Manager->>Tls: create TLS config
+        Tls-->>Manager: TLS client config
+    end
+    Manager->>Gateway: Connect with authorization and machine header
+    Gateway->>Nats: Upgrade and forward NATS traffic
+    Nats-->>Manager: Connected client
+    Manager->>Manager: Replace watch client value
+    Manager-->>Caller: Success

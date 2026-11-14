@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Workflow as "Onboarding Workflow"
+    participant Repository as "Progress Repository"
+    participant Mongo as "MongoDB"
+    Workflow->>Repository: Look up progress with explicit scope identifiers
+    Repository->>Mongo: Query onboarding progress document
+    Mongo-->>Repository: Matching document or no document
+    Repository-->>Workflow: Optional progress result
+    Note over Workflow: Initialize or update progress when no record exists

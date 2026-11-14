@@ -1,0 +1,8 @@
+flowchart LR
+    Leaves["Execution leaves"] --> Waiting["Any waiting machine"]
+    Leaves --> Progress["Any queued or running leaf"]
+    Leaves --> Failed["Any failed or script-error leaf"]
+    Waiting --> Status["WAITING"]
+    Progress --> StatusProgress["IN PROGRESS"]
+    Failed --> StatusFailed["FAILED"]
+    Leaves --> StatusDone["COMPLETED"]

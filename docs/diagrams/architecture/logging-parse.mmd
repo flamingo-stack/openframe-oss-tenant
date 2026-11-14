@@ -1,0 +1,8 @@
+flowchart LR
+    Runtime["OpenFrame Client Runtime"] --> Writer["Client and Tool Log File"]
+    Writer --> Reader["Logging Parse"]
+    Reader --> Parser["Line Format Parser"]
+    Parser --> Entries["Structured Log Entries"]
+    Entries --> Dedup["Tool Message Deduplicator"]
+    Dedup --> Batch["Log Batch Message"]
+    Batch --> Downstream["Shipping or Streaming Runtime"]

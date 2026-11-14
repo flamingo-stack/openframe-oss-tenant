@@ -1,0 +1,11 @@
+flowchart TD
+    Startup["Service Startup"] --> RepairCheck{"Git Cache Exists?"}
+    RepairCheck -->|"no"| ConfigReady["Config Server Starts"]
+    RepairCheck -->|"yes"| RemoveLocks["Remove Stale Lock Files"]
+    RemoveLocks --> DirtyCheck{"Checkout Is Clean?"}
+    DirtyCheck -->|"yes"| ConfigReady
+    DirtyCheck -->|"no"| ResetCache["Hard Reset and Clean Cache"]
+    ResetCache --> ConfigReady
+    RemoveLocks -->|"repair fails"| WipeCache["Delete Cache"]
+    WipeCache --> ConfigReady
+    ConfigReady --> CloneOnDemand["Spring Cloud Config Re-clones When Needed"]

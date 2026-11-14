@@ -1,0 +1,9 @@
+flowchart TD
+    Stream["Software event processing"] --> Inventory["Device software observations"]
+    Inventory --> Rollups["Device software aggregation"]
+    ActionDispatch["Software action dispatch"] --> ActionRows["Software action results"]
+    AgentResults["Script execution results"] --> Executions["Script executions"]
+    ActionRows --> ActionAggregation["Software action aggregation"]
+    Executions --> ActionAggregation
+    Rollups --> Consumers["Inventory and vulnerability readers"]
+    ActionAggregation --> Consumers

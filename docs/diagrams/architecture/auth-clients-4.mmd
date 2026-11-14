@@ -1,0 +1,11 @@
+flowchart TD
+    Begin["Start authentication request"] --> Send["Send form encoded POST request"]
+    Send --> Received{"Response received?"}
+    Received -->|"no"| TransportError["Return contextual transport error"]
+    Received -->|"yes"| Notify["Report HTTP status to DeactivationService"]
+    Notify --> Success{"Successful status?"}
+    Success -->|"no"| Failure["Return authentication error"]
+    Success -->|"yes"| Decode["Deserialize AgentTokenResponse"]
+    Decode --> Parsed{"Payload decoded?"}
+    Parsed -->|"no"| ParseError["Return contextual parse error"]
+    Parsed -->|"yes"| Token["Return token response"]

@@ -1,0 +1,9 @@
+flowchart LR
+    StreamService["OpenFrame Stream service"] --> Projection["Fleet Software Projection"]
+    Projection --> StreamCore["OpenFrame Stream Service Core library"]
+    Projection --> FleetSdk["Fleet MDM SDK client"]
+    Projection --> ToolData["Integrated tool and connection data"]
+    Projection --> SoftwareData["Device software data repository"]
+    Projection --> ProjectionTrigger["Software projection trigger"]
+    SoftwareData --> Mongo["MongoDB device software records"]
+    ProjectionTrigger --> SoftwareViews["Software and vulnerability views"]

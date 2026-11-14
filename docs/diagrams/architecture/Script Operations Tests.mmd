@@ -1,0 +1,14 @@
+flowchart LR
+    TestRunner["JUnit Test Runner"] --> ScriptsTest["ScriptsTest"]
+    ScriptsTest --> ScriptApi["Script API Helper"]
+    ScriptsTest --> CommandApi["Command API Helper"]
+    ScriptsTest --> DeviceApi["Device API Helper"]
+    ScriptsTest --> Generators["Input Generators"]
+    ScriptsTest --> FleetWait["Fleet Wait Poller"]
+    ScriptApi --> GraphqlApi["OpenFrame GraphQL API"]
+    CommandApi --> GraphqlApi
+    DeviceApi --> GraphqlApi
+    GraphqlApi --> Dispatch["Script and Command Dispatch"]
+    Dispatch --> Agent["Enrolled Windows Agent"]
+    Agent --> Results["Execution Results"]
+    Results --> GraphqlApi

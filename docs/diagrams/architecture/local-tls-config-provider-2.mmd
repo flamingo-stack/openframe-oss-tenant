@@ -1,0 +1,13 @@
+flowchart TD
+    Start["NATS connection needs local TLS"] --> LocalMode{"Local mode enabled?"}
+    LocalMode -->|"no"| DefaultPath["Use NATS default connection options"]
+    LocalMode -->|"yes"| ReadPath["Read local CA path"]
+    ReadPath --> PathSet{"Path is non-empty?"}
+    PathSet -->|"no"| EmptyError["Return missing-path error"]
+    PathSet -->|"yes"| Exists{"File exists?"}
+    Exists -->|"no"| MissingError["Return missing-file error"]
+    Exists -->|"yes"| ReadFile["Read PEM file"]
+    ReadFile --> ParsePem["Parse PEM certificates"]
+    ParsePem --> AddRoots["Add certificates to empty root store"]
+    AddRoots --> BuildConfig["Build ClientConfig without client authentication"]
+    BuildConfig --> ApplyConfig["Apply configuration to NATS options"]

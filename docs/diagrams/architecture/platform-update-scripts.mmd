@@ -1,0 +1,7 @@
+flowchart LR
+    UpdateService["Client Update Service"] -->|"reserves and applies update"| Launcher["Platform Updater Launcher"]
+    Launcher -->|"starts external updater"| Scripts["Platform Update Scripts"]
+    Scripts -->|"stops, swaps, and starts"| ClientService["OpenFrame Client Service"]
+    ClientService -->|"writes version marker"| BootMarker["Boot Marker"]
+    Scripts -->|"updates phase"| UpdateState["Update State"]
+    Scripts -->|"restores on failure"| Reserve["Last Known Good Reserve"]

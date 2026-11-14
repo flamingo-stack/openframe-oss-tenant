@@ -1,0 +1,12 @@
+flowchart TD
+    ClientStart["OpenFrame Client startup"] --> StreamManager["Log streaming run manager"]
+    ClientStart --> Registration["Registration processor"]
+    Registration --> Authentication["Authentication processor"]
+    Authentication --> LogKeyService["Log Key Service"]
+    StreamManager --> NatsStream["NATS log stream"]
+    NatsStream -->|"connection failure"| LogKeyService
+    LogKeyService --> ConfigService["Initial configuration service"]
+    LogKeyService --> AgentConfig["Agent configuration service"]
+    LogKeyService --> ApiEndpoint["Client API log-key endpoint"]
+    LogKeyService --> RestartGate["Restart gate"]
+    RestartGate --> ClientStart

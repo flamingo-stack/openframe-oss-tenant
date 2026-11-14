@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Test as "Package Search Test"
+    participant Api as "Package Search API Helper"
+    participant Graphql as "GraphQL API"
+    participant Catalog as "Package Catalog"
+    Test->>Api: Search manager and query
+    Api->>Graphql: Search packages
+    Graphql->>Catalog: Query manager catalog
+    Catalog-->>Graphql: Connection with nodes and cursor
+    Graphql-->>Api: Typed search response
+    Api-->>Test: Package search connection
+    Test->>Api: Open selected package details
+    Api->>Graphql: Request manager, id, and type
+    Graphql->>Catalog: Resolve exact package
+    Catalog-->>Graphql: Details or coded error
+    Graphql-->>Api: Typed details or GraphQL errors
+    Api-->>Test: Assert manager contract

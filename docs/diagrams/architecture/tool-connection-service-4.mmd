@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Get all connections"] --> Read["Read JSON through shared file utility"]
+    Read --> State{"File state"}
+    State -->|"Parsed"| Records["Return parsed records"]
+    State -->|"Missing"| Empty["Return empty collection"]
+    State -->|"Read error"| Failure["Return contextual error"]

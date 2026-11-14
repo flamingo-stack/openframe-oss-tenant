@@ -1,0 +1,11 @@
+flowchart TD
+    Wake["Timer tick or notification"] --> Keys["Read pending keys"]
+    Keys --> Load["Load payload"]
+    Load --> Present{"Payload present?"}
+    Present -->|"no"| Cleanup["Remove incomplete entry"]
+    Present -->|"yes"| Size{"Within current limit?"}
+    Size -->|"no"| Skip["Skip oversize entry"]
+    Size -->|"yes"| Publish["Publish with timeout"]
+    Publish --> Success{"Published?"}
+    Success -->|"yes"| Remove["Remove metadata and payload"]
+    Success -->|"no"| Retry["Retain for next wake"]

@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Directory cleanup requested"] --> Exists{"Directory exists?"}
+    Exists -->|"No"| Complete["Return success"]
+    Exists -->|"Yes"| Remove["Try recursive deletion"]
+    Remove -->|"Success"| Complete
+    Remove -->|"Failure before final attempt"| Recovery["Prepare retry and wait"]
+    Recovery --> Unlock["Near final attempt remove restrictive attributes"]
+    Unlock --> Remove
+    Remove -->|"Final failure"| Force["Run platform force removal"]
+    Force -->|"Directory gone"| Complete
+    Force -->|"Directory remains"| Error["Return contextual error"]

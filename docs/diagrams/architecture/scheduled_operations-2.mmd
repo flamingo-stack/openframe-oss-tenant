@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Spring as "Spring scheduler"
+    participant Lock as "Redis ShedLock"
+    participant Job as "Scheduled job"
+    participant Service as "Delegated RMM service"
+    participant Data as "Repository and execution state"
+    participant Delivery as "Delivery pipeline"
+    Spring->>Lock: Acquire named job lock
+    alt "Lock acquired"
+        Lock-->>Job: Allow one replica to run
+        Job->>Service: Invoke sweep operation
+        Service->>Data: Load and update durable work state
+        Service->>Delivery: Dispatch eligible work when applicable
+        Job->>Lock: Release after the invocation
+    else "Lock held by another replica"
+        Lock-->>Job: Skip this replica run
+    end

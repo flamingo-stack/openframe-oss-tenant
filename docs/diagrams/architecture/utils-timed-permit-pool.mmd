@@ -1,0 +1,11 @@
+flowchart LR
+    ClientRuntime["OpenFrame client runtime"] --> Pool["Timed Permit Pool"]
+    Pool --> Semaphore["Tokio semaphore"]
+    Pool --> Timeout["Tokio timeout"]
+    Pool --> BlockingExecutor["Tokio blocking executor"]
+    BlockingExecutor --> Closure["Synchronous closure"]
+    Semaphore --> Permit["Owned permit"]
+    Permit --> Closure
+    Closure --> Result["Value or task failure"]
+    Timeout --> CallerResult["Pooled call result"]
+    Result --> CallerResult

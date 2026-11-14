@@ -1,0 +1,9 @@
+flowchart LR
+    TicketSource["Ticket source record"] -->|"publishes ticket identifier and title"| TicketEvent["TicketEvent"]
+    TicketEvent -->|"tenant-scoped published record"| Projection["TicketOnTimeEntriesProjection"]
+    Projection -->|"updates copied title"| TimeEntryRepository["TimeEntryProjectionRepository"]
+    TimeEntryRepository --> TimeEntries["Time entry ticketTitle copies"]
+    Projection -->|"loads source titles"| TicketRepository["TicketProjectionRepository"]
+    TicketRepository --> TicketSource
+    Projection -->|"reads minimal fields"| View["TimeEntryTicketView"]
+    View -->|"reconciliation result"| Projection

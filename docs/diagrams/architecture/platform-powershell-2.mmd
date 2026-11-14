@@ -1,0 +1,13 @@
+flowchart TD
+    Caller["Caller requests PowerShell path"] --> GetPath["get_powershell_path"]
+    GetPath --> Resolve["resolve_system32_exe"]
+    Resolve --> ReadWindir["Read WINDIR"]
+    ReadWindir --> HasWindir{"WINDIR available?"}
+    HasWindir -->|"yes"| JoinPath["Join Windows directory and System32 relative path"]
+    HasWindir -->|"no"| ReadRoot["Read SystemRoot"]
+    ReadRoot --> HasRoot{"SystemRoot available?"}
+    HasRoot -->|"yes"| JoinPath
+    HasRoot -->|"no"| Fallback["Return bare executable name"]
+    JoinPath --> FileExists{"Joined path is a file?"}
+    FileExists -->|"yes"| Absolute["Return absolute path string"]
+    FileExists -->|"no"| Fallback

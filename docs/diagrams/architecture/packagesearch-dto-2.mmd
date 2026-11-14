@@ -1,0 +1,17 @@
+classDiagram
+    class PackageSearchEdge {
+        +PackageSearchItem node
+        +String cursor
+    }
+    class PackageSearchItem {
+        +String id
+        +String name
+        +String version
+        +String publisher
+        +String iconUrl
+        +String installCommand
+        +String packageType
+        +Integer popularity
+        +String packageManager
+    }
+    PackageSearchEdge --> PackageSearchItem : node

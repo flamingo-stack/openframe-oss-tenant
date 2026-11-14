@@ -1,0 +1,15 @@
+flowchart LR
+    Platform["OpenFrame Control Plane"] --> Nats["NATS"]
+    Nats --> CommandListener["Command Listener"]
+    Nats --> ExecutionListener["Execution Listener"]
+    Nats --> RemoteListener["Remote Access Message Listener"]
+
+    CommandListener --> CommandHandlers["Command Handlers"]
+    ExecutionListener --> ExecutionService["Execution Service"]
+    RemoteListener --> ToolManager["Tool Run Manager"]
+
+    CommandHandlers --> ResultStore["Result Store"]
+    ExecutionService --> ResultStore
+    ResultStore --> Outbox["Result Outbox"]
+    Outbox --> Nats
+    Nats --> Platform

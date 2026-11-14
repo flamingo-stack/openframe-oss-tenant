@@ -1,0 +1,8 @@
+flowchart TD
+    KafkaIn["Kafka Dispatch Message"] --> Validate["Validate Delivery Metadata"]
+    Validate --> Deduplicate["Check Processed Command"]
+    Deduplicate --> LocalSink["Local Delivery Sink"]
+    LocalSink --> Agent["Endpoint Agent"]
+    Agent --> Result["NATS Delivery Result"]
+    Result --> Tracker["Delivery Tracker"]
+    Tracker --> State["Delivery and Execution State"]

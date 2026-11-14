@@ -1,0 +1,10 @@
+flowchart TD
+    Open["Open dialog"] --> Prompt["Send unique context prompt"]
+    Prompt --> Idle["Wait until run is idle"]
+    Idle --> Compact["Request compaction"]
+    Compact --> Summary["Wait for stored summary"]
+    Summary --> FollowUp["Ask context-dependent follow-up"]
+    FollowUp --> ContextAssert["Assert preserved context"]
+    Idle --> StopPath["Alternative: stop active generation"]
+    StopPath --> NextPrompt["Send follow-up prompt"]
+    NextPrompt --> Reusable["Assert dialog remains usable"]

@@ -1,0 +1,13 @@
+flowchart TD
+    Start["External updater starts"] --> Validate["Validate paths and staged binary size"]
+    Validate -->|"invalid"| PreSwapFailure["Mark failed and restart untouched service"]
+    Validate -->|"valid"| Stop["Stop client service"]
+    Stop -->|"timeout or error"| PreSwapFailure
+    Stop --> Move["Move installed executable to previous copy"]
+    Move --> Swap["Copy staged executable into target path"]
+    Swap --> StartService["Start client service"]
+    StartService --> Marker["Wait for matching boot marker"]
+    Marker -->|"matching version"| Verifying["Set phase to verifying and clean up"]
+    Marker -->|"missing or wrong version"| Rollback["Restore last known good or previous copy"]
+    Rollback --> Restart["Restart restored service"]
+    Restart --> RolledBack["Set phase to rolled back"]

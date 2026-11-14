@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Receive folder list request"] --> Scope["Apply parent, search, and item identifier filters"]
+    Scope --> CursorCheck{"Cursor supplied?"}
+    CursorCheck -->|"yes"| Continue["Select records after the cursor"]
+    CursorCheck -->|"no"| Begin["Select from the first record"]
+    Continue --> Sort["Sort by normalized name then identifier"]
+    Begin --> Sort
+    Sort --> Limit["Apply result limit"]
+    Limit --> Result["Return folder page"]

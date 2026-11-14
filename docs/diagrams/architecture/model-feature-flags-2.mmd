@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Resolve a known feature"] --> Present{"Flag present?"}
+    Present -->|"no"| DefaultMissing["Use disabled default"]
+    Present -->|"yes"| Dev{"Development client version?"}
+    Dev -->|"yes"| DevValue["Use enabled value"]
+    Dev -->|"no"| Versions{"Both versions parse and running version meets minimum?"}
+    Versions -->|"yes"| EligibleValue["Use enabled value"]
+    Versions -->|"no"| DefaultIneligible["Use disabled default"]
+    DefaultMissing --> Result["Store feature only when true"]
+    DevValue --> Result
+    EligibleValue --> Result
+    DefaultIneligible --> Result

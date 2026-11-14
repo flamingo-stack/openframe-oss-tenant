@@ -1,0 +1,15 @@
+flowchart TD
+    Receive["Receive Package Update Message"] --> Submit["Submit to Order Store"]
+    Submit --> MachineChanged{"Machine identifier changed?"}
+    MachineChanged -->|"yes"| Reset["Discard previous machine orders"]
+    MachineChanged -->|"no"| Known{"Sequence is stale?"}
+    Reset --> Known
+    Known -->|"yes"| Stale["Return stale submission"]
+    Known -->|"no"| SameRequest{"Same request identifier?"}
+    SameRequest -->|"yes"| Revise["Replace fields and increment revision"]
+    SameRequest -->|"no"| SamePackage{"Queued order matches package?"}
+    SamePackage -->|"yes"| Supersede["Replace queued order and report superseded"]
+    SamePackage -->|"no"| Queue["Append new order"]
+    Revise --> Persist["Persist and notify runner"]
+    Supersede --> Persist
+    Queue --> Persist

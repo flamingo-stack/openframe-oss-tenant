@@ -1,0 +1,9 @@
+flowchart TD
+    Result["RMM result event"] --> Decode["Deserialize and enrich"]
+    Decode --> Validate["Validate correlation fields"]
+    Validate --> Match{"Matching execution exists?"}
+    Match -->|"no"| Warn["Log correlation warning"]
+    Match -->|"yes"| Classify["Classify execution outcome"]
+    Classify --> Update["Update Mongo execution history"]
+    Update --> Aggregate["Aggregate schedule and dispatch state"]
+    Decode --> Cassandra["Optionally store command result in Cassandra"]

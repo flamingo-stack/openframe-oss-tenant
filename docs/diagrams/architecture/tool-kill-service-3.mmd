@@ -1,0 +1,19 @@
+flowchart TD
+    Request["Stop request"] --> Discover["Refresh process command and executable data"]
+    Discover --> Found{"Matching processes found?"}
+    Found -->|"No"| Success["Return success"]
+    Found -->|"Yes"| Select["Select next process identifier"]
+    Select --> Graceful["Request normal process termination"]
+    Graceful --> GracefulWait["Poll for exit until graceful timeout"]
+    GracefulWait --> GracefulExit{"Process exited?"}
+    GracefulExit -->|"Yes"| More{"More matched processes?"}
+    GracefulExit -->|"No"| Force["Send forced kill signal"]
+    Force --> ForceWait["Poll for exit until force timeout"]
+    ForceWait --> ForceExit{"Process exited?"}
+    ForceExit -->|"Yes"| More
+    ForceExit -->|"No"| Retry{"Retries remain?"}
+    Retry -->|"Yes"| Delay["Wait one second"]
+    Delay --> Force
+    Retry -->|"No"| Failure["Return stop failure"]
+    More -->|"Yes"| Select
+    More -->|"No"| Success

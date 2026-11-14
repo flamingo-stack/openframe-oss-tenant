@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UpdateLogic as Update Logic
+    participant Comparator as Utils Version Comparator
+    participant SemVer as SemVer Parser
+    UpdateLogic->>Comparator: compare_versions(source, target)
+    Comparator->>SemVer: parse normalized source
+    SemVer-->>Comparator: source version or failure
+    Comparator->>SemVer: parse normalized target
+    SemVer-->>Comparator: target version or failure
+    alt either input is invalid
+        Comparator-->>UpdateLogic: None
+    else both inputs are valid
+        Comparator->>Comparator: compare target precedence to source
+        Comparator-->>UpdateLogic: Some Ordering
+    end

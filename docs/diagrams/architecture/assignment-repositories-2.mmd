@@ -1,0 +1,12 @@
+flowchart TD
+    Request["List Request"] --> Query["Build Item and Target Query"]
+    Query --> Search{"Search Provided?"}
+    Search -->|"yes"| Filter["Add Literal Display Name Filter"]
+    Search -->|"no"| Cursor{"Cursor Provided?"}
+    Filter --> Cursor
+    Cursor -->|"no"| Sort["Apply Selected Sort and ID Tie Breaker"]
+    Cursor -->|"yes"| Resolve["Resolve Cursor ObjectId and Document"]
+    Resolve --> Continue["Add Continuation Criteria"]
+    Continue --> Sort
+    Sort --> Limit["Apply Page Limit"]
+    Limit --> Results["Return Item Assignments"]

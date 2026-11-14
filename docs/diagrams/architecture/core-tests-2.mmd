@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Runner as "Test Runner"
+    participant Test as "Core Test Class"
+    participant Api as "Test API Helper"
+    participant Tenant as "OpenFrame Tenant"
+    participant Store as "Tenant Services and Data"
+
+    Runner->>Test: Execute tagged test case
+    Test->>Api: Invoke typed operation
+    Api->>Tenant: Submit API or GraphQL request
+    Tenant->>Store: Process workflow
+    Store-->>Tenant: Return result or error
+    Tenant-->>Api: Return response
+    Api-->>Test: Return typed DTO or raw response
+    Test->>Test: Assert contract and cleanup fixtures

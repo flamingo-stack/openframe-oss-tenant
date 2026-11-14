@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Receive URL template"] --> ReadConfig["Read configured server host"]
+    ReadConfig --> ConfigOk{"Configuration available?"}
+    ConfigOk -->|"no"| ReturnError["Return configuration error"]
+    ConfigOk -->|"yes"| ReplaceToken["Replace every server URL placeholder"]
+    ReplaceToken --> ReturnUrl["Return resolved URL string"]

@@ -1,0 +1,7 @@
+flowchart LR
+    Client["Browser or API Client"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> ApiService["OpenFrame API Service"]
+    ApiService --> Controllers["Api Controllers"]
+    Controllers --> Security["Authentication and AuthPrincipal"]
+    Controllers --> Domain["Domain Services"]
+    Domain --> Storage["Tenant Data and Supporting Services"]

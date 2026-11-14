@@ -1,0 +1,7 @@
+flowchart LR
+    Registration["Registration Service"] -->|"registration data"| ConfigService["Agent Configuration Service"]
+    Authentication["Authentication Service"] -->|"token pair"| ConfigService
+    ConfigService -->|"read and write"| ConfigFile["agent_config.json"]
+    ConfigFile -->|"deserialize"| AgentConfig["Agent Configuration"]
+    AgentConfig --> Identity["Machine and OAuth credentials"]
+    AgentConfig --> Tokens["Access and refresh tokens"]

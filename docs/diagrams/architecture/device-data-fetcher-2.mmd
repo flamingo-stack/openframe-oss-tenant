@@ -1,0 +1,7 @@
+flowchart TD
+    Caller["Client service"] --> Create["Create or clone fetcher"]
+    Create --> Fetcher["Stateless Device Data Fetcher"]
+    Fetcher --> Hostname["Retrieve hostname"]
+    Fetcher --> Timezone["Retrieve timezone"]
+    Fetcher --> Version["Retrieve agent version"]
+    Fetcher --> OsType["Retrieve operating system type"]

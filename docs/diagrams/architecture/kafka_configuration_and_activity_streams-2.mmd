@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Kafka as Kafka broker
+    participant Topology as Activity enrichment topology
+    participant Output as Fleet event topic
+    Kafka->>Topology: ActivityMessage from activity topic
+    Kafka->>Topology: HostActivityMessage from host activity topic
+    Topology->>Topology: Re-key records by activity identifier
+    Topology->>Topology: Left join within five seconds
+    alt Host activity has a host identifier
+        Topology->>Topology: Set hostId and agentId
+    else Host activity is absent or incomplete
+        Topology->>Topology: Preserve the activity without host enrichment
+    end
+    Topology->>Topology: Add message-type and type-id headers
+    Topology->>Output: Publish ActivityMessage

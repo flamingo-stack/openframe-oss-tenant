@@ -1,0 +1,18 @@
+flowchart LR
+    User["Browser, API consumer, or managed endpoint"] --> Gateway["Openframe Gateway"]
+    Gateway --> Authz["Authorization Server"]
+    Gateway --> Api["Openframe API"]
+    Gateway --> External["External API"]
+    Gateway --> Client["Client Service"]
+    Api --> Data["MongoDB, Redis, Cassandra, and Pinot"]
+    External --> Data
+    Client --> Nats["NATS"]
+    Client --> Kafka["Kafka"]
+    Stream["Openframe Stream"] --> Kafka
+    Stream --> Data
+    Management["Openframe Management"] --> Nats
+    Management --> Kafka
+    Config["Openframe Config"] --> Gateway
+    Config --> Api
+    Config --> Client
+    Config --> Stream

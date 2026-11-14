@@ -1,0 +1,10 @@
+flowchart TD
+    Startup["API startup"] --> ReadConfig["Read default OAuth client properties"]
+    ReadConfig --> FindClient["Find client by client ID"]
+    FindClient --> Exists{"Client exists?"}
+    Exists -->|"No"| Create["Create client with password and refresh token grants"]
+    Exists -->|"Yes"| Match{"Secret matches?"}
+    Match -->|"No"| Update["Update stored client secret"]
+    Match -->|"Yes"| Keep["Keep existing client"]
+    Create --> Repository["Save through OAuth client repository"]
+    Update --> Repository

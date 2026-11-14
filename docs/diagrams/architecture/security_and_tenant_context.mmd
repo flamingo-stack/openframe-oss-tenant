@@ -1,0 +1,15 @@
+flowchart LR
+    Browser["Browser or OAuth Client"] --> Edge["Gateway or Direct Request"]
+    Edge --> TenantContext["Tenant Context Filter"]
+    TenantContext --> TenantPrefix["Tenant Forwarded Prefix Filter"]
+    TenantPrefix --> ForwardedHeaders["Forwarded Header Filter"]
+    ForwardedHeaders --> SecurityChains["Spring Security Filter Chains"]
+    SecurityChains --> DefaultChain["Login and External SSO Chain"]
+    SecurityChains --> AuthorizationChain["Authorization Server Chain"]
+    DefaultChain --> DynamicClients["Dynamic Client Registration Repository"]
+    AuthorizationChain --> TenantKeys["Tenant Key Service"]
+    AuthorizationChain --> UserService["Tenant Scoped User Service"]
+    SecurityChains --> RedisSessions["Redis Session Repository"]
+    TenantKeys --> Jwt["Tenant Signed JWT"]
+    UserService --> Jwt
+    DynamicClients --> ExternalIdp["External OpenID Connect Provider"]

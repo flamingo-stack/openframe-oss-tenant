@@ -1,0 +1,7 @@
+flowchart LR
+    ControlPlane["Control plane"] -->|"supplies download configuration"| ClientRuntime["OpenFrame client runtime"]
+    ClientRuntime -->|"invokes"| DownloadService["Github Download Service"]
+    DownloadService -->|"HTTP GET"| ArtifactHost["Configured artifact host"]
+    DownloadService -->|"extracts payload"| ArchiveSupport["ZIP, tar-gzip, or DMG support"]
+    DownloadService -->|"writes executable"| BinaryWriter["Platform binary writer"]
+    BinaryWriter -->|"persists"| DeviceStorage["Device tool or agent storage"]

@@ -1,0 +1,15 @@
+flowchart LR
+    Input["Deserialized Debezium Message"] --> Selector["Enrichment Service Selection"]
+    Selector --> Pre["Pre Enriched Data Enrichment Service"]
+    Selector --> Rmm["RMM Enrichment Service"]
+    Pre --> TenantProvider["Tenant ID Provider"]
+    Rmm --> MachineCache["Machine ID Cache Service"]
+    Rmm --> ExecutionRepos["Script and Command Execution Repositories"]
+    Rmm --> ScriptRepo["Script Repository"]
+    Rmm --> TenantResolver["Cluster Tenant ID Resolver"]
+    TenantProvider --> Context["Resolved Tenant Context"]
+    TenantResolver --> Context
+    Pre --> Output["Integrated Tool Enriched Data"]
+    Rmm --> Output
+    Context --> Output
+    Output --> Routing["Stream Event Routing"]

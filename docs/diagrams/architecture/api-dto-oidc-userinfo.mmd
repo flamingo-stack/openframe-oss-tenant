@@ -1,0 +1,13 @@
+flowchart LR
+    OidcClient["OIDC Client"] -->|"reads discovery document"| Discovery["OpenIDConfiguration"]
+    OidcClient -->|"supplies identity data"| Request["UserInfoRequest"]
+    Request -->|"mapped by API logic"| Response["UserInfo"]
+    Response -->|"JSON response"| OidcClient
+
+    subgraph api_service["OpenFrame API Service"]
+        Discovery
+        Request
+        Response
+    end
+
+    AuthService["Authorization Server"] -->|"issuer and endpoint values"| Discovery

@@ -1,0 +1,11 @@
+flowchart TD
+    ClientStart["Client startup"] --> InitialAuth["Initial authentication"]
+    InitialAuth --> RefreshStart["Start token refresh manager"]
+    RefreshStart --> ImmediateRefresh["Refresh at startup"]
+    ImmediateRefresh --> Reauthenticate["Try refresh token"]
+    Reauthenticate -->|"refresh unavailable"| Credentials["Use client credentials"]
+    Reauthenticate -->|"refresh succeeds"| NewToken["Receive token response"]
+    Credentials --> NewToken
+    NewToken --> PersistConfig["Persist agent token pair"]
+    NewToken --> UpdateShared["Update shared token artifact"]
+    UpdateShared --> ToolsConnect["Tools connect with current token"]

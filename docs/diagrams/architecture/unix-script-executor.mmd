@@ -1,0 +1,8 @@
+flowchart LR
+    Request["Execution request"] --> Service["Execution service"]
+    Service --> Params["ScriptParams"]
+    Params --> UnixExecutor["Unix Script Executor"]
+    UnixExecutor --> ProcessRunner["Timeout-aware process runner"]
+    ProcessRunner --> Result["ExecResult"]
+    Result --> Service
+    Service --> RmmResult["RMM result"]

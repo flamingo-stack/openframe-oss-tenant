@@ -1,0 +1,15 @@
+flowchart TD
+    Start["Client startup"] --> HealthCheck["perform health check"]
+    HealthCheck --> Ensure["ensure directories"]
+    Ensure --> CreateLogs["Create logs directory"]
+    Ensure --> CreateSupport["Create application support directory"]
+    Ensure --> CreateSecure["Create secured directory"]
+    CreateLogs --> ApplyRegular["Apply regular permissions"]
+    CreateSupport --> ApplyRegular
+    CreateSecure --> ModeCheck{"Development mode?"}
+    ModeCheck -->|"yes"| ApplyRegular
+    ModeCheck -->|"no"| ApplySecure["Apply secured permissions"]
+    ApplyRegular --> Writable["Verify directory is writable"]
+    ApplySecure --> Validate["Validate permissions"]
+    Writable --> Validate
+    Validate --> Ready["Directory layout ready"]

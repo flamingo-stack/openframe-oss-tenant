@@ -1,0 +1,13 @@
+flowchart LR
+    UpdateMessage["Tool update message"] --> UpdateService["Tool Agent Update Service"]
+    UpdateService --> Orchestrator["Common updater orchestration"]
+    Orchestrator --> Factory["Updater factory"]
+    Factory --> StandardUpdater["Platform Tool Updater Standard"]
+    Factory --> ServiceUpdater["Service tool updater"]
+    Factory --> GuiUpdater["GUI application updater"]
+    StandardUpdater --> KillService["Tool kill service"]
+    StandardUpdater --> DirectoryManager["Directory manager"]
+    StandardUpdater --> DownloadService["Download and binary writer"]
+    StandardUpdater --> RunManager["Tool run manager"]
+    DownloadService --> Executable["Updated executable"]
+    RunManager --> Executable

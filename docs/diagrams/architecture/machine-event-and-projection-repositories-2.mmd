@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Publisher as "Machine publisher"
+    participant Projection as "Machine on tickets projection"
+    participant Tickets as "Ticket projection repository"
+
+    Publisher->>Projection: Publish machine event
+    Projection->>Projection: Resolve preferred name
+    Projection->>Tickets: Update matching ticket device names
+    Tickets-->>Projection: Return updated ticket count

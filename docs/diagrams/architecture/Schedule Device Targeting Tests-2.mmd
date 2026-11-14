@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Select enrolled machine"] --> Create["Create compatible script and future schedule"]
+    Create --> Assign["Assign one device and verify picker"]
+    Assign --> Unassign["Unassign device and verify idempotency"]
+    Unassign --> Bulk["Assign by hostname search, then clear all"]
+    Bulk --> Replace["Replace explicit target set"]
+    Replace --> Criteria["Set criteria-based target selection"]
+    Criteria --> Mismatch["Create other-platform schedule and reject device"]
+    Mismatch --> Cleanup["Clear assignments and delete schedules and scripts"]

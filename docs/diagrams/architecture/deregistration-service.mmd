@@ -1,0 +1,9 @@
+flowchart LR
+    ServiceManagement["Client service management"] -->|"creates unless reinstall"| DeregistrationService["Deregistration Service"]
+    MacUninstaller["macOS uninstaller"] -->|"initial and final calls"| DeregistrationService
+    WindowsUninstaller["Windows uninstaller"] -->|"initial and final calls"| DeregistrationService
+    DeregistrationService -->|"reads configuration"| InitialConfig["Initial Configuration Service"]
+    DeregistrationService -->|"reads credentials"| AgentConfig["Agent Configuration Service"]
+    DeregistrationService -->|"fallback read"| PersistedInfo["Persisted machine-info store"]
+    DeregistrationService -->|"authenticated HTTPS request"| RegistrationClient["Registration Client"]
+    RegistrationClient -->|"POST uninstall endpoint"| ClientApi["OpenFrame Client API"]

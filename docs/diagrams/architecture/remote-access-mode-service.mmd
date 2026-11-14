@@ -1,0 +1,10 @@
+flowchart LR
+    Installer["Installer invocation"] -->|"remote access mode"| InitialConfig["Initial configuration file"]
+    InitialConfig --> InitialConfigService["Initial Configuration Service"]
+    InitialConfigService --> RemoteAccessModeService["Remote Access Mode Service"]
+    RemoteAccessModeService --> RemoteAccessMode["Remote Access Mode model"]
+    RemoteAccessModeService --> RetryHelper["Shared retry helper"]
+    RetryHelper --> DeactivationService["Deactivation Service"]
+    RetryHelper --> RemoteAccessClient["Remote Access Client"]
+    RemoteAccessClient -->|"authenticated HTTP PUT"| Backend["OpenFrame backend"]
+    RemoteAccessModeService -->|"clear after terminal outcome"| InitialConfig

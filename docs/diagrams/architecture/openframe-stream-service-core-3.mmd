@@ -1,0 +1,9 @@
+flowchart TD
+    Result["Agent Execution Result"] --> Deserialize["RMM Result Deserializer"]
+    Deserialize --> Classify["Execution Outcome Classifier"]
+    Classify --> CommandBranch{"Command Result?"}
+    CommandBranch -->|"yes"| CommandHistory["Update Command Execution"]
+    CommandBranch -->|"no"| ScriptHistory["Update Script Execution"]
+    CommandHistory --> CommandStore["Cassandra Command Result"]
+    ScriptHistory --> Schedule["Aggregate Scheduled Execution"]
+    Deserialize --> EventLog["Event Log Destinations"]

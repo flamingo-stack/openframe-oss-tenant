@@ -1,0 +1,6 @@
+flowchart TD
+    InstallationMessage["Tool installation message"] -->|"supplies tool agent identifier"| InstallationService["Tool installation service"]
+    InstallationService -->|"coordinates installation"| DownloadClient["Tool API and download clients"]
+    InstallationService -->|"records installed state"| InstalledTools["Installed tools service"]
+    InstallationService -->|"associates result identity"| ResultModel["ToolInstallationResult"]
+    ResultModel -->|"Serde serialization"| WirePayload["JSON payload"]

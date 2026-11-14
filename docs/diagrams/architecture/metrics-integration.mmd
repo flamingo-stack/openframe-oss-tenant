@@ -1,0 +1,7 @@
+flowchart LR
+    TenantRepo["OpenFrame OSS Tenant"] -->|"runs"| ClientRuntime["OpenFrame Client runtime"]
+    ClientRuntime -->|"contains"| MetricsIntegration["Metrics Integration"]
+    MetricsIntegration -->|"writes initialization event"| Tracing["Tracing subscriber"]
+    Tracing -->|"formats and routes logs"| LoggingSetup["Client logging setup"]
+    ClientRuntime -->|"may use separately"| LoggingMetrics["Logging metrics store"]
+    ClientRuntime -->|"may use separately"| PermissionMonitoring["Permission monitoring"]

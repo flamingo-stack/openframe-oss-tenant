@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Execution Request"] --> Platform{"Windows Platform?"}
+    Platform -->|"No"| UnixMap["Map Admin to Agent, User to User"]
+    Platform -->|"Yes"| Policy{"Interactive Elevated Policy?"}
+    Policy -->|"Yes"| Elevated["Use Elevated User"]
+    Policy -->|"No"| WindowsMap["Map Admin to Agent, User to User"]
+    UnixMap --> Params["Script Parameters"]
+    Elevated --> Params
+    WindowsMap --> Params

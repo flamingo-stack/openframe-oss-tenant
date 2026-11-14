@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Processor as Registration Processor
+    participant Config as Agent Configuration Service
+    participant Service as Agent Registration Service
+    participant Initial as Initial Configuration Service
+    participant Store as Machine Information Store
+    participant Api as Client Registration API
+
+    Processor->>Config: get_machine_id()
+    alt machine identifier exists
+        Config-->>Processor: non-empty identifier
+        Processor-->>Processor: log and return success
+    else machine identifier missing
+        Config-->>Processor: empty identifier
+        Processor->>Service: register_agent()
+        Service->>Initial: get_initial_key()
+        Service->>Store: read persisted credentials
+        Service->>Api: fresh registration or reinstall request
+        Api-->>Service: machine ID and client credentials
+        Service->>Store: persist reinstall information
+        Service->>Config: save registration data
+        Service-->>Processor: registration response
+        Processor-->>Processor: log success and return
+    end

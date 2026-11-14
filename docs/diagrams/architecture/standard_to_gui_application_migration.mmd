@@ -1,0 +1,10 @@
+flowchart TD
+    Prepare["Prepare Migration"] --> Stop["Stop Existing Tool"]
+    Stop --> Wait["Wait Two Seconds"]
+    Wait --> Migrate["Install GUI Application"]
+    Migrate --> Record["Return GUI Application Installation"]
+    Record --> Finalize["Finalize Migration"]
+    Finalize --> LaunchCheck{"Start requested?"}
+    LaunchCheck -->|"no"| Complete["Migration Complete"]
+    LaunchCheck -->|"yes"| UserLaunch["Launch in User Session"]
+    UserLaunch --> Complete

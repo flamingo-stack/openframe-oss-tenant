@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Caller
+    participant Writer
+    participant Session as Console User Lookup
+    participant Launchctl
+    participant Defaults
+    Caller->>Writer: write(bundle ID, pairs)
+    Writer->>Session: get console user
+    Session-->>Writer: user ID and username
+    loop each preference pair
+        Writer->>Launchctl: launchctl asuser with defaults write
+        Launchctl->>Defaults: write bundle domain key and value
+        alt primary write succeeds
+            Defaults-->>Launchctl: success status
+            Launchctl-->>Writer: success status
+        else primary write fails
+            Defaults-->>Launchctl: failure status
+            Launchctl-->>Writer: failure status
+            Writer->>Defaults: sudo user defaults write
+            Defaults-->>Writer: fallback status
+        end
+    end
+    Writer-->>Caller: success or error

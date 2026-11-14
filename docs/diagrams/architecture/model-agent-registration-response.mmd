@@ -1,0 +1,8 @@
+flowchart LR
+    Agent["OpenFrame endpoint agent"] -->|"registration request"| RegistrationClient["Registration client"]
+    RegistrationClient -->|"HTTPS request"| RegistrationApi["Client registration API"]
+    RegistrationApi -->|"JSON response"| ResponseModel["Agent registration response"]
+    ResponseModel -->|"machine identity"| MachineStore["Persisted machine information"]
+    ResponseModel -->|"registration data"| ConfigStore["Agent configuration"]
+    ConfigStore -->|"client credentials"| AuthService["Agent authentication service"]
+    AuthService -->|"token response"| Agent["OpenFrame endpoint agent"]

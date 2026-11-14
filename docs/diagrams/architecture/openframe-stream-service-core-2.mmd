@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Tool as "Integrated Tool or Agent"
+    participant Kafka as "Kafka"
+    participant Listener as "Json Kafka Listener"
+    participant Processor as "Message Processor"
+    participant Deserializer as "Typed Deserializer"
+    participant Enrichment as "Enrichment Service"
+    participant Handler as "Destination Handler"
+
+    Tool->>Kafka: Publish typed event
+    Kafka->>Listener: Deliver record and message type
+    Listener->>Processor: Process Debezium message
+    Processor->>Deserializer: Normalize payload
+    Deserializer->>Enrichment: Request context
+    Enrichment->>Handler: Supply enriched event
+    Handler->>Kafka: Publish analytics event or persist result

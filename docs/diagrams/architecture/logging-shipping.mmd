@@ -1,0 +1,8 @@
+flowchart LR
+    Producer["OpenFrame Client component"] -->|"send log string"| Sender["LogShipper sender"]
+    Sender -->|"bounded queue, capacity 1000"| Receiver["Background shipping task"]
+    Receiver -->|"accumulate"| Buffer["In-memory batch"]
+    Buffer -->|"100 entries or quiet timeout"| Payload["LogBatch JSON payload"]
+    Payload -->|"HTTP POST"| Endpoint["Configured log endpoint"]
+    Endpoint -->|"success status"| Delivered["Batch accepted"]
+    Endpoint -->|"transport or status error"| ErrorLog["Tracing error event"]

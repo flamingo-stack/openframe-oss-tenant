@@ -1,0 +1,14 @@
+flowchart TD
+    Attempt["Run caller-managed attempt"] --> Result{"Operation succeeded?"}
+    Result -->|"no"| Decide["Evaluate decision captured from should_log"]
+    Decide --> Emit{"Log enabled?"}
+    Emit -->|"yes"| FailureLog["Write failure log"]
+    Emit -->|"no"| RecordSilent["Record failure with logged false"]
+    FailureLog --> RecordLogged["Record failure with logged true"]
+    RecordSilent --> Retry["Caller schedules next attempt"]
+    RecordLogged --> Retry
+    Result -->|"yes"| Reset["Call record_success and reset state"]
+    Reset --> Prior{"Prior failure streak exists?"}
+    Prior -->|"yes"| Recovery["Write recovery log immediately"]
+    Prior -->|"no"| Continue["Continue normal work"]
+    Recovery --> Continue

@@ -1,0 +1,8 @@
+flowchart LR
+    Device["Device Document"] --> Identity["ID, Tenant ID, Machine ID"]
+    Device --> Inventory["Serial, Model, OS, Type, Status"]
+    Device --> Checkin["Last Check-In"]
+    Device --> Configuration["Device Configuration"]
+    Device --> Health["Device Health"]
+    Configuration --> SecuritySettings["Security Settings"]
+    Health --> Alerts["Alerts"]

@@ -1,0 +1,10 @@
+flowchart TD
+    Receive["Receive hostname event"] --> Parse["Extract machine ID and parse payload"]
+    Parse --> Parsed{"Parsed successfully?"}
+    Parsed -->|"no"| Retry["Leave unacknowledged for redelivery"]
+    Parsed -->|"yes"| Nonblank{"Hostname is nonblank?"}
+    Nonblank -->|"no"| Ignore["Acknowledge without update"]
+    Nonblank -->|"yes"| Update["Update machine hostname"]
+    Update --> Saved{"Update succeeded?"}
+    Saved -->|"yes"| Ack["Acknowledge event"]
+    Saved -->|"no"| Retry

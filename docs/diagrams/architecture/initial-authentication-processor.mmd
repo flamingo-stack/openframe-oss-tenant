@@ -1,0 +1,9 @@
+flowchart TD
+    ClientStart["OpenFrame Client startup"] --> Registration["Registration Processor"]
+    Registration --> AuthProcessor["Initial Authentication Processor"]
+    AuthProcessor --> AuthReady{"Authentication complete?"}
+    AuthReady -->|"yes"| TokenServices["Start token-dependent services"]
+    TokenServices --> Nats["Connect to NATS"]
+    Nats --> Listeners["Start message listeners"]
+    AuthReady -->|"no"| Retry["Wait 60 seconds and retry"]
+    Retry --> AuthProcessor

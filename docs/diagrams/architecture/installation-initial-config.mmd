@@ -1,0 +1,12 @@
+flowchart TD
+    Installer["Installer or CLI arguments"] --> Params["InstallConfigParams"]
+    Params --> Classifier["is_parameterless()"]
+    Classifier -->|"no arguments"| Deferred["Deferred configuration via authentication flow"]
+    Classifier -->|"one or more arguments"| Builder["InstallationInitialConfigService"]
+    Builder --> Validator["Required-field validation"]
+    Validator --> Config["InitialConfiguration"]
+    Builder -->|"local mode"| Mkcert["mkcert CAROOT lookup"]
+    Mkcert --> Config
+    Config --> Storage["InitialConfigurationService"]
+    Storage --> File["secured directory initial_config.json"]
+    File --> Startup["Later agent startup and registration"]

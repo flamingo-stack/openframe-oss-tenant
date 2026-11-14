@@ -1,0 +1,9 @@
+flowchart TD
+    Create["Create Script Schedule Request"] --> Metadata["Schedule metadata"]
+    Create --> Actions["Action list"]
+    Metadata --> Name["Name and enabled state"]
+    Metadata --> Timing["Task type, time, and interval"]
+    Metadata --> Platforms["Supported platforms"]
+    Actions --> Action["Action"]
+    Action --> Script["Script reference and type"]
+    Action --> Runtime["Timeout, arguments, and environment"]

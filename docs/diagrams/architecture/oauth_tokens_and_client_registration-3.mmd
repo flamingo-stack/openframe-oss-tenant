@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Runtime as Authorization Server
+    participant Repository as Mongo Registered Client Repository
+    participant Mongo as Mongo Client Repository
+    Runtime->>Repository: save or find client
+    Repository->>Mongo: persist or query client document
+    Mongo-->>Repository: client document or empty result
+    Repository-->>Runtime: Registered Client or null

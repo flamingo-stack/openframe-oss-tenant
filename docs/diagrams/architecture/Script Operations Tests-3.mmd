@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Test as "ScriptsTest"
+    participant Api as "Script API"
+    participant Service as "OpenFrame Service"
+    participant Agent as "Windows Agent"
+    Test->>Api: Create marker echo script
+    Api->>Service: Create script mutation
+    Service-->>Api: Script identifier and stored marker
+    Api-->>Test: Created script
+    Test->>Api: Run script with marker override
+    Api->>Service: Dispatch mutation
+    Service-->>Api: Execution identifier
+    Api-->>Test: Execution identifier
+    Service->>Agent: Deliver script request
+    Agent->>Agent: Execute echo script
+    Agent->>Service: Publish execution result
+    Test->>Api: Poll script execution history
+    Api->>Service: Query matching execution row
+    Service-->>Api: Terminal result row
+    Api-->>Test: Status, output, timestamps, and metadata
