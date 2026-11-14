@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Incoming HTTP request"] --> Gateway["Gateway filters and security"]
+    Gateway --> Route{"Path matches?"}
+    Route -->|"/sas/**"| Auth["Authorization Server"]
+    Route -->|"/api-docs/**"| External["External API"]
+    Route -->|"/api/**"| Api["OpenFrame API"]
+    Route -->|"/clients/**"| Client["Client Service"]
+    Route -->|"otherwise"| Frontend["Frontend SPA"]

@@ -1,0 +1,17 @@
+classDiagram
+    class ToolCredentialsResponse {
+        String username
+        String password
+        ToolApiKeyResponse apiKey
+    }
+    class ToolApiKeyResponse {
+        String key
+        String type
+        String keyName
+    }
+    class ToolUrlResponse {
+        String url
+        String port
+        String type
+    }
+    ToolCredentialsResponse --> ToolApiKeyResponse : apiKey

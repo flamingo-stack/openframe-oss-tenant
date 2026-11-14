@@ -1,0 +1,8 @@
+flowchart LR
+    InstallService["Tool installation service"] -->|"requests an asset"| ToolClient["Tool Api Client"]
+    ToolClient -->|"reads access token"| ConfigService["Agent configuration service"]
+    ConfigService -->|"reads agent configuration"| SecuredStore["Secured local configuration"]
+    ToolClient -->|"GET with bearer token"| HttpClient["Injected HTTP client"]
+    HttpClient -->|"requests asset"| ToolApi["Tool API endpoint"]
+    ToolApi -->|"successful bytes"| ToolClient
+    ToolClient -->|"raw bytes"| InstallService

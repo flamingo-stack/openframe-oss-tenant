@@ -1,0 +1,5 @@
+flowchart LR
+    Lombok["Lombok annotations"] --> Dto["OrganizationFilterOption"]
+    Jackson["Jackson annotations"] --> Dto
+    Dto --> TestData["Typed log filter test data"]
+    TestData --> TestCase["Test assertions or request setup"]

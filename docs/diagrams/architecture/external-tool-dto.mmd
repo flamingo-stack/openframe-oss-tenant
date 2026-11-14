@@ -1,0 +1,7 @@
+flowchart LR
+    Contract["External API OpenAPI Contract"] -->|"generates"| Dtos["External Tool Dto Models"]
+    Dtos --> ApiKey["Tool API Key Response"]
+    Dtos --> Credentials["Tool Credentials Response"]
+    Dtos --> Url["Tool Url Response"]
+    Credentials -->|"contains"| ApiKey
+    TestService["OpenFrame Test Service"] -->|"deserializes responses into"| Dtos

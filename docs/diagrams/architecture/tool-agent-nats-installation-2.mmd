@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Delivery as "Command Delivery"
+    participant Resolver as "Parameter Resolver"
+    participant Retriever as "Fleet Retriever"
+    participant Tools as "Tool Configuration"
+    participant Fleet as "Fleet MDM API"
+
+    Delivery->>Resolver: Process tool ID and arguments
+    alt placeholder is absent
+        Resolver-->>Delivery: Return arguments unchanged
+    else placeholder is present
+        Resolver->>Retriever: Request registration secret
+        Retriever->>Tools: Load tool, API URL, and API key
+        Retriever->>Fleet: Request enrollment secret
+        Fleet-->>Retriever: Return enrollment secret
+        Retriever-->>Resolver: Return enrollment secret
+        Resolver-->>Delivery: Return substituted arguments
+    end

@@ -1,0 +1,7 @@
+flowchart LR
+    CliArgs["Install command tag arguments"] --> Parser["DeviceTag parse from CLI"]
+    Parser --> TagModel["DeviceTag collection"]
+    TagModel --> InitialConfig["Initial configuration tags"]
+    InitialConfig --> RegistrationRequest["Agent registration request"]
+    RegistrationRequest --> RegistrationService["Registration tag assignment service"]
+    RegistrationService --> TagStore["Device tags and assignments"]

@@ -1,0 +1,6 @@
+flowchart LR
+    Consumer["Feature flag service or data fetcher"] -->|"findFirstBy()"| Repository["FeFeatureFlagsRepository"]
+    Repository -->|"Spring Data MongoDB query"| Mongo["MongoDB"]
+    TenantAspect["Tenant scoping aspect"] -->|"adds tenantId criterion"| Repository
+    Mongo -->|"optional FeFeatureFlags document"| Repository
+    Repository -->|"tenant-local overrides or empty result"| Consumer

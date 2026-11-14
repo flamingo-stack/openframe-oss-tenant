@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Handler as Command Handler
+    participant Update as Services Tool Agent Update
+    participant Registry as Installed Tool Registry
+    participant Download as Download Service
+    participant Updater as Platform Updater
+    participant Publisher as Version Publisher
+    Handler->>Update: process_update_locked(message, guard)
+    Update->>Registry: Get current installed tool
+    Update->>Download: Find configuration for current OS
+    Update->>Updater: Detect installation or migrate when type changes
+    Update->>Updater: Prepare, apply, finalize same-type update
+    Updater-->>Update: Updated installation metadata
+    Update->>Registry: Save tool record and version
+    Update->>Publisher: Publish tool ID and version
+    Update-->>Handler: Success or contextual error

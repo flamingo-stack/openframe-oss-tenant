@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Runner as "Test Runner"
+    participant Tests as "General Tests"
+    participant Clients as "Test API Clients"
+    participant Platform as "OpenFrame Platform"
+    participant Agent as "Device Agent"
+
+    Runner->>Tests: Select tagged scenarios
+    Tests->>Clients: Create or locate test fixtures
+    Clients->>Platform: Invoke API operations
+    Platform-->>Clients: Return responses and state
+    Clients-->>Tests: Validate contracts
+    Tests->>Agent: Dispatch work when required
+    Agent->>Platform: Report asynchronous outcome
+    Tests->>Clients: Query final state
+    Tests->>Clients: Remove test-owned fixtures

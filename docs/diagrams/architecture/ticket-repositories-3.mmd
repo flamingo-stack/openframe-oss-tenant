@@ -1,0 +1,10 @@
+flowchart TD
+    Query["Filtered query"] --> Cursor{"Valid cursor?"}
+    Cursor -->|"No"| Sort["Sort page"]
+    Cursor -->|"Yes"| SortChoice{"Sort field is ID?"}
+    SortChoice -->|"Yes"| IdBound["Add ID cursor bound"]
+    SortChoice -->|"No"| CursorDoc["Load cursor ticket"]
+    CursorDoc --> CompositeBound["Add value and ID tie-break bound"]
+    IdBound --> Sort
+    CompositeBound --> Sort
+    Sort --> Page["Limit and fetch tickets"]

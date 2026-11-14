@@ -1,0 +1,17 @@
+flowchart LR
+    subgraph client["OpenFrame Client process"]
+        Producers["Execution result producers"]
+        Store["Result store"]
+        Notify["Tokio notification"]
+        Manager["Services Result Outbox Run Manager"]
+        Publisher["Result publisher"]
+    end
+    Broker["NATS and JetStream"]
+
+    Producers -->|"enqueue result"| Store
+    Producers -->|"wake worker"| Notify
+    Notify --> Manager
+    Store -->|"pending keys and payloads"| Manager
+    Manager -->|"remove after delivery"| Store
+    Manager -->|"raw or acknowledged publish"| Publisher
+    Publisher --> Broker

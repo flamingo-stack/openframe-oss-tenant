@@ -1,0 +1,7 @@
+flowchart LR
+    Device["Device"] --> Identity["Tenant and machine identity"]
+    Device --> Inventory["Hardware and OS inventory"]
+    Device --> Configuration["Device Configuration"]
+    Device --> Health["Device Health"]
+    Configuration --> SecuritySettings["Security Settings"]
+    Health --> Alerts["Operational alerts"]

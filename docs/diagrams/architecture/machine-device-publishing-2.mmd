@@ -1,0 +1,9 @@
+flowchart TD
+    Event["Machine Event"] --> PreferredName["Resolve nickname or hostname"]
+    PreferredName --> Update["Update matching ticket device hostname"]
+    Update --> Tickets["Tickets for tenant and machine ID"]
+    Reconcile["Reconcile ticket device views"] --> LoadMachines["Bulk load machines by tenant and machine ID"]
+    LoadMachines --> Compare["Compare source preferred name with copied name"]
+    Compare --> Match{"Names match?"}
+    Match -->|"yes"| Complete["No mismatch"]
+    Match -->|"no"| Mismatch["Return reconciliation mismatch"]

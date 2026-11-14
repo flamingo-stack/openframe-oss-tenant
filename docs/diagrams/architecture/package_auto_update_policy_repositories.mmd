@@ -1,0 +1,7 @@
+flowchart LR
+    SoftwareRun["Software execution"] --> PolicyService["Package auto-update policy service"]
+    Catalog["Package catalog versions"] --> PolicyService
+    PolicyService -->|"enable template and machines"| Repository["Package auto update policy repositories"]
+    Repository -->|"bulk upsert"| Mongo["MongoDB policy collection"]
+    Mongo --> PolicyEngine["Package update orchestration"]
+    PolicyEngine --> Agent["Endpoint agent"]

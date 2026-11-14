@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Runtime as OpenFrame Client
+    participant Registration as Agent Registration Service
+    participant Config as Agent Configuration Service
+    participant Auth as Agent Authentication Service
+    participant Server as OpenFrame services
+    Runtime->>Registration: register agent
+    Registration->>Server: submit registration request
+    Server-->>Registration: machine and client credentials
+    Registration->>Config: save registration data
+    Config->>Config: write identity fields atomically
+    Runtime->>Auth: authenticate initially
+    Auth->>Config: get client credentials
+    Config-->>Auth: client identifier and secret
+    Auth->>Server: authenticate with client credentials
+    Server-->>Auth: access and refresh tokens
+    Auth->>Config: update tokens
+    Config->>Config: write token fields atomically

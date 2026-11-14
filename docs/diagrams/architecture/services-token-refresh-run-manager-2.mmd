@@ -1,0 +1,10 @@
+flowchart LR
+    Manager["Services Token Refresh Run Manager"] --> AuthService["Agent authentication service"]
+    Manager --> Deactivation["Deactivation service"]
+    Manager --> JwtParser["JWT timing parser"]
+    AuthService --> AuthClient["Authentication client"]
+    AuthService --> ConfigStore["Agent configuration service"]
+    AuthService --> SharedToken["Shared token service"]
+    AuthClient --> TokenEndpoint["Client token endpoint"]
+    AuthClient --> Deactivation
+    SharedToken --> TokenFile["Encrypted shared token file"]

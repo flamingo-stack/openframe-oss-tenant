@@ -1,0 +1,9 @@
+flowchart LR
+    TokenSource["Token string"] --> Parser["token_times_unix()"]
+    Parser --> ShapeCheck["Require three segments"]
+    ShapeCheck --> PayloadDecode["Decode URL safe Base64 payload"]
+    PayloadDecode --> ClaimsDecode["Deserialize exp and optional iat"]
+    ClaimsDecode --> Times["JwtTimes"]
+    Times --> Lifetime["ttl_secs()"]
+    Parser --> Invalid["None for malformed or missing exp"]
+    Lifetime --> LifetimeResult["Positive lifetime or None"]

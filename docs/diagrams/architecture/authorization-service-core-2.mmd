@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client as "OAuth client"
+    participant Auth as "Authorization Server"
+    participant Grant as "Grant provider"
+    participant Keys as "Tenant key service"
+    participant Store as "Authorization store"
+
+    Client->>Auth: Token request with authenticated client
+    Auth->>Grant: Resolve grant credential and user
+    Grant->>Keys: Resolve active tenant RSA key
+    Grant->>Grant: Generate access and optional refresh token
+    Grant->>Store: Save OAuth2 authorization
+    Grant->>Client: Return token response

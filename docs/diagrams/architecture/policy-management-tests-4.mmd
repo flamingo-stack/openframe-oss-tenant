@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Created
+    Created --> Listed
+    Listed --> Read
+    Read --> Edited
+    Edited --> Disabled
+    Disabled --> Enabled
+    Enabled --> Regenerated
+    Regenerated --> OldIdRejected
+    OldIdRejected --> Deleted
+    Deleted --> [*]

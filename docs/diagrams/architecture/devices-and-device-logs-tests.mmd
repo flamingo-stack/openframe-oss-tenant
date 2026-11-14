@@ -1,0 +1,14 @@
+flowchart LR
+    Runner["OpenFrame Test Service"] --> Tests["Devices And Device Logs Tests"]
+    Tests --> DeviceApi["Device API Test Client"]
+    Tests --> LogApi["Device Log API Test Client"]
+    DeviceApi --> ApiService["OpenFrame API Service"]
+    LogApi --> ApiService
+    ApiService --> Inventory["Device Inventory"]
+    ApiService --> Fleet["Fleet MDM"]
+    ApiService --> Mesh["MeshCentral"]
+    ApiService --> LogStore["Device Log Storage"]
+    DeviceApi --> Uninstall["Client Uninstall Request"]
+    Uninstall --> Agent["Enrolled Client"]
+    Agent --> Deregistration["Device Deregistration"]
+    Deregistration --> Inventory

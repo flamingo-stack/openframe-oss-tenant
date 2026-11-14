@@ -1,0 +1,14 @@
+flowchart LR
+    Runtime["Client Runtime"]
+    Events["Tracing Events"]
+    Layer["Metrics Layer"]
+    Visitor["Metric Visitor"]
+    Store["Metrics Store"]
+    Reader["Metric Reader"]
+    Bootstrap["Logging Bootstrap"]
+    Runtime -->|"emits fields"| Events
+    Events -->|"invokes"| Layer
+    Layer -->|"records fields"| Visitor
+    Visitor -->|"selects value and labels"| Store
+    Store -->|"returns metric records"| Reader
+    Bootstrap -->|"retains shared handle"| Store

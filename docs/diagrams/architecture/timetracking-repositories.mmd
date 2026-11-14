@@ -1,0 +1,8 @@
+flowchart TD
+    Caller["Time Tracking Service or Data Fetcher"] --> Contract["Custom Time Entry Repository"]
+    Contract --> Implementation["Custom Time Entry Repository Implementation"]
+    Implementation --> TenantSupport["Tenant Aware Repository Support"]
+    TenantSupport --> TenantTemplate["Tenant Aware Mongo Template"]
+    TenantTemplate --> Mongo["MongoDB Time Entry Collection"]
+    Implementation --> Results["Time Entries, Counts, and Statistics"]
+    Results --> Caller

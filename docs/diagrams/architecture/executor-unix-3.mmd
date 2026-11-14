@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant ES as Execution Service
+    participant EU as Executor Unix
+    participant RA as Run As Resolver
+    participant FS as Unix File System
+    participant CP as Child Process Runner
+    ES->>EU: execute_script(parameters)
+    EU->>RA: resolve requested privilege
+    RA-->>EU: agent or user identity
+    EU->>FS: write protected temporary script
+    EU->>FS: optionally change file owner
+    EU->>CP: configure and execute command
+    CP-->>EU: output, exit code, timeout state
+    EU->>FS: remove temporary script
+    EU-->>ES: execution result

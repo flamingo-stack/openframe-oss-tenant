@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Receive affected machine"] --> Assignments["Load device tag assignments"]
+    Assignments --> TagIds["Collect assigned tag identifiers"]
+    TagIds --> Tags["Load tag definitions"]
+    Tags --> Map["Map assignments by tag identifier"]
+    Map --> Keys["Collect non-null tag keys"]
+    Keys --> Values["Build key and value entries"]
+    Values --> Attributes["Add machine and directory attributes"]
+    Attributes --> Tenant["Add tenant identifier and ingestion time"]
+    Tenant --> Publish["Publish Machine Pinot Message"]

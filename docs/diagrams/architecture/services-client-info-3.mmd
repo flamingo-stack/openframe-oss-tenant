@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Command as Client update request
+    participant Update as Client update service
+    participant Info as Services Client Info
+    participant State as Update state service
+    participant Updater as Platform updater
+    Command->>Update: reserve and apply requested version
+    Update->>Info: get current record
+    Update->>Info: set Updating and target version
+    Update->>State: save pending update state
+    Update->>Updater: stage and launch update
+    alt update execution fails
+        Update->>Info: set Failed and target version
+        Update->>State: clear stale update state
+    else updater launches
+        Updater-->>Update: process replacement begins
+    end

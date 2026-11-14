@@ -1,0 +1,20 @@
+flowchart TD
+    Wake["Interval tick or notification"] --> Keys["Read pending keys and subjects"]
+    Keys --> Limit["Determine payload limit"]
+    Limit --> Next["Select next outbox entry"]
+    Next --> Load["Load payload"]
+    Load --> Missing{"Payload present?"}
+    Missing -->|"No"| RemoveMissing["Remove stale entry"]
+    RemoveMissing --> Next
+    Missing -->|"Yes"| Size{"Within payload limit?"}
+    Size -->|"No"| Skip["Leave entry queued and continue"]
+    Skip --> Next
+    Size -->|"Yes"| AckKind{"Requires stream acknowledgement?"}
+    AckKind -->|"Yes"| AckPublish["Publish with JetStream acknowledgement"]
+    AckKind -->|"No"| RawPublish["Publish raw NATS message"]
+    AckPublish --> Outcome{"Publish succeeds before timeout?"}
+    RawPublish --> Outcome
+    Outcome -->|"Yes"| Remove["Remove delivered entry"]
+    Remove --> Next
+    Outcome -->|"No"| Retain["Retain entry for a later flush"]
+    Retain --> Next

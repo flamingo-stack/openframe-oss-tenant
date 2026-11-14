@@ -1,0 +1,8 @@
+flowchart LR
+    Prompt["Targeted Mingo prompt"] --> Mingo["Mingo"]
+    Mingo --> Target["Requested target machine"]
+    Mingo -.-> Control["Control machine"]
+    Target --> SSH_A["Target SSH verifier"]
+    Control --> SSH_B["Control SSH verifier"]
+    SSH_A --> Assert["State and scope assertions"]
+    SSH_B --> Assert

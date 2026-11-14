@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Begin service tool update"] --> Prepare["Prepare and record backup"]
+    Prepare --> Apply["Apply new artifact"]
+    Apply -->|"Success"| Finalize["Start service and clean backup"]
+    Apply -->|"Failure"| Rollback["Restore backup when available"]
+    Rollback --> Restart["Attempt service restart"]
+    Restart --> Failed["Return original apply failure"]
+    Finalize --> Complete["Update complete"]

@@ -1,0 +1,6 @@
+flowchart LR
+    NewTag["Create Unique Device Tag"] --> Edit["Update Description and Color"]
+    Edit --> Filter["List Tags by Entity Type"]
+    Filter --> Suggest["Query Key and Value Suggestions"]
+    Suggest --> Remove["Delete Device Tag"]
+    Remove --> Confirm["Verify No Listing or Suggestion"]

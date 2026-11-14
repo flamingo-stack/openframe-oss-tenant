@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Service as "Calling service"
+    participant Repository as "CustomUserRepositoryImpl"
+    participant Mongo as "MongoTemplate"
+    participant Database as "MongoDB"
+    Service->>Repository: Request page with filter, cursor, and limit
+    Repository->>Repository: Build criteria and stable sort
+    Repository->>Mongo: Execute Spring Data query
+    Mongo->>Database: Read matching User documents
+    Database->>Mongo: Return ordered documents
+    Mongo->>Repository: Map documents to User records
+    Repository->>Service: Return page or count

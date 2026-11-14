@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Client starts or a tool is installed"] --> Load["Load installed tools"]
+    Load --> Available{"Any installed tools?"}
+    Available -->|"No"| Complete["Finish without publication"]
+    Available -->|"Yes"| TypePresent{"Tool type present?"}
+    TypePresent -->|"No"| Skip["Log warning and skip tool"]
+    TypePresent -->|"Yes"| Active{"Processing loop already active?"}
+    Active -->|"Yes"| Wake["Signal existing loop for prompt publication"]
+    Active -->|"No"| Build["Build subject and message"]
+    Build --> Publish["Publish JSON through NATS"]
+    Publish --> Result{"Publish succeeds?"}
+    Result -->|"Yes"| Complete
+    Result -->|"No"| Error["Return contextual publication error"]

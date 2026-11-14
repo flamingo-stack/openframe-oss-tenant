@@ -1,0 +1,9 @@
+flowchart TD
+    Operation["Requested privileged operation"] --> Capability["Select required capability"]
+    Capability --> AdminNeed{"Administrative capability?"}
+    AdminNeed -->|"Yes"| Admin["Evaluate is_admin()"]
+    AdminNeed -->|"No"| ReadLogs["Evaluate system log access"]
+    Admin --> Result{"Available?"}
+    ReadLogs --> Result
+    Result -->|"Yes"| Proceed["Run caller workflow"]
+    Result -->|"No"| Warn["Warn or reject according to caller policy"]

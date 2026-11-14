@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["Connector-facing application service"] --> AlertRepo["ConnectorAlertRepository"]
+    Caller --> EventRepo["ConnectorRecreationEventRepository"]
+    AlertRepo --> AlertDoc["ConnectorAlert documents"]
+    EventRepo --> EventDoc["ConnectorRecreationEvent documents"]
+    AlertDoc --> MongoDb[("MongoDB")]
+    EventDoc --> MongoDb

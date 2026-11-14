@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Runtime as Client Runtime
+    participant Processor as Registration Processor
+    participant Config as Agent Configuration Service
+    participant Service as Agent Registration Service
+    participant Api as Registration Client
+    Runtime->>Processor: process()
+    Processor->>Config: get_machine_id()
+    alt machine identifier exists
+        Config-->>Processor: non-empty machine identifier
+        Processor-->>Runtime: success without network call
+    else machine identifier absent
+        loop until registration succeeds
+            Processor->>Service: register_agent()
+            Service->>Api: register or reinstall request
+            Api-->>Service: registration response or error
+            alt successful response
+                Service->>Config: save_registration_data()
+                Service-->>Processor: registration response
+                Processor-->>Runtime: success
+            else failed attempt
+                Service-->>Processor: contextual error
+                Note over Processor: Log error and wait 60 seconds
+            end
+        end
+    end

@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Test as "JUnit test"
+    participant Api as "GraphQL API client"
+    participant Platform as "OpenFrame platform"
+    participant Agent as "Enrolled device agent"
+
+    Test->>Api: Create script or schedule
+    Api->>Platform: Send mutation
+    Platform->>Api: Return resource identifier
+    Api->>Test: Return resource
+    Test->>Api: Dispatch script or command
+    Api->>Platform: Send dispatch request
+    Platform->>Agent: Deliver work
+    Agent->>Platform: Report execution result
+    loop Until terminal row or timeout
+        Test->>Api: Query execution history
+        Api->>Platform: Request connection and facets
+        Platform->>Api: Return current rows
+        Api->>Test: Evaluate completion
+    end
+    Test->>Api: Delete test-owned resources

@@ -1,0 +1,10 @@
+flowchart TD
+    ClientStart["OpenFrame Client startup"] --> NatsConnect["Connect NATS"]
+    NatsConnect --> Recover["Recover interrupted results"]
+    Recover --> OutboxStart["Start Services Result Outbox Run Manager"]
+    OutboxStart --> Listeners["Start execution listeners"]
+    Listeners --> Produce["Execution produces result"]
+    Produce --> Store["Persist result in durable outbox"]
+    Store --> Notify["Notify outbox worker"]
+    Notify --> Flush["Flush pending result"]
+    Flush --> Nats["Publish to NATS or JetStream"]

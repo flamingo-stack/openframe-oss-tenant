@@ -1,0 +1,18 @@
+flowchart TD
+    Runner["JUnit Test Runner"] --> AiTests["AI Settings Test"]
+    Runner --> DialogTests["Dialogs Test"]
+
+    AiTests --> AiApi["AI Settings API"]
+    AiTests --> OrgApi["Organization API"]
+    AiApi --> TenantAi["Tenant AI Configuration"]
+    OrgApi --> OrgData["Throwaway Organization"]
+    AiApi --> OrgData
+
+    DialogTests --> DialogApi["Dialog API"]
+    DialogTests --> MessageApi["Message API"]
+    DialogTests --> TicketApi["Ticket API"]
+    DialogTests --> DeviceApi["Device API"]
+    DeviceApi --> TargetDevice["Configured Target Device"]
+    DialogApi --> DialogData["Dialog and Ticket State"]
+    MessageApi --> DialogData
+    TicketApi --> DialogData

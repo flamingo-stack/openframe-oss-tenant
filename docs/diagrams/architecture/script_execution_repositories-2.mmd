@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Dispatcher as Dispatch service
+    participant Repository as Script Execution Repositories
+    participant Mongo as MongoDB
+    Dispatcher->>Repository: saveQueued or saveRunning request
+    Repository->>Repository: Build one row per machine
+    alt No target machines
+        Repository-->>Dispatcher: Empty row list
+    else Target machines exist
+        Repository->>Mongo: insertAll execution rows
+        Mongo-->>Repository: Persisted rows
+        Repository-->>Dispatcher: Persisted rows
+    end

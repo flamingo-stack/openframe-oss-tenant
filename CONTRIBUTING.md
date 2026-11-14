@@ -2,204 +2,164 @@
 
 Thank you for your interest in contributing to **OpenFrame OSS Tenant** — the multi-service, multi-tenant open-source foundation of the OpenFrame platform, built by [Flamingo](https://flamingo.run). This repository bundles the Spring Boot backend services (`openframe-api`, `openframe-gateway`, `openframe-authorization-server`, `openframe-external-api`, `openframe-client`, `openframe-stream`, `openframe-management`, `openframe-config`, `openframe-test`), the Kubernetes/Argo CD manifests that deploy them, and the Rust `openframe-client` agent under `clients/openframe-client`.
 
-This guide covers setting up a development environment, the branching and pull request workflow, code style, running and writing tests, and where to go for more documentation.
+This guide covers setting up a development environment, the branching and pull request workflow, code style, running and writing tests, reporting security issues, and where to find more documentation.
 
----
+## Community and communication
 
-## 💬 Community and communication
-
-**This project does not use GitHub Issues or GitHub Discussions** for feature requests, bug reports, or general discussion. All of that happens in the OpenMSP Slack community:
+**This project does not use GitHub Issues or GitHub Discussions** for feature requests, bug reports, or general discussion. Coordination and support happen in the OpenMSP Slack community:
 
 - [https://www.openmsp.ai/](https://www.openmsp.ai/)
 - [Join Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
 
-GitHub pull requests remain the mechanism for proposing and reviewing code changes. Before opening a larger pull request, consider discussing the change in Slack first.
-
----
+GitHub pull requests remain the mechanism for proposing and reviewing code changes. Before opening a larger pull request, consider discussing the change in Slack first. Do not reference invented GitHub Issue or Discussion numbers in commits or PR titles — reference the relevant Slack conversation instead, if one exists.
 
 ## How this repository fits the ecosystem
 
-OpenFrame OSS Tenant is registered in the organization's code graph as a **service** publishing nine Maven artifacts under `com.openframe` (all `1.0.0-SNAPSHOT`) plus the `openframe_client` Cargo crate (`0.1.0`). It has one recorded upstream dependency — the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib), pinned manually — and no recorded downstream consumer. Coverage for this graph is `full`, meaning that absence is conclusive: nothing else in the organization currently depends on `com.openframe:*` or `openframe_client`.
+Per the organization's repository graph (`get_repo_ecosystem`, coverage: full), OpenFrame OSS Tenant is a **service** that publishes nine Maven artifacts under `com.openframe` (all `1.0.0-SNAPSHOT`) plus the `openframe_client` Cargo crate (`0.1.0`). It pins 22 Maven artifacts and one Cargo crate (`openframe_agent_lib`, tag `v0.0.5`) from the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) at version `7.0.11`. No repository in the organization is recorded as consuming artifacts published from here — this repository sits at the end of the dependency chain, assembling the library into a deployable product rather than being built upon by others.
 
-```mermaid
-flowchart LR
-  lib["OpenFrame OSS Library"]
-  tenant["OpenFrame OSS Tenant"]
-  tenant -.->|"manual"| lib
-```
+A practical consequence: most domain logic (API resolvers, authorization flows, client registration, gateway routing, stream processing) lives upstream in OpenFrame OSS Library, not in this repository. Before writing new logic here, check whether it belongs in the OSS Library instead. The Rust agent build depends directly on that library too: `clients/openframe-client/Cargo.toml` pins `openframe-agent-lib` to tag `v0.0.5` of `https://github.com/flamingo-stack/openframe-oss-lib.git`, and `clients/openframe-client/src/main.rs` is a thin wrapper that calls into it.
 
-A practical consequence: a public API change here is lower-risk to the rest of the organization's graph than a change to `openframe-oss-lib` itself — but the Rust agent build still depends directly on that library (`clients/openframe-client/Cargo.toml` pins `openframe-agent-lib` to tag `v0.0.5` of `https://github.com/flamingo-stack/openframe-oss-lib.git`), and `clients/openframe-client/src/main.rs` is a thin wrapper that calls into it. If you are touching the CLI surface exposed by the separately maintained [openframe-cli](https://github.com/flamingo-stack/openframe-cli) tool, consult that repository's own [installation](https://github.com/flamingo-stack/openframe-cli#installation) and [documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs) — it is not part of this codebase.
+If you are touching the CLI surface exposed by the separately maintained [openframe-cli](https://github.com/flamingo-stack/openframe-cli) tool, consult that repository's own [installation guide](https://github.com/flamingo-stack/openframe-cli#installation) and [documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs) — it is not part of this codebase, and changes to it belong there.
 
----
+## Setting up a development environment
 
-## 🛠️ Setting up a development environment
+Do not try to piece a setup together from scratch here — follow the dedicated guides, which are kept current with the repository's actual structure:
 
-Do not try to piece a setup together from scratch here — follow the dedicated guides:
-
-1. [Prerequisites](./docs/getting-started/prerequisites.md) — tools you need before you start.
+1. [Introduction](./docs/getting-started/introduction.md) and [Prerequisites](./docs/getting-started/prerequisites.md) — orientation and tools you need before you start.
 2. [Quick Start](./docs/getting-started/quick-start.md) and [First Steps](./docs/getting-started/first-steps.md) — get something running quickly.
-3. [Environment Setup](./docs/development/setup/environment.md) — JDK/Rust toolchain, IDE configuration, environment variables.
-4. [Local Development](./docs/development/setup/local-development.md) — cloning, building, running services and the Rust agent locally, hot reload, and debugging.
-5. [Architecture Overview](./docs/development/architecture/README.md) — how the services, data stores, and the Rust agent fit together before you start changing code.
+3. [Environment Setup](./docs/development/setup/environment.md) — JDK/Rust toolchain, IDE configuration (VS Code launch configs and tasks), and environment variables.
+4. [Local Development](./docs/development/setup/local-development.md) — cloning, building, running services and the Rust agent locally, hot reload/watch mode, and debugging.
+5. [Architecture Overview](./docs/development/architecture/README.md) — how the gateway, authorization server, API, client, management, and stream services fit together before you start changing code.
 
-In short: the backend is a Maven multi-module project rooted at `pom.xml` (Spring Boot `4.1.1`, Java `25`, Spring Cloud `2025.1.3`), and the Rust agent lives at `clients/openframe-client/` with its build requiring the `OPENFRAME_VERSION` environment variable. See [Environment Setup](./docs/development/setup/environment.md) for the full toolchain list and [Local Development](./docs/development/setup/local-development.md) for exact build and run commands — do not duplicate them here, as they are kept current with the repository's actual structure.
+In short: the backend is a Maven multi-module project rooted at `pom.xml` (Spring Boot `4.1.1`, Java `25`, Spring Cloud `2025.1.3`), and the Rust agent lives at `clients/openframe-client/`, with its build requiring the `OPENFRAME_VERSION` environment variable passed through to `openframe-agent-lib`'s build script. See [Environment Setup](./docs/development/setup/environment.md) for the full toolchain list and [Local Development](./docs/development/setup/local-development.md) for exact build and run commands — they are not duplicated here.
 
----
-
-## 🔀 Development workflow
+## Development workflow
 
 ### Branches
 
-Branch naming is not rigidly enforced by a single documented scheme in this repository's CI, but a few constraints are worth keeping in mind:
+Branch naming is not rigidly enforced by a single documented scheme, but keep these constraints in mind:
 
-- **Default branch is `main`.** The release workflow (`.github/workflows/release.yml`) triggers on pushes to `main` that touch `manifests/**`, `openframe/**`, `integrated-tools/**`, `pom.xml`, or `clients/**`, building and publishing images and the Helm chart. Avoid pushing directly to `main`; land changes through a pull request.
-- **Stale branches are pruned automatically.** `.github/workflows/cleanup.yml` runs a daily job that deletes any unprotected branch with no commit in the last 60 days. Keep your branch active (rebase or push) if you intend to keep it beyond that window.
-- **Scope your branch to one logical change.** CI's path-filtered `changes` job decides what to rebuild and release per component (`openframe-api`, `openframe-authorization-server`, `openframe-external-api`, `openframe-client`, `openframe-config`, `openframe-gateway`, `openframe-management`, `openframe-stream`, the Rust `client` crate, `openframe-test`, `helm`). A branch mixing unrelated service changes makes the diff harder to review and can trigger a wider rebuild/release surface than intended.
+- **Default branch is `main`.** The release workflow (`.github/workflows/release.yml`) triggers on pushes to `main` that touch `manifests/**`, `openframe/**`, `integrated-tools/**`, `pom.xml`, or `clients/**`, building and publishing container images and the `app-of-apps` Helm chart. Land changes through a pull request rather than pushing directly.
+- **Avoid reserved branch prefixes.** `ai-fix/*` is reserved for automated review-fix branches, `setup/*` for the hub's setup automation, and `code-documentation/*` for automated documentation pull requests (`DOCS_BRANCH_PREFIX` in `.github/workflows/code-documentation.yml`).
+- **Scope your branch to one logical change.** Use a descriptive branch name that signals scope and intent — for example, a backend change under `openframe/services/openframe-api` or a deployment change under `manifests/`. Keeping one logical change per branch keeps the CODEOWNERS-driven review scoped to one team where possible, and makes `git log --oneline` across `openframe/services/*`, `clients/openframe-client`, and `manifests/*` easier to triage.
 
 ### Commits
 
-No single commit-message template is enforced by tooling in this repository's workflows; write commits that are clear and scoped to one logical change. When a change is a deliberate override or exception (as the version pins and CVE overrides in `pom.xml` are), explain *why*, not just *what* — following the style of the inline comments already in `pom.xml` and the workflow files. A good commit message:
+No commit-message template is enforced mechanically, but observed workflow history favors a clear, imperative, single-purpose style:
 
-- States the component touched (service name, `manifests/<chart>`, `clients/openframe-client`, etc.) and the effect of the change.
-- Calls out version bumps explicitly, e.g. referencing the property changed (`${openframe.libs.version}`, `${spring-boot.version}`), so a reviewer can cross-check the changelog of that dependency.
-- For security-motivated dependency overrides, states the CVE class being avoided (as the `jackson-bom.version` / `bcprov-lts8on.version` overrides do in comments), so a future contributor does not silently "clean up" a deliberate pin.
+- **Imperative mood, present tense** — "Add gateway route for external API" rather than "Added" or "Adds".
+- **Name the module or manifest touched** in the summary line, since this is a multi-module monorepo.
+- **Explain the "why" in the body for anything non-obvious** — a version bump that fixes a CVE, a chart dependency change, an Argo CD sync-wave adjustment. The parent `pom.xml` models this convention itself: every non-obvious pin (for example `kafka-lz4-java.version`) carries an inline comment explaining *why* that version, not just what it is. Commit messages should carry the same reasoning.
+- **One logical change per commit** where practical, so a bisect across services stays useful.
+
+```text
+Example commit message shape:
+
+Pin lz4-java to the at.yawk.lz4 fork for kafka-clients 4
+
+kafka-clients 4 moved to the at.yawk.lz4 fork; the upstream
+org.lz4:lz4-java 1.10.1 carries a HIGH CVE. Pins
+kafka-lz4-java.version in the parent POM.
+```
+
+Because GitHub Issues and Discussions are not used here, do not reference issue numbers in commit messages or PR titles — reference the OpenMSP Slack discussion instead if one exists.
 
 ### Opening a pull request
 
-1. Branch from `main`, make your change, and ensure it builds locally — see [Local Development](./docs/development/setup/local-development.md) for the exact Maven/Cargo commands.
-2. Open the pull request against `main` at [github.com/flamingo-stack/openframe-oss-tenant/pulls](https://github.com/flamingo-stack/openframe-oss-tenant/pulls).
-3. `.github/CODEOWNERS` routes the review request automatically based on the paths you changed (see the table below).
-4. **Automated code review.** This repository runs the "🦩 Flamingo Code Review" workflow (`.github/workflows/flamingo-code-review.yml`). A review does **not** run automatically the moment a PR is opened — opening, reopening, or marking ready-for-review posts an invitation comment with a checkbox; checking it (or commenting `@flamingo-review`, or adding the `flamingo-review` label) starts the first pass. Commenting `@flamingo-review full` re-reads the whole cumulative diff instead of only the incremental delta since the last reviewed commit. Repeated pushes to an open PR do **not** re-trigger a review by themselves unless the PR carries the `flamingo-review-always` label (continuous review), or you explicitly ask again.
-5. Address findings, keep pushing to the same branch, and ask for re-review via the same comment/checkbox/label mechanism once ready.
-6. Once approvals from the relevant CODEOWNERS are in and checks are green, the PR can be merged. Merging into `main` for a path covered by the release workflow triggers an image/chart build and publish.
-
-The "🦩 Flamingo Code Documentation" workflow (`.github/workflows/code-documentation.yml`) also runs a `code-graph` job on every push to the default branch, rebuilding the deterministic code graph the review tooling and documentation pipeline rely on. It explicitly ignores `docs/**` and `**.md` changes, so documentation-only PRs do not trigger a graph rebuild.
+1. **Branch from `main`.** Make your change and confirm it builds locally — see [Local Development](./docs/development/setup/local-development.md) for the exact Maven and Cargo commands.
+2. **Keep the change scoped to what CODEOWNERS can review together.** A PR spanning `openframe/services/openframe-api` and `manifests/tenant` requires sign-off from both `@flamingo-stack/backend-engineers` and `@flamingo-stack/devops-engineers`; splitting it in two is usually faster to merge.
+3. **Let CI run.** On every push (except documentation-only changes, excluded via `paths-ignore: ['docs/**', '**.md']`), the `code-graph` job in `.github/workflows/code-documentation.yml` re-indexes the code graph that both the documentation pipeline and the automated code reviewer read. Pull requests also run `.github/workflows/flamingo-code-review.yml`, the automated review pipeline.
+4. **Request a review pass explicitly.** Review is not automatic on every commit:
+   - A first pass happens on PR open, reopen, or ready-for-review as an **invitation** comment with a checkbox.
+   - Checking that box, adding the `flamingo-review` label, or commenting `@flamingo-review` requests a pass on the commits since the last review.
+   - Commenting `@flamingo-review full` (or checking the "review the whole diff again" box) re-reviews the entire cumulative diff.
+   - Adding the `flamingo-review-always` label subscribes the PR to review on every push — reserve this for unusually risky refactors.
+5. **Resolve findings or explain why not.** Treat automated findings as you would a human reviewer's comment: fix the code, or reply with the reasoning for leaving it as-is.
+6. **Merge once required checks pass and CODEOWNERS have approved.** There is no issue tracker to close on merge — if the change was discussed on Slack, note that in the PR description for traceability.
 
 ### Reviews — ownership (CODEOWNERS)
 
-`.github/CODEOWNERS` assigns review ownership by path (last match wins, broader patterns listed above more specific ones):
+[`.github/CODEOWNERS`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/.github/CODEOWNERS) assigns review ownership by path, using **last-match-wins**:
 
 | Path | Owning team |
 |---|---|
 | `/openframe/` | `@flamingo-stack/backend-engineers` |
 | `/clients/openframe-client/` | `@flamingo-stack/client-engineers` |
 | `/configs/` | `@flamingo-stack/backend-engineers` |
-| `/configs/base/` | `@flamingo-stack/tech-leads` and `@flamingo-stack/tech-heads-of` (Spring Cloud Config base profile — requires both) |
+| `/configs/base/` | `@flamingo-stack/tech-leads` and `@flamingo-stack/tech-heads-of` (stricter than the rest of `/configs/`, since this is the shared Spring Cloud Config that every service reads) |
 | `/manifests/` | `@flamingo-stack/devops-engineers` |
 | `/.github/CODEOWNERS` | `@flamingo-stack/devops-engineers` |
 
-A pull request touching `configs/base/` requires sign-off from both a tech lead and a head-of, reflecting that this file drives shared Spring configuration (MongoDB, Redis Cluster, Cassandra, Pinot connection endpoints) consumed by every backend service.
+Because CODEOWNERS uses last-match-wins, a pull request touching `configs/base/application.yml` requires the tech-leads/tech-heads-of approval even though the broader `/configs/` rule also matches — a PR that touches both `configs/base` and an unrelated service pulls in the stricter reviewer set for the whole PR.
 
 ### Review checklist
 
-Before requesting (or performing) review, confirm:
+Before requesting review, and again while reviewing someone else's PR, check:
 
-- **Scope.** The branch touches one logical area and does not mix unrelated changes across service boundaries without reason.
-- **Build passes.** The Java and Rust builds succeed for touched modules (see [Local Development](./docs/development/setup/local-development.md) for exact commands).
-- **No new compiler warnings in Rust.** CI enforces `RUSTFLAGS=-D warnings` and `clippy --deny clippy::all`; a warning introduced locally will fail CI.
-- **Fallible Rust calls have context.** Any new `?`-propagated error in `clients/openframe-client` has a `.context("Failed to ...")` attached, per the rules enforced on Rust files in this repository.
-- **Shared JSON state writes are atomic.** Any new Rust code writing a state file another process may read uses a tmp-then-rename pattern, not a bare `fs::write`.
-- **Regex values are compiled once**, via a `static` initializer (`once_cell::sync::Lazy` or `lazy_static!`), never constructed inline inside a function body.
-- **Dependency pins respected.** A version bump to a `com.openframe.oss:*` library goes through `${openframe.libs.version}` in the root `pom.xml`, not a per-module override; a security-motivated override in `pom.xml` is not removed without checking the comment explaining why it exists.
-- **CODEOWNERS respected**, per the table above.
-- **Docker build steps use retry.** Any new `docker buildx build` step in a workflow is wrapped in `nick-fields/retry@v4` (`max_attempts: 3`, `retry_wait_seconds: 5`, `timeout_minutes: 30`), matching the pattern in `.github/workflows/release.yml`.
-- **No invented GitHub Issues/Discussions references.** Feature requests and support questions are redirected to the OpenMSP Slack community.
+- **CODEOWNERS coverage is correct.** If the PR touches `/configs/base/`, confirm a tech lead or head-of has approved, not just a backend engineer.
+- **No phantom imports.** Every new import resolves to a local file, a declared Maven/Cargo dependency, or a symbol another managed repository publishes — this is checked automatically in code review.
+- **Version pins are deliberate.** If a dependency version changed in `pom.xml` or `Cargo.toml`, is there a comment or commit message explaining why (CVE fix, feature need, compatibility constraint)? Match the existing inline-comment pattern in the parent POM (e.g. on `jackson-bom.version`, `bcprov-lts8on.version`).
+- **Module boundaries respected.** Does new logic belong in this repository's thin service wiring, or should it live in the upstream OpenFrame OSS Library instead?
+- **Lombok/annotation-processor wiring untouched or deliberately extended.** A new Java module's `pom.xml` must inherit from the parent so it gets Lombok and `spring-boot-configuration-processor` annotation processing automatically — JDK 23+ no longer auto-discovers annotation processors on the classpath.
+- **Helm/Argo CD changes keep sync waves consistent.** If an image tag, chart dependency, or new Argo CD application was added under `manifests/`, does it respect the existing wave ordering in `manifests/apps/values.yaml` (platform and datasource waves before tenant workloads)?
+- **Datasource endpoints match `configs/base/application.yml`.** A new service reading Mongo, Redis, Kafka, NATS, Cassandra, or Pinot should reuse the shared connection settings already defined there rather than hardcoding a new endpoint.
+- **Gateway routes stay consistent.** A new route exposed through the gateway should fit the existing prefix convention in `configs/base/openframe-gateway.yml` (`/sas/**` to the authorization server, `/api/**` to the API service, `/api-docs/**` to the external API, `/clients/**` to the client service, `/**` to the frontend).
+- **No GitHub Issue/Discussion references invented.** Reference the OpenMSP Slack conversation instead where relevant.
+- **Rust changes are clippy-clean and formatted.** Run `cargo clippy` and `cargo fmt` before pushing.
 - **External CLI changes stay external.** Anything concerning the `openframe-cli` tool is referenced against its own repository ([flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli)), never assumed to live in a local subdirectory of this repository.
-- **Documentation kept consistent.** If the change affects architecture, update references consistently with [Architecture](./docs/development/architecture/README.md) rather than leaving them to drift.
 
----
-
-## 📐 Code style and conventions
+## Code style and conventions
 
 ### Java / Spring Boot services
 
-All Java services share the parent `pom.xml` (`com.openframe:openframe-parent`), built on `spring-boot-starter-parent` 4.1.1 and targeting Java 25. Each service module (`openframe/services/openframe-api`, `openframe-authorization-server`, `openframe-client`, `openframe-config`, `openframe-external-api`, `openframe-gateway`, `openframe-management`, `openframe-stream`, `openframe-test`) has its own `pom.xml` that inherits from the root and declares only the dependencies it adds on top of the shared BOM.
+All nine Maven modules (`openframe-config`, `openframe-api`, `openframe-client`, `openframe-stream`, `openframe-management`, `openframe-gateway`, `openframe-external-api`, `openframe-authorization-server`, `openframe-test`) share a single parent `pom.xml` that extends `spring-boot-starter-parent` `4.1.1`. Conventions to follow:
 
-Conventions to follow:
-
-- **Lombok** is used throughout. Since JDK 23+ no longer auto-discovers annotation processors, any new module's `maven-compiler-plugin` configuration must keep Lombok and `spring-boot-configuration-processor` listed explicitly in `annotationProcessorPaths`, mirroring the root `pom.xml`'s `pluginManagement` block — do not drop this when adding a module.
-- **Shared, org-wide libraries** (`openframe-core`, `openframe-data-mongo-common`, `openframe-data-redis`, `openframe-security-core`, `openframe-api-lib`, `fleetmdm`, and similar `com.openframe.oss:*` artifacts) are centrally versioned by the single `${openframe.libs.version}` property in the root `pom.xml`. Bump that one property rather than pinning an individual module to a different library version.
-- **Entry points.** Each Spring Boot application's entry point is a single `*Application.java` class under `src/main/java/com/openframe/<service>/` (e.g. `ApiApplication`, `GatewayApplication`). Keep this pattern for any new service: one `@SpringBootApplication` class per module, named `<Service>Application`.
-- **Security-sensitive dependency versions** in the root `pom.xml` (`jackson-bom.version`, `jackson-2-bom.version`, `tomcat.version`, `bcprov-lts8on.version`, `libthrift.version`, etc.) are pinned deliberately above what the Spring Boot BOM would otherwise resolve, to close HIGH/CRITICAL CVEs reported by Trivy. Do not "simplify" these overrides back to the BOM default without checking the comment that explains why each one exists.
-- **Test dependencies** (`spring-boot-starter-test`, `spring-security-test`, `mockito-core`, `mockito-junit-jupiter`) are declared once in the root POM and inherited by every module; do not redeclare them per-module.
-- Prefer constructor injection over field injection, and follow the Spring naming conventions already used across the codebase (`*Service`, `*Repository`, `*Controller`).
+- **Target Java 25** (`java.version` in the parent POM) and let the parent manage dependency versions. Do not pin a library version at the module level unless the parent POM does not already manage it.
+- **Lombok is required, not optional,** for annotation processing — the parent POM explicitly lists `lombok` and `spring-boot-configuration-processor` under `maven-compiler-plugin`'s `annotationProcessorPaths`. A new module that skips this configuration will fail to compile Lombok-annotated classes.
+- **Most domain logic lives upstream** in the OpenFrame OSS Library (`com.openframe.oss:*`, pinned at `7.0.11`). This repository's service modules are thin: they wire up the Spring Boot application class, pull in the relevant `*-service-core` artifact, and add service-specific configuration. Before writing new logic here, check whether it belongs in the OSS Library instead.
+- **Module `pom.xml` files stay minimal.** Each service module's own POM only declares the parent, the relevant OSS Library artifact(s), and any Spring Cloud/Spring Boot starters it needs directly. Resist adding transitive dependencies a module doesn't use directly.
+- **An import must resolve.** Any import a pull request adds must resolve to a local file, a declared Maven/Cargo dependency, or a symbol another managed repository publishes. An unresolved import is a phantom reference that will fail the build, and is checked automatically in code review.
+- **Security-sensitive dependency versions** in the root `pom.xml` (`jackson-bom.version`, `jackson-2-bom.version`, `tomcat.version`, `bcprov-lts8on.version`, `libthrift.version`, and others) are pinned deliberately above what the Spring Boot BOM would otherwise resolve, to close known HIGH/CRITICAL CVEs. Do not revert these overrides to the BOM default without checking the comment that explains why each one exists.
 
 ### Rust client (`clients/openframe-client`)
 
-`clients/openframe-client` is a thin binary crate (`openframe-client`, `0.1.0`) whose logic lives in the `openframe-agent-lib` crate pulled from `openframe-oss-lib`. `src/main.rs` should stay a thin entry point that delegates to that library; substantial agent logic belongs upstream in `openframe-oss-lib`, not inline in this repository.
+The endpoint agent is a thin binary (`src/main.rs`) over the `openframe-agent-lib` crate pinned by tag in `clients/openframe-client/Cargo.toml`. Keep this binary thin — agent behavior (registration, command execution, tool management, logging) belongs in `openframe-agent-lib` upstream, not in `main.rs`. Rules enforced on Rust files under `clients/`:
 
-Rules enforced on Rust files in this repository (apply to any file under `clients/`):
+- **Every fallible call that returns `anyhow::Result` must attach `.context("Failed to <verb> <component>")`** before propagating with `?`. A bare `?` is not acceptable on initialization paths.
+- **`Regex` values must be compiled exactly once** via a `static` initializer (`once_cell::sync::Lazy` or `lazy_static!`), never constructed inline inside a function body.
+- **Writes to JSON state files that another process may concurrently read must use an atomic tmp-then-rename pattern**, not a bare `fs::write` — a concurrent reader can otherwise observe a torn/partial JSON.
+- **All code must compile without warnings.** CI sets `RUSTFLAGS=-D warnings` globally, and clippy runs with `--deny clippy::all` across `--benches --tests --examples --all-features`. Do not suppress a warning with `#[allow(...)]` without a comment explaining why the suppression is justified.
+- Run `cargo clippy` and `cargo fmt` before submitting — the `.vscode/tasks.json` tasks `rust-clippy`, `rust-check`, and `rust-build` mirror what CI expects, and `.vscode/settings.json` enables `rust-analyzer.checkOnSave.command: "clippy"` with format-on-save for `[rust]` files.
+- Bumping `openframe-agent-lib` to a new tag is a deliberate upgrade, not a side effect of an unrelated change — call it out explicitly in the PR description.
 
-- Every fallible call that returns `anyhow::Result` must attach a `.context("Failed to <verb> <component>")` description before propagating with `?` — a bare `?` is not acceptable on initialization paths.
-- `Regex` values must be compiled exactly once via a `static` initializer (`once_cell::sync::Lazy` or `lazy_static!`), never constructed inline inside a function body.
-- Writes to JSON state files that may be concurrently read by another process must use an atomic tmp-then-rename pattern — a bare `fs::write` to the final path risks a reader observing a torn/partial file.
-- CI enforces `RUSTFLAGS=-D warnings` and `clippy --deny clippy::all` across `--benches --tests --examples --all-features`; a new warning fails the build. Don't suppress a warning with `#[allow(...)]` without a comment explaining why.
+### Shell scripts and manifests
 
-```bash
-# Format
-cargo fmt
+Shell scripts are concentrated in datasource bootstrap logic (for example `manifests/datasources/mongodb/scripts/mongo-init.sh`). Keep them idempotent (safe to re-run against an already-initialized datasource) and quote variables defensively, since they run as Kubernetes init/readiness hooks.
 
-# Lint (warnings are errors)
-OPENFRAME_VERSION=0.0.0-dev cargo clippy -- -D warnings
-```
+Helm charts and Argo CD application definitions under `manifests/` follow the existing `Chart.yaml`/`values.yaml` pairing per component. When changing an image tag or chart dependency version, update `values.yaml` and `Chart.yaml` together and confirm the change against `manifests/apps/values.yaml`, which declares the Argo CD sync wave each component belongs to — getting the wave wrong can deploy a tenant workload before its datasource is ready.
 
-### Kubernetes manifests and CI workflows
+### Global formatting
 
-- Docker image build steps in GitHub Actions workflows must wrap `docker buildx build` in `nick-fields/retry@v4` with `max_attempts: 3`, `retry_wait_seconds: 5`, `timeout_minutes: 30`, passing the build invocation via `command:` rather than `run:` — see the `build_images` job in `.github/workflows/release.yml` for the reference pattern.
-- Chart and manifest changes under `manifests/` follow the existing Argo CD app-of-apps structure (`manifests/apps`, `manifests/platform/*`, `manifests/datasources/*`, `manifests/tenant`); keep new datasources or platform components consistent with the `argocd_app` / `chart_dependency` / `chart_image` entries already present in the corresponding `Chart.yaml` and `values.yaml`.
+`.vscode/settings.json` fixes `files.eol: "\n"` and 2-space indentation (spaces, not tabs) as the repository default, with Rust overriding to 4-space tabs for `[rust]` files. Match these settings regardless of which editor you use.
 
-### Editor and formatting defaults
+## Running and writing tests
 
-`.vscode/settings.json` fixes the baseline every contributor's editor should match: `files.eol` is `\n`, `editor.tabSize` is 2 with `editor.insertSpaces` true, and Rust files additionally use `editor.formatOnSave` with `rust-lang.rust-analyzer` as the default formatter and a 4-space tab size override for `[rust]`. Match these settings (or configure your editor equivalently) before formatting a diff, to avoid unrelated whitespace noise in a PR.
+This repository does not document a single unified test command in the development material beyond what each toolchain already provides:
 
----
+- **Rust client:** from `clients/openframe-client`, `cargo test` (the `rust-test` VS Code task, and the default test task) runs the test suite. `cargo clippy` and `cargo fmt` should be run alongside tests before submitting, matching what CI enforces (`RUSTFLAGS=-D warnings`, `clippy --deny clippy::all`).
+- **Java services:** standard Maven test execution applies per module, built from the root multi-module `pom.xml`. The `openframe-api` module's test resources (`openframe/services/openframe-api/src/test/resources/application-test.yml`) show the repository's pattern for isolating security-adjacent infrastructure in tests — disable datastores a test doesn't exercise (Redis, Cassandra, Kafka) rather than pointing it at a real one, and use an explicit, obviously-fake test secret (for example the `jwt.secret: test-secret-key` value already used there) rather than anything resembling a production credential.
+- Test fixtures such as `openframe/services/openframe-api/src/test/java/com/openframe/api/util/TestAuthenticationManager.java` and the shared wiring in `openframe/services/openframe-api/src/test/java/com/openframe/api/config/TestConfig.java` exist for the API service's test suite — check these before adding new authentication or authorization test fixtures to avoid duplicating a manager or constant set.
 
-## ✅ Running and writing tests
+For the full local build/run/debug workflow (including VS Code's preconfigured launch configurations and `rust-build`/`rust-test`/`rust-watch` tasks), see [Local Development](./docs/development/setup/local-development.md).
 
-Detailed test organization, how to run each suite, and conventions for writing new tests (Java fixtures, Helm chart assertions, the `openframe-test` end-to-end module, and Rust) are covered in full in [Testing](./docs/development/testing/README.md) — read it before adding or changing tests. In short:
+## Reporting security issues
 
-- **Backend (Java/Maven):** test dependencies (`spring-boot-starter-test`, `spring-security-test`, `mockito-core`, `mockito-junit-jupiter`) are declared once at the parent POM level. Build and test from the repository root, or scope to one module with Maven's `-pl` reactor selector — see [Testing](./docs/development/testing/README.md) for the exact invocations.
-- **Backend test conventions:** follow the pattern established in `openframe-api`'s test tree — a `final` utility class of constants (`TestConstants`), a shared `TestUtils` helper class, a `@TestConfiguration` that mocks every infrastructure bean (`MongoTemplate`, `RedisTemplate`, `KafkaTemplate`, `CassandraTemplate`, the Pinot `Connection`, repositories) with `Mockito.mock(...)` — except `PasswordEncoder`, which should be a real `BCryptPasswordEncoder` since hashing correctness is worth testing directly — and small, explicit test doubles for failure paths (e.g. `TestAuthenticationManager`, which always throws `BadCredentialsException`).
-- **Mock beans need `@Primary`.** This is an enforced, active code-review rule: a mock bean missing `@Primary` causes ambiguous bean resolution in the Spring test context and will be flagged in review.
-- **`openframe-test`** is not a shared JUnit helper library — it is a standalone test-runner application (`TestApplication.java`) run as its own process, driving `registration` → `oss` → `reset` tagged test phases and reporting results to Slack.
-- **Rust agent:** since nearly all of the crate's behavior is re-exported from the external `openframe-agent-lib` crate, meaningful unit test coverage for agent behavior belongs in the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) repository, not here. This repository's own Rust surface (`clients/openframe-client/src/main.rs`) is a thin wrapper not expected to carry its own test suite beyond Cargo's doctest/compile checks.
-- **Helm chart tests:** `manifests/app-of-apps/tests/` holds `helm-unittest`-style YAML suites validating the Argo CD app-of-apps chart's rendered manifests. New assertions follow the existing `suite:`/`templates:`/`tests:` structure, one concern per file.
-- **Tenant/organization scoping:** an active rule (`OPENFRAM-005-11`, `error`) requires any filter object passed into a method that *mutates* records (archive, delete, status update) to have `organizationIds` set before the call — follow the established `inOrganization` helper idiom when writing such tests.
-- **Class size:** the active rule `OFJAVA-006` (`warn`) measures class size by responsibility, not line count — if a class is painful to unit test with mocks, that's a signal to split it.
+**Do not report a security vulnerability through a GitHub Issue, pull request, or Slack channel.** Follow the process in [`SECURITY.md`](./SECURITY.md): email **security@flamingo.run** with the affected product/repository, version or commit, a description of the issue, and reproduction steps. See `SECURITY.md` for acknowledgement timelines, scope, and the coordinated-disclosure policy.
 
-No repository-wide coverage threshold or coverage-reporting plugin (e.g. JaCoCo, Clover) is configured for this repository; treat the practices above as the practical minimum bar for new code.
+For development-time security practices specific to this repository (tenant isolation, JWT/OAuth handling, encryption configuration, input validation, dependency CVE hygiene), see [Security](./docs/development/security/README.md).
 
----
+## Where to find more documentation
 
-## 🔒 Reporting security issues
+- [Development documentation index](./docs/development/README.md) — the map across environment setup, local development, architecture, security, and contributing guidelines.
+- [Documentation home](./docs/README.md) — the top-level documentation index for this repository.
 
-Security vulnerabilities must **not** be reported through a public GitHub issue, pull request, or the OpenMSP Slack community. See [SECURITY.md](./SECURITY.md) for the full disclosure process, scope, and supported versions. In short: email **security@flamingo.run**.
-
-Two code-review rules tagged `severity: error` are actively enforced against this repository's security-sensitive code:
-
-- **`OPENFRAM-002-12`** — custom `AuthenticationProvider` beans must not be registered via `@Bean` (this silently bypasses the platform's default authentication provider).
-- **`OPENFRAM-002-6`** — tenant-scoped MongoDB `@Document` classes must implement the `TenantScoped` marker interface.
-
-Before opening a pull request that touches a `*Config.java`, `*SecurityConfig.java`, `*AuthenticationProvider.java`, or any file under a `document/` package, check your change against these two rules first. For the full authentication/authorization model, encryption configuration, and environment-variable secrets handling, see [Security](./docs/development/security/README.md).
-
----
-
-## 📚 Where to find more documentation
-
-- [Documentation home](./docs/README.md)
-- [Development hub](./docs/development/README.md)
-- [Architecture Overview](./docs/development/architecture/README.md)
-- [Environment Setup](./docs/development/setup/environment.md)
-- [Local Development](./docs/development/setup/local-development.md)
-- [Testing](./docs/development/testing/README.md)
-- [Security](./docs/development/security/README.md)
-- [Getting Started: Introduction](./docs/getting-started/introduction.md)
-- [Getting Started: Prerequisites](./docs/getting-started/prerequisites.md)
-- [Getting Started: Quick Start](./docs/getting-started/quick-start.md)
-- [Getting Started: First Steps](./docs/getting-started/first-steps.md)
-
----
-
-<div align="center">
-  Questions? Join the <a href="https://www.openmsp.ai/"><b>OpenMSP Slack community</b></a> — we're happy to help.
-</div>

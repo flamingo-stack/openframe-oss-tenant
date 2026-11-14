@@ -1,0 +1,10 @@
+flowchart LR
+    ClientRuntime["OpenFrame client runtime"] --> ClientLog["OpenFrame log file"]
+    ToolRuntime["MeshCentral agent"] --> ToolLog["MeshCentral log file"]
+    ClientLog --> OpenframeSource["FileLogSource openframe"]
+    ToolLog --> MeshSource["FileLogSource meshcentral agent"]
+    OpenframeSource --> Registry["LogSourceRegistry"]
+    MeshSource --> Registry
+    Registry --> Entries["LogEntry batch"]
+    Entries --> LogShipper["HTTP log shipper"]
+    Entries --> NatsStreamer["NATS log streaming manager"]

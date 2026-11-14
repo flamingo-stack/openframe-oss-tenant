@@ -1,0 +1,8 @@
+flowchart TD
+    Receive["Receive hostname message"] --> Decode["Extract machine ID and deserialize JSON"]
+    Decode --> Valid{{"Hostname is nonblank?"}}
+    Valid -->|"No"| EmptyAck["Log warning and acknowledge without update"]
+    Valid -->|"Yes"| Update["Update hostname for machine"]
+    Update --> Ack["Acknowledge message"]
+    Decode -->|"Failure"| Retry["Log error and leave message unacknowledged"]
+    Update -->|"Failure"| Retry

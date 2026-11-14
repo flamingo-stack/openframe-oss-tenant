@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["Application service"] --> Repository["Push Device Repository"]
+    Repository --> CustomContract["Custom Push Device Repository"]
+    CustomContract --> Implementation["Custom Push Device Repository Implementation"]
+    Implementation --> Template["Tenant Aware Mongo Template"]
+    Template --> Mongo["MongoDB Push Device Collection"]
+    Repository --> Mongo

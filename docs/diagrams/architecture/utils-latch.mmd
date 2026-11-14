@@ -1,0 +1,9 @@
+flowchart LR
+    Writer["Writer task"] -->|"set()"| Latch["Latch"]
+    Latch -->|"Arc clone"| AtomicState["Shared AtomicBool"]
+    Latch -->|"view()"| ReadOnlyView["LatchView"]
+    ReadOnlyView -->|"Arc clone"| AtomicState
+    ReaderOne["Reader task"] -->|"is_set()"| Latch
+    ReaderTwo["Reader task"] -->|"is_set()"| ReadOnlyView
+    Latch -->|"load()"| AtomicState
+    ReadOnlyView -->|"load()"| AtomicState

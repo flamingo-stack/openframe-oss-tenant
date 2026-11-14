@@ -1,0 +1,9 @@
+flowchart LR
+    ControlPlane["OpenFrame control plane"] -->|"execution message"| Broker["NATS messaging"]
+    Broker -->|"payload"| Listener["Execution listener"]
+    Listener -->|"deserialize"| Model["Model Execution"]
+    Model -->|"ExecutionRequest values"| Service["Execution service"]
+    Service -->|"platform execution"| Executor["Unix or Windows executor"]
+    Executor -->|"outcome"| Result["RmmResult"]
+    Result -->|"publish"| Broker
+    Model -->|"ExecutionAck"| Broker

@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Interval tick"] --> Attempt["Attempt heartbeat publication"]
+    Attempt --> ConfigOk{"Configuration read succeeds?"}
+    ConfigOk -->|"No"| ReturnError["Return configuration error"]
+    ConfigOk -->|"Yes"| TransportOk{"NATS publish and flush succeed?"}
+    TransportOk -->|"No"| ReturnTransportError["Return transport error"]
+    TransportOk -->|"Yes"| Count["Increment success counter"]
+    Count --> Sample{"First or every sixtieth success?"}
+    Sample -->|"Yes"| InfoLog["Write information log"]
+    Sample -->|"No"| DebugLog["Write debug log"]
+    ReturnError --> ManagerLog["Run manager logs error and continues"]
+    ReturnTransportError --> ManagerLog
+    InfoLog --> Complete["Heartbeat complete"]
+    DebugLog --> Complete

@@ -1,0 +1,7 @@
+flowchart TD
+    Request["Software action request"] --> Verify["Verify dispatchable devices"]
+    Verify --> Persist["Create software execution rows"]
+    Persist --> Tokenize["Tokenize script arguments"]
+    Tokenize --> Publish["Publish NATS message per machine"]
+    Publish --> Agent["Target device agent"]
+    Agent --> Results["Execution results"]

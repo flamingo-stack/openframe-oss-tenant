@@ -1,0 +1,7 @@
+flowchart LR
+    ApiService["API and software services"] -->|"title queries"| SoftwareRepository["Custom Software Repository"]
+    ApiService -->|"inventory and CVE summaries"| AggregationRepository["Device Software Aggregation Repository"]
+    SoftwareRepository -->|"find and count"| SoftwareCollection[("Software collection")]
+    AggregationRepository -->|"aggregate"| DeviceSoftwareCollection[("Device Software collection")]
+    SoftwareCollection -->|"tenant-scoped title pages"| ApiService
+    DeviceSoftwareCollection -->|"rollups and affected device ids"| ApiService

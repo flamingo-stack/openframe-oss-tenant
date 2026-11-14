@@ -1,0 +1,7 @@
+flowchart TD
+    Client["Endpoint Client"] --> Registration["Registration and Authentication"]
+    Client --> Listeners["Command and Execution Listeners"]
+    Client --> Tools["Tool Management"]
+    Client --> Reporting["Reporting Services"]
+    Reporting --> InstalledModel["Model Installed Agent"]
+    InstalledModel --> InstalledPublisher["Installed Agent Message Publisher"]

@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Construct service"] --> ConfigRead["Read registration credentials from agent configuration"]
+    ConfigRead --> Valid{{"Credentials valid?"}}
+    Valid -->|"Yes"| Cache["Cache machine ID and client secret"]
+    Valid -->|"No"| FallbackRead["Read persisted machine information"]
+    FallbackRead --> PersistedFound{{"Persisted information found?"}}
+    PersistedFound -->|"Yes"| Cache
+    PersistedFound -->|"No"| NoCredentials["Record no credentials available"]
+    Cache --> Ready["Ready to report uninstall"]
+    NoCredentials --> Ready

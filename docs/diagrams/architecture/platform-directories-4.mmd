@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Health check request"] --> Ensure["Ensure managed directories"]
+    Ensure --> EnsureOk{{"Creation successful?"}}
+    EnsureOk -->|"No"| CreateError["Return creation or fix error"]
+    EnsureOk -->|"Yes"| Validate["Validate modes, ownership, and writability"]
+    Validate --> ValidateOk{{"Validation successful?"}}
+    ValidateOk -->|"No"| ValidationError["Return permission or validation error"]
+    ValidateOk -->|"Yes"| Ready["Directory layout ready"]

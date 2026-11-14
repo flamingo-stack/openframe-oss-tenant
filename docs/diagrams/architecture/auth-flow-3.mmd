@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Start SaaS login"] --> Discover["Discover tenant"]
+    Discover --> Login["Request oauth login with tenant"]
+    Login --> Init["Follow authorization redirect"]
+    Init --> Page["Fetch login page"]
+    Page --> TokenCheck{{"CSRF input present?"}}
+    TokenCheck -->|"Yes"| AddToken["Add CSRF field to form"]
+    TokenCheck -->|"No"| PlainForm["Use credential form without CSRF field"]
+    AddToken --> Submit["Post credentials with session cookie"]
+    PlainForm --> Submit
+    Submit --> Code["Continue redirect to authorization code"]
+    Code --> Tokens["Complete redirect and select token cookies"]

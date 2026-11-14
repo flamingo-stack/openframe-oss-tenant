@@ -1,0 +1,19 @@
+flowchart TD
+    LoopStart["Supervisor iteration"] --> Shutdown{"Shutdown signalled?"}
+    Shutdown -->|"Yes"| Remove["Remove tool from running set"]
+    Shutdown -->|"No"| Busy{"Tool operation busy?"}
+    Busy -->|"Yes"| WaitBusy["Wait one second"]
+    WaitBusy --> LoopStart
+    Busy -->|"No"| Refresh["Refresh persisted installation and arguments"]
+    Refresh --> Supervised{"Still in running set?"}
+    Supervised -->|"No"| EndLoop["End supervisor"]
+    Supervised -->|"Yes"| StopLeftovers["Stop old processes and reap helpers"]
+    StopLeftovers --> Resolve["Resolve command parameters"]
+    Resolve --> Launch["Launch by installation type"]
+    Launch --> Observe["Capture output and wait for process"]
+    Observe --> Stable{"Survived quick exit window?"}
+    Stable -->|"Yes"| Healthy["Reset failure streak"]
+    Stable -->|"No"| Failed["Increase failed start streak"]
+    Healthy --> Delay["Wait before next launch"]
+    Failed --> Delay
+    Delay --> LoopStart

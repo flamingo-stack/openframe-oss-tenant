@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Component as "Agent component"
+    participant Span as "Tracing span"
+    participant Layer as "JSON layer"
+    participant File as "Log file"
+    participant Console as "Console"
+    Component->>Span: "Create span with context fields"
+    Span->>Layer: "Store span fields"
+    Component->>Layer: "Emit tracing event"
+    Layer->>Layer: "Visit event fields and merge span context"
+    Layer->>Layer: "Record log count by level"
+    Layer->>File: "Append serialized JSON record"
+    alt "INFO or lower severity"
+        Layer->>Console: "Write to standard output"
+    else "WARN or ERROR severity"
+        Layer->>Console: "Write to standard error"
+    end

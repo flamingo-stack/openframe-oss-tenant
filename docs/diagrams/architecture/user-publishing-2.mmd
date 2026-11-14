@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Publisher as "Publishing framework"
+    participant Spec as "User Aggregate Spec"
+    participant Projection as "User On Tickets Projection"
+    participant Tickets as "Ticket projection repository"
+
+    Publisher->>Spec: Convert changed user to event
+    Spec->>Publisher: User event
+    Publisher->>Projection: Apply published record
+    Projection->>Projection: Build full name
+    alt name is present
+        Projection->>Tickets: Update user names for tenant and user
+        Tickets->>Projection: Updated ticket count
+    else name is absent
+        Projection->>Projection: Preserve existing ticket copies
+    end

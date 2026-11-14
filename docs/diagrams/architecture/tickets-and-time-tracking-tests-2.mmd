@@ -1,0 +1,7 @@
+flowchart TD
+    Setup["Class Setup"] --> Seed["Create Or Locate Required Fixtures"]
+    Seed --> Exercise["Execute Ordered GraphQL Operation"]
+    Exercise --> Verify["Assert Response And Persisted State"]
+    Verify --> Next["Continue Dependent Scenario"]
+    Next --> Cleanup["Best Effort Class Cleanup"]
+    Cleanup --> Result["Leave Tenant State Clean"]

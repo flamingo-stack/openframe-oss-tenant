@@ -1,0 +1,11 @@
+flowchart LR
+    Test["RemoteAccessPolicyTest"] --> Base["Base test lifecycle"]
+    Test --> PolicyApi["Remote access policy API"]
+    Test --> OrganizationApi["Organization API"]
+    Test --> DeviceApi["Device API"]
+    Test --> Context["Pipeline context"]
+    PolicyApi --> Graphql["Authenticated GraphQL endpoint"]
+    OrganizationApi --> Rest["Organization REST endpoint"]
+    DeviceApi --> Graphql
+    Context --> Setup["Remote-access setup phase"]
+    Context --> Teardown["Remote-access teardown phase"]

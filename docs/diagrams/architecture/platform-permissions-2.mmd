@@ -1,0 +1,8 @@
+flowchart LR
+    Request["Caller selects file or directory mode"] --> Profile["Permissions profile"]
+    Profile --> Apply["Apply requested mode"]
+    Apply --> Metadata["Filesystem metadata"]
+    Metadata --> Verify["Verify effective permission state"]
+    Verify --> Match{"Expected mode satisfied?"}
+    Match -->|"Yes"| Success["Continue workflow"]
+    Match -->|"No"| ErrorResult["Return permission error or false"]

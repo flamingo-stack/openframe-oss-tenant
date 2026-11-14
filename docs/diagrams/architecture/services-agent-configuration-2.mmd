@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Registrar as Agent Registration Service
+    participant Config as Agent Configuration Service
+    participant File as Agent Config JSON
+    participant Auth as Agent Authentication Service
+    participant Server as Authentication Server
+    Registrar->>Config: save registration data
+    Config->>File: atomic JSON replacement
+    Auth->>Config: get client credentials
+    Config->>File: read JSON
+    Auth->>Server: authenticate with client secret
+    Server-->>Auth: access token and refresh token
+    Auth->>Config: update tokens
+    Config->>File: atomic JSON replacement

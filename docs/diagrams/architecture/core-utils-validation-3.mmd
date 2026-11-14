@@ -1,0 +1,10 @@
+flowchart LR
+    Raw["Optional rich text"] --> Presence{"Contains text?"}
+    Presence -->|"No"| NullResult["Return null"]
+    Presence -->|"Yes"| Strip["Strip supported HTML and Markdown markup"]
+    Strip --> Collapse["Collapse whitespace and trim"]
+    Collapse --> Empty{"Text remains?"}
+    Empty -->|"No"| NullResult
+    Empty -->|"Yes"| Clean["Return plain text"]
+    Clean --> CharacterExcerpt["Optional character excerpt"]
+    Clean --> ByteExcerpt["Optional UTF-8 byte excerpt"]

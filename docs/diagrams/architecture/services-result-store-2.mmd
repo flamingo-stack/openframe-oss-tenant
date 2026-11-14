@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Handler as Execution Handler
+    participant Store as Services Result Store
+    participant Flusher as Result Outbox Run Manager
+    participant Broker as NATS
+    Handler->>Store: journal_batch(records)
+    Handler->>Store: journal_mark_started(key)
+    Handler->>Store: complete(key, subject, result bytes)
+    Store->>Store: Write outbox entry and remove journal entry
+    Flusher->>Store: pending_keys()
+    Flusher->>Store: load_payload(key)
+    Flusher->>Broker: Publish raw or acknowledged result
+    Broker-->>Flusher: Publish completes
+    Flusher->>Store: remove(key)

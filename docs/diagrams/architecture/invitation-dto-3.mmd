@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Pending: "Invitation created"
+    Pending --> Accepted: "Invitation accepted"
+    Pending --> Revoked: "Invitation revoked"
+    Pending --> ExpiredPending: "Expiry time passes"
+    ExpiredPending --> Revoked: "Resend revokes original"
+    ExpiredPending --> Pending: "Resend creates replacement"
+    Accepted --> [*]
+    Revoked --> [*]

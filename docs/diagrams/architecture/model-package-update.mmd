@@ -1,0 +1,9 @@
+flowchart LR
+    Backend["Backend delivery pipeline"] -->|"PackageUpdateMessage"| Listener["Package update handler"]
+    Listener -->|"submit order"| Orders["Durable order store"]
+    Orders -->|"pending order"| Runner["Package update run manager"]
+    Runner -->|"check package and running app"| Gate["Update gate"]
+    Gate -->|"clear decision"| Manager["Package manager"]
+    Gate -->|"blocked decision"| Reporter["Status reporter"]
+    Manager -->|"result"| Reporter
+    Reporter -->|"PackageUpdateStatusMessage"| Backend

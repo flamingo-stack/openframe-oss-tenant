@@ -1,0 +1,9 @@
+flowchart LR
+    Runtime["OpenFrame endpoint client runtime"] --> InfoService["OpenFrame client info service"]
+    UpdateService["OpenFrame client update service"] --> InfoService
+    InfoService --> InfoModel["OpenFrameClientInfo"]
+    InfoModel --> Status["ClientUpdateStatus"]
+    InfoService --> InfoFile["Local client info JSON file"]
+    UpdateService --> UpdateState["Separate update state service"]
+    UpdateService --> ToolManager["Tool run manager"]
+    UpdateService --> Downloader["GitHub download service"]

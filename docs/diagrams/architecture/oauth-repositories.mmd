@@ -1,0 +1,11 @@
+flowchart LR
+    AuthLayer["Authorization or authentication layer"]
+    TokenRepo["OAuthTokenRepository"]
+    SpringData["Spring Data MongoDB repository proxy"]
+    TokenDocument["OAuthToken document"]
+    MongoCollection["MongoDB oauth_tokens collection"]
+
+    AuthLayer -->|"save or token lookup"| TokenRepo
+    TokenRepo -->|"derived repository query"| SpringData
+    SpringData -->|"maps document"| TokenDocument
+    SpringData -->|"read and write"| MongoCollection

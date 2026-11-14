@@ -25,7 +25,29 @@ OpenFrame OSS Tenant is a **service** (bash, java, rust).
 
 | Repository | Artifact | Pinned version | Edge |
 |---|---|---|---|
-| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | n/a | n/a | manual (manual) |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:fleetmdm` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-api-lib` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-api-service-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-authorization-service-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-client-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-config-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-data-device-aspect` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-data-mongo-common` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-data-mongo-reactive` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-data-mongo-sync` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-data-redis` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-external-api-service-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-gateway-service-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-idp-configuration` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-management-service-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-notification-mail` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-security-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-security-oauth` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-stream-service-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-test-service-core` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `com.openframe.oss:openframe-tool-agent-nats-installation` | 7.0.11 | maven |
+| [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) | `openframe_agent_lib` | v0.0.5 | cargo |
 
 ## Downstream consumers
 
@@ -132,7 +154,7 @@ None recorded.
 flowchart LR
   r_01d21e68fc3743ce874eef90["OpenFrame OSS Library"]
   r_9266475793a04351b2453dca["OpenFrame OSS Tenant"]
-  r_9266475793a04351b2453dca -.->|"manual"| r_01d21e68fc3743ce874eef90
+  r_9266475793a04351b2453dca -->|"maven 7.0.11"| r_01d21e68fc3743ce874eef90
   class r_01d21e68fc3743ce874eef90 roleLibrary
   class r_9266475793a04351b2453dca roleService
   classDef roleLibrary stroke-width:2px
@@ -147,5 +169,5 @@ flowchart LR
 
 ## Index state
 
-- Snapshot: `882354348212` on `main`, indexed 2026-11-12T03:07:08.994+00:00
+- Snapshot: `8fe416700d15` on `main`, indexed 2026-11-14T03:54:58.777+00:00
 - Coverage: full (every other managed repository has a fresh graph, so a symbol with no consumer here has no consumer in the org)

@@ -1,0 +1,6 @@
+flowchart LR
+    PackageDomain["Package management domain"] -->|"constructs and compares"| PackageRef["Model Package Ref"]
+    PackageRef -->|"serializes and deserializes"| Serde["Serde wire format"]
+    PackageRef -->|"encodes manager identity"| Winget["Winget reference"]
+    PackageRef -->|"encodes kind and name"| Brew["Homebrew reference"]
+    PackageRef -->|"encodes manager identity"| Choco["Chocolatey reference"]

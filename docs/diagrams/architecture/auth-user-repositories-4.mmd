@@ -1,0 +1,7 @@
+flowchart TD
+    Login["Successful user authentication"] --> LastLogin["Update lastLogin by email and tenantId"]
+    Avatar["Profile image change"] --> ImageUrl["Update imageUrl by _id"]
+    LastLogin --> Repository["Auth User Repositories"]
+    ImageUrl --> Repository
+    Repository --> Mongo["MongoTemplate"]
+    Mongo --> Document["AuthUser document"]

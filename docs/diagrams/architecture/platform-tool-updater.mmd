@@ -1,0 +1,16 @@
+flowchart LR
+    UpdateMessage["Tool update message"] --> UpdateService["Tool Agent Update Service"]
+    UpdateService --> ToolRecord["Installed tool record"]
+    ToolRecord --> UpdaterFactory["Platform Tool Updater factory"]
+    UpdaterFactory --> StandardUpdater["Standard Tool Updater"]
+    UpdaterFactory --> ServiceUpdater["Service Tool Updater"]
+    UpdaterFactory --> GuiUpdater["GUI App Tool Updater on macOS"]
+    StandardUpdater --> DownloadService["GitHub Download Service"]
+    ServiceUpdater --> DownloadService
+    GuiUpdater --> DownloadService
+    DownloadService --> BinaryWriter["Platform binary writer"]
+    StandardUpdater --> ToolKillService["Tool Kill Service"]
+    ServiceUpdater --> ToolKillService
+    GuiUpdater --> ToolKillService
+    BinaryWriter --> UpdatedTool["Updated tool installation"]
+    UpdatedTool --> UpdateService

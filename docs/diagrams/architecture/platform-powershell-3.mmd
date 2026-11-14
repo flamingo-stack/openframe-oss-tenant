@@ -1,0 +1,7 @@
+flowchart TD
+    ScriptRunner["Windows script executor"] --> PathOperation["PowerShell path operation"]
+    PathOperation --> SystemResolver["System32 executable resolver"]
+    SystemResolver --> WindowsEnv["Windows environment variables"]
+    SystemResolver --> LocalDisk["Windows file system"]
+    SystemResolver --> Result["Executable path string"]
+    Result --> ScriptRunner

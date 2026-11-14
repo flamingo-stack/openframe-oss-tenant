@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client as External caller
+    participant Web as External API web layer
+    participant Controller as Resource controller
+    participant Mapper as Base REST mapper
+    participant Service as Application service
+    participant Store as Data store
+    Client->>Web: Send request payload
+    Web->>Controller: Resolve caller and bind request contract
+    Controller->>Service: Invoke authorized operation
+    Service->>Store: Read or write resource state
+    Store-->>Service: Return domain result
+    Service-->>Mapper: Supply result for external representation
+    Mapper-->>Controller: Produce response contract
+    Controller-->>Web: Return response
+    Web-->>Client: Serialize resource contract

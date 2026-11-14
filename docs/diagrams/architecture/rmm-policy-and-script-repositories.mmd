@@ -1,0 +1,12 @@
+flowchart TD
+    ApiService["API and client services"] --> RepositoryLayer["RMM repository layer"]
+    RepositoryLayer --> ScriptQueries["Script catalog queries"]
+    RepositoryLayer --> ScheduleQueries["Schedule and run queries"]
+    RepositoryLayer --> ExecutionQueries["Execution history queries"]
+    RepositoryLayer --> PolicyQueries["Package auto-update policies"]
+    RepositoryLayer --> SoftwareViews["Software action summaries"]
+    ScriptQueries --> Mongo["MongoDB"]
+    ScheduleQueries --> Mongo
+    ExecutionQueries --> Mongo
+    PolicyQueries --> Mongo
+    SoftwareViews --> Mongo

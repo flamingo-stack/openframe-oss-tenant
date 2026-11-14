@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Junit as "JUnit Platform"
+    participant Listener as "Slack Listener"
+    participant Pipeline as "Test Pipeline"
+    participant Client as "Slack Client"
+    participant Slack as "Slack Service"
+
+    Junit->>Listener: Test plan started
+    Junit->>Listener: Test finished, skipped, or aborted
+    Listener->>Listener: Update counters and result details
+    Pipeline->>Listener: Send results with tag and environment
+    Listener->>Client: Post summary and ordered details
+    alt Bot configuration available
+        Client->>Slack: Post summary
+        Slack-->>Client: Return thread timestamp
+        Client->>Slack: Post detail chunks in thread
+    else Webhook configuration available
+        Client->>Slack: Post combined report chunks
+    else No Slack configuration
+        Client->>Client: Log summary and detail chunks
+    end

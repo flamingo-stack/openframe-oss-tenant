@@ -1,0 +1,11 @@
+flowchart LR
+    Consumer["Integration Consumer"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> ExternalApi["External API Application"]
+    ExternalApi --> WebConfig["ExternalApiWebConfig"]
+    WebConfig --> CallerResolver["ApiCallerArgumentResolver"]
+    CallerResolver --> Resources["Rest Resources"]
+    Resources --> Mapper["BaseRestMapper"]
+    Resources --> DomainServices["Domain Services"]
+    DomainServices --> DataStores["Data Stores"]
+    Resources --> Contracts["External REST DTOs"]
+    OpenApi["OpenApiConfig"] --> ExternalApi

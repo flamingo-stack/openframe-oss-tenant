@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Resolver as "GraphQL field resolver"
+    participant Registry as "DGS loader registry"
+    participant Loader as "Batch loader"
+    participant Data as "Service or repository"
+
+    Resolver->>Registry: Load keys from parent objects
+    Registry->>Loader: Invoke one batch with collected keys
+    Loader->>Data: Bulk lookup for unique non-null keys
+    Data->>Loader: Records or grouped records
+    Loader->>Loader: Restore requested-key order
+    Loader->>Registry: Complete aligned result list
+    Registry->>Resolver: Resolve parent fields

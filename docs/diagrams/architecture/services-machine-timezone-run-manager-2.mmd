@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Start manager task"] --> WaitConnection["Wait for NATS connected state"]
+    WaitConnection --> Subscribe["Subscribe to reconnect broadcast"]
+    Subscribe --> WaitEvent["Wait for interval tick or reconnect"]
+    WaitEvent --> ReadTimezone["Read system timezone"]
+    ReadTimezone --> Resolved{"Timezone resolved?"}
+    Resolved -->|"No"| LogMissing["Log warning and continue"]
+    LogMissing --> WaitEvent
+    Resolved -->|"Yes"| Changed{"Reconnect or changed value?"}
+    Changed -->|"No"| WaitEvent
+    Changed -->|"Yes"| Publish["Publish with 30 second timeout"]
+    Publish --> Result{"Acknowledged?"}
+    Result -->|"Yes"| Remember["Store as last sent value"]
+    Result -->|"No"| LogFailure["Log error"]
+    Remember --> WaitEvent
+    LogFailure --> WaitEvent

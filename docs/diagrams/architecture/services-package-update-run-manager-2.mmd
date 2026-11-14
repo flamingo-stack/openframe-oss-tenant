@@ -1,0 +1,9 @@
+flowchart TD
+    Caller["Client service bootstrap"] --> Construct["Construct run manager"]
+    Construct --> Inject["Inject orders, status, configuration, signals, and in progress marker"]
+    Inject --> Start["Call start()"]
+    Start --> Started{"Already started?"}
+    Started -->|"No"| MarkStarted["Set atomic started flag"]
+    MarkStarted --> Spawn["Spawn Tokio worker task"]
+    Spawn --> Handle["Return join handle"]
+    Started -->|"Yes"| Warning["Log warning and return no handle"]

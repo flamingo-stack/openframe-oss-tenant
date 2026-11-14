@@ -1,0 +1,10 @@
+flowchart LR
+    Delivery["Command delivery flow"] --> Resolver["Tool Command Params Resolver"]
+    Resolver --> Registry["Secret retriever list"]
+    Registry --> FleetRetriever["Fleet MDM secret retriever"]
+    FleetRetriever --> ToolService["Integrated Tool Service"]
+    FleetRetriever --> UrlService["Tool URL Service"]
+    FleetRetriever --> FleetApi["Fleet MDM API"]
+    FleetApi --> Secret["Enrollment secret"]
+    Secret --> Resolver
+    Resolver --> Prepared["Prepared command parameters"]

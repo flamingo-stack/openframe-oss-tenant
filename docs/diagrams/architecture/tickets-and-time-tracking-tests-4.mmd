@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Running: "Start"
+    Running --> Paused: "Pause"
+    Paused --> Running: "Resume"
+    Running --> Completed: "Stop"
+    Running --> [*]: "Cancel"

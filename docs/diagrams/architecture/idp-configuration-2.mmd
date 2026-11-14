@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Management startup"] --> Enabled{"Idp initialization enabled?"}
+    Enabled -->|"No"| Skip["Component is not created"]
+    Enabled -->|"Yes"| Delay["Wait five seconds"]
+    Delay --> Lock["Acquire ShedLock"]
+    Lock --> Lookup["Find client by configured client ID"]
+    Lookup --> Found{"Client exists?"}
+    Found -->|"No"| Create["Build and save gateway client"]
+    Found -->|"Yes"| Reconcile["Compare grants, methods, and secret"]
+    Reconcile --> Changed{"Any selected field changed?"}
+    Changed -->|"Yes"| Save["Save reconciled client"]
+    Changed -->|"No"| Current["Log that client is current"]
+    Create --> Complete["Initialization complete"]
+    Save --> Complete
+    Current --> Complete
+    Skip --> Complete

@@ -1,0 +1,11 @@
+flowchart TD
+    Startup["Agent startup or newly installed tool"] --> Processor["Tool Connection Processing Manager"]
+    Processor --> InstalledTools["Installed Tools Service"]
+    Processor --> Params["Tool Command Parameters Resolver"]
+    Processor --> Config["Agent Configuration Service"]
+    Processor --> Ops["Tool Operations"]
+    Processor --> Store["Services Tool Connection"]
+    Processor --> Publisher["Tool Connection Message Publisher"]
+    Publisher --> Broker["NATS message publisher"]
+    Store --> Record["Tool Connection record"]
+    Record --> Disk["Secured JSON registry"]

@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Uninstall as Uninstall lifecycle
+    participant Client as Registration Client
+    participant Api as Client service
+    Uninstall->>Client: deregister persisted machine info
+    Client->>Client: create deletedAt timestamp body
+    Client->>Api: POST uninstall with machine credentials
+    alt success status
+        Api-->>Client: success response
+        Client-->>Uninstall: Deregistered
+    else unauthorized, forbidden, not found, or gone
+        Api-->>Client: terminal status
+        Client-->>Uninstall: AlreadyGone status
+    else other failure
+        Api-->>Client: failure response
+        Client-->>Uninstall: error with status and body
+    end

@@ -1,0 +1,14 @@
+flowchart TD
+    Caller["Client update or installation workflow"] --> Writable["ensure writable"]
+    Caller --> Harden["harden executable"]
+    Writable --> WindowsCheck{"Windows target?"}
+    Harden --> HardenWindowsCheck{"Windows target?"}
+    WindowsCheck -->|"yes"| PrepareCommands["attrib, takeown, and icacls"]
+    WindowsCheck -->|"no"| WritableNoop["Return success without changes"]
+    HardenWindowsCheck -->|"yes"| HardenCommands["takeown and icacls"]
+    HardenWindowsCheck -->|"no"| HardenNoop["Return success without changes"]
+    PrepareCommands --> WarningLogs["Log unsuccessful command statuses"]
+    HardenCommands --> WarningLogs
+    WarningLogs --> Result["Return Result success"]
+    WritableNoop --> Result
+    HardenNoop --> Result

@@ -1,0 +1,9 @@
+flowchart TD
+    UpdateService["Tool Agent Update Service"] -->|"builds dependencies"| UpdateRunner["Shared update runner"]
+    UpdateRunner -->|"selects Standard installation"| Factory["Updater factory"]
+    Factory -->|"creates"| StandardUpdater["Standard Tool Updater"]
+    StandardUpdater -->|"stops process"| KillService["Tool Kill Service"]
+    StandardUpdater -->|"resolves executable"| DirectoryManager["Directory Manager"]
+    StandardUpdater -->|"downloads and writes"| DownloadService["GitHub Download Service"]
+    StandardUpdater -->|"creates and restores backup"| FileSystem["Endpoint file system"]
+    StandardUpdater -->|"restart requested"| RunManager["Tool Run Manager"]

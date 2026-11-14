@@ -1,0 +1,12 @@
+flowchart LR
+    Browser["Browser or mobile client"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> AuthServer["Authorization Server application"]
+    AuthServer --> TenantFilter["Tenant context and forwarded prefix filters"]
+    TenantFilter --> SecurityChains["Authorization and login security chains"]
+    SecurityChains --> TokenService["OAuth2 and OIDC token services"]
+    SecurityChains --> SsoFlows["Password and external SSO flows"]
+    TokenService --> TenantKeys["Tenant RSA signing keys"]
+    TokenService --> MongoClients["Mongo OAuth client repository"]
+    SsoFlows --> Providers["Google, Microsoft, Apple"]
+    AuthServer --> RedisSession["Redis Spring Session"]
+    AuthServer --> UserTenantData["Tenant and user persistence"]

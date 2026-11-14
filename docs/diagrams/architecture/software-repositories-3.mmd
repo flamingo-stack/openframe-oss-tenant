@@ -1,0 +1,10 @@
+flowchart TD
+    Observations[("Connected device software observations")] --> TitleMatch["Match tenant and software title"]
+    TitleMatch --> TitleFacet["Summary and version-count facets"]
+    TitleFacet --> TitleRollup["Software title rollup"]
+    Observations --> CveMatch["Match tenant and CVE"]
+    CveMatch --> GroupTitles["Group observations by software title"]
+    GroupTitles --> UnionMachines["Union affected machines"]
+    UnionMachines --> CveRollup["CVE rollup"]
+    CveMatch --> DistinctMachines["Find distinct machine identifiers"]
+    DistinctMachines --> MachineIds["Affected machine identifiers"]

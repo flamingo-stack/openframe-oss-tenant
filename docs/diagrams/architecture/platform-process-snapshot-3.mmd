@@ -1,0 +1,15 @@
+flowchart TD
+    Start["Caller invokes snapshot()"] --> Create["Create a new System instance"]
+    Create --> Refresh["Refresh processes with executable metadata always updated"]
+    Refresh --> Iterate["Iterate process entries"]
+    Iterate --> Readable{"Readable executable image?"}
+    Readable -->|"No"| Skip["Skip process"]
+    Readable -->|"Yes"| CopyImage["Copy executable path"]
+    CopyImage --> ResolveParent["Resolve parent image from same process map"]
+    ResolveParent --> Classify["Classify service status on Windows"]
+    Classify --> Session["Resolve session on Windows"]
+    Session --> Build["Build RunningProcess record"]
+    Build --> More{"More processes?"}
+    Skip --> More
+    More -->|"Yes"| Iterate
+    More -->|"No"| Return["Return process records"]

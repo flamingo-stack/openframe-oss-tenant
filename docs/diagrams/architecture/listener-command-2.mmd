@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Start CommandListener"] --> Recover["Recover incomplete deliveries once"]
+    Recover --> RestartCompletion["Report prior restart completion"]
+    RestartCompletion --> Bind["Bind machine specific NATS subscription"]
+    Bind --> Receive["Receive and deserialize command"]
+    Receive --> Admit{"Handler accepts work?"}
+    Admit -->|"No"| Busy["Return busy handling"]
+    Admit -->|"Yes"| Track["Record delivery and retain guard"]
+    Track --> Run["Run handler"]
+    Run --> Settle["Record outcome and publish or queue result"]
+    Settle --> Bind
+    Bind --> Error["Binding ends or errors"]
+    Error --> Delay["Wait reconnection delay"]
+    Delay --> Bind

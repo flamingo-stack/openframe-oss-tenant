@@ -1,0 +1,9 @@
+flowchart LR
+    Caller["External API caller"] --> Request["Read request"]
+    Request --> Controller["Resource controller"]
+    Controller --> Query["Application query"]
+    Query --> Data["Tenant-scoped data"]
+    Data --> Query
+    Query --> Mapper["Base REST mapper"]
+    Mapper --> Response["Response contract"]
+    Response --> Caller

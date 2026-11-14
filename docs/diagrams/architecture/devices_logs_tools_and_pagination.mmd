@@ -1,0 +1,16 @@
+flowchart LR
+    Runner["OpenFrame test service"] --> Suite["Devices Logs Tools And Pagination suites"]
+    Suite --> DeviceApi["ExternalDeviceApi"]
+    Suite --> LogApi["ExternalLogApi"]
+    Suite --> ToolApi["ExternalToolApi"]
+    Suite --> CustomerApi["ExternalCustomerApi"]
+    Suite --> TicketApi["ExternalTicketApi"]
+    DeviceApi --> ExternalApi["External API service"]
+    LogApi --> ExternalApi
+    ToolApi --> ExternalApi
+    CustomerApi --> ExternalApi
+    TicketApi --> ExternalApi
+    ExternalApi --> DeviceData["Device inventory"]
+    ExternalApi --> ToolData["Integrated-tool registry"]
+    ExternalApi --> LogData["Log query storage"]
+    LogData --> Pinot["Pinot"]

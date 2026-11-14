@@ -1,0 +1,20 @@
+flowchart LR
+    Browser["Browser or Native Client"] --> Gateway["OpenFrame Gateway"]
+    Agent["Endpoint Agent"] --> Gateway
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> Api["OpenFrame API"]
+    Gateway --> Client["Client Service"]
+    Gateway --> External["External API"]
+    Gateway --> Frontend["Frontend"]
+    Gateway --> Fleet["Fleet MDM"]
+    Gateway --> Mesh["MeshCentral"]
+
+    subgraph gateway_core["Gateway Core"]
+        Security["JWT and Role Security"]
+        Filters["Policy and Metrics Filters"]
+        Proxy["HTTP and WebSocket Tool Proxy"]
+    end
+
+    Gateway --- Security
+    Gateway --- Filters
+    Gateway --- Proxy

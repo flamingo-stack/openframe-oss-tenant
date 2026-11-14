@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Software title query"] --> TenantFilter["Tenant and installed-device filters"]
+    TenantFilter --> OptionalName["Optional literal name match"]
+    OptionalName --> OptionalCve["Optional vulnerability filter"]
+    OptionalCve --> Manageability["Optional manageability criteria"]
+    Manageability --> Count["Count matching titles"]
+    Manageability --> Page["Apply pageable query"]
+    Count --> Result["Page of Software titles"]
+    Page --> Result

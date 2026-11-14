@@ -1,0 +1,21 @@
+flowchart TD
+    Runner["Test Runner"] --> GeneralTests["General Tests"]
+    GeneralTests --> Auth["Authentication and Onboarding"]
+    GeneralTests --> Admin["Administration and Organizations"]
+    GeneralTests --> Device["Devices and Device Logs"]
+    GeneralTests --> Automation["Scripts and Software Management"]
+    GeneralTests --> Support["Tickets Knowledge Base and Notifications"]
+    GeneralTests --> Remote["Remote Access"]
+    GeneralTests --> Ai["AI Settings and Dialogs"]
+
+    Auth --> Platform["Running OpenFrame Platform"]
+    Admin --> Platform
+    Device --> Platform
+    Automation --> Platform
+    Support --> Platform
+    Remote --> Platform
+    Ai --> Platform
+
+    Platform --> Api["API Services"]
+    Platform --> Agents["Enrolled Device Agents"]
+    Platform --> Data["Configured Data Services"]

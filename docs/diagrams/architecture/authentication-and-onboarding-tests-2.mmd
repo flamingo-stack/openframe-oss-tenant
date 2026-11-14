@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Start ordered onboarding suite"] --> Read["Read and retain original progress"]
+    Read --> Reset["Reset to clean progress"]
+    Reset --> Steps["Complete each allowed user step"]
+    Steps --> Finish["Finish and verify idempotence"]
+    Finish --> ResetFinished["Reset finished progress"]
+    ResetFinished --> Skip["Skip midway and verify idempotence"]
+    Skip --> Tour["Set and replace tour dialog"]
+    Tour --> Restore["Restore saved original progress"]
+    Restore --> EndNode["End"]
+    Read -.->|"interrupted after mutation"| Fallback["AfterAll best-effort restoration"]
+    Reset -.->|"interrupted after mutation"| Fallback
+    Steps -.->|"interrupted after mutation"| Fallback
+    Finish -.->|"interrupted after mutation"| Fallback
+    Skip -.->|"interrupted after mutation"| Fallback
+    Tour -.->|"interrupted after mutation"| Fallback

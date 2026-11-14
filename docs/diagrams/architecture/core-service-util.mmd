@@ -1,0 +1,5 @@
+flowchart LR
+    Template["Download link template"] --> Resolver["Download configuration link resolver"]
+    Provider["Assets base URL provider"] -->|"optional dynamic URL"| Resolver
+    Property["openframe assets base URL property"] -->|"fallback URL"| Resolver
+    Resolver --> ResolvedLink["Resolved download link"]

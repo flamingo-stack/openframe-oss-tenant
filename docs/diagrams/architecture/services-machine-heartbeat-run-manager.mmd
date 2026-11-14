@@ -1,0 +1,11 @@
+flowchart LR
+    ClientStart["OpenFrame Client startup"] --> Auth["Registration and authentication"]
+    Auth --> NatsConnect["NATS connection manager"]
+    NatsConnect --> Watchdog["NATS connection watchdog"]
+    Watchdog --> RunManager["Services Machine Heartbeat Run Manager"]
+    RunManager --> Publisher["Machine Heartbeat Publisher"]
+    Publisher --> NatsPublisher["NATS message publisher"]
+    NatsPublisher --> Nats["NATS subject machine machine id heartbeat"]
+    Nats --> Listener["Machine Heartbeat Listener"]
+    Listener --> Status["Machine status service"]
+    Status --> Offline["Offline detection scheduler"]

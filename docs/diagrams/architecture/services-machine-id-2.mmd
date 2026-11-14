@@ -1,0 +1,14 @@
+flowchart TD
+    Start["get_or_create called"] --> CacheCheck{"Cache populated?"}
+    CacheCheck -->|"yes"| ReturnCached["Return cached identity"]
+    CacheCheck -->|"no"| ReadFile["Read and trim machine_id file"]
+    ReadFile --> ReadCheck{"Non empty file value?"}
+    ReadCheck -->|"yes"| CacheStored["Cache stored identity"]
+    CacheStored --> ReturnStored["Return stored identity"]
+    ReadCheck -->|"no or read failure"| CreateUuid["Generate UUID version 4"]
+    CreateUuid --> EnsureDir["Create parent directory when needed"]
+    EnsureDir --> WriteFile["Write identity to machine_id file"]
+    WriteFile --> WriteCheck{"Write succeeded?"}
+    WriteCheck -->|"yes"| CacheNew["Cache generated identity"]
+    CacheNew --> ReturnNew["Return generated identity"]
+    WriteCheck -->|"no"| ReturnError["Return contextual error"]

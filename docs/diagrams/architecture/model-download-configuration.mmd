@@ -1,0 +1,9 @@
+flowchart LR
+    ServerMessage["Tool installation message"] --> ConfigList["Download configurations"]
+    ConfigList --> Selector["Platform configuration selector"]
+    Selector --> MatchCheck["matches_current_os()"]
+    MatchCheck --> SelectedConfig["Selected download configuration"]
+    SelectedConfig --> DownloadService["Download service"]
+    DownloadService --> Storage["Tool directory or executable path"]
+    SelectedConfig --> Updater["Tool updater"]
+    Updater --> Installation["Standard, GUI app, or service installation"]

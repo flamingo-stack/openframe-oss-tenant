@@ -1,0 +1,12 @@
+flowchart LR
+    InstallArgs["Installation arguments"] --> InitialConfig["Initial Configuration Service"]
+    InitialConfig --> ModeService["Remote Access Mode Service"]
+    ModeService --> ModeModel["Remote Access Mode model"]
+    ModeService --> RetryHelper["Backend retry helper"]
+    RetryHelper --> Deactivation["Deactivation Service"]
+    RetryHelper --> RemoteClient["Remote Access Client"]
+    RemoteClient --> TokenConfig["Agent Configuration Service"]
+    RemoteClient --> Backend["Backend device mode endpoint"]
+    Backend --> Outcome["Device mode outcome"]
+    Outcome --> ModeService
+    ModeService --> InitialConfig

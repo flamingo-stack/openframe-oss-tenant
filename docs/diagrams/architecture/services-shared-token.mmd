@@ -1,0 +1,6 @@
+flowchart LR
+    AuthService["Agent Authentication Service"] -->|"token value"| SharedToken["Services Shared Token"]
+    SharedToken -->|"secured_dir()"| Directories["Directory Manager"]
+    SharedToken -->|"encrypt()"| Encryption["Encryption Service"]
+    SharedToken -->|"atomic_write()"| FileSystem["shared_token.enc"]
+    Directories -->|"secure path"| FileSystem

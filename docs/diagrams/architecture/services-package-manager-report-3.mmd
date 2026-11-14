@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Report cycle starts"] --> LoadId["Load machine identifier"]
+    LoadId --> IdAvailable{"Machine identifier available?"}
+    IdAvailable -->|"No"| ConfigFailure["Return configuration error"]
+    IdAvailable -->|"Yes"| DetectSession["Read console session presence"]
+    DetectSession --> InspectManagers["Resolve all manager states"]
+    InspectManagers --> Dependencies{"Dependency reporting enabled and manager present?"}
+    Dependencies -->|"Yes"| InspectDependencies["Map dependency presence to report states"]
+    Dependencies -->|"No"| BuildReport["Build report without ineligible dependencies"]
+    InspectDependencies --> BuildReport
+    BuildReport --> Publish["Serialize and publish through NATS"]
+    Publish --> Published{"Publish and flush succeed?"}
+    Published -->|"Yes"| Complete["Report cycle completes"]
+    Published -->|"No"| TransportFailure["Return publication error"]

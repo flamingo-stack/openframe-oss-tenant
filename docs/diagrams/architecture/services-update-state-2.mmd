@@ -1,0 +1,11 @@
+flowchart TD
+    Request["Client update request"] --> Reserve["Reserve update work"]
+    Reserve --> Apply["Validate and prepare update"]
+    Apply --> SaveState["Save update state before updater launch"]
+    SaveState --> Launch["Launch platform updater"]
+    Launch --> Restart["Client starts after replacement"]
+    Restart --> ReadState["Load persisted update state"]
+    ReadState --> VersionMatch{"Running version matches target?"}
+    VersionMatch -->|"Yes"| Success["Verify success and clear state"]
+    VersionMatch -->|"No and launch or verification phase"| Retain["Keep state for next boot"]
+    VersionMatch -->|"No and other phase"| Failure["Report failure clean up and clear state"]

@@ -1,0 +1,12 @@
+flowchart TD
+    InitialCreate["Initial target creation"] --> Failed{"Creation succeeded?"}
+    Failed -->|"yes"| WriteBytes["Write bytes"]
+    Failed -->|"no"| Writable["Best effort writable recovery"]
+    Writable --> Windows{"Windows target?"}
+    Windows -->|"yes"| RemoveOld["Remove prior .old sibling"]
+    RemoveOld --> MoveAside["Rename target to .old"]
+    Windows -->|"no"| RetryCreate["Retry target creation"]
+    MoveAside --> RetryCreate
+    RetryCreate --> Created{"Retry succeeded?"}
+    Created -->|"yes"| WriteBytes
+    Created -->|"no"| Error["Return contextual error"]

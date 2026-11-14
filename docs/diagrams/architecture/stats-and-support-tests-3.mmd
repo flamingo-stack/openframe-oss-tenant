@@ -1,0 +1,12 @@
+flowchart TD
+    LoadDomains["Read openframe.all.tenants.json"] --> CreateWorkers["Create fixed pool of 15 workers"]
+    CreateWorkers --> SetDomain["Set target base URL for a tenant domain"]
+    SetDomain --> ListDevices["List device IDs with statistics filter"]
+    ListDevices --> FetchVersion["Fetch each device OS version"]
+    FetchVersion --> Present{"OS version present?"}
+    Present -->|"No"| NextDevice["Continue"]
+    Present -->|"Yes"| Normalize["Normalize Windows build suffix"]
+    Normalize --> Count["Merge version count in concurrent map"]
+    Count --> NextDevice
+    NextDevice --> Sort["Wait for workers, sort counts descending"]
+    Sort --> Output["Print and write stats.txt"]

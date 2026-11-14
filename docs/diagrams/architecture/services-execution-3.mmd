@@ -1,0 +1,9 @@
+flowchart TD
+    Requested["Requested privilege and policy"] --> System{"Operating system"}
+    System -->|"Unix"| UnixMap["Admin to agent, User to user"]
+    System -->|"Windows"| WindowsPolicy{"Interactive elevated policy?"}
+    WindowsPolicy -->|"Yes"| Elevated["Elevated interactive user"]
+    WindowsPolicy -->|"No"| WindowsMap["Admin to agent, User to logged-on user"]
+    UnixMap --> ExecutorPrivilege["Executor privilege"]
+    Elevated --> ExecutorPrivilege
+    WindowsMap --> ExecutorPrivilege

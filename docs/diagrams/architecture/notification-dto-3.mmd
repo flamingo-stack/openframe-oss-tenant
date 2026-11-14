@@ -1,0 +1,7 @@
+flowchart TD
+    Query["List notifications query"] --> Response["Connection response"]
+    Response --> Edges["Notification edge collection"]
+    Edges --> Edge["Notification Dto"]
+    Edge --> AssertNode["Assert notification fields"]
+    Edge --> Continue["Use cursor for next page"]
+    AssertNode --> Workflow["Read and delete workflow tests"]

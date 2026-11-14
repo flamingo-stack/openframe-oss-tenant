@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Client as "OAuth Client"
+    participant Api as "OpenFrame API"
+    participant Auth as "Authorization Service"
+    Client->>Api: Send code, verifier, and redirect URI
+    Api->>Auth: Exchange and validate authorization code
+    Auth->>Api: Return token material
+    Api->>Client: Return TokenResponse

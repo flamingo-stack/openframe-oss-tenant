@@ -1,0 +1,14 @@
+flowchart TD
+    Input["Throwable received"] --> NullCheck{"Throwable present?"}
+    NullCheck -->|"No"| NotDisconnect["Return false"]
+    NullCheck -->|"Yes"| Unwrap["Unwrap Reactor exception"]
+    Unwrap --> Traverse["Traverse cause chain"]
+    Traverse --> Seen{"Cause already visited?"}
+    Seen -->|"Yes"| NotDisconnect
+    Seen -->|"No"| TypeCheck{"Known disconnect type?"}
+    TypeCheck -->|"Aborted, closed channel, or premature close"| Disconnect["Return true"]
+    TypeCheck -->|"IOException"| MessageCheck{"Known disconnect message?"}
+    MessageCheck -->|"Yes"| Disconnect
+    MessageCheck -->|"No"| NextCause["Inspect next cause"]
+    TypeCheck -->|"Other type"| NextCause
+    NextCause --> Traverse

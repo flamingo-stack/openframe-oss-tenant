@@ -1,0 +1,11 @@
+flowchart LR
+    InstallArgs["Installation parameters"] --> InstallService["Installation initial config service"]
+    InstallService --> InitialModel["Initial configuration model"]
+    InitialModel --> ConfigService["Initial configuration service"]
+    ConfigService --> ConfigFile["Persisted JSON configuration"]
+    ConfigFile --> AuthProcessor["Initial authentication processor"]
+    ConfigFile --> RegistrationProcessor["Registration processor"]
+    AuthProcessor --> AgentCredentials["Agent credentials"]
+    RegistrationProcessor --> MachineIdentity["Machine identity"]
+    ConfigService --> LogStreaming["Log key lifecycle"]
+    ConfigService --> RemoteAccess["Remote access acknowledgement"]

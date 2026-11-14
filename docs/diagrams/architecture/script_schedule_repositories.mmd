@@ -1,0 +1,7 @@
+flowchart LR
+    Consumer["RMM service or API layer"] -->|"tenant, filter, sort, cursor"| Contract["Custom Script Schedule Repository"]
+    Contract -->|"implemented by"| Repository["Custom Script Schedule Repository Implementation"]
+    Repository -->|"plain queries and counts"| Schedules["script schedules collection"]
+    Repository -->|"lookup for device count"| Assignments["schedule machine assignments collection"]
+    Repository -->|"maps documents"| Model["Schedule Script domain model"]
+    Repository -->|"page, count, facets, cursor"| Consumer

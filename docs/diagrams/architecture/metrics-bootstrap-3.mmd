@@ -1,0 +1,4 @@
+flowchart TD
+    Invoke["Caller invokes init()"] --> Log["Emit initialization info event"]
+    Log --> Return["Return successful Result"]
+    Return --> Caller["Caller continues startup"]

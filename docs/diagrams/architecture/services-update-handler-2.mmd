@@ -1,0 +1,19 @@
+flowchart TD
+    Handler["UpdateHandlerService"]
+    State["UpdateStateService"]
+    Info["OpenFrameClientInfoService"]
+    Cleanup["UpdateCleanupService"]
+    Lkg["LastKnownGoodService"]
+    Config["AgentConfigurationService"]
+    Results["ResultStore"]
+    Publisher["InstalledAgentMessagePublisher"]
+    Launcher["Platform updater launcher"]
+
+    Handler -->|"loads and clears"| State
+    Handler -->|"records status"| Info
+    Handler -->|"removes leftovers"| Cleanup
+    Handler -->|"promotes and prunes"| Lkg
+    Handler -->|"reads machine identity"| Config
+    Handler -->|"settles delivery"| Results
+    Handler -->|"announces version"| Publisher
+    Handler -->|"starts rollback only"| Launcher

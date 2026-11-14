@@ -1,0 +1,8 @@
+flowchart LR
+    RegistrationService["Agent Registration Service"] -->|"save registration data"| ConfigurationService["Agent Configuration Service"]
+    AuthenticationService["Agent Authentication Service"] -->|"read credentials and update tokens"| ConfigurationService
+    RefreshManager["Token Refresh Run Manager"] -->|"reauthenticate"| AuthenticationService
+    ConfigurationService -->|"ensure directories"| DirectoryManager["Directory Manager"]
+    DirectoryManager -->|"secured directory"| ConfigFile["agent config JSON"]
+    ConfigurationService -->|"atomic write"| FileUtility["File Utility"]
+    FileUtility -->|"replace file"| ConfigFile

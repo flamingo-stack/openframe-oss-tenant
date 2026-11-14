@@ -1,0 +1,12 @@
+flowchart TD
+    TestCase["Mingo test case"] --> Base["Mingo Base Test"]
+    Base --> Dialog["Fresh dialog fixture"]
+    Dialog --> Runner["Assistant runner"]
+    Runner --> Mingo["Mingo admin assistant"]
+    Mingo --> Tools["Product and AI tools"]
+    Tools --> Product["OpenFrame platform"]
+    TestCase --> Verify["Independent verifier"]
+    Verify --> Product
+    Verify --> SSH["SSH target machine"]
+    Product --> Assertions["Persisted state assertions"]
+    SSH --> Assertions

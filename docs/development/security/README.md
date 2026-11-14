@@ -1,146 +1,87 @@
+## Security
 
-# Security
+OpenFrame OSS Tenant assembles the runnable Spring Boot services (`openframe-api`, `openframe-authorization-server`, `openframe-client`, `openframe-config`, `openframe-external-api`, `openframe-gateway`, `openframe-management`, `openframe-stream`) and the Rust endpoint agent (`openframe_client`) that together form the OpenFrame platform. Most security-relevant logic — OAuth2/OIDC, JWT signing, tenant isolation, password policy, domain validation — is implemented in the pinned [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) (`com.openframe.oss:*`, version `7.0.11`), which this repository consumes as a Maven dependency and runs. This document describes how those security mechanisms are wired together in this repository: configuration, deployment, environment variables, and secure development practices for anyone contributing to this repository.
 
-OpenFrame OSS Tenant is the multi-service, multi-tenant backend of the OpenFrame platform: a Spring Cloud Gateway, an OAuth2/OIDC authorization server, several Spring Boot services (API, External API, Client, Stream, Management, Config), and a Rust system agent (`openframe-client`). This document describes the authentication and authorization model, how secrets and sensitive data are handled, input-validation and common-vulnerability guidance, and how security is enforced in code review for this repository.
+> This is a development reference. For the organization's vulnerability-disclosure process, supported versions, and how to report a security issue, see [`SECURITY.md`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/SECURITY.md) at the repository root, or email security@flamingo.run. Do not open a public GitHub issue for a security problem.
 
-For how the services fit together end-to-end, see [the architecture overview](../../reference/architecture/overview.md) and [the ecosystem reference](../../reference/architecture/ecosystem.md). For the environment variables that configure a local or cluster deployment, see [the environment setup guide](../setup/environment.md).
+### How the pieces fit together
 
-> **Reporting a vulnerability:** do not open a public GitHub issue, pull request, or community Slack message for a security problem. Email **security@flamingo.run** instead. The organization's security policy (coordinated disclosure, scope, supported versions) is published at [https://www.flamingo.run/trust-center](https://www.flamingo.run/trust-center).
+```mermaid
+flowchart LR
+    User["Browser, technician, integration, or endpoint agent"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> Api["OpenFrame API"]
+    Gateway --> ExternalApi["External API"]
+    Gateway --> Client["Client Service"]
+    Config["Config Server"] -.-> Api
+    Config -.-> Auth
+    Config -.-> Client
+    Config -.-> Gateway
+    Auth --> Mongo["MongoDB"]
+    Auth --> Redis["Redis Cluster"]
+    Api --> Mongo
+    Api --> Redis
+```
 
-## 1. Authentication and authorization patterns
+The gateway is the single public entry point. It routes `/sas/**` to the authorization server, `/api/**` to the API, `/api-docs/**` to the external API, and `/clients/**` to the client service, as declared in `configs/base/openframe-gateway.yml`. Every authentication, token, and tenant-isolation decision upstream of a backend service happens at or before this boundary.
 
-### 1.1 Centralized OAuth2/OIDC authorization server
+---
 
-`openframe-authorization-server` (Maven artifact `com.openframe:openframe-authorization-server`) is the single source of truth for authentication across the platform. Its entry point, `OpenFrameAuthorizationServerApplication` (`openframe/services/openframe-authorization-server/src/main/java/com/openframe/authz/OpenFrameAuthorizationServerApplication.java`), is a `@SpringBootApplication` with `@EnableDiscoveryClient` that component-scans `com.openframe.authz`, `com.openframe.core`, `com.openframe.data`, and `com.openframe.notification` — pulling in shared authentication, persistence, and notification logic from the upstream [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib).
+### 1. Authentication and authorization patterns
 
-Per the architecture reference, this server is responsible for:
-- Multi-tenant OAuth2/OIDC token issuance (RSA-signed JWTs).
-- SSO integrations (Google, Microsoft).
+#### Tenant-aware OAuth 2.1 / OpenID Connect
 
-### 1.2 Gateway-level enforcement
+The `openframe-authorization-server` service (entry point `openframe/services/openframe-authorization-server/src/main/java/com/openframe/authz/OpenFrameAuthorizationServerApplication.java`) runs the `com.openframe.oss:openframe-authorization-service-core` library. It is a multi-tenant OAuth 2.1/OIDC authorization server:
 
-`openframe-gateway` (Spring Cloud Gateway, port 8081) is the single entry point for all client traffic and is where JWT validation and routing security are enforced before a request reaches a backend service. Its route table, defined in `configs/base/openframe-gateway.yml`, maps path prefixes to backend services:
+- Tenant context is resolved before user lookup, client registration, signing-key selection, and issuer construction — `TenantForwardedPrefixFilter` injects `X-Forwarded-Prefix: /{tenant}` so Spring Authorization Server computes a tenant-specific issuer.
+- Each tenant has its own RSA signing key, managed by `TenantKeyService`; the JWK set served to a request only exposes the key for the resolved tenant.
+- Issued access tokens carry `tenant_id`, `userId`, and `roles` claims (see [Authorization Service Core](../../reference/architecture/authorization-service-core/authorization-service-core.md)).
+- Password login uses BCrypt via `DaoAuthenticationProvider`; an SSO-provisioned account with no password hash cannot authenticate by password.
+- External sign-in supports Google, Microsoft, and Apple OIDC, plus native Apple token exchange and a signup-ticket grant for mobile clients (`urn:openframe:params:oauth:grant-type:apple-native`, `urn:openframe:params:oauth:grant-type:signup-ticket`).
+- Sessions are backed by Redis-backed Spring Session, not in-memory sessions, so login state survives restarts and is shared across replicas.
 
-| Route ID | Path | Target |
-|---|---|---|
-| `sas` | `/sas/**` | `openframe-authorization-server.tenant.svc.cluster.local` |
-| `swagger-api-docs` | `/api-docs/**` | `openframe-external-api.tenant.svc.cluster.local` |
-| `openframe-api` | `/api/**` | `openframe-api.tenant.svc.cluster.local` |
-| `openframe-client` | `/clients/**` | `openframe-client.tenant.svc.cluster.local` |
-| `openframe-ui-spa` | `/**` | `openframe-frontend.tenant.svc.cluster.local` |
+The gateway side of this flow — authorization redirects, callback handling, auth cookies, refresh, logout, and mobile/native handoff — is implemented by `com.openframe.oss:openframe-security-oauth` and runs inside `openframe-gateway`. See [Security Oauth](../../reference/architecture/security-oauth/security-oauth.md) for the full endpoint list (`/oauth/login`, `/oauth/callback`, `/oauth/refresh`, `/oauth/logout`, Apple-native and mobile endpoints). It is only active when `openframe.gateway.oauth.enable=true`.
 
-Because the gateway is the only component with an externally reachable path, every other service can assume requests arriving on its internal cluster address have already passed gateway-level checks — but each service must still independently validate its own JWTs and authorization rules (defense in depth), since internal cluster networking is not itself a trust boundary.
+> **Security-relevant behavior to preserve:** an invalid or unknown refresh token returns `401` **without** clearing cookies, so a late response from a losing concurrent refresh request cannot delete cookies written by a winning one. A *missing* refresh token, by contrast, clears cookies and returns `401`. Do not conflate these two paths when touching refresh logic.
 
-### 1.3 Shared OAuth2 token lifetimes
+#### JWT signing and verification
 
-Token lifetime and refresh policy are centralized in `configs/base/application.yml` under `security.oauth2`, shared by every service that imports the base config:
+`com.openframe.oss:openframe-security-core` (`JwtSecurityConfig`, `KeyConfig`) builds the shared `JwtEncoder`/`JwtDecoder` beans from configured RSA key material (see [Security Core Oauth](../../reference/architecture/security-core-oauth/security-core-oauth.md)):
+
+- The encoder needs both the public and private key and is the only component that should be able to sign tokens.
+- The decoder needs only the public key and verifies signatures without ever holding private-key material.
+- `KeyConfig.toRSAPublicKey()` parses a PEM-formatted public key (markers and whitespace stripped, Base64-decoded, loaded via the JCA RSA `KeyFactory`). Malformed PEM content fails bean construction at startup rather than silently producing an unusable decoder.
+
+Common, non-tenant-aware token expiration defaults live in `configs/base/application.yml` under `security.oauth2.token`:
 
 ```yaml
 security:
   oauth2:
     token:
       access:
-        expiration-seconds: 3600  # access token lifetime
+        expiration-seconds: 3600   # 10 minute in the source comment, 3600s = 1 hour actual value
       refresh:
-        expiration-seconds: 604800   # 1 week
-        max-refresh-count: 10080     # cap on refreshes within that week
+        expiration-seconds: 604800     # 1 week
+        max-refresh-count: 10080       # maximum refreshes allowed in that week
 ```
 
-Do not raise `access.expiration-seconds` without a corresponding review of session-invalidation paths — a longer-lived access token widens the window an attacker has if a token is leaked.
+When rotating signing keys, replace both the signing (private) and verification (public) material together — a decoder that has not picked up the new public key cannot verify tokens signed by a rotated encoder (see Operational Considerations in [Security Core Oauth](../../reference/architecture/security-core-oauth/security-core-oauth.md)).
 
-### 1.4 Resource-server auto-configuration transition
+#### Gateway-level authorization boundary
 
-`configs/base/application.yml` excludes both the Spring Boot 3 and Spring Boot 4 names of the OAuth2 resource-server auto-configuration classes:
+`openframe-gateway` is the reactive edge: JWT validation, API-key handling, service routing, and WebSocket/tool proxying happen here before a request reaches a backend service (see [`docs/reference/architecture/README.md`](../../reference/architecture/README.md)). Treat the gateway's routing table in `configs/base/openframe-gateway.yml` as a security boundary definition, not just a convenience map — a new backend route must be added there deliberately, scoped to the correct path prefix.
 
-```yaml
-spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
-      - org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
-      - org.springframework.boot.security.oauth2.server.resource.autoconfigure.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
-```
+#### Tenant isolation as an authorization control
 
-This is a deliberate transition shim: services are migrating from Spring Boot 3 to Spring Boot 4 (the parent POM already pins `spring-boot-starter-parent` 4.1.1), and Spring Boot silently ignores an exclude entry it doesn't recognize, so both old and new class names are listed together. If you add a service-specific security configuration that re-enables one of these auto-configurations, confirm you are not reintroducing a resource-server bean that conflicts with the platform's own JWT validation filters.
+`configs/base/application.yml` enables `openframe.tenant-isolation.enabled: true`. This is load-bearing: library version `7.0.11`'s tenant-aware repositories (and `TenantAwareMongoTemplate`) only register when this flag is on. Services started without it, or against an incompatible library version, crash-loop at startup because tenant-aware beans are unsatisfiable. Do not disable this flag in a tenant deployment of this repository.
 
-### 1.5 Custom `AuthenticationProvider` beans are forbidden
+---
 
-This is an **active, enforced code-review rule** (`OPENFRAM-002-12`, severity `error`) for this repository, applying to `**/*Config.java`, `**/*SecurityConfig.java`, and `**/*AuthenticationProvider.java`:
+### 2. Data encryption and secure storage
 
-> Registering a custom `AuthenticationProvider` as a `@Bean` causes Spring Boot to make it the global `AuthenticationManager`'s *only* provider, silently bypassing the `DaoAuthenticationProvider` wired to `UserDetailsService` and breaking all password logins with `ProviderNotFoundException`.
+#### At-rest value encryption
 
-**Do not** do this:
-
-```java
-// WRONG — silently replaces the global AuthenticationManager's provider list
-@Bean
-public AuthenticationProvider myCustomProvider() {
-    return new MyCustomAuthenticationProvider();
-}
-```
-
-**Do** construct the custom provider inline and wire it directly through the security DSL, scoped to the one endpoint that needs it:
-
-```java
-// CORRECT — wired directly into the filter chain, does not touch the global AuthenticationManager
-@Bean
-public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
-    OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-            OAuth2AuthorizationServerConfigurer.authorizationServer();
-
-    http.with(authorizationServerConfigurer, (authorizationServer) ->
-            authorizationServer.tokenEndpoint(tokenEndpoint ->
-                    tokenEndpoint.authenticationProvider(new MyCustomAuthenticationProvider())));
-
-    return http.build();
-}
-```
-
-If you are writing or reviewing a `SecurityConfig` in `openframe-authorization-server`, `openframe-gateway`, or any other service, check for a stray `@Bean`-annotated `AuthenticationProvider` first — it is the most common way password login breaks in this codebase.
-
-### 1.6 Testing authentication failure paths
-
-The API service ships a dedicated test double for exercising authentication-failure behavior: `TestAuthenticationManager` (`openframe/services/openframe-api/src/test/java/com/openframe/api/util/TestAuthenticationManager.java`). It implements Spring Security's `AuthenticationManager` and always throws `BadCredentialsException`, regardless of the credentials supplied:
-
-```java
-package com.openframe.api.util;
-
-public class TestAuthenticationManager implements AuthenticationManager {
-    @Override
-    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        throw new BadCredentialsException("Test authentication failed");
-    }
-}
-```
-
-Use it (typically wired as a `@Primary` test bean, alongside `TestConfig` in `openframe/services/openframe-api/src/test/java/com/openframe/api/config/TestConfig.java`) whenever a test needs to assert that a protected endpoint correctly rejects an unauthenticated or invalid-credential request, rather than mocking a successful login path by accident.
-
-### 1.7 Tenant isolation as an authorization boundary
-
-Multi-tenancy is enforced in the data layer, not only at the API boundary. `configs/base/application.yml` sets:
-
-```yaml
-openframe:
-  tenant-isolation:
-    enabled: true
-  redis:
-    tenant-id: default
-```
-
-The accompanying comment in that file explains why this matters: OSS single-tenant deployments still run the shared libraries (from `openframe-oss-lib`) in tenant-isolation mode starting at library version 6.16, because those libraries register services (notifications, tickets, knowledge base) that constructor-require `@TenantAwareRepository` beans. Those beans are only satisfied when `openframe.tenant-isolation.enabled` is `true` — leaving it `false` causes every dependent service to crash-loop at startup rather than silently losing isolation, which is the safer failure mode.
-
-This is reinforced by an **active, enforced code-review rule** (`OPENFRAM-002-6`, severity `error`) scoped to `**/document/**/*.java`:
-
-> All MongoDB `@Document` classes that hold tenant-specific data must implement the `TenantScoped` marker interface. This is the mechanism the platform uses to enforce tenant isolation at the repository layer via `TenantAwareMongoTemplate`. A document that stores a `tenantId` field but does not implement `TenantScoped` will bypass the isolation checks.
-
-When adding a new `@Document` class under a `document/` package in any service, implement `TenantScoped` whenever the document carries tenant-specific data — a `tenantId` field alone does not trigger the isolation checks; only the marker interface does.
-
-## 2. Data encryption and secure storage
-
-### 2.1 Field-level encryption configuration
-
-The shared `security.encryption` block in `configs/base/application.yml` configures the symmetric encryption used for sensitive fields at rest:
+`configs/base/application.yml` defines a shared encryption configuration used for encrypting sensitive configuration values at rest:
 
 ```yaml
 security:
@@ -149,138 +90,154 @@ security:
     salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
 ```
 
-> **Both values have inline defaults in the shared base config.** Those defaults exist so the platform boots in a local/dev context without extra setup, but they are **not** safe for any shared, staging, or production environment. Every real deployment must override `ENCRYPTION_PASSWORD` and `ENCRYPTION_SALT` with values injected from a secret store, never left at the checked-in default. Treat the presence of these two environment variables in a deployment's secret configuration as a release gate.
+> **The checked-in values are development defaults, not production secrets.** Every deployment beyond local development must override `ENCRYPTION_PASSWORD` and `ENCRYPTION_SALT` with values injected from a secret store rather than left at these repository defaults. The same applies to the MongoDB credential embedded in the default connection string (`spring.mongodb.uri` in `configs/base/application.yml`) — it must be replaced with a managed credential in any shared or production environment.
 
-### 2.2 Dependency-level cryptography hardening
+#### Transport encryption
 
-The root `pom.xml` pins several cryptography- and serialization-adjacent dependencies above the versions the Spring Boot BOM would otherwise select, specifically to stay ahead of HIGH/CRITICAL CVEs:
+- The authorization server's RSA key pairs (via `AuthenticationKeyPair`, `PemUtil`) sign and verify JWTs; see Authentication above.
+- The gateway terminates and routes HTTP traffic for all public prefixes; TLS termination and certificate management for externally reachable endpoints are deployment concerns of the `manifests/platform/ingress-nginx` chart dependency and are outside this repository's application code.
+- Session cookies from the authorization server keep the `JSESSIONID` name and respect the servlet-context path so a tenant-forwarded path does not create a cookie that is never sent back to the authorization-server context.
 
-| Dependency | Pinned version | Why |
+#### Secure storage of credentials in persistence
+
+- OAuth token records (`OAuthToken` documents, `oauth_tokens` MongoDB collection) are indexed by tenant but carry access and refresh token values directly; see [Oauth Repositories](../../reference/architecture/data-mongo-sync-repositories/oauth-repositories/oauth-repositories.md). Treat both the lookup input and the returned token value as secrets — never log raw access or refresh tokens in application or audit logs.
+- `Auth User Repositories` performs field-level updates for `lastLogin` and `imageUrl` rather than full-document read-modify-save, intentionally avoiding optimistic-lock races around login timestamps (see [Auth User Repositories](../../reference/architecture/data-mongo-sync-repositories/auth-user-repositories/auth-user-repositories.md)). This pattern — narrow, field-scoped writes instead of full document replace — is worth following for any other sensitive, frequently-updated field.
+- One-time OAuth "dev tickets" used for mobile/developer handoff are held in-memory only (`InMemoryOAuthDevTicketStore`) by default, with no persistence, expiry, or cross-instance sharing. A horizontally scaled gateway deployment should supply a distributed `OAuthDevTicketStore` implementation instead of relying on the default.
+
+---
+
+### 3. Input validation and sanitization
+
+Validation primitives are centralized in library modules so services share one policy rather than reimplementing ad hoc checks:
+
+- **Email validation** (`com.openframe.oss:openframe-core`): `ValidEmailValidator` is a Jakarta Bean Validation constraint validator. It rejects `null` and requires a **full match** against the configured regex — it does not trim, lowercase, or otherwise normalize input, so the annotation's regex is the single source of truth for accepted syntax (see [Core Validation](../../reference/architecture/core-validation/core-validation.md)).
+- **Disposable / blocked email domains** (`com.openframe.oss:openframe-core`): `EmailDomainPolicy` combines a local blocklist/allowlist with an optional external disposable-domain lookup (Kickbox-compatible endpoint). The external check is deliberately **fail-open**: any timeout, DNS error, or malformed response is logged and treated as "not disposable," so a third-party outage can never block legitimate registration — only an explicit positive classification adds a block. Configure under `openframe.email-domain-policy` (see [Core Email Validation](../../reference/architecture/core-email-validation/core-email-validation.md)).
+- **Tool-argument validation** (`com.openframe.oss:openframe-core`): `ToolArgumentValueKind` predicates (`HAS_TEXT`, `NOT_TRIM_EMPTY`, `NOT_TRIM_BLANK`, `PATTERN`) and `ToolArgumentNormalizationPatterns` build fully anchored regexes with Unicode-aware case handling for enum-like and character-class argument values (see [Core Validation](../../reference/architecture/core-validation/core-validation.md)). When adding a new tool-argument rule, keep generated patterns anchored (`^...$`) — removing anchoring changes both the accepted input and the security guarantee at tool-execution boundaries.
+- **API-layer contracts**: software-bundle mutation inputs (`CreateSoftwareBundleInput`, `UpdateSoftwareBundleInput` in `com.openframe.oss:openframe-api-lib`) apply Jakarta Bean Validation at the API boundary — notably restricting target machine identifiers to letters, digits, underscores, and hyphens, which keeps identifiers safe for message-subject use downstream (see [Api Contracts And Mapping](../../reference/architecture/api-contracts-and-mapping/api-contracts-and-mapping.md)).
+- **Password policy**: password-reset and user-registration DTOs in the authorization service require a password of at least eight characters containing uppercase, lowercase, digit, and special-character categories (see [Authorization Service Core](../../reference/architecture/authorization-service-core/authorization-service-core.md)).
+- **Device log query arguments**: `DeviceLogArgumentContract` (in `openframe-api-lib`) enforces ID, text-term, time-window, epoch-nanosecond, and cursor rules before a log query is admitted to the backend store (see [Api Service Backend](../../reference/architecture/api-service-backend/api-service-backend.md)).
+- **Script execution validators**: elevated-user execution is constrained to Windows-only scripts, and invalid or excessive timeouts are rejected before a script execution record is created (see [Api Service Backend](../../reference/architecture/api-service-backend/api-service-backend.md)).
+
+When adding a new input surface in this repository or in a service that consumes these libraries, prefer reusing `ValidEmailValidator`, `EmailDomainPolicy`, and `ToolArgumentValueKind` rather than writing a parallel regex, so that validation remains centralized and auditable.
+
+---
+
+### 4. Common security vulnerabilities and mitigations
+
+#### Dependency and CVE hygiene
+
+`pom.xml` pins several transitive dependencies explicitly above the versions the Spring Boot BOM or upstream libraries would otherwise select, specifically to close known HIGH/CRITICAL CVEs:
+
+| Dependency | Version | Reason (from `pom.xml` comments) |
 |---|---|---|
-| `org.bouncycastle:bcprov-lts8on` | `2.73.13` | Cryptography provider (BouncyCastle) — pinned to a version past known CVEs |
-| `com.fasterxml.jackson` (BOM) | `jackson-bom` 3.1.7 / `jackson-2-bom` 2.21.7 | Jackson stays on the 3.2-minus minor line because 3.2 rejects a type-id/type-property overlap the platform's chat `MessageData` type relies on |
-| `org.apache.tomcat.embed` | `11.0.26` | Embedded servlet container |
-| `org.codehaus.plexus:plexus-utils` | `3.6.2` | Build/runtime utility library |
-| `org.apache.thrift:libthrift` | `0.25.0` | Serialization |
-| `org.lz4:lz4-java` / `at.yawk.lz4:lz4-java` | `1.8.1` / `1.12.0` | Compression — the Kafka-clients fork is pinned separately because the version Kafka 4 brings in by default (`1.10.1`) carries a HIGH CVE |
+| `org.codehaus.plexus:plexus-utils` | `3.6.2` | Not managed by Spring Boot; pinned past known CVEs. |
+| `org.bouncycastle:bcprov-lts8on` | `2.73.13` | Pinned past known CVEs. |
+| `org.apache.thrift:libthrift` | `0.25.0` | Pinned past known CVEs. |
+| `org.asynchttpclient:async-http-client` | `3.0.14` | Pinned past known CVEs. |
+| `org.lz4:lz4-java` | `1.8.1` | Pinned past known CVEs. |
+| `at.yawk.lz4:lz4-java` (Kafka fork) | `1.12.0` | The `kafka-clients` 4 fork at `1.10.1` has a HIGH CVE. |
+| Jackson (`jackson-bom`, `jackson-2-bom`) | `3.1.7` / `2.21.7` | Security overrides on top of the Spring Boot BOM; kept on the 3.x minor line because Jackson 3.2 rejects a chat `MessageData` type-id/type-property overlap used elsewhere in the platform. |
 
-The comments directly above these properties in `pom.xml` state the intent explicitly: *"Security overrides on top of the Spring Boot BOM: versions with fixes for HIGH/CRITICAL CVEs flagged by Trivy."* When you bump a dependency anywhere in this POM, check whether it is one of these pinned overrides before letting a transitive resolution silently downgrade it — Trivy scanning in CI is the mechanism that originally forced each of these pins, and reverting one reopens a known CVE.
+Renovate (`renovate.json`) is scoped to automatically track only `com.openframe.oss:*` Maven artifacts (grouped as `openframe-libs`), the `@flamingo-stack/openframe-frontend-core` npm package, the pinned FleetMDM and MeshCentral Helm charts, and all dependencies under `clients/openframe-client/**` (grouped as `openframe-client deps`). All other Maven and npm dependency updates are explicitly disabled in `renovate.json`, so a CVE fix in an unlisted dependency requires a manual `pom.xml` override of the kind shown above rather than an automatic PR. When you add a new dependency that later needs a security pin, follow this same explicit-override pattern in `pom.xml` and document the CVE reason in a comment, as the existing entries do.
 
-### 2.3 Secure storage of datastore credentials
+#### Tenant data isolation failures
 
-Datastore connection strings are themselves sensitive and are composed in `configs/base/application.yml` using a YAML anchor so the value is defined once and reused:
+Because every backend service runs with `openframe.tenant-isolation.enabled: true`, the main tenant-isolation risk in this repository is **accidentally bypassing tenant scoping** — for example, calling a repository method that queries by a non-tenant-scoped key, or caching a value under a key that omits the tenant ID. `openframe.redis.tenant-id: default` and the Redis cluster key-locality design (see [Data Redis](../../reference/architecture/data-redis/data-redis.md)) exist specifically so that cache keys remain tenant-partitioned; any new Redis usage should go through the shared Redis key builder rather than constructing raw keys.
+
+#### Token and session replay / confusion
+
+- Refresh-token and Apple-native-token revocation paths are designed with the concurrent-refresh race explicitly in mind (see Authentication above) — a fix to "simplify" refresh-failure cookie handling can reintroduce a session-eviction race.
+- The OIDC ID-token decoder cache in the authorization server is keyed by provider, client ID, JWK-set URI, **and issuer**, not just provider ID — this prevents a decoder created for one tenant from enforcing another tenant's audience or metadata. Any change to decoder caching must preserve all four key components.
+- `SsoFlowSuccessHandler` and `LoginSsoHandler` require a **trusted** provider email signal before using email claims to link an SSO identity to an existing account, and `MicrosoftLoginEmailGate` adds an extra verified-email defense for tenant-scoped generic Microsoft logins. Weakening either of these checks would allow account-linking based on an unverified email claim.
+- `SsoJoinController`, the invitation/consent gate, validates that the invitation cookie matches the invitation ID stamped into the **same** authenticated OIDC session before completing registration — this prevents a cookie from one invitation flow being replayed against a different session's identity.
+
+#### Open redirect
+
+The gateway's mobile and native-Apple flows (`/oauth/signup-continue`, `/oauth/join-return`) apply an explicit redirect allow-list before appending a signup ticket or redirecting, falling back to a configured safe page (`openframe.gateway.oauth.signup-continue-page`, `openframe.gateway.oauth.join-cancel-page`) when the requested target is not allow-listed. The default `DefaultRedirectTargetResolver` used for ordinary browser flows is a **selection** fallback (requested target → `Referer` → `/`), not an allow-list — native/mobile destinations must go through the explicit allow-list check, never through the default resolver alone.
+
+#### Client disconnect noise vs. real failures
+
+`ClientDisconnectClassifier` (in `com.openframe.oss:openframe-core`) exists so that expected peer disconnects (closed channels, broken pipes, premature close) in reactive/Netty paths are not misreported as application failures. When adding new exception handling around reactive HTTP, use this classifier rather than a broad `catch (Exception e)` that could silently swallow a genuine security- or integrity-relevant error alongside benign disconnects.
+
+---
+
+### 5. Security testing and code review guidelines
+
+#### Test configuration patterns
+
+`openframe-api`'s test resources (`openframe/services/openframe-api/src/test/resources/application-test.yml`) show the repository's pattern for isolating security-adjacent infrastructure in tests:
 
 ```yaml
+jwt:
+  secret: test-secret-key
+  expiration: 3600000
+
 spring:
-  mongodb:
-    uri: &mongo-uri mongodb://openframe:password123456789@mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe?authSource=admin&...
+  data:
+    redis:
+      enabled: false
+    cassandra:
+      enabled: false
+  kafka:
+    enabled: false
 ```
 
-As with the encryption password and salt, this URI's checked-in credential is a local/dev default. Any environment beyond local development should override the MongoDB connection details (and the equivalent Redis Cluster, Cassandra, Kafka, and NATS endpoints also defined in this file and in each service's `configs/base/openframe-*.yml`) through environment-specific secrets rather than relying on the value baked into the shared config.
+Follow this pattern for new test suites: use an explicit, obviously-fake test secret (never a value that resembles a production key), and disable infrastructure the test does not exercise rather than pointing it at a real datastore.
 
-### 2.4 Redis, Cassandra, Kafka, and NATS endpoints
+`openframe/services/openframe-api/src/test/java/com/openframe/api/util/TestAuthenticationManager.java` provides a minimal `AuthenticationManager` that always throws `BadCredentialsException`, useful as a negative-path authentication double. `openframe/services/openframe-api/src/test/java/com/openframe/api/config/TestConfig.java` and `TestConstants.java`/`TestUtils.java` (same package) hold the shared test wiring for the API service — check these before adding new authentication or authorization test fixtures to avoid duplicating a manager or constant set.
 
-The same `application.yml` centralizes every datasource endpoint consumed by the services in this repository — Redis Cluster nodes, Cassandra contact points, and the Pinot controller/broker URLs — and per-service files (`configs/base/openframe-api.yml`, `configs/base/openframe-client.yml`, `configs/base/openframe-external-api.yml`, `configs/base/openframe-management.yml`, `configs/base/openframe-stream.yml`) add the Kafka bootstrap servers and NATS server address each service needs. Treat any change to these addresses as a networking/security change, not a cosmetic config change: they define which services can reach which datastore, and in a cluster deployment that reachability is also a trust boundary enforced by Kubernetes network policy at the `datasources` and `tenant` namespace level (see the Argo CD app-of-apps wiring referenced in the ecosystem reference).
+#### What to verify before merging a security-relevant change
 
-## 3. Input validation and sanitization
+- **Tenant scoping**: any new repository method, cache key, or query must include a tenant predicate consistent with `openframe.tenant-isolation.enabled: true`. A method that silently drops tenant scoping is a cross-tenant data leak, not just a bug.
+- **Secrets in configuration**: a new `configs/base/*.yml` entry must use an environment-variable placeholder (`${VAR_NAME:default}`) for any credential, and the default — if present at all — must be clearly a development-only value, following the existing pattern for `ENCRYPTION_PASSWORD`, `ENCRYPTION_SALT`, and `REDIS_CLUSTER_NODES`.
+- **Token handling**: no raw JWT, access token, or refresh token value should appear in a log statement, error message, or test assertion output.
+- **Dependency changes**: a `pom.xml` version bump for a dependency already carrying a CVE-driven override (see the table above) must preserve or improve on the pinned version, not silently revert to a BOM-managed version that reintroduces the CVE.
+- **Redirect targets**: any new redirect-producing endpoint in the gateway OAuth flow must go through an explicit allow-list, matching the pattern used by `/oauth/signup-continue` and `/oauth/join-return`.
 
-This repository has no application-level input-validation framework documented in the material inlined above beyond what Spring Boot and Spring Security provide by default (Bean Validation annotations on request DTOs, GraphQL schema-level typing in `openframe-api`). In the absence of repository-specific guidance here, apply these defaults consistently across every service:
+#### Reporting findings discovered during review
 
-- **Validate at the boundary.** Every REST controller and GraphQL resolver in `openframe-api`, `openframe-external-api`, and `openframe-client` (service) should validate incoming payloads against their declared schema/DTO shape before any business logic runs — reject malformed or out-of-range input with a 4xx response rather than letting it propagate into a datastore write.
-- **Treat the external API as hostile input.** `openframe-external-api` is the public, rate-limited surface (API key managed) described in the architecture reference — it is the service most likely to receive adversarial input, and its handlers should be the most defensively written in the codebase.
-- **Never trust a tenant ID from the request body alone.** Tenant-scoping (section 1.7) depends on the authenticated principal's tenant, not a client-supplied value; a resolver or controller that reads `tenantId` from the request payload and uses it directly to scope a query reintroduces a cross-tenant data leak even if the underlying document correctly implements `TenantScoped`.
-- **Validate script and command input at the agent boundary.** The Rust agent (`openframe-client`, `clients/openframe-client/src/main.rs`) executes scripts dispatched from the platform (bash/PowerShell/Python/Nushell, per the architecture reference's script-execution sequence). The dispatch path — API → Gateway → `openframe-client` service → NATS → agent — is the sensitive one: anything that lets an unauthorized caller reach the dispatch endpoint is equivalent to arbitrary remote code execution on every managed device. Authorization checks on that dispatch path deserve the same scrutiny as the authentication flow itself.
+If a code review surfaces an actual exploitable vulnerability (not a style or best-practice nit), do not file it as a GitHub issue or discuss it in a public pull request comment or OpenMSP Slack channel. Report it per [`SECURITY.md`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/SECURITY.md): email security@flamingo.run with the affected file/commit and reproduction steps.
 
-## 4. Common security vulnerabilities and mitigations
+---
 
-| Vulnerability class | Where it applies in this repository | Mitigation already in place / to apply |
+### 6. Environment variables and secrets management
+
+#### Variables referenced in shared configuration
+
+`configs/base/application.yml` is the common configuration layer loaded by every service through the Config Server (`SPRING_CONFIG_URL`, default `http://openframe-config.platform.svc.cluster.local:8888`). The variables it reads, with their checked-in defaults, are:
+
+| Variable | Used for | Checked-in default |
 |---|---|---|
-| Broken authentication (silently bypassed login) | Any `SecurityConfig`/`AuthenticationProvider` in `openframe-authorization-server` or other services | Rule `OPENFRAM-002-12` — never register a custom `AuthenticationProvider` as a `@Bean`; wire it inline through the DSL (section 1.5) |
-| Cross-tenant data leakage | Any new `@Document` class under a `document/` package | Rule `OPENFRAM-002-6` — implement `TenantScoped`; keep `openframe.tenant-isolation.enabled: true` (section 1.7) |
-| Hardcoded/default secrets reaching production | `security.encryption.password`/`salt`, the MongoDB URI's embedded credential, in `configs/base/application.yml` | Override via environment variables (`ENCRYPTION_PASSWORD`, `ENCRYPTION_SALT`) in every non-local environment (section 2.1) |
-| Known-CVE transitive dependencies | Any dependency not explicitly pinned in the root `pom.xml`'s `dependencyManagement` | The parent POM already overrides BouncyCastle, Jackson, Tomcat, Plexus Utils, Thrift, async-http-client, and both lz4-java forks past flagged CVEs; keep these pins when upgrading (section 2.2) |
-| Excess session/token lifetime | `security.oauth2.token` in `configs/base/application.yml` | Review `access.expiration-seconds` and `refresh.expiration-seconds`/`max-refresh-count` together before changing either (section 1.3) |
-| Unauthorized script/command dispatch to managed devices | The API → Gateway → `openframe-client` service → NATS → agent path | Authorization must be enforced at every hop, not only at the Gateway; see section 3 |
-| Gateway route path confusion | `configs/base/openframe-gateway.yml` | The frontend route (`/**`) is intentionally listed last/most-general; keep more specific path predicates (`/api/**`, `/clients/**`, `/sas/**`, `/api-docs/**`) registered and matched before the catch-all |
+| `ENCRYPTION_PASSWORD` | At-rest value encryption password | Development placeholder — **override in any non-local environment** |
+| `ENCRYPTION_SALT` | At-rest value encryption salt | Development placeholder — **override in any non-local environment** |
+| `REDIS_CLUSTER_NODES` | Redis cluster node list for `spring.data.redis.cluster.nodes` | `redis-cluster-0/1/2.redis-cluster-headless.datasources.svc.cluster.local:6379` |
+| `OPENFRAME_CLUSTER_ID` | `openframe.cluster-id` tag used across services | `cluster-id` |
+| `RELEASE_VERSION` | Actuator management endpoint base path versioning | `v1` |
+| `SPRING_CONFIG_URL` | Location of the Config Server each service imports configuration from | `http://openframe-config.platform.svc.cluster.local:8888` (per-service `application.yml` files use `http://openframe-config.microservices.svc.cluster.local:8888` as their local default — confirm which applies in your deployment) |
 
-For dependency CVEs specifically, Renovate (`renovate.json`) is configured to track and open PRs for `com.openframe.oss` Maven packages, `@flamingo-stack/openframe-frontend-core`, the pinned FleetMDM and MeshCentral Helm charts, and — grouped into a single PR — every dependency under `clients/openframe-client/**` for the Rust agent. All other Maven, npm, and Helm dependencies are deliberately left unmanaged by Renovate in this repository (each rule's `enabled: false` entries exclude everything not explicitly whitelisted), so a CVE in an unlisted transitive dependency will not be caught automatically — the manual pins in `pom.xml`'s `dependencyManagement` (section 2.2) are the current compensating control for that gap.
+Each per-service `application.yml` (for example `openframe/services/openframe-api/src/main/resources/application.yml`, and the equivalent files for `openframe-authorization-server` and `openframe-client`) only sets `spring.application.name` and imports configuration from the Config Server — it does not define service-specific secrets directly, so service-level secret overrides belong in the Config Server's backing configuration or in the Kubernetes manifests, not hardcoded into these files.
 
-## 5. Security testing and code review guidelines
+#### Rust agent build-time variable
 
-### 5.1 Enforced code-review rules
-
-Two code-review rules tagged `severity: error` are actively enforced against this repository today (both described in detail in sections 1.5 and 1.7 above):
-
-- **`OPENFRAM-002-12`** — custom `AuthenticationProvider` beans must not be registered via `@Bean`.
-- **`OPENFRAM-002-6`** — tenant-scoped MongoDB `@Document` classes must implement `TenantScoped`.
-
-Both are `tier: judged`, meaning they are evaluated by the automated reviewer against code you change, not merely documented as guidance. Before opening a pull request that touches a `*Config.java`, `*SecurityConfig.java`, `*AuthenticationProvider.java`, or any file under a `document/` package, check your change against these two rules first.
-
-### 5.2 Test infrastructure for security scenarios
-
-- `TestAuthenticationManager` (section 1.6) exists specifically to test rejection paths — use it rather than mocking a loosely-defined `AuthenticationManager` stub when a test needs to assert a 401/403 response.
-- `openframe-api`'s test configuration (`openframe/services/openframe-api/src/test/java/com/openframe/api/config/TestConfig.java`) and test utilities (`TestConstants.java`, `TestUtils.java`) centralize fixtures for authentication-related tests in that service; extend these rather than duplicating test security configuration per test class.
-- The test-only configuration `openframe/services/openframe-api/src/test/resources/application-test.yml` disables Kafka, Redis, Cassandra, and Spring Cloud Config, and supplies a non-production `jwt.secret: test-secret-key`. This value must never be reused outside tests — it is deliberately weak and predictable so tests are deterministic, not because weak secrets are acceptable anywhere else.
-- `openframe-test` (`com.openframe:openframe-test`) is the shared test-support Maven module used across services; `SummaryLogger` and `TestApplication` in that module back cross-service test reporting.
-
-### 5.3 Vulnerability disclosure and supported versions
-
-The organization's security policy (see `SECURITY.md` at the repository root) defines the full disclosure process. Key points for contributors to this repository:
-
-- Report vulnerabilities to **security@flamingo.run**, never through a public issue, pull request, or Slack message.
-- In scope: the source code in public `flamingo-stack` GitHub repositories (including this one), OpenFrame SaaS, and the Flamingo websites.
-- Out of scope: self-hosted deployments operated by someone else (report those to their operator, unless the root cause is in this repository's code, in which case report the code issue here) and vulnerabilities in upstream projects OpenFrame bundles (Fleet, MeshCentral, osquery) that are not caused by how OpenFrame uses them.
-- Supported versions receiving security fixes: the running OpenFrame SaaS service (fixed by Flamingo automatically) and the latest release of self-hosted OpenFrame, its agent, and its desktop/mobile apps.
-- Flamingo AI does not run a paid bug-bounty program but credits reporters publicly with their consent.
-
-## 6. Environment variables and secrets management
-
-### 6.1 Variables defined with defaults in shared config
-
-`configs/base/application.yml` is imported (via Spring Cloud Config, served by `openframe-config`) by every Java service in this repository. It defines the following environment-driven values, each with a checked-in default that is safe only for local development:
-
-| Variable | Purpose | Default (local-only, override in every other environment) |
-|---|---|---|
-| `ENCRYPTION_PASSWORD` | Symmetric encryption password for sensitive fields | `kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n` |
-| `ENCRYPTION_SALT` | Salt paired with `ENCRYPTION_PASSWORD` | `74f62c51327175b05abe1ad78030565c` |
-| `REDIS_CLUSTER_NODES` | Redis Cluster node list | the three in-cluster `redis-cluster-*.redis-cluster-headless.datasources.svc.cluster.local:6379` addresses |
-| `OPENFRAME_CLUSTER_ID` | Identifies this cluster to the shared libraries | `cluster-id` |
-| `SPRING_CONFIG_URL` | Address of the Config Server each service imports from | `http://openframe-config.platform.svc.cluster.local:8888` (also referenced with a `microservices` namespace variant in some per-service `application.yml` files) |
-| `RELEASE_VERSION` | Used to version the Actuator management base path | `v1` |
-
-> All of these are read with Spring's `${VAR:default}` placeholder syntax, so the default only applies when the environment variable is genuinely unset. Confirm your deployment's secret injection mechanism actually sets `ENCRYPTION_PASSWORD` and `ENCRYPTION_SALT` — a misconfigured secret mount that silently falls through to the default is indistinguishable from "working" until the encrypted data is inspected.
-
-### 6.2 Per-service configuration imports
-
-Each service's own `src/main/resources/application.yml` (for example `openframe/services/openframe-api/src/main/resources/application.yml`, `openframe/services/openframe-authorization-server/src/main/resources/application.yml`, and `openframe/services/openframe-client/src/main/resources/application.yml`) sets only its `spring.application.name` and imports the rest of its configuration from the Config Server:
-
-```yaml
-spring:
-  application:
-    name: openframe-api
-  config:
-    import: "optional:configserver:${SPRING_CONFIG_URL:http://openframe-config.microservices.svc.cluster.local:8888}"
-```
-
-The `optional:` prefix means a service will still start if the Config Server is unreachable, falling back to whatever local defaults exist — useful for isolated testing, but a reminder that a production deployment must ensure `openframe-config` is actually reachable, or a service may silently boot with stale or default security settings rather than failing closed.
-
-### 6.3 Build-time secrets for the Rust agent
-
-The agent crate (`clients/openframe-client/src/main.rs`) is a thin wrapper around the shared `openframe` crate published from the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib). Its build requires `OPENFRAME_VERSION` at build time:
+The endpoint agent (`clients/openframe-client/src/main.rs`) requires `OPENFRAME_VERSION` at build time, consumed by the shared `openframe-agent-lib` (`openframe_agent_lib`, pinned at `v0.0.5` from [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib)) build script:
 
 ```bash
 OPENFRAME_VERSION=0.0.0-dev cargo build --release
 ```
 
-This is a version string, not a secret, but it illustrates the pattern the agent follows for its other feature-gated build-time inputs (`OPENFRAME_CHAT_VERSION`, `MESHCENTRAL_AGENT_VERSION`, `FLEETMDM_AGENT_VERSION`, `OSQUERY_VERSION`, per the architecture reference) — all forwarded through the library's `build.rs`. None of these should ever carry a credential; if a future build-time variable needs to carry one, it must be injected by the CI pipeline's secret store, never committed to a `.env` file or workflow step in plaintext.
+This is a build-identity value, not a secret, but it must be set consistently with the release pipeline's versioning scheme for reproducible, auditable builds.
 
-### 6.4 General secrets-management rules for this repository
+#### Secrets management principles for this repository
 
-1. **Never commit a real secret value.** The defaults visible in `configs/base/application.yml` are known-local placeholders by design — do not add a new placeholder that looks production-plausible, since that increases the chance someone mistakes it for a real value and reuses it.
-2. **Prefer the Config Server over hardcoding.** Every service already imports from `openframe-config`; new configuration — especially anything secret — belongs there (backed by whatever secret store the cluster's Config Server is wired to), not inlined in a service's own `application.yml`.
-3. **Keep Renovate's dependency scope in mind when patching a CVE.** Because `renovate.json` disables automatic updates for every Maven/npm/Helm package except the explicitly whitelisted `com.openframe.oss`, `@flamingo-stack/openframe-frontend-core`, FleetMDM, and MeshCentral entries, a security patch to any other dependency must be applied manually in `pom.xml`'s `dependencyManagement` (the existing CVE-driven pins in section 2.2 are the template to follow).
-4. **Route datastore and token-lifetime changes through review.** Both are read from the shared `configs/base/application.yml`, consumed by every service — a change here has platform-wide blast radius, unlike a change scoped to one service's own resources.
+- **Never commit a production credential.** The values embedded in `configs/base/application.yml` (the MongoDB connection string's inline credential, the default `ENCRYPTION_PASSWORD`/`ENCRYPTION_SALT`) are committed defaults intended for local/dev use only; production and shared environments must supply their own values through the deployment's secret mechanism (Kubernetes Secrets referenced by the Argo CD-managed manifests under `manifests/`, or an equivalent secret store), not by editing this file in place.
+- **Prefer environment-variable indirection.** Every security-sensitive setting in `configs/base/application.yml` already follows the `${VAR_NAME:default}` Spring placeholder pattern. Extend new configuration the same way rather than hardcoding a literal.
+- **Scope automated dependency updates deliberately.** `renovate.json` intentionally disables automatic updates for everything except `com.openframe.oss:*` artifacts, the frontend-core npm package, the two pinned Helm charts, and `clients/openframe-client/**` dependencies — this is a deliberate control to keep the update surface reviewable, not an oversight. Do not broaden it without considering the CVE-tracking burden that creates.
+- **Do not log secrets.** This applies to JWTs, OAuth access/refresh tokens, the encryption password/salt, and any database credential — consistent with the token-handling guidance in the Common Vulnerabilities section above.
 
-## Related material
+---
 
-For the surrounding system (which services call which, and the full delivery chain from source to the `ghcr.io/flamingo-stack/openframe-oss-tenant/*` container images), see [the architecture overview](../../reference/architecture/overview.md) and [the ecosystem reference](../../reference/architecture/ecosystem.md), plus [the architecture diagrams](../../diagrams/architecture/README.md). For how to configure environment variables for local development, see [the environment setup guide](../setup/environment.md) and [the local development guide](../setup/local-development.md). For the test suite that exercises this behavior, see [the testing guide](../testing/README.md), and for the review process this document's rules are enforced under, see [the contributing guidelines](../contributing/guidelines.md).
+[![Autonomous AI Agents That Actually Fix Your Infrastructure | OpenFrame v0.5.2](https://img.youtube.com/vi/jEkFcS4AcQ4/maxresdefault.jpg)](https://www.youtube.com/watch?v=jEkFcS4AcQ4)
+
+### Related documentation
+
+For the services and libraries referenced in this document, see [OpenFrame OSS Tenant architecture overview](../../reference/architecture/README.md), [Authorization Service Core](../../reference/architecture/authorization-service-core/authorization-service-core.md), [Security Core Oauth](../../reference/architecture/security-core-oauth/security-core-oauth.md), [Security Oauth](../../reference/architecture/security-core-oauth/security-core-oauth.md), [Core Validation](../../reference/architecture/core-validation/core-validation.md), [Core Email Validation](../../reference/architecture/core-email-validation/core-email-validation.md), and [Data Redis](../../reference/architecture/data-redis/data-redis.md). For general environment setup, see [Environment Setup](../setup/environment.md) and [Local Development](../setup/local-development.md). For the overall contribution process, see [Contributing Guidelines](../contributing/guidelines.md).

@@ -1,0 +1,8 @@
+flowchart LR
+    Create["Create ticket"] --> Number["Allocate tenant ticket number"]
+    Message["Client or outbound message"] --> Activity["Stamp activity state"]
+    Transition["Status transition"] --> Resolver["Stamp resolver when applicable"]
+    Transition --> History["Persist status history"]
+    Filters["Ticket list filters"] --> Staleness["Resolve status-specific stale cutoffs"]
+    History --> Report["Statistics and reporting"]
+    Activity --> Report

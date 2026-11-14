@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Control as Control plane
+    participant Broker as NATS
+    participant Listener as Execution listener
+    participant Service as Services Execution
+    participant Executor as Platform executor
+    participant Store as Result store
+    Control->>Broker: Publish execution message
+    Broker->>Listener: Deliver message
+    Listener->>Service: Execute request
+    Service->>Executor: Run script with resolved settings
+    Executor-->>Service: Return execution outcome
+    Service-->>Listener: Return correlated RMM result
+    Listener->>Store: Enqueue result when durable delivery is needed
+    Store->>Broker: Publish result or retain for retry
+    Broker-->>Control: Deliver execution outcome

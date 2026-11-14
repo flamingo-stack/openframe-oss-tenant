@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Caller
+    participant Publisher as "NATS message publisher"
+    participant Manager as "Connection manager"
+    participant Nats as "NATS broker"
+    Caller->>Publisher: publish subject and value
+    Publisher->>Publisher: Serialize value to JSON
+    Publisher->>Manager: get_client
+    Manager-->>Publisher: Active client
+    Publisher->>Nats: Publish subject and payload
+    Publisher->>Nats: Flush
+    Nats-->>Publisher: Flush completes
+    Publisher-->>Caller: Success or contextual error

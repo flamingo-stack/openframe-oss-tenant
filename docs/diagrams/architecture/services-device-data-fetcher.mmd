@@ -1,0 +1,10 @@
+flowchart LR
+    Kernel["Operating system and agent build"] --> Fetcher["Services Device Data Fetcher"]
+    Fetcher --> Registration["Agent registration service"]
+    Fetcher --> HostnamePublisher["Hostname report publisher"]
+    Fetcher --> TimezoneManager["Machine timezone run manager"]
+    Registration --> RegistrationClient["Registration client"]
+    HostnamePublisher --> NatsPublisher["NATS message publisher"]
+    TimezoneManager --> TimezonePublisher["Machine timezone publisher"]
+    TimezonePublisher --> NatsPublisher
+    NatsPublisher --> Nats["NATS service"]

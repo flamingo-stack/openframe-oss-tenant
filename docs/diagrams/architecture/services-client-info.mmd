@@ -1,0 +1,11 @@
+flowchart LR
+    ClientRuntime["OpenFrame Client runtime"] --> InfoService["OpenFrameClientInfoService"]
+    UpdateService["Client update service"] --> InfoService
+    UpdateHandler["Update handler service"] --> InfoService
+    InfoService --> DirectoryManager["DirectoryManager"]
+    DirectoryManager --> SecuredDir["Secured directory"]
+    InfoService --> JsonRead["Quarantine-aware JSON reader"]
+    InfoService --> AtomicWrite["Atomic file writer"]
+    JsonRead --> InfoFile["openframe_client_info.json"]
+    AtomicWrite --> InfoFile
+    InfoService --> InfoModel["OpenFrameClientInfo"]

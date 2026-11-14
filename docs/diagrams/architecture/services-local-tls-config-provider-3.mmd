@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Begin NATS connection"] --> LocalMode{"Local mode enabled?"}
+    LocalMode -->|"No"| DefaultTls["Use normal connection options"]
+    LocalMode -->|"Yes"| ResolvePath["Read configured local CA path"]
+    ResolvePath --> PathValid{"Path is set and exists?"}
+    PathValid -->|"No"| ConfigError["Return configuration error"]
+    PathValid -->|"Yes"| ReadPem["Read and parse PEM certificates"]
+    ReadPem --> ParseValid{"Certificates load into root store?"}
+    ParseValid -->|"No"| CertificateError["Return TLS configuration error"]
+    ParseValid -->|"Yes"| ApplyTls["Attach ClientConfig to NATS options"]
+    DefaultTls --> Connect["Connect to NATS"]
+    ApplyTls --> Connect

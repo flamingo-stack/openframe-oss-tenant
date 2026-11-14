@@ -1,0 +1,7 @@
+flowchart LR
+    TestCase["Ticket focused test"] --> Client["Test client and JSON mapper"]
+    Client --> TicketDto["Ticket Dto"]
+    TicketDto --> Ownership["Owner, user, and machine data"]
+    TicketDto --> Content["Attachments, images, and dialog data"]
+    TicketDto --> Query["Pagination and status totals"]
+    Client --> TicketApi["Ticket API response"]

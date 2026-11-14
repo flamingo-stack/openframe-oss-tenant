@@ -1,0 +1,17 @@
+flowchart TD
+    Gateway["Gateway"] --> Identity["Authorization Server"]
+    Gateway --> CoreApi["OpenFrame API"]
+    Gateway --> AgentApi["Client Service"]
+    Gateway --> IntegrationApi["External API"]
+
+    Management["Management Service"] --> Bootstrap["Configuration and stream initialization"]
+    Management --> Catalogs["Package catalog synchronization"]
+    Management --> Delivery["Client and tool update publishing"]
+
+    AgentApi --> Agent["OpenFrame endpoint agent"]
+    Agent --> Nats["NATS messaging"]
+    Nats --> AgentApi
+
+    Stream["Stream Service"] --> Kafka["Kafka events"]
+    Kafka --> Logs["Cassandra and Loki event logs"]
+    Kafka --> Analytics["Pinot projections"]

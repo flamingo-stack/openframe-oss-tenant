@@ -1,0 +1,7 @@
+flowchart LR
+    ApiService["API service and RMM command services"] -->|"create execution request"| Repository["Script Execution Repositories"]
+    Scheduler["Schedule dispatch services"] -->|"schedule fire"| Repository
+    Repository -->|"MongoTemplate queries"| MongoDb["MongoDB ScriptExecution collection"]
+    AgentResults["Agent result listeners"] -->|"find matching leaf"| Repository
+    HistoryUi["Execution history data fetcher"] -->|"page count and facets"| Repository
+    Repository -->|"execution rows and aggregates"| ApiService

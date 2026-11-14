@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Tenant domain requested"] --> Context["Read RequestContextHolder attributes"]
+    Context --> ServletCheck{"Servlet request attributes?"}
+    ServletCheck -->|"No"| EmptyContext["Return empty Optional"]
+    ServletCheck -->|"Yes"| Header["Read X-Tenant-Domain header"]
+    Header --> HeaderCheck{"Header present?"}
+    HeaderCheck -->|"Yes"| Domain["Return domain Optional"]
+    HeaderCheck -->|"No"| EmptyHeader["Return empty Optional"]

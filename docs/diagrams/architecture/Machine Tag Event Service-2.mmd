@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Writer as Repository Writer
+    participant Aspect as Machine Tag Event Aspect
+    participant Service as Machine Tag Event Service
+    participant Data as Machine and Tag Repositories
+    participant Kafka as Retrying Kafka Producer
+    Writer->>Aspect: Save machine or device assignment
+    Aspect->>Service: Delegate successful write
+    Service->>Data: Resolve machine, assignments, and tags
+    Data-->>Service: Current device projection data
+    Service->>Service: Build Machine Pinot Message
+    Service->>Kafka: Publish keyed by machine identifier
+    Kafka-->>Service: Delivery handled by producer

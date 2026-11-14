@@ -1,0 +1,10 @@
+flowchart LR
+    CommandListener["Command listener"] --> PackageHandler["Package update handler"]
+    PackageHandler --> OrderStore["Order store"]
+    OrderStore --> OrderFile["Persisted orders JSON"]
+    OrderStore --> ChangeSignal["Change notification"]
+    ChangeSignal --> UpdateWorker["Package update worker"]
+    UpdateWorker --> UpdateGate["Update gate"]
+    UpdateGate --> PackageManager["Package manager"]
+    PackageHandler --> StatusReporter["Status reporter"]
+    StatusReporter --> ControlPlane["Control plane"]

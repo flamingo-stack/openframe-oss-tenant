@@ -1,0 +1,11 @@
+flowchart TD
+    Startup["Client startup"] --> Recover["Read journal records"]
+    Recover --> Found{"Journal record found?"}
+    Found -->|"No"| Finish["Continue startup"]
+    Found -->|"Yes"| Started{"Record marked started?"}
+    Started -->|"Yes"| Interrupted["Build interrupted result with exit code 85"]
+    Started -->|"No"| NotStarted["Build not started result with exit code 85"]
+    Interrupted --> Complete["Persist result and remove journal entry"]
+    NotStarted --> Complete
+    Complete --> Next["Process next journal record"]
+    Next --> Found

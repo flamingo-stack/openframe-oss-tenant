@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Caller
+    participant Alive as "alive()"
+    participant Snapshot as "snapshot()"
+    participant ProcessView as "Refreshed process view"
+    Caller->>Alive: requested PIDs
+    Alive->>Snapshot: collect current processes
+    Snapshot->>ProcessView: refresh executable metadata
+    ProcessView-->>Snapshot: RunningProcess records
+    Snapshot-->>Alive: current snapshot
+    Alive-->>Caller: requested PIDs found in snapshot

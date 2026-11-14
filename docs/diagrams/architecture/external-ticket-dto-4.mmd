@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "External API test"
+    participant Api as "External API"
+    participant Mapper as "Jackson mapper"
+    participant Dto as "External Ticket Dto"
+    Test->>Api: Request ticket data
+    Api->>Test: Return JSON response
+    Test->>Mapper: Deserialize response payload
+    Mapper->>Dto: Create response models
+    Dto->>Test: Expose typed fields for assertions

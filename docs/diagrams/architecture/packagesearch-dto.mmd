@@ -1,0 +1,5 @@
+flowchart LR
+    TestCase["Package search test"] --> Edge["PackageSearchEdge"]
+    Edge --> Node["PackageSearchItem node"]
+    Edge --> Cursor["String cursor"]
+    JsonPayload["JSON response payload"] --> Edge

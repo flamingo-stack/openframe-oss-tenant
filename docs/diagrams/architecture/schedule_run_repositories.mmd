@@ -1,0 +1,8 @@
+flowchart TD
+    Schedule["Script schedule"] -->|"fires"| Header["Schedule run header"]
+    Header -->|"correlates by execution identifier"| Leaves["Script execution leaves"]
+    Header -->|"stores aggregate status"| HeaderStore["Schedule run collection"]
+    Leaves -->|"stores machine outcomes"| LeafStore["Script execution collection"]
+    LeafStore -->|"terminal leaves per machine"| Progress["Responded device count"]
+    HeaderStore -->|"page and facet queries"| RunsView["Schedule Runs view"]
+    Progress -->|"progress ratio"| RunsView

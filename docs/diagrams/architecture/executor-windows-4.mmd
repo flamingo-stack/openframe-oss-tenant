@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Service as Execution Service
+    participant Executor as Executor Windows
+    participant Disk as Support Directory
+    participant Runner as Windows Runner
+    Service->>Executor: ScriptParams
+    Executor->>Executor: Resolve interpreter and privilege route
+    Executor->>Disk: Write temporary ps1 or bat script
+    Executor->>Disk: Open script to verify readiness
+    alt agent context
+        Executor->>Runner: Run normal process
+    else user context
+        Executor->>Runner: Run as interactive user
+    end
+    Runner-->>Executor: ExecResult
+    Executor->>Disk: Remove temporary script by guard
+    Executor-->>Service: ExecResult

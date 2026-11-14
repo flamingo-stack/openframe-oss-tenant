@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Two package references"] --> BothWinget{"Both Winget?"}
+    BothWinget -->|"Yes"| FoldCase["Compare identifiers with ASCII case folding"]
+    BothWinget -->|"No"| Structural["Compare enum variant and all fields exactly"]
+    FoldCase --> Result["Return match result"]
+    Structural --> Result

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Installer
+    participant Parser as Model Device Tag
+    participant Config as Initial Configuration
+    participant Client as Endpoint Client
+    participant Server as Registration Service
+    Installer->>Parser: provide tag arguments
+    Parser->>Parser: split, trim, reject invalid, group values
+    Parser->>Config: return DeviceTag collection
+    Config->>Client: supply tags during registration
+    Client->>Server: send registration request with tags
+    Server->>Server: validate, create or find, assign each tag

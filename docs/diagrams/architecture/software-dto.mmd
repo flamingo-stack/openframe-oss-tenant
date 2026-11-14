@@ -1,0 +1,22 @@
+flowchart TD
+    Api["GraphQL software and vulnerability queries"] --> SoftwareConnection["Software connection"]
+    Api --> DeviceConnection["Software on device connection"]
+    Api --> SoftwareVulnerabilityConnection["Software vulnerability connection"]
+    Api --> VulnerabilityConnection["Vulnerability connection"]
+
+    SoftwareConnection --> SoftwareEdge["SoftwareEdge"]
+    SoftwareEdge --> Software["Software node"]
+    Software --> Summary["SoftwareVulnerabilitySummary"]
+
+    DeviceConnection --> SoftwareOnDeviceEdge["SoftwareOnDeviceEdge"]
+    SoftwareOnDeviceEdge --> DeviceInstall["SoftwareOnDevice node"]
+
+    SoftwareVulnerabilityConnection --> SoftwareVulnerabilityEdge["SoftwareVulnerabilityEdge"]
+    SoftwareVulnerabilityEdge --> SoftwareVulnerability["SoftwareVulnerability node"]
+
+    VulnerabilityConnection --> VulnerabilityEdge["VulnerabilityEdge"]
+    VulnerabilityEdge --> Vulnerability["Vulnerability node"]
+    SoftwareEdge --> Cursor["Cursor"]
+    SoftwareOnDeviceEdge --> Cursor
+    SoftwareVulnerabilityEdge --> Cursor
+    VulnerabilityEdge --> Cursor

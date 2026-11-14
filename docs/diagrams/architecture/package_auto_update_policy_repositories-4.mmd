@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Turn off auto update for software"] --> Criteria["Match tenant, software, enabled true"]
+    Criteria --> Matches{"Policies matched?"}
+    Matches -->|"No"| None["Return zero modified"]
+    Matches -->|"Yes"| Disable["Set disabled state and audit fields"]
+    Disable --> Count["Return modified count"]

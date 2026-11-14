@@ -1,0 +1,10 @@
+flowchart TD
+    Request["Ticket Request"] --> TicketResource["TicketController"]
+    TicketResource --> Caller["Resolved API Caller"]
+    Caller --> Authorize["Authorization and Domain Validation"]
+    Authorize --> Decision{"Accepted?"}
+    Decision -->|"No"| Failure["Error Response"]
+    Decision -->|"Yes"| TicketService["Ticket Domain Service"]
+    TicketService --> TicketData["Ticket Data"]
+    TicketData --> TicketMapper["REST Mapping"]
+    TicketMapper --> Success["Ticket Response"]

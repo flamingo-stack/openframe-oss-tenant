@@ -1,0 +1,16 @@
+flowchart TD
+    Loop["Refresh loop"] --> Suspended{"Client suspended?"}
+    Suspended -->|"Yes"| ProbeDelay["Get escalating probe delay"]
+    ProbeDelay --> ProbeWait["Sleep until probe"]
+    ProbeWait --> ProbeAuth["Run bounded reauthentication"]
+    ProbeAuth --> Loop
+    Suspended -->|"No"| DueWait["Wait until scheduled deadline"]
+    DueWait --> RefreshAuth["Run bounded reauthentication"]
+    RefreshAuth --> RefreshOk{"Refresh succeeds?"}
+    RefreshOk -->|"Yes"| Schedule["Derive next deadline"]
+    Schedule --> Loop
+    RefreshOk -->|"No"| BecameSuspended{"Suspended during retry?"}
+    BecameSuspended -->|"Yes"| Reset["Reset schedule to immediate"]
+    Reset --> Loop
+    BecameSuspended -->|"No"| RetryWait["Sleep 60 seconds"]
+    RetryWait --> RefreshAuth

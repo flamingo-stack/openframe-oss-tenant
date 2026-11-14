@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Job as "Retention Caller"
+    participant Events as "Connector Recreation Event Repository"
+    participant Mongo as "MongoDB"
+    Job->>Events: Delete events before cutoff
+    Events->>Mongo: Delete matching documents
+    Mongo-->>Events: Deleted document count
+    Events-->>Job: Deleted document count

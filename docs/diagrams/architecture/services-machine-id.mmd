@@ -1,0 +1,6 @@
+flowchart LR
+    Client["OpenFrame Client process"] -->|"constructs"| Service["MachineIdService"]
+    DirectoryManager["DirectoryManager"] -->|"provides app support directory"| Service
+    Service -->|"uses"| Cache["Shared optional ID cache"]
+    Service -->|"reads and writes"| IdentityFile["Application support directory machine_id file"]
+    ToolAgents["Integrated tool agents"] -->|"read shared identity"| IdentityFile

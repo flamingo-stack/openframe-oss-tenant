@@ -1,0 +1,9 @@
+flowchart LR
+    ApiClient["API client"] --> ApiService["OpenFrame API service"]
+    ApiService --> Contracts["Api Contracts And Mapping"]
+    Contracts --> OrgContracts["Organization and audit contracts"]
+    Contracts --> BundleContracts["Software bundle inputs"]
+    Contracts --> TicketContracts["Ticket transition rule"]
+    BundleContracts --> RmmServices["RMM software services"]
+    TicketContracts --> TicketServices["Ticket services"]
+    OrgContracts --> ApiResponses["API filter and organization responses"]

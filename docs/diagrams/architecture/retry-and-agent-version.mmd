@@ -1,0 +1,7 @@
+flowchart TD
+    Attempt["Background MongoDB update"] --> Failure{"Retriable conflict or transient failure?"}
+    Failure -->|"No"| Other["Do not emit retry-specific log"]
+    Failure -->|"Yes"| Retry["Log failed retry attempt"]
+    Retry --> Result{"Retry succeeds?"}
+    Result -->|"Yes"| Success["Log recovery after retries"]
+    Result -->|"No"| Exhausted["Log update not saved marker"]

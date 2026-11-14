@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Agent as "Endpoint agent"
+    participant Nats as "NATS JetStream"
+    participant Listener as "Durable listener"
+    participant Service as "Client domain service"
+    participant Mongo as "MongoDB"
+
+    Agent->>Nats: Publish machine event
+    Nats->>Listener: Deliver message
+    Listener->>Listener: Extract subject identity and parse payload
+    Listener->>Service: Apply state change
+    Service->>Mongo: Persist state
+    Mongo->>Service: Write succeeds
+    Service->>Listener: Processing succeeds
+    Listener->>Nats: Acknowledge message

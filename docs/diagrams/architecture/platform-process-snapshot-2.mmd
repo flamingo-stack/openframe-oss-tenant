@@ -1,0 +1,12 @@
+flowchart TD
+    Snapshot["snapshot()"] --> Refresh["Refresh executable metadata"]
+    Refresh --> ProcessMap["Process map"]
+    ProcessMap --> Image["Readable executable image"]
+    ProcessMap --> Parent["Parent process image"]
+    Image --> Record["RunningProcess"]
+    Parent --> Record
+    Record --> Service["Windows service classification"]
+    Record --> Session["Windows session lookup"]
+    Alive["alive(pids)"] --> Snapshot
+    Snapshot --> Filter["Filter requested PIDs"]
+    Filter --> LivePids["Live PID list"]

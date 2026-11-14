@@ -1,0 +1,9 @@
+flowchart TD
+    Scheduler["Fleet host facts backfill"] --> DueQuery["findDueForFleetHostFacts"]
+    DueQuery --> LiveMachines["Exclude retired machines"]
+    LiveMachines --> MissingFacts["Require at least one blank host fact"]
+    MissingFacts --> StaleCheck["Never checked or checked before threshold"]
+    StaleCheck --> Selected["Oldest due machines"]
+    Selected --> FetchFacts["Fetch and persist host facts"]
+    FetchFacts --> MarkChecked["markHostFactsChecked"]
+    Heartbeat["Machine heartbeat"] --> UpdateSeen["updateLastSeen"]

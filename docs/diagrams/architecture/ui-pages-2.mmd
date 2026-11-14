@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Case as "Test Case"
+    participant Devices as "Devices Page"
+    participant DeviceView as "Device View"
+    participant Remote as "Remote Access"
+    participant Mesh as "MeshCentral"
+    Case->>Devices: "Search"
+    Devices->>Devices: "Select online row"
+    Devices->>DeviceView: "Open device"
+    Case->>DeviceView: "Choose remote feature"
+    DeviceView->>Mesh: "Establish session"
+    Mesh->>Remote: "Render session"
+    Remote->>Remote: "Wait for UI"

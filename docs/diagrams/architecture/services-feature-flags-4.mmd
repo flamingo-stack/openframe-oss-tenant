@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Handler as Feature Flags Handler
+    participant Service as Feature Flags Service
+    participant Disk as State File
+    participant Restart as Restart Coordinator
+    Handler->>Service: apply delivery and sequence
+    Service->>Disk: atomically persist state
+    Service-->>Handler: unchanged or restart required
+    Handler->>Restart: coordinate restart when required
+    Restart->>Service: restart reported
+    Service->>Disk: persist cleared restart marker

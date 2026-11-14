@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Update as "Update Service"
+    participant Launcher as "Platform Updater Launcher"
+    participant Stage as "Update Staging Directory"
+    participant OS as "OS Process Manager"
+    participant Service as "Client Service"
+
+    Update->>Launcher: Launch with staged binary and recovery metadata
+    Launcher->>Stage: Create staging directory
+    alt Windows
+        Launcher->>Stage: Write PowerShell updater and output log
+        Launcher->>OS: Spawn hidden PowerShell process
+        Launcher->>Update: Return exit watcher
+    else macOS
+        Launcher->>Stage: Write executable shell script and plist
+        Launcher->>OS: Load one-shot launchd job
+        Launcher->>Update: Return detached launch result
+    else Linux
+        Launcher->>Update: Return unsupported implementation error
+    end
+    OS->>Service: Continue update after service stop

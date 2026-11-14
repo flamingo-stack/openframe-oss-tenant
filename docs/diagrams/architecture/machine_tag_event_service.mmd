@@ -1,0 +1,7 @@
+flowchart LR
+    Machine["Machine"] --> Build["Build Machine Pinot Message"]
+    Assignments["Device tag assignments"] --> Build
+    Tags["Tag definitions"] --> Build
+    Tenant["Current tenant ID"] --> Build
+    Build --> Fields["Machine fields and tag facets"]
+    Fields --> Publish["Publish with machine ID key"]

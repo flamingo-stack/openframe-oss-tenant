@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant L as Listener Execution
+    participant S as Result Store
+    participant E as Execution Service
+    participant O as Result Outbox
+    participant N as NATS
+    L->>S: Journal durable batch
+    L->>E: Execute request
+    E-->>L: RmmResult
+    L->>S: Complete result into outbox
+    L->>O: Notify flush
+    O->>N: Publish result
+    N-->>O: Publish outcome
+    O->>S: Remove delivered entry

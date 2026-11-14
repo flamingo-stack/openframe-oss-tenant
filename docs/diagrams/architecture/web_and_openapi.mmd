@@ -1,0 +1,12 @@
+flowchart LR
+    IntegrationClient["Integration Client"] --> Gateway["OpenFrame Gateway"]
+    Gateway -->|"/external-api with prefix removed"| ExternalApi["External API Service"]
+    Gateway -->|"/api-docs"| ApiDocs["Springdoc API Document"]
+    Gateway -->|"/swagger-ui or /webjars"| SwaggerAssets["Swagger UI Assets"]
+    ExternalApi --> Bootstrap["ExternalApiApplication"]
+    Bootstrap --> WebConfig["ExternalApiWebConfig"]
+    WebConfig --> Resolver["ApiCallerArgumentResolver"]
+    Bootstrap --> OpenApi["OpenApiConfig"]
+    ExternalApi --> Controllers["External Resource Controllers"]
+    Resolver --> Controllers
+    OpenApi --> ApiDocs

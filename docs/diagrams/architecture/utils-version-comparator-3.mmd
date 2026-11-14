@@ -1,0 +1,12 @@
+flowchart LR
+    From["from string"] --> ParseFrom["parse_version"]
+    To["to string"] --> ParseTo["parse_version"]
+    ParseFrom --> FromValid{"Parsed?"}
+    ParseTo --> ToValid{"Parsed?"}
+    FromValid -->|"No"| Invalid["Return None"]
+    ToValid -->|"No"| Invalid
+    FromValid -->|"Yes"| Compare["precedence to against from"]
+    ToValid -->|"Yes"| Compare
+    Compare --> Lower["Less: downgrade"]
+    Compare --> Same["Equal: same precedence"]
+    Compare --> Higher["Greater: upgrade"]

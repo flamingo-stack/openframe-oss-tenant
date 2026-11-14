@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Authentication method called"] --> BuildUrl["Append token path to base URL"]
+    BuildUrl --> BuildForm["Set form content type and grant fields"]
+    BuildForm --> Send["Send HTTP POST request"]
+    Send --> TransportOk{"Request sent?"}
+    TransportOk -->|"No"| TransportError["Return contextual transport error"]
+    TransportOk -->|"Yes"| Observe["Pass status to deactivation service"]
+    Observe --> Success{"HTTP success status?"}
+    Success -->|"No"| StatusError["Return authentication error"]
+    Success -->|"Yes"| Decode["Decode JSON token response"]
+    Decode --> DecodeOk{"Valid token JSON?"}
+    DecodeOk -->|"No"| ParseError["Return contextual parse error"]
+    DecodeOk -->|"Yes"| Result["Return agent token response"]

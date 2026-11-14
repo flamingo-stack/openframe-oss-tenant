@@ -1,0 +1,14 @@
+flowchart TD
+    Detect["Detect unhealthy condition"] --> Cooldown{"Cooldown elapsed?"}
+    Cooldown -->|"No"| Wait["Continue polling"]
+    Cooldown -->|"Yes"| Resolve["Resolve msh file path"]
+    Resolve --> Fetch["Request generate msh with bearer token"]
+    Fetch --> Valid{"Response has MeshID or ServerID?"}
+    Valid -->|"No"| Restart["Restart agent anyway"]
+    Valid -->|"Yes"| Compare["Compare MeshID and ServerID"]
+    Compare --> Changed{"Values changed?"}
+    Changed -->|"Yes"| Rewrite["Write temporary file and rename"]
+    Changed -->|"No"| Restart
+    Rewrite --> Restart
+    Restart --> Observe["Wait for healthy log marker"]
+    Observe --> Wait

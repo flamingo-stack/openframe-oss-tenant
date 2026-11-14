@@ -1,0 +1,10 @@
+flowchart TD
+    HasLeaves{"Any matched execution leaves?"}
+    HasLeaves -->|"No"| StoredStatus["Keep persisted action status"]
+    HasLeaves -->|"Yes"| Waiting{"Waiting machines greater than zero?"}
+    Waiting -->|"Yes"| WaitingStatus["Status is WAITING"]
+    Waiting -->|"No"| InProgress{"Queued or running leaf present?"}
+    InProgress -->|"Yes"| ProgressStatus["Status is IN PROGRESS"]
+    InProgress -->|"No"| Failed{"Script error or failed leaf present?"}
+    Failed -->|"Yes"| FailedStatus["Status is FAILED"]
+    Failed -->|"No"| CompletedStatus["Status is COMPLETED"]

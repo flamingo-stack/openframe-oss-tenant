@@ -1,0 +1,11 @@
+flowchart TD
+    Finalize["Finalize Gui App Migration"] --> NeedStart{"Needs start?"}
+    NeedStart -->|"No"| Complete["Return successfully"]
+    NeedStart -->|"Yes"| Platform{"Target platform"}
+    Platform -->|"macOS"| MacPrefs["Write preferences when bundle identifier exists"]
+    MacPrefs --> MacUser["Find console user"]
+    MacUser --> MacLaunch["Launch as console user"]
+    Platform -->|"Windows"| WinArgs["Resolve launch arguments"]
+    WinArgs --> WinLaunch["Launch in user session"]
+    MacLaunch --> Complete
+    WinLaunch --> Complete

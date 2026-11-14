@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Coordinator as Doctor healing coordinator
+    participant Installer as WebView2 installer
+    participant Disk as Secured directory
+    participant Microsoft as Microsoft download endpoint
+    participant PowerShell as System PowerShell
+    participant Bootstrapper as WebView2 bootstrapper
+    participant Registry as Windows runtime registration
+
+    Coordinator->>Installer: install()
+    Installer->>Disk: Create UUID staging path
+    Installer->>Microsoft: Download bootstrapper as stream
+    Microsoft-->>Installer: Response chunks
+    Installer->>Disk: Write chunks with size cap
+    Installer->>PowerShell: Validate Authenticode signature
+    PowerShell-->>Installer: Valid Microsoft signature
+    Installer->>Bootstrapper: Run silent machine wide install
+    Bootstrapper->>Registry: Register WebView2 runtime
+    loop Up to 12 checks
+        Installer->>Registry: Check machine wide runtime
+        Registry-->>Installer: Runtime status
+    end
+    Installer->>Disk: Remove staged executable
+    Installer-->>Coordinator: Healed or failed outcome

@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Handler as Services Update Handler
+    participant Lkg as Last Known Good Service
+    participant Info as Client Information Service
+    participant Store as Result Store
+    participant Clean as Update Cleanup Service
+    Handler->>Lkg: promote target version
+    Handler->>Clean: remove pre-swap copy
+    Handler->>Info: update version
+    Handler->>Info: set status updated
+    Handler->>Store: settle awaiting delivery as done
+    Handler->>Clean: cleanup all artifacts
+    Handler->>Lkg: prune updater transcripts
+    Handler->>Handler: clear update state

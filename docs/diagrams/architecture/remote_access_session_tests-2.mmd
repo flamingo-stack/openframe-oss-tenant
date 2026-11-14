@@ -1,0 +1,9 @@
+flowchart TD
+    Find["List Windows devices"] --> Match["Filter by configured hostname"]
+    Match --> Prefer["Prefer an online device record"]
+    Prefer --> Available{"Device found?"}
+    Available -->|"No"| Skip["Skip dependent tests"]
+    Available -->|"Yes"| Wait["Wait for account session to clear"]
+    Wait --> Free{"No active account session?"}
+    Free -->|"No"| Skip
+    Free -->|"Yes"| Create["Create test-owned request"]

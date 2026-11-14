@@ -1,0 +1,6 @@
+flowchart TD
+    Producer["Application Event Producer"] --> Event["External Application Event"]
+    Event --> Repository["External Application Event Repository"]
+    Repository --> Mapping["Spring Data Mapping"]
+    Mapping --> Collection["external application events Collection"]
+    Collection --> Stored["Tenant Scoped Event Record"]

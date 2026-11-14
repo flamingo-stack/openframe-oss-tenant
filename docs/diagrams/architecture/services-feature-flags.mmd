@@ -1,0 +1,8 @@
+flowchart LR
+    Delivery["Feature flags delivery"] --> Handler["Feature flags handler"]
+    Handler --> Service["Feature flags service"]
+    Service --> Model["Feature flag model"]
+    Service --> Store["Atomic JSON state file"]
+    Service --> Runtime["Running effective flags"]
+    Service --> Restart["Restart coordination"]
+    Model --> Runtime

@@ -1,0 +1,13 @@
+flowchart LR
+    Gateway["Gateway HTTP response"] --> StatusHandler["on_gateway_status"]
+    StatusHandler --> Service["DeactivationService"]
+    Service --> State["Async state and atomic suspension gate"]
+    Service --> Marker["Secured directory marker"]
+    Service --> Queue["Deactivation command channel"]
+    Queue --> Supervisor["Tokio command supervisor"]
+    Supervisor --> Tools["ToolRunManager"]
+    Supervisor --> Uninstaller["Detached client uninstall"]
+    Caller["Client outbound-call path"] --> Gate["is_suspended"]
+    Gate --> Service
+    Caller --> Delay["next_probe_delay"]
+    Delay --> Service

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Test as Test code
+    participant Client as API client
+    participant Server as API service
+    participant Mapper as Jackson mapper
+    participant Edge as TimeEntryEdge
+    Test->>Client: Request a page of time entries
+    Client->>Server: Send query or request
+    Server-->>Client: Return edges with nodes and cursors
+    Client->>Mapper: Provide response JSON
+    Mapper->>Edge: Construct and populate each edge
+    Edge-->>Test: Expose node and cursor
+    Test->>Client: Use cursor when requesting a following page

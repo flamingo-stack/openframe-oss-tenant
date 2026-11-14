@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Bulk as Bulk uninstall
+    participant Service as Services Tool Uninstall
+    participant Kill as Tool Kill Service
+    participant Resolve as Parameter Resolver
+    participant Paths as Directory Manager
+    participant Tool as Tool executable
+    participant OS as Operating system
+    Bulk->>Service: uninstall all
+    Service->>Kill: stop installed tool
+    alt Fleet related tool
+        Service->>Kill: stop osqueryd asset
+    end
+    Service->>Resolve: resolve uninstall arguments
+    Service->>Paths: locate executable
+    alt Executable exists and arguments exist
+        Service->>Tool: launch uninstall command
+        Tool-->>Service: stdout and stderr streams
+        Tool-->>Service: exit status
+        Service->>Kill: stop remaining processes by path
+    else No command or missing executable
+        Service->>Service: skip command
+    end
+    Service->>OS: remove graphical bundle or autorun when applicable
+    Service->>OS: remove service registration when applicable

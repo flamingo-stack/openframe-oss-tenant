@@ -1,0 +1,6 @@
+flowchart TD
+    RawFile["Client log file"] --> Parser["Log parsing and source registry"]
+    Parser --> NatsManager["NATS log streaming manager"]
+    NatsManager -->|"authenticated publish with acknowledgement"| Nats["NATS JetStream"]
+    RawString["Raw log string"] --> Shipper["Logging Shipping"]
+    Shipper -->|"best effort HTTP POST"| HttpEndpoint["Configured HTTP endpoint"]

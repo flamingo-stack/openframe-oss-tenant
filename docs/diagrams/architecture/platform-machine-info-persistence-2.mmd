@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Caller invokes read"] --> CheckStore["Check whether the platform store exists"]
+    CheckStore --> Missing{"Store missing?"}
+    Missing -->|"Yes"| Fresh["Return Ok None"]
+    Missing -->|"No"| Load["Read one JSON record"]
+    Load --> Denied{"Permission denied?"}
+    Denied -->|"Yes"| Repair["Repair platform permissions"]
+    Repair --> Retry["Retry read once"]
+    Retry --> Validate
+    Denied -->|"No"| Validate["Deserialize and validate required fields"]
+    Validate --> Valid{"Complete valid record?"}
+    Valid -->|"Yes"| Reuse["Return Ok Some record"]
+    Valid -->|"No"| Error["Return contextual error"]
+    Repair --> RepairFailed{"Repair succeeded?"}
+    RepairFailed -->|"No"| Error
+    RepairFailed -->|"Yes"| Retry

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Runner as Test runner
+    participant Setup as Setup phase
+    participant Api as Policy API
+    participant Context as Pipeline context
+    participant Session as Remote-session tests
+    participant Teardown as Teardown phase
+    Runner->>Setup: Execute remote-access setup tag
+    Setup->>Api: Read and set tenant mode to SILENT_ACCESS
+    Api-->>Setup: Previous tenant mode
+    Setup->>Context: Store previous mode
+    Runner->>Session: Execute unattended remote-session tests
+    Runner->>Teardown: Execute remote-access teardown tag
+    Teardown->>Context: Read previous mode
+    Teardown->>Api: Restore previous mode when needed

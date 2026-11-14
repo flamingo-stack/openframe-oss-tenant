@@ -1,0 +1,7 @@
+flowchart LR
+    Operator["Authorized Operator"] --> Request["Force Update Request"]
+    Request --> Controller["API Controller"]
+    Controller --> Validation["Authorization and Target Validation"]
+    Validation --> Dispatch["Update Dispatch Service"]
+    Dispatch --> Machines["Selected Machines"]
+    Dispatch --> Response["Force Tool Agent Update Response"]

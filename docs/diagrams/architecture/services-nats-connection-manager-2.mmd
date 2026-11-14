@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Runtime as Client Runtime
+    participant Manager as Connection Manager
+    participant Config as Agent Configuration
+    participant Tls as TLS Provider
+    participant Nats as NATS Endpoint
+    Runtime->>Manager: connect()
+    Manager->>Config: get machine ID
+    Manager->>Config: get access token
+    Manager->>Manager: build WebSocket authorization URL
+    Manager->>Manager: configure credentials callbacks and pings
+    alt Local development mode
+        Manager->>Tls: create TLS configuration
+        Tls-->>Manager: TLS client configuration
+    end
+    Manager->>Nats: connect with authenticated URL
+    Nats-->>Manager: async NATS client
+    Manager->>Manager: replace watched client and note activity
+    Manager-->>Runtime: success

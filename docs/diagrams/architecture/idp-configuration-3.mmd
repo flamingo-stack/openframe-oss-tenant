@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Management as "Management service"
+    participant Scheduler as "Idp Configuration scheduler"
+    participant Encoder as "Password encoder"
+    participant Repository as "Registered client repository"
+    Management->>Scheduler: Start application and wait five seconds
+    Scheduler->>Repository: Find configured gateway client ID
+    Repository-->>Scheduler: No registered client
+    Scheduler->>Encoder: Encode configured client secret
+    Encoder-->>Scheduler: Encoded secret
+    Scheduler->>Repository: Save complete registered client
+    Repository-->>Scheduler: Client persisted

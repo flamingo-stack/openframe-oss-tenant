@@ -1,0 +1,20 @@
+flowchart TD
+    Receive["Receive update command"] --> Reserve["Acquire update guard"]
+    Reserve --> Busy{"Update or work busy?"}
+    Busy -->|"Yes"| Defer["Reject for later redelivery"]
+    Busy -->|"No"| Validate["Trim and validate version"]
+    Validate --> Valid{"Version valid?"}
+    Valid -->|"No"| Failed["Record failed status"]
+    Valid -->|"Yes"| Running{"Already running?"}
+    Running -->|"Yes"| Skip["Clear pending marker and skip"]
+    Running -->|"No"| Downgrade{"Below last known good?"}
+    Downgrade -->|"Yes"| Skip
+    Downgrade -->|"No"| Mark["Set updating status"]
+    Mark --> Select["Select current OS configuration"]
+    Select --> Stage["Download and stage artifact"]
+    Stage --> Launch["Persist state and launch updater"]
+    Launch --> Restart["Client restarts"]
+    Restart --> Verify["Resolve update on next start"]
+    Verify --> Result{"Target version running?"}
+    Result -->|"Yes"| Complete["Report success and promote version"]
+    Result -->|"No"| Recover["Keep pending state or handle failure"]

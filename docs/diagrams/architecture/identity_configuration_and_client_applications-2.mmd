@@ -1,0 +1,10 @@
+flowchart TD
+    Main["Application main method"] --> Boot["SpringApplication.run"]
+    Boot --> Settings["Resolve runtime configuration"]
+    Settings --> Scan["Discover configured component packages"]
+    Scan --> AuthContext["Authorization Server context"]
+    Scan --> ConfigContext["Config Server context"]
+    Scan --> ClientContext["Client Service context"]
+    AuthContext --> AuthRuntime["Authentication and identity runtime"]
+    ConfigContext --> ConfigRuntime["Configuration delivery runtime"]
+    ClientContext --> ClientRuntime["Agent coordination runtime"]

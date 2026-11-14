@@ -1,0 +1,10 @@
+flowchart LR
+    AgentRuntime["OpenFrame Client runtime"] --> StreamManager["Log streaming run manager"]
+    StreamManager --> RotationManager["LogRotationManager"]
+    StreamManager --> Parser["Log parser and reader"]
+    StreamManager --> NatsConnection["NATS log connection"]
+    RotationManager --> ActiveLog["Active openframe.log"]
+    RotationManager --> OffsetFile["Persisted offset file"]
+    RotationManager --> Archive["openframe.log.gz archive"]
+    Parser --> ActiveLog
+    NatsConnection --> RemoteLogs["NATS log stream"]

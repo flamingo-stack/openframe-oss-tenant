@@ -1,0 +1,11 @@
+flowchart LR
+    Inventory["Device software aggregation"] --> SoftwareProjector["Software projector"]
+    Inventory --> VulnerabilityProjector["Vulnerability projector"]
+    SoftwareProjector --> Matcher["Software package matcher"]
+    Matcher --> WingetMatcher["Winget package matcher"]
+    WingetMatcher --> Catalog["Package catalog"]
+    SoftwareProjector --> SoftwareRepo["Software repository"]
+    VulnerabilityProjector --> VulnerabilityRepo["Vulnerability repository"]
+    Criteria["Schedule device criteria"] --> Resolver["Schedule criteria resolver"]
+    Resolver --> MachineRepo["Machine repository"]
+    Agents["Installed agent records"] --> VersionService["Agent version service"]

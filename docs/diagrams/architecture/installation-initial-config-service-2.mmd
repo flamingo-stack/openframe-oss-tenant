@@ -1,0 +1,6 @@
+flowchart TD
+    DirectoryManager["DirectoryManager"] --> Constructor["InstallationInitialConfigService new()"]
+    Constructor --> InitialService["InitialConfigurationService new()"]
+    InitialService --> Ready{"Initialization succeeds?"}
+    Ready -->|"Yes"| Service["Installation Initial Config Service"]
+    Ready -->|"No"| Error["Contextual initialization error"]

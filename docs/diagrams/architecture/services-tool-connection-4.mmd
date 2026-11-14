@@ -1,0 +1,8 @@
+flowchart TD
+    DeleteRequest["Delete by tool agent ID"] --> Lock["Acquire writer mutex"]
+    Lock --> Read["Read current registry"]
+    Read --> Filter["Remove matching records"]
+    Filter --> Changed{"Registry changed?"}
+    Changed -->|"Yes"| Persist["Atomically persist updated registry"]
+    Changed -->|"No"| NoWrite["Return false without writing"]
+    Persist --> Removed["Return true"]

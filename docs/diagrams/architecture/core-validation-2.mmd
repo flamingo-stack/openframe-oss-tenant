@@ -1,0 +1,11 @@
+flowchart TD
+    Input["Tool argument rule"] --> KindCheck{"Text predicate?"}
+    KindCheck -->|"Yes"| Evaluate["ToolArgumentValuePatterns"]
+    KindCheck -->|"No"| RejectKind["Reject unsupported predicate"]
+    EnumInput["Enum values"] --> EnumPattern["uppercaseEnum"]
+    RegexInput["Anchored class expression"] --> GrammarCheck{"Supported grammar?"}
+    GrammarCheck -->|"Yes"| ClassPattern["lowercaseClasses"]
+    GrammarCheck -->|"No"| EmptyResult["Empty Optional"]
+    EnumPattern --> NormalizedPattern["Trim aware normalized regex"]
+    ClassPattern --> NormalizedPattern
+    Evaluate --> Decision["Validation decision"]

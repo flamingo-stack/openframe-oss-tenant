@@ -1,0 +1,10 @@
+flowchart TD
+    Begin["Reauthentication begins"] --> ReadRefresh["Read persisted refresh token"]
+    ReadRefresh --> RefreshRequest["Request tokens with refresh grant"]
+    RefreshRequest --> RefreshOk{"Refresh succeeds?"}
+    RefreshOk -->|"Yes"| ReturnRefresh["Return refreshed token response"]
+    RefreshOk -->|"No"| ReadCredentials["Read persisted client credentials"]
+    ReadCredentials --> SecretRequest["Request tokens with client credentials grant"]
+    SecretRequest --> SecretOk{"Request succeeds?"}
+    SecretOk -->|"Yes"| ReturnSecret["Return token response"]
+    SecretOk -->|"No"| ReturnError["Return authentication error"]

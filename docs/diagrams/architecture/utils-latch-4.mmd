@@ -1,0 +1,5 @@
+flowchart TD
+    Tenant["OpenFrame OSS Tenant"] -->|"consumes"| Library["OpenFrame OSS Library"]
+    Library -->|"provides"| AgentLibrary["openframe_agent_lib"]
+    AgentLibrary -->|"contains"| UtilsLatch["Utils Latch"]
+    UtilsLatch -->|"shared signal"| ClientTasks["OpenFrame client tasks"]

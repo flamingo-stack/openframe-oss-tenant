@@ -1,0 +1,7 @@
+flowchart LR
+    TicketSource["Ticket source record"] -->|"publishes ticketId and title"| TicketEvent["TicketEvent"]
+    TicketEvent -->|"published record with tenant"| Projection["TicketOnTimeEntriesProjection"]
+    Projection -->|"updates matching records"| TimeEntries["Time entry projections"]
+    Projection -->|"looks up current titles"| TicketRepository["Ticket projection repository"]
+    TimeEntries -->|"selected fields"| View["TimeEntryTicketView"]
+    View -->|"reconciliation input"| Projection

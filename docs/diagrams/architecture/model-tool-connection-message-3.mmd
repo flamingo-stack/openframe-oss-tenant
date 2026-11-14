@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client as OpenFrame Client
+    participant Nats as NATS JetStream
+    participant Listener as Tool Connection Listener
+    participant Service as Tool Connection Service
+    Client->>Nats: Publish machine scoped JSON message
+    Nats->>Listener: Deliver matching subject
+    Listener->>Listener: Extract machine ID and deserialize payload
+    Listener->>Service: Add tool connection with delivery state
+    alt processing succeeds
+        Service-->>Listener: Complete
+        Listener->>Nats: Acknowledge message
+    else processing fails
+        Listener-->>Nats: Leave message unacknowledged
+        Nats-->>Listener: Redeliver under consumer policy
+    end

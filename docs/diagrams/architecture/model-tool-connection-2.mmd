@@ -1,0 +1,12 @@
+classDiagram
+    class ToolConnection {
+        +String tool_agent_id
+        +String agent_tool_id
+        +bool published
+    }
+    class ToolConnectionMessage {
+        +String tool_type
+        +String agent_tool_id
+    }
+    ToolConnectionService --> ToolConnection : persists
+    ToolConnectionMessagePublisher --> ToolConnectionMessage : publishes

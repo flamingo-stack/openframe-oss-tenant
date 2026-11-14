@@ -1,0 +1,13 @@
+flowchart TD
+    Incoming["Receive tool installation or update data"] --> CandidateList["Read download configurations"]
+    CandidateList --> FindMatch["Find first configuration matching local OS"]
+    FindMatch --> Available{{"Configuration found?"}}
+    Available -->|"No"| Fail["Return no configuration for current OS error"]
+    Available -->|"Yes"| ResolveVersion["Apply optional version override"]
+    ResolveVersion --> FolderCheck{{"Target contains multiple path components?"}}
+    FolderCheck -->|"No"| SingleFile["Download archive and extract target file"]
+    SingleFile --> WriteFile["Write executable to default path"]
+    FolderCheck -->|"Yes"| FullArchive["Download and extract full archive to tool folder"]
+    FullArchive --> SetPermissions["Set executable permissions on target path"]
+    WriteFile --> ApplyInstall["Apply installation or update strategy"]
+    SetPermissions --> ApplyInstall

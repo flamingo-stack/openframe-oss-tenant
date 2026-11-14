@@ -1,0 +1,5 @@
+flowchart TD
+    Summary["Ticket summary response"] --> Counts["Status definition counts"]
+    Counts --> Entry["StatusDefinitionCount"]
+    Entry --> Status["TicketStatusResponse"]
+    Entry --> Count["Integer count"]

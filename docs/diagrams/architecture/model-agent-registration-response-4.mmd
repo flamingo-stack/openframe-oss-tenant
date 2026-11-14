@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Start registration"] --> Existing{"Saved credentials available?"}
+    Existing -->|"No"| Fresh["Send fresh registration request"]
+    Existing -->|"Yes"| Reinstall["Send reinstall request with prior proof"]
+    Fresh --> Decode["Deserialize Model Agent Registration Response"]
+    Reinstall --> Decode
+    Decode --> PersistMachine["Write machine ID and client secret"]
+    PersistMachine --> PersistConfig["Save machine ID, client ID, and client secret"]
+    PersistConfig --> Complete["Registration complete"]

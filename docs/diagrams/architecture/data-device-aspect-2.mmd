@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Writer as "Repository Writer"
+    participant Aspect as "Machine Tag Event Aspect"
+    participant Service as "Machine Tag Event Service"
+    participant Stores as "Machine and Tag Stores"
+    participant Kafka as "Kafka Producer"
+
+    Writer->>Aspect: Save machine or device tag state
+    Aspect->>Writer: Continue repository operation
+    Aspect->>Service: Process affected machine
+    Service->>Stores: Resolve machine, tags, and assignments
+    Stores->>Service: Current projection inputs
+    Service->>Kafka: Publish tenant-scoped machine message

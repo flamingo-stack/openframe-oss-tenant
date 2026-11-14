@@ -1,0 +1,9 @@
+flowchart TD
+    CommandListener["Client uninstall command handler"] --> Uninstall["Platform Uninstall"]
+    Uninstall --> ServiceAdapter["Service adapter"]
+    Uninstall --> DeregistrationService["Deregistration service"]
+    DeregistrationService --> RegistrationClient["Registration client"]
+    Uninstall --> ToolUninstallService["Tool uninstall service"]
+    ToolUninstallService --> InstalledTools["Installed tools state"]
+    Uninstall --> DirectoryManager["Directory manager"]
+    Uninstall --> OsInterfaces["Windows or macOS operating system interfaces"]

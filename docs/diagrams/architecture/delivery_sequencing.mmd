@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Dispatcher
+    participant Repository as "Sequence Repository"
+    participant Mongo as "MongoDB"
+    Dispatcher->>Repository: Request next sequence
+    Repository->>Mongo: Find tenant record and increment value
+    Mongo->>Repository: Return incremented record
+    Repository->>Dispatcher: Return next integer

@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Client as "Client"
+    participant Gateway as "Gateway Controller"
+    participant Cookies as "Cookie Service"
+    participant Bff as "OAuth BFF Service"
+    participant Auth as "Authorization Server"
+
+    Client->>Gateway: GET /oauth/login
+    Gateway->>Cookies: Clear auth server and stale state cookies
+    Gateway->>Bff: Build authorize redirect
+    Bff-->>Gateway: Authorization URL and state data
+    Gateway->>Bff: Build signed state token
+    Gateway->>Cookies: Add OAuth state cookie
+    Gateway-->>Client: 302 authorization URL
+    Client->>Auth: Authorization request
+    Auth-->>Client: Redirect to /oauth/callback
+    Client->>Gateway: GET /oauth/callback with code and state
+    Gateway->>Bff: Validate state and exchange code
+    Bff-->>Gateway: Tokens and redirect target
+    Gateway->>Cookies: Add auth cookies and clear state cookie
+    Gateway-->>Client: 302 resolved target

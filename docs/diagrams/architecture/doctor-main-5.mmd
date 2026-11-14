@@ -1,0 +1,8 @@
+flowchart LR
+    URL["Configured server URL"] --> DNS{"DNS resolves?"}
+    DNS -->|"No"| DNSFailure["Return DNS failure"]
+    DNS -->|"Yes"| TCP["TCP connectivity"]
+    TCP --> TLS["HTTPS TLS handshake"]
+    TLS --> WebSocket["WebSocket upgrade at ws nats path"]
+    WebSocket --> Proxy["Proxy environment inspection"]
+    Proxy --> Results["Append results to report"]

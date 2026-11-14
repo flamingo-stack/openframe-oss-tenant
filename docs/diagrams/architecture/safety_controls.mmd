@@ -1,0 +1,5 @@
+flowchart TD
+    Fixture["Seed file, ticket, or article"] --> Prompt["Prompt Mingo"]
+    Prompt --> Assistant["Mingo response or proposed action"]
+    Assistant --> Check["Independent SSH or product API check"]
+    Check --> Safe["Expected side effect is absent"]

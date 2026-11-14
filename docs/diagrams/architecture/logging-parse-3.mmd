@@ -1,0 +1,9 @@
+flowchart TD
+    Input["Parsed entries"] --> Classify{"Client log?"}
+    Classify -->|"Yes"| Preserve["Append unchanged"]
+    Classify -->|"No"| Seen{"Message seen?"}
+    Seen -->|"No"| First["Store message index and append"]
+    Seen -->|"Yes"| Increment["Increment first entry count"]
+    Preserve --> Output["Ordered output"]
+    First --> Output
+    Increment --> Output

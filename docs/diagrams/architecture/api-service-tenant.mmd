@@ -1,0 +1,8 @@
+flowchart LR
+    Client["Client request with Host"] --> Gateway["OpenFrame gateway"]
+    Gateway -->|"resolves tenant domain"| StampedRequest["HTTP request with X-Tenant-Domain"]
+    StampedRequest --> ApiService["OpenFrame API service"]
+    ApiService --> Provider["GatewayTenantDomainProvider"]
+    Provider --> Contract["RequestTenantDomainProvider contract"]
+    Contract --> TenantService["Tenant domain consumer"]
+    TenantService --> Fallback["Tenant record fallback when header is absent"]

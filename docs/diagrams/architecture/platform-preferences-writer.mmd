@@ -1,0 +1,8 @@
+flowchart LR
+    Caller["OpenFrame Client caller"] -->|"CLI-style arguments"| Parser["args_to_pairs"]
+    Caller -->|"bundle identifier"| Writer["write"]
+    Parser -->|"key-value pairs"| Writer
+    Writer -->|"macOS only"| ConsoleUser["Console user lookup"]
+    ConsoleUser -->|"username and UID"| Writer
+    Writer -->|"launchctl and defaults"| MacPrefs["macOS preference domain"]
+    Writer -->|"other targets"| NoOp["Successful no-op"]

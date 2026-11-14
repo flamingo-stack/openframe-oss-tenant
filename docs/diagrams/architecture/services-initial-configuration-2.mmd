@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Installer as Installation Service
+    participant InitialConfig as Services Initial Configuration
+    participant Disk as Secured Configuration File
+    participant Auth as Initial Authentication
+    participant Registration as Registration Processor
+
+    Installer->>Installer: Validate server URL, initial key, and organization ID
+    Installer->>InitialConfig: Save complete initial configuration
+    InitialConfig->>Disk: Atomically persist JSON
+    Auth->>InitialConfig: Read bootstrap and server values
+    Auth->>Auth: Authenticate until successful
+    Registration->>InitialConfig: Read persisted registration context
+    Registration->>Registration: Register until successful
+    Auth->>InitialConfig: Clear initial key after bootstrap
+    InitialConfig->>Disk: Atomically persist updated JSON

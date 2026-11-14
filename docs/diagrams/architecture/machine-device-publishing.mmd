@@ -1,0 +1,12 @@
+flowchart LR
+    MachineRecord["Machine source record"] --> MachineEvent["Machine Event"]
+    MachineEvent --> NameProjection["Machine On Tickets Projection"]
+    MachineEvent --> OwnerProjection["Machine On Client Tickets Projection"]
+    NameProjection --> TicketRepository["Ticket Projection Repository"]
+    OwnerProjection --> TicketRepository
+    TicketRepository --> TicketCollection["Ticket collection"]
+    NameProjection -.-> DeviceView["Ticket Device View"]
+    OwnerProjection -.-> OwnerView["Ticket Client Owner View"]
+    NameProjection --> MachineRepository["Machine Repository"]
+    OwnerProjection --> MachineRepository
+    MachineRepository --> MachineRecord

@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Service as Tool Agent Update Service
+    participant Updater as Platform Tool Updater
+    participant Migrator as Standard To Gui App Migrator
+    participant Tool as Existing Standard Tool
+    participant Host as Operating System
+    Service->>Updater: Request target Gui App installation
+    Updater->>Migrator: Create for Standard to Gui App
+    Migrator->>Tool: Stop tool
+    Migrator->>Migrator: Wait two seconds
+    Migrator->>Host: Install replacement artifact
+    Host-->>Migrator: Gui App executable path
+    Migrator->>Host: Launch in interactive user session
+    Host-->>Migrator: Launch result
+    Migrator-->>Updater: Gui App installation metadata
+    Updater-->>Service: Migration result

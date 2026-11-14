@@ -1,0 +1,10 @@
+flowchart LR
+    BaseConfig["Original configuration"] --> Clone["Clone configuration"]
+    Clone --> Check{{"Original version is nonempty and differs?"}}
+    Check -->|"No"| Unchanged["Return clone unchanged"]
+    Check -->|"Yes"| Replace["Replace original version in link"]
+    Replace --> Found{{"Link changed?"}}
+    Found -->|"No"| Warn["Log warning"]
+    Found -->|"Yes"| Resolved["Use rewritten link"]
+    Warn --> Result["Return resolved clone"]
+    Resolved --> Result

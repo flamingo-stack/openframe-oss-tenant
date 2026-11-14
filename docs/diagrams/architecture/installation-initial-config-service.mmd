@@ -1,0 +1,14 @@
+flowchart LR
+    Installer["Installer or client command"] --> Params["InstallConfigParams"]
+    Params --> Classifier["Parameterless install classifier"]
+    Params --> Service["Installation Initial Config Service"]
+    Service --> Validation["Required value validation"]
+    Validation --> Config["InitialConfiguration"]
+    Service --> LocalMode{"Local mode enabled?"}
+    LocalMode -->|"Yes"| Mkcert["mkcert -CAROOT"]
+    Mkcert --> Certificate["rootCA.pem validation"]
+    Certificate --> Config
+    LocalMode -->|"No"| Config
+    Config --> Storage["InitialConfigurationService"]
+    Storage --> Disk["Persisted initial configuration"]
+    Disk --> Client["Later client startup and authentication"]

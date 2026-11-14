@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> InFlight
+    InFlight --> AwaitingRestart: delivery await restart
+    InFlight --> Settled: delivery settle
+    InFlight --> Settled: restart recovery failure
+    AwaitingRestart --> Settled: restart outcome settlement
+    Settled --> [*]: expiration pruning

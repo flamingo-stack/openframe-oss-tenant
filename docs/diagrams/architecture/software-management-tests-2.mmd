@@ -1,0 +1,10 @@
+flowchart TD
+    Draft["Create pending bundle"] --> Select["Assign or remove target devices"]
+    Select --> Validate{"Valid devices and package?"}
+    Validate -->|"No"| Pending["Keep bundle pending"]
+    Validate -->|"Yes"| Submit["Submit install now"]
+    Submit --> Dispatch["Dispatch package action"]
+    Dispatch --> Wait["Wait for terminal action status"]
+    Wait --> Verify["Verify install over SSH"]
+    Verify --> Cleanup["Uninstall package during cleanup"]
+    Dispatch --> History["Preserve completed bundle and action history"]

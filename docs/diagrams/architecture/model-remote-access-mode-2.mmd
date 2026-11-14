@@ -1,0 +1,11 @@
+flowchart TD
+    Enum["RemoteAccessMode enum"] --> Encode["wire_name()"]
+    Enum --> Decode["from_wire_name()"]
+    Encode --> InstallConfig["Installation initial configuration service"]
+    InstallConfig --> Stored["InitialConfiguration.remote_access_mode"]
+    Stored --> Decode
+    Decode --> ModeService["RemoteAccessModeService"]
+    ModeService --> ApiClient["RemoteAccessClient"]
+    ApiClient --> TokenConfig["Agent configuration service"]
+    ApiClient --> Api["Device mode endpoint"]
+    ModeService --> Deactivation["Deactivation service"]

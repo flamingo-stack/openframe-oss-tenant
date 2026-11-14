@@ -1,0 +1,13 @@
+flowchart TD
+    Lifecycle["Client lifecycle command"] --> Doctor["Doctor Main"]
+    Doctor --> Entry["Lifecycle diagnostic entry point"]
+    Entry --> Args["Command argument checks"]
+    Entry --> Privilege["Administrator check"]
+    Entry --> Runtime["Runtime check"]
+    Entry --> Storage["Storage and configuration checks"]
+    Entry --> Network["Network checks"]
+    Entry --> Report["Doctor report"]
+    Runtime --> Remediation["Optional remediation marker"]
+    Report --> Console["Console report output"]
+    Report --> Healing["Healing processor"]
+    Healing --> Installer["WebView2 installer"]

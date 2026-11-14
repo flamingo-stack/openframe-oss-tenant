@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Consumer as "API Consumer"
+    participant Api as "OpenFrame API"
+    participant Contract as "DTO Contract"
+    participant Service as "Application Service"
+    participant Provider as "Authorization or Data Provider"
+    Consumer->>Api: Submit request or query parameters
+    Api->>Contract: Bind request into typed DTO
+    Contract->>Service: Supply filter, command, or identity data
+    Service->>Provider: Perform authenticated operation or query
+    Provider->>Service: Return operation result or identity data
+    Service->>Contract: Build response DTO
+    Contract->>Api: Serialize API response
+    Api->>Consumer: Return JSON or GraphQL result

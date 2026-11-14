@@ -1,0 +1,22 @@
+flowchart TD
+    Start["Load or receive installed tool"] --> Eligible{"Tool type present?"}
+    Eligible -->|"No"| Skip["Skip connection publication"]
+    Eligible -->|"Yes"| Single{"Processor already running?"}
+    Single -->|"Yes"| Wake["Request immediate refresh"]
+    Single -->|"No"| Reload["Reload installed tool record"]
+    Reload --> Present{"Record still installed?"}
+    Present -->|"No"| Stop["Remove loop tracking and stop"]
+    Present -->|"Yes"| Busy{"Tool operation active?"}
+    Busy -->|"Yes"| Delay["Wait 15 seconds"]
+    Delay --> Reload
+    Busy -->|"No"| Resolve{"Agent ID command configured?"}
+    Resolve -->|"No"| EmptyId["Use empty agent side ID"]
+    Resolve -->|"Yes"| Command["Resolve parameters and run command"]
+    Command --> Valid{"Successful nonempty output?"}
+    Valid -->|"No"| Retry["Back off and retry"]
+    Retry --> Reload
+    Valid -->|"Yes"| Publish["Publish connection message"]
+    EmptyId --> Publish
+    Publish --> Saved["Save local connection record"]
+    Saved --> Wait["Wait one hour or wake signal"]
+    Wait --> Reload

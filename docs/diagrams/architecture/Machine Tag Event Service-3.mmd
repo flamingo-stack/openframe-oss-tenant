@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Writer as Repository Writer
+    participant Aspect as Machine Tag Event Aspect
+    participant Service as Machine Tag Event Service
+    participant Data as Tag Assignment Repository
+    participant Kafka as Retrying Kafka Producer
+    Writer->>Aspect: Request assignment deletion
+    Aspect->>Service: Process before deletion
+    Service->>Data: Load current device assignments
+    Service->>Service: Exclude removed tag assignment
+    Service->>Kafka: Publish remaining tag projection
+    Aspect->>Writer: Proceed with repository deletion

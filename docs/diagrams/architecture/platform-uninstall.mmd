@@ -1,0 +1,16 @@
+flowchart TD
+    Request["Uninstall request"] --> Entry["OpenFrame Client uninstall command"]
+    Entry --> Detached["Detached uninstall process"]
+    Detached --> PlatformUninstall["Platform Uninstall"]
+    PlatformUninstall --> ServiceManager["CrossPlatformServiceManager"]
+    PlatformUninstall --> Deregistration["DeregistrationService"]
+    PlatformUninstall --> ToolCleanup["ToolUninstallService"]
+    PlatformUninstall --> DirectoryManager["DirectoryManager"]
+    PlatformUninstall --> UpdateCleanup["UpdateCleanupService"]
+    PlatformUninstall --> OsCleanup{"Operating system?"}
+    OsCleanup -->|"Windows"| Windows["Windows cleanup and deferred binary removal"]
+    OsCleanup -->|"macOS"| Macos["macOS binary and state removal"]
+    ServiceManager --> ServiceRemoved["Service removed"]
+    Deregistration --> DeviceRemoved["Best effort device deregistration"]
+    ToolCleanup --> ToolsRemoved["Integrated tools removed"]
+    DirectoryManager --> StateRemoved["Logs and application state removed"]

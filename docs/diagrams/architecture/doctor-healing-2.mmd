@@ -1,0 +1,9 @@
+flowchart TD
+    CheckResult["CheckResult"] -->|"optional remediation"| Pending["pending()"]
+    Remediation["Remediation"] --> Pending
+    Pending -->|"Vec Remediation"| Heal["heal()"]
+    Heal -->|"dispatches"| RunAction["run action"]
+    RunAction -->|"calls"| WebViewInstaller["WebView2 installer"]
+    WebViewInstaller -->|"returns"| HealOutcome["HealOutcome"]
+    HealOutcome -->|"paired with remediation"| HealResult["HealResult"]
+    Heal -->|"info and warning logs"| Tracing["tracing"]

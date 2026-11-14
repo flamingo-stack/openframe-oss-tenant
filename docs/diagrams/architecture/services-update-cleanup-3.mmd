@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Cleanup All invoked"] --> Backup["Locate executable directory"]
+    Backup --> MatchBackup["Match derived backup prefix"]
+    MatchBackup --> RemoveBackup["Remove each matching backup"]
+    RemoveBackup --> Temp["Scan system temporary directory"]
+    Temp --> AgeCheck{"Older than minimum age?"}
+    AgeCheck -->|"No"| Skip["Keep artifact"]
+    AgeCheck -->|"Yes"| DeleteTemp["Delete file or directory"]
+    DeleteTemp --> Staging["Scan update staging directory when distinct"]
+    Skip --> Staging
+    Staging --> Summary["Log cleanup summary when files were removed"]

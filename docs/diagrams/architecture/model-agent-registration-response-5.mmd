@@ -1,0 +1,14 @@
+flowchart TD
+    Submit["Submit registration request"] --> HttpResult{"HTTP success?"}
+    HttpResult -->|"No"| SecretError{"Invalid client secret?"}
+    SecretError -->|"Yes"| CredentialFailure["Return client secret error"]
+    SecretError -->|"No"| HttpFailure["Return status and response-body error"]
+    HttpResult -->|"Yes"| DecodeResult{"Response JSON decodes?"}
+    DecodeResult -->|"No"| DecodeFailure["Return parsing error"]
+    DecodeResult -->|"Yes"| SaveResult{"Configuration save succeeds?"}
+    SaveResult -->|"No"| SaveFailure["Return persistence error"]
+    SaveResult -->|"Yes"| Success["Registration succeeds"]
+    CredentialFailure --> Retry["Processor waits 60 seconds and retries"]
+    HttpFailure --> Retry
+    DecodeFailure --> Retry
+    SaveFailure --> Retry

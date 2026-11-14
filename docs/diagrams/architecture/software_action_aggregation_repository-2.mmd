@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Request with tenant and query criteria"] --> BaseMatch["Match software action result documents"]
+    BaseMatch --> Lookup["Lookup matching script executions"]
+    Lookup --> LeafGroup["Group device execution leaves"]
+    LeafGroup --> Reconcile["Reconcile counts and action status"]
+    Reconcile --> Timing["Derive dispatch and completion times"]
+    Timing --> Projection["Project summary fields"]
+    Projection --> ExcludeScheduled["Exclude scheduled-only rows"]
+    ExcludeScheduled --> StatusFilter["Apply requested status filter"]
+    StatusFilter --> QueryMode{"Query mode?"}
+    QueryMode -->|"Page"| SortPage["Sort then skip and limit"]
+    QueryMode -->|"Count"| CountRows["Count matching summaries"]
+    QueryMode -->|"Facet"| GroupFacet["Group matching summaries"]
+    QueryMode -->|"Execution identifier"| SingleSummary["Return first summary"]

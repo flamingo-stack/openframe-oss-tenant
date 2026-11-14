@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Command as Update command
+    participant Update as Client update service
+    participant Info as Client info service
+    participant State as Update state service
+    participant Tools as Tool run manager
+    Command->>Update: Request target version
+    Update->>Tools: Mark client update pending
+    Update->>Info: Read current client info
+    Update->>Info: Set updating and target version
+    Update->>State: Create update attempt state
+    Update->>Update: Download and launch updater
+    alt update launch fails
+        Update->>Info: Set failed and target version
+        Update->>State: Clear update attempt state
+    else updater launches
+        Update-->>Command: Report launch accepted
+    end

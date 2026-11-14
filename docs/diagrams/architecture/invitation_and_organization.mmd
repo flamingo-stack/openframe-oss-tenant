@@ -1,0 +1,7 @@
+flowchart TD
+    Caller["API Caller"] --> InviteRequest["Update Invitation Status Request"]
+    InviteRequest --> Validation["Bean Validation"]
+    Validation --> InvitationProcessor["Invitation Processor"]
+    Caller --> OrgQuery["Organization Query"]
+    OrgQuery --> SortField["LAST ACTIVITY Sort Field"]
+    SortField --> OrganizationQuery["Organization Query Service"]

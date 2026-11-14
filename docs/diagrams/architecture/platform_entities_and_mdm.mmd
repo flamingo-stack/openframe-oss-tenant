@@ -1,0 +1,7 @@
+flowchart TD
+    Setup["Seed fixture through product API"] --> Prompt["Ask Mingo to act"]
+    Prompt --> Approval["Automatic administrative approval"]
+    Approval --> Tool["Mingo platform tool"]
+    Tool --> State["Persisted platform state"]
+    State --> Verify["Independent API verification"]
+    Verify --> Cleanup["Best effort cleanup"]

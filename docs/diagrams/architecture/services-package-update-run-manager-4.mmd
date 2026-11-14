@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Server as Control plane
+    participant Handler as Command handler
+    participant Store as Order store
+    participant Manager as Run manager
+    participant Gate as Restart signals
+    participant Host as Endpoint package manager
+    participant Status as Status reporter
+    Server->>Handler: Package update message
+    Handler->>Store: Submit or update durable order
+    Store->>Manager: Change notification
+    Manager->>Store: Load pending orders for machine
+    Manager->>Gate: Check client update and restart state
+    alt Restart pending
+        Manager->>Manager: Leave order pending for a later pass
+    else Installation allowed
+        Manager->>Store: Reread current order
+        Manager->>Host: Inspect and perform package action
+        Host-->>Manager: Progress or terminal outcome
+        Manager->>Status: Report state transition
+        Manager->>Store: Persist finished order when terminal
+    end

@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Caller
+    participant Writer as Platform Preferences Writer
+    participant Session as Console User Lookup
+    participant Launchctl
+    participant Defaults as macOS defaults
+    Caller->>Writer: write(bundle identifier, pairs)
+    Writer->>Session: resolve active console user
+    Session-->>Writer: username and UID
+    alt no pairs
+        Writer-->>Caller: success
+    else one or more pairs
+        loop each key-value pair
+            Writer->>Launchctl: asuser and sudo defaults write
+            Launchctl->>Defaults: write preference
+            alt primary command succeeds
+                Defaults-->>Writer: continue
+            else primary command fails
+                Writer->>Defaults: sudo as user defaults write
+                alt fallback succeeds
+                    Defaults-->>Writer: continue
+                else fallback fails
+                    Writer-->>Caller: error for current key
+                end
+            end
+        end
+        Writer-->>Caller: success
+    end

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Kafka
+    participant Listener as "Logs Event Listener"
+    participant Processor as "Generic JSON Message Processor"
+
+    Kafka->>Listener: Common Debezium message and message type
+    Listener->>Processor: Process message by message type
+    alt processing succeeds
+        Processor-->>Listener: Processing complete
+    else processing fails
+        Processor-->>Listener: Exception
+        Listener->>Listener: Log processing failure
+    end

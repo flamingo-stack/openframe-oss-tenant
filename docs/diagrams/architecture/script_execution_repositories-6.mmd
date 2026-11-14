@@ -1,0 +1,9 @@
+flowchart TD
+    ScheduleFire["Schedule fire execution identifier"] --> LoadLeaves["Count queued running failed and script error leaves"]
+    LoadLeaves --> Progress{"In progress count greater than zero?"}
+    Progress -->|"Yes"| Open["Keep schedule header open"]
+    Progress -->|"No"| Failed{"Failed count greater than zero?"}
+    Failed -->|"Yes"| FailedStatus["Settle as FAILED"]
+    Failed -->|"No"| ScriptError{"Script error count greater than zero?"}
+    ScriptError -->|"Yes"| ErrorStatus["Settle as SCRIPT ERROR"]
+    ScriptError -->|"No"| SuccessStatus["Settle as SUCCESS"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Consumer["Integration consumer"] --> Gateway["OpenFrame gateway"]
+    Gateway --> ExternalApi["External API service"]
+    ExternalApi --> ResourceContracts["Resource Contracts"]
+    ResourceContracts --> Controllers["Controllers and mappers"]
+    Controllers --> Backend["Tenant application and data services"]

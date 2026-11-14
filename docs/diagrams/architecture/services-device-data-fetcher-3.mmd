@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Client as OpenFrame Client
+    participant Fetcher as Services Device Data Fetcher
+    participant Config as Agent Configuration Service
+    participant Hostname as Hostname Report Publisher
+    participant Timezone as Machine Timezone Run Manager
+    participant NatsPublisher as NATS Message Publisher
+    participant Nats as NATS Service
+    Client->>Hostname: publish at startup
+    Hostname->>Fetcher: get hostname
+    Fetcher-->>Hostname: hostname or no value
+    Hostname->>Config: obtain machine identity
+    Hostname->>NatsPublisher: publish report
+    NatsPublisher->>Nats: send message
+    Client->>Timezone: start background manager
+    Timezone->>Fetcher: get timezone
+    Fetcher-->>Timezone: timezone or no value
+    Timezone->>Config: obtain machine identity
+    Timezone->>NatsPublisher: publish acknowledged timezone message
+    NatsPublisher->>Nats: send message and await acknowledgement

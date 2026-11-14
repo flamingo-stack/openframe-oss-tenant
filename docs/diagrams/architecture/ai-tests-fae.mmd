@@ -1,0 +1,15 @@
+flowchart TD
+    TestCase["Fae E2E test case"] --> Base["Fae Base Test"]
+    Base --> AgentSession["Machine-bound AGENT session"]
+    AgentSession --> ClientChat["CLIENT CHAT dialog"]
+    ClientChat --> Runner["Assistant runner and approval policy"]
+    Runner --> Fae["Fae assistant"]
+    Fae --> Rmm["RMM command capability"]
+    Fae --> Fleet["Fleet query capability"]
+    Runner --> Result["Run result"]
+    TestCase --> Ssh["Independent SSH verifier"]
+    Rmm --> Machine["Bound target machine"]
+    Fleet --> Machine
+    Ssh --> Machine
+    Result --> Assertions["Behavior and safety assertions"]
+    Machine --> Assertions

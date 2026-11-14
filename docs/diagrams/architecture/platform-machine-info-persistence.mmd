@@ -1,0 +1,10 @@
+flowchart TD
+    ClientRuntime["OpenFrame Client runtime"] --> RegistrationFlow["Registration or reinstall flow"]
+    RegistrationFlow --> PersistenceApi["Platform Machine Info Persistence"]
+    PersistenceApi --> RecordModel["PersistedMachineInfo"]
+    PersistenceApi --> PlatformStore["Platform-native secure store"]
+    PlatformStore --> WindowsStore["Windows registry value"]
+    PlatformStore --> MacStore["macOS preferences plist key"]
+    PlatformStore --> LinuxStore["Linux machine JSON file"]
+    PersistenceApi --> PermissionRecovery["Permission repair and single retry"]
+    PermissionRecovery --> PlatformStore

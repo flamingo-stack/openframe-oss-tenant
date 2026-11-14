@@ -1,0 +1,10 @@
+flowchart LR
+    Config["Configuration service"] -.->|"runtime configuration"| Management["Management application"]
+    Config -.->|"runtime configuration"| Stream["Stream application"]
+    Management -->|"initializes streams and schedules work"| Nats["NATS JetStream"]
+    Management -->|"maintains operational state"| Mongo["MongoDB"]
+    Management -->|"synchronizes catalog data"| Catalog["Package catalogs"]
+    Kafka["Kafka"] -->|"Debezium and domain events"| Stream
+    Stream -->|"dispatches processed events"| Data["Data and event handlers"]
+    Data --> Cassandra["Cassandra"]
+    Data --> Pinot["Pinot"]

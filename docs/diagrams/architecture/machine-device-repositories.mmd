@@ -1,0 +1,9 @@
+flowchart TD
+    ServiceLayer["Device and scheduling services"] --> RepositoryContract["CustomMachineRepository"]
+    RepositoryContract --> RepositoryImpl["CustomMachineRepositoryImpl"]
+    RepositoryImpl --> QueryBuilder["Tenant scoped filter and search builder"]
+    RepositoryImpl --> Aggregations["Facet and ranked pagination aggregations"]
+    QueryBuilder --> MongoTemplate["Spring Data MongoTemplate"]
+    Aggregations --> MongoTemplate
+    MongoTemplate --> Machines["Machine collection"]
+    MongoTemplate --> Tags["Tag and TagAssignment collections"]

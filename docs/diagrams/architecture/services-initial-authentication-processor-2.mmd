@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Processor starts"] --> ReadToken["Read persisted access token"]
+    ReadToken --> ReadOk{{"Read succeeded?"}}
+    ReadOk -->|"No"| ReadError["Return contextual configuration error"]
+    ReadOk -->|"Yes"| HasToken{{"Token is nonempty?"}}
+    HasToken -->|"Yes"| Skip["Log token detected and return success"]
+    HasToken -->|"No"| Authenticate["Request initial authentication"]
+    Authenticate --> AuthOk{{"Authentication succeeded?"}}
+    AuthOk -->|"Yes"| Complete["Log success and return success"]
+    AuthOk -->|"No"| Warn["Log failure warning"]
+    Warn --> Wait["Wait 60 seconds"]
+    Wait --> Authenticate

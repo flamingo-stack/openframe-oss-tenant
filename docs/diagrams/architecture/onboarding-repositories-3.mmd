@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Workflow as "Onboarding Workflow"
+    participant TenantRepo as "Tenant Progress Repository"
+    participant UserRepo as "User Progress Repository"
+    participant Mongo as "MongoDB"
+    Workflow->>TenantRepo: Find progress by tenant identifier
+    TenantRepo->>Mongo: Query tenant progress document
+    Mongo-->>TenantRepo: Progress document or no result
+    TenantRepo-->>Workflow: Optional tenant progress
+    Workflow->>UserRepo: Find progress by user and tenant identifiers
+    UserRepo->>Mongo: Query user progress document
+    Mongo-->>UserRepo: Progress document or no result
+    UserRepo-->>Workflow: Optional user progress
+    Note over Workflow: The workflow applies onboarding rules and saves any resulting state

@@ -1,0 +1,7 @@
+flowchart LR
+    DoctorChecks["Doctor diagnostics"] -->|"CheckResult values"| Healing["Doctor Healing"]
+    Healing -->|"pending()"| WorkList["Ordered unique remediations"]
+    WorkList -->|"heal()"| Dispatcher["Action dispatcher"]
+    Dispatcher -->|"InstallWebview2"| Installer["WebView2 installer"]
+    Installer -->|"HealOutcome"| Results["HealResult collection"]
+    Results -->|"returned to caller"| Client["OpenFrame Client workflow"]

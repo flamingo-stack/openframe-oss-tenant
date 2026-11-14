@@ -1,0 +1,12 @@
+flowchart TD
+    Event["Tracing Event"] --> Visit["Visit Fields"]
+    Visit --> Supported{{"Supported Field?"}}
+    Supported -->|"No"| Ignore["No Store Update"]
+    Supported -->|"Yes"| Lock["Acquire Write Lock"]
+    Lock --> Type{{"Metric Type?"}}
+    Type -->|"Counter"| Counter["Replace Counter"]
+    Type -->|"Gauge"| Gauge["Replace Gauge"]
+    Type -->|"Histogram"| Histogram["Create or Append Sample"]
+    Counter --> Read["Metric Available to Readers"]
+    Gauge --> Read
+    Histogram --> Read

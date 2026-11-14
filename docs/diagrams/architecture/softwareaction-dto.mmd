@@ -1,0 +1,7 @@
+flowchart LR
+    Response["History query response"] --> Connection["Software action run connection"]
+    Connection --> Edge["Software action run edge"]
+    Edge --> Node["Software action run node"]
+    Edge --> Cursor["Pagination cursor"]
+    Node --> Test["History assertion"]
+    Cursor --> NextQuery["Next page request"]

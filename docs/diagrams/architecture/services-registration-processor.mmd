@@ -1,0 +1,10 @@
+flowchart LR
+    ClientRuntime["OpenFrame client runtime"] --> Processor["Registration Processor"]
+    Processor --> ConfigService["Agent Configuration Service"]
+    Processor --> RegistrationService["Agent Registration Service"]
+    RegistrationService --> DeviceData["Device data fetcher"]
+    RegistrationService --> InitialConfig["Initial configuration service"]
+    RegistrationService --> RegistrationClient["Registration client"]
+    RegistrationClient --> TenantApi["Tenant client registration API"]
+    RegistrationService --> MachineInfo["Persisted machine information"]
+    RegistrationService --> ConfigService

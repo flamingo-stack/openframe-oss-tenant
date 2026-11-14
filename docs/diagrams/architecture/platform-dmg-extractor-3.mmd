@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Caller
+    participant Extractor as "Platform Dmg Extractor"
+    participant FileSystem as "Temporary filesystem"
+    participant Hdiutil as "hdiutil"
+    participant CopyTool as "cp"
+    Caller->>Extractor: extract_all(bytes, target, source path)
+    Extractor->>FileSystem: write temporary DMG
+    Extractor->>Hdiutil: attach read only at mount point
+    Hdiutil-->>Extractor: mount result
+    Extractor->>FileSystem: remove colliding target item
+    Extractor->>CopyTool: copy selected source recursively
+    CopyTool-->>Extractor: copy result
+    Extractor->>Hdiutil: detach mount point
+    Extractor->>FileSystem: remove temporary DMG
+    Extractor-->>Caller: copy success or copy error

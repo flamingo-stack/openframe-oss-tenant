@@ -1,0 +1,16 @@
+flowchart TD
+    Test["Test Case"] --> Flow["Ui Login Flow"]
+    Flow --> Auth["Authentication Pages"]
+    Test --> Devices["Device Pages"]
+    Test --> Monitoring["Monitoring Page"]
+    Test --> Scripts["Script Pages"]
+
+    Auth --> AuthUi["OpenFrame User Interface"]
+    Devices --> AuthUi
+    Monitoring --> AuthUi
+    Scripts --> AuthUi
+
+    Devices --> Mesh["MeshCentral Remote Session"]
+    Mesh --> Desktop["Remote Desktop Page"]
+    Mesh --> Shell["Remote Shell Page"]
+    Mesh --> Files["File Manager Page"]

@@ -1,0 +1,9 @@
+flowchart LR
+    ToolConfig["Download Configuration"] --> Detector["Platform Installation Detector"]
+    ToolId["Tool Identifier"] --> Detector
+    Directories["Directory Manager"] --> Detector
+    Detector -->|"macOS service"| LaunchDaemon["LaunchDaemon plist probe"]
+    Detector -->|"Windows service"| SystemService["System Service probe"]
+    LaunchDaemon --> Detector
+    SystemService --> Detector
+    Detector --> Result["Optional Installation record"]

@@ -1,0 +1,4 @@
+flowchart LR
+    ClientStartup["OpenFrame Client startup"] -->|"calls init()"| MetricsBootstrap["Metrics Bootstrap"]
+    MetricsBootstrap -->|"writes informational event"| Tracing["Tracing subscriber"]
+    MetricsBootstrap -->|"returns Result<()>"| ClientStartup

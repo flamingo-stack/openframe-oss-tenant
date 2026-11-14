@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Coordinator
+    participant Latch
+    participant Observer
+    Coordinator->>Latch: view()
+    Latch-->>Coordinator: LatchView
+    Observer->>Latch: is_set()
+    Latch-->>Observer: false
+    Coordinator->>Latch: set()
+    Observer->>Latch: is_set()
+    Latch-->>Observer: true

@@ -1,0 +1,9 @@
+flowchart TD
+    Caller["Agent service"] -->|"supplies path and type"| Reader["Read and quarantine operation"]
+    Caller -->|"supplies path and bytes"| Writer["Atomic write operation"]
+    Reader --> Parser["Parse and quarantine operation"]
+    Parser --> Json["JSON deserializer"]
+    Writer --> TempFile["Temporary file facility"]
+    Writer --> FileSystem["Operating system filesystem"]
+    Parser --> FileSystem
+    FileSystem --> Log["Warning log on corruption"]

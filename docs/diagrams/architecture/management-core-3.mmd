@@ -1,0 +1,10 @@
+flowchart TD
+    Schedule["Catalog schedule"] --> Lock["Global Redis lock"]
+    Lock --> Brew["Homebrew catalog fetcher"]
+    Lock --> Winget["winget catalog fetcher"]
+    Brew --> Writer["Package catalog writer"]
+    Winget --> Writer
+    Writer --> Repository["Package catalog repository"]
+    Writer --> Snapshot["Upsert and stale-entry pruning"]
+    Brew --> Metrics["Success or failure metric"]
+    Winget --> Metrics

@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Start seeding"] --> Load["Load anchor"]
+    Load --> Present{"Anchor present?"}
+    Present -->|"No"| Promote["Promote running version"]
+    Present -->|"Yes"| Reserve{"Reserve exists?"}
+    Reserve -->|"Yes"| Keep["Keep anchor and reserve"]
+    Reserve -->|"No"| Match{"Anchor matches running version?"}
+    Match -->|"Yes"| Rebuild["Promote running version to rebuild reserve"]
+    Match -->|"No"| Degraded["Leave reserve unset"]

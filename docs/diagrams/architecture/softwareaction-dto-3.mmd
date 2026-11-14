@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Test as History Test
+    participant Api as API Client
+    participant Service as API Service
+    participant Connection as Run Connection
+    Test->>Api: Request software action history
+    Api->>Service: Submit query
+    Service-->>Api: Return paginated response
+    Api-->>Connection: Deserialize connection
+    Connection-->>Test: Provide edges and page information
+    Test->>Test: Assert node fields and retain cursor
+    Test->>Api: Request next page with cursor

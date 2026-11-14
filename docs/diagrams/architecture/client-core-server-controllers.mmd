@@ -1,0 +1,13 @@
+flowchart LR
+    Agent["Endpoint agent"] -->|"HTTPS"| Gateway["OpenFrame gateway"]
+    Gateway -->|"clients path"| ClientService["OpenFrame client service"]
+    Agent -->|"NATS events and results"| Nats["NATS JetStream"]
+    Nats -->|"consumed by"| Listeners["Client Core listeners"]
+    Kafka["Kafka delivery hand-off"] -->|"optional dispatch topic"| DeliveryListener["Delivery dispatch listener"]
+    DeliveryListener -->|"local request"| DeliveryServices["Delivery and RMM services"]
+    Listeners -->|"state transitions"| DeliveryServices
+    Schedulers["Scheduled jobs"] -->|"invokes"| DeliveryServices
+    Schedulers -->|"distributed locks"| Redis["Redis ShedLock"]
+    DeliveryServices -->|"persist"| Mongo["MongoDB"]
+    DeliveryServices -->|"commands and tracking"| Nats
+    ClientService -->|"outbound event logs"| Kafka

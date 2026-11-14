@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Client as OpenFrame Client
+    participant Service as Machine Id Service
+    participant File as Machine ID File
+    participant Tool as Integrated Tool Agent
+    Client->>Service: get_or_create()
+    Service->>File: read existing value
+    alt value available
+        Service->>Service: cache value
+        Service-->>Client: return stored identity
+    else value unavailable
+        Service->>Service: generate UUID version 4
+        Service->>File: write generated value
+        Service->>Service: cache value
+        Service-->>Client: return generated identity
+    end
+    Tool->>File: read shared identity

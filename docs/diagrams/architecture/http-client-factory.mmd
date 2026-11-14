@@ -1,0 +1,18 @@
+flowchart LR
+    AgentRuntime["Endpoint agent runtime"] --> Factory["Http Client Factory"]
+    Factory --> Header["Default machine identifier header"]
+    Factory --> Timeout["Configured request timeout"]
+    Factory --> Tls["Configured TLS validation"]
+    Factory --> Network["No proxy and no idle pool"]
+    Header --> Client["Configured reqwest client"]
+    Timeout --> Client
+    Tls --> Client
+    Network --> Client
+    Client --> Auth["Authentication client"]
+    Client --> Registration["Registration client"]
+    Client --> RemoteAccess["Remote access client"]
+    Client --> ToolApi["Tool API client"]
+    Auth --> ControlPlane["OpenFrame control plane"]
+    Registration --> ControlPlane
+    RemoteAccess --> ControlPlane
+    ToolApi --> ControlPlane

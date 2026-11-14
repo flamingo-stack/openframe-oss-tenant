@@ -1,0 +1,9 @@
+flowchart TD
+    Program["Installed program"] --> System{"System component?"}
+    System -->|"Yes"| NoPackage["No package result"]
+    System -->|"No"| Normalize["Fold keys and normalize name and publisher"]
+    Normalize --> Catalog["Query Winget catalog by all keys"]
+    Catalog --> Candidates["Build code or name and publisher candidates"]
+    Candidates --> Select{"One safe candidate?"}
+    Select -->|"Yes"| Match["Store package match"]
+    Select -->|"No"| Ambiguous["Return ambiguous or no-package result"]

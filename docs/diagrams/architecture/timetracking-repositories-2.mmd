@@ -1,0 +1,11 @@
+flowchart TD
+    Request["Filtered Time Entry Request"] --> Filter["Build MongoDB Query"]
+    Filter --> SortCheck{"Valid Sort Field?"}
+    SortCheck -->|"No"| DefaultSort["Use Date as Default"]
+    SortCheck -->|"Yes"| SelectedSort["Use Requested Sort"]
+    DefaultSort --> DatePath{"Date Sort?"}
+    SelectedSort --> DatePath
+    DatePath -->|"Yes"| DatePipeline["Aggregate by Work Day, Created At, and Identifier"]
+    DatePath -->|"No"| StandardQuery["Apply Sort Value and Identifier Keyset Predicate"]
+    DatePipeline --> Page["Return Limited Page"]
+    StandardQuery --> Page

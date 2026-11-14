@@ -1,0 +1,5 @@
+flowchart LR
+    Item["Item identifier"] --> Group["Group assignments by target type"]
+    Group --> Totals["Typed assignment counts"]
+    Target["Item type and target"] --> Reverse["Find matching assignments"]
+    Reverse --> ItemIds["Assigned item identifiers"]

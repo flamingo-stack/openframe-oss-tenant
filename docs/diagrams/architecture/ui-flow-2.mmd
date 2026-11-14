@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Test as Browser Test
+    participant Flow as Ui Flow
+    participant Entry as Auth Entry Page
+    participant Browser as Playwright Page
+    participant Dashboard as Dashboard Page
+    participant Sidebar as Navigation Sidebar
+    Test->>Flow: login(email, password)
+    Flow->>Entry: create with page
+    Flow->>Entry: navigate()
+    Entry->>Browser: navigate authentication UI
+    Flow->>Entry: switchToLogin()
+    Flow->>Entry: submitEmail(email)
+    Flow->>Entry: clickSignInWithOpenFrameSso()
+    Flow->>Entry: login(email, password)
+    Entry-->>Flow: Dashboard Page
+    Flow->>Browser: waitForCondition(Dashboard Page is loaded)
+    Browser->>Dashboard: evaluate isLoaded()
+    Dashboard-->>Browser: readiness result
+    Flow->>Sidebar: create with page
+    Sidebar-->>Test: authenticated navigation surface

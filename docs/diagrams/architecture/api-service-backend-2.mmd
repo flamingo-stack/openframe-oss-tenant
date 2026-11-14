@@ -1,0 +1,10 @@
+flowchart LR
+    Fetcher["API log request"] --> Selector["Log details service"]
+    Selector --> Decision{{"Store is both?"}}
+    Decision -->|"No"| ActiveStore["Configured log store"]
+    Decision -->|"Yes"| Boundary{{"Timestamp before Loki boundary?"}}
+    Boundary -->|"Yes"| Cassandra["Cassandra lookup with tenant key"]
+    Boundary -->|"No"| Loki["Loki lookup with tenant ID"]
+    ActiveStore --> Details["Optional log details"]
+    Cassandra --> Details
+    Loki --> Details

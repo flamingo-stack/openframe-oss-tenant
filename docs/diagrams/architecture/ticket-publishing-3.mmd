@@ -1,0 +1,11 @@
+flowchart TD
+    Input["Time entry ticket views"] --> Filter["Keep entries with ticket identifiers"]
+    Filter --> CheckEmpty{"No entries remain?"}
+    CheckEmpty -->|"Yes"| Match["Return all match result"]
+    CheckEmpty -->|"No"| Query["Load ticket titles for tenant and ticket identifiers"]
+    Query --> Compare["Compare source title and copied title"]
+    Compare --> SourceGone{"Source title found?"}
+    SourceGone -->|"No"| Ignore["Do not report mismatch"]
+    SourceGone -->|"Yes"| Equal{"Titles equal?"}
+    Equal -->|"Yes"| Ignore
+    Equal -->|"No"| Mismatch["Return tenant scoped mismatch"]

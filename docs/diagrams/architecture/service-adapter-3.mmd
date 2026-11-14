@@ -1,0 +1,8 @@
+flowchart LR
+    Config["ServiceConfig"] --> Mac["macOS launchd plist"]
+    Config --> Linux["Unix advanced options"]
+    Config --> Windows["Windows service registration"]
+    Mac --> Launchd["launchd"]
+    Linux --> SystemManager["Native Unix manager"]
+    Windows --> Scm["Windows SCM"]
+    RecoveryConfig["RecoveryConfig"] -->|"Windows only"| Scm

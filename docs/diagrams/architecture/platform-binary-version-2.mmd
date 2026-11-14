@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Caller requests version"] --> Prepare["Set executable permissions"]
+    Prepare --> PermissionOk{"Permissions set?"}
+    PermissionOk -->|"No"| ReturnNone1["Warn and return None"]
+    PermissionOk -->|"Yes"| WindowsCheck{"Windows platform?"}
+    WindowsCheck -->|"Yes"| Unlock["Wait for executable unlock"]
+    WindowsCheck -->|"No"| Launch["Launch binary with --version"]
+    Unlock --> Launch
+    Launch --> Completed{"Finished before limit?"}
+    Completed -->|"No"| ReturnNone2["Warn and return None"]
+    Completed -->|"Yes"| StatusOk{"Exit status successful?"}
+    StatusOk -->|"No"| ReturnNone3["Warn and return None"]
+    StatusOk -->|"Yes"| Parse["Read first non-empty stdout line"]
+    Parse --> Valid{"Client name and semantic version valid?"}
+    Valid -->|"No"| ReturnNone4["Warn and return None"]
+    Valid -->|"Yes"| ReturnVersion["Return semantic version"]

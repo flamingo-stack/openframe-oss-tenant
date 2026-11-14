@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Incoming Request"] --> Origin["Sanitize Null Origin"]
+    Origin --> VersionMetrics["Record Client Version Metrics"]
+    VersionMetrics --> UpgradeGate{"Mobile Client Meets Policy?"}
+    UpgradeGate -->|"No"| UpgradeResponse["HTTP 426 Response"]
+    UpgradeGate -->|"Yes or Exempt"| Jwt["Resolve and Validate JWT Issuer"]
+    Jwt --> Access{"Path Role Check"}
+    Access -->|"Allowed"| Route["Route or Proxy Request"]
+    Access -->|"Denied"| Denied["Authentication or Authorization Response"]

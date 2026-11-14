@@ -1,0 +1,8 @@
+flowchart TD
+    Contract["PackageCatalogRepositoryCustom"] --> Implementation["PackageCatalogRepositoryImpl"]
+    Implementation --> Template["MongoTemplate"]
+    Implementation --> Entry["PackageCatalogEntry"]
+    Implementation --> Page["PackageCatalogPage"]
+    Implementation --> Order["PackageCatalogOrder"]
+    Fallback["DefaultTenantIdProvider"] --> TenantContract["TenantIdProvider"]
+    Configuration["TENANT_ID or oss"] --> Fallback

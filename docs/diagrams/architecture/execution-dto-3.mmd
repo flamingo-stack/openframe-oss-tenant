@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "Test Case"
+    participant API as "Execution Query API"
+    participant Mapper as "JSON Mapper"
+    participant DTO as "Execution Dto"
+    Test->>API: Request execution history page
+    API->>Test: Return connection response
+    Test->>Mapper: Deserialize response payload
+    Mapper->>DTO: Populate edge, node, and cursor fields
+    Test->>DTO: Assert status, counts, identifiers, and timestamps

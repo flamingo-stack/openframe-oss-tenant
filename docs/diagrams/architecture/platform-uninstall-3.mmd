@@ -1,0 +1,6 @@
+flowchart LR
+    RunningService["Running client service"] --> Request["Uninstall requested"]
+    Request --> Spawn["Spawn detached client uninstall process"]
+    Spawn --> Child["Detached uninstall process"]
+    Child --> Stop["Stop and remove client service"]
+    Stop --> Cleanup["Clean client state and binary"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller
+    participant Adapter as Service Adapter
+    participant Native as Native Manager
+    participant Client as Client Process
+    Caller->>Adapter: uninstall()
+    Adapter->>Native: stop(label)
+    Native->>Client: stop request
+    Adapter->>Adapter: Windows waits for process stop
+    Adapter->>Native: uninstall(label)
+    Native-->>Adapter: removed or accepted absent state
+    Adapter-->>Caller: result

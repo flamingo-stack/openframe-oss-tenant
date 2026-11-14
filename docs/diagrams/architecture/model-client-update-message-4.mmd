@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Server as Server delivery router
+    participant Broker as NATS
+    participant Client as Client command handler
+    participant Updater as Platform updater
+    participant Startup as Next client startup
+    Server->>Broker: Dispatch update message
+    Broker->>Client: Deliver message
+    Client->>Client: Reserve, validate, and stage update
+    Client->>Updater: Launch replacement workflow
+    Updater->>Startup: Start updated client
+    Startup->>Startup: Load persisted update state
+    alt target version is running
+        Startup->>Startup: Mark successful and promote last known good
+    else verification is pending or fails
+        Startup->>Startup: Retain state or run failure handling
+    end

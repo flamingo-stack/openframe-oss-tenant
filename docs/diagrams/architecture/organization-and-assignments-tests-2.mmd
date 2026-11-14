@@ -1,0 +1,11 @@
+flowchart TD
+    Create["Create organization fixture"] --> Publish{"Later pipeline phase consumes it?"}
+    Publish -->|"Yes"| Context["Publish organization ID and registration secret"]
+    Publish -->|"No"| Standalone["Keep device lookups tenant-wide"]
+    Context --> List["List and retrieve organizations"]
+    Standalone --> List
+    List --> Update["Update a non-default organization"]
+    Update --> Archive["Archive selected organization"]
+    Archive --> Query["Sort and filter by last activity"]
+    Query --> ArchiveCheck["Verify an empty organization can archive"]
+    ArchiveCheck --> GlobalLookup["Resolve existing and missing global IDs"]

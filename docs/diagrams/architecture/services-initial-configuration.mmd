@@ -1,0 +1,9 @@
+flowchart TD
+    Installer["Installation Initial Configuration Service"] -->|"builds configuration"| ConfigService["Services Initial Configuration"]
+    ConfigService -->|"ensures directories"| DirectoryManager["Directory Manager"]
+    ConfigService -->|"reads and atomically replaces"| ConfigFile["secured directory initial_config.json"]
+    ConfigFile -->|"deserializes"| ConfigModel["Initial Configuration model"]
+    ConfigService -->|"server and initial key"| AuthFlow["Initial Authentication Processor"]
+    ConfigService -->|"identity and bootstrap values"| RegistrationFlow["Registration Processor"]
+    ConfigService -->|"pending mode"| RemoteAccess["Remote Access Mode Service"]
+    ConfigService -->|"log key"| LogKey["Log Key Service"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Page["Visible schedule-run page"] -->|"execution identifiers"| Match["Match tenant and terminal leaves"]
+    Match --> GroupMachine["Group by execution and machine"]
+    GroupMachine --> GroupRun["Group by execution"]
+    GroupRun --> Counts["Map execution identifier to responded count"]
+    Counts --> View["Show responded devices and total machines"]

@@ -1,0 +1,8 @@
+flowchart TD
+    Probe["Attempt exclusive open"] --> Result{"Probe result"}
+    Result -->|"open succeeds"| Ready["Return true"]
+    Result -->|"file in use before deadline"| Sleep["Wait 250 milliseconds"]
+    Sleep --> Probe
+    Result -->|"file in use at deadline"| Holders["Query Restart Manager holders"]
+    Holders --> TimedOut["Log warning and return false"]
+    Result -->|"other error"| Proceed["Log warning and return true"]

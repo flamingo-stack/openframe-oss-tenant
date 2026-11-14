@@ -1,0 +1,10 @@
+flowchart LR
+    Producer["Execution or command handler"] -->|"RmmResult"| Store["Services Result Store"]
+    Store --> Journal["Scheduled execution journal"]
+    Store --> OutboxMeta["Outbox metadata table"]
+    Store --> OutboxPayload["Outbox payload table"]
+    Store --> Ledger["Delivery ledger tables"]
+    Flusher["Result Outbox Run Manager"] -->|"pending keys and payloads"| Store
+    Flusher -->|"publish raw or acknowledged"| Publisher["ResultPublisher"]
+    Publisher --> Nats["NATS transport"]
+    Nats --> Server["OpenFrame client service"]

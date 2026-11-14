@@ -1,0 +1,9 @@
+flowchart LR
+    Caller["Windows client capability"] --> Resolver["Platform Powershell"]
+    Resolver --> Environment["WINDIR or SystemRoot"]
+    Resolver --> Candidate["System32 PowerShell candidate"]
+    Candidate --> Exists{"File exists?"}
+    Exists -->|"Yes"| Absolute["Absolute PowerShell path"]
+    Exists -->|"No"| Fallback["Bare powershell.exe name"]
+    Absolute --> Caller
+    Fallback --> Caller

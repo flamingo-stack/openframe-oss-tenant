@@ -1,0 +1,13 @@
+flowchart TD
+    Build["Build Package Update Status Message"] --> Log["Log Request and Status Fields"]
+    Log --> Serialize{"JSON serialization succeeds?"}
+    Serialize -->|"No"| SerializationError["Log Error and Stop"]
+    Serialize -->|"Yes"| StoreEnabled{"Result Store enabled?"}
+    StoreEnabled -->|"Yes"| MakeKey["Create Time Ordered Outbox Key"]
+    MakeKey --> Enqueue{"Enqueue succeeds?"}
+    Enqueue -->|"Yes"| Notify["Notify Outbox Flusher"]
+    Enqueue -->|"No"| PersistError["Log Error, Event Is Lost"]
+    StoreEnabled -->|"No"| DirectPublish["Acknowledged NATS Publish"]
+    DirectPublish --> PublishResult{"Published Before Timeout?"}
+    PublishResult -->|"Yes"| Complete["Complete"]
+    PublishResult -->|"No"| PublishWarning["Log Warning"]

@@ -1,0 +1,12 @@
+flowchart LR
+    TestCase["Integration test"] --> Contract["IAuthFlow contract"]
+    Contract --> OssFlow["AuthFlowOSS"]
+    Contract --> SaasFlow["AuthFlowSAAS"]
+    OssFlow --> TenantApi["Tenant discovery API"]
+    SaasFlow --> TenantApi
+    OssFlow --> OssAuth["OSS authorization redirects"]
+    SaasFlow --> SaasLogin["SaaS OAuth login redirects"]
+    SaasLogin --> LoginPage["Login page and CSRF field"]
+    OssAuth --> TokenCookies["Access and refresh token cookies"]
+    LoginPage --> TokenCookies
+    TokenCookies --> TestCase

@@ -1,0 +1,13 @@
+flowchart TD
+    Input["Service configuration"] --> Label["Create service label"]
+    Label --> Manager["Detect native service manager"]
+    Manager --> WorkDir["Resolve working directory"]
+    WorkDir --> Context["Build installation context"]
+    Context --> PlatformConfig["Apply platform configuration"]
+    PlatformConfig --> LogDirs["Create log parent directories"]
+    LogDirs --> InstallNative["Install native service"]
+    InstallNative --> RecoveryCheck{"Windows recovery configured?"}
+    RecoveryCheck -->|"Yes"| Recovery["Apply SCM failure actions"]
+    RecoveryCheck -->|"No"| StartService["Start service"]
+    Recovery --> StartService
+    StartService --> Running["Client runs in service mode"]

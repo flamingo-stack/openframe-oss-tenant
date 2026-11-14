@@ -1,0 +1,8 @@
+flowchart LR
+    BuildInputs["Cargo features and build environment"] --> Compile["Rust compiler"]
+    Compile --> AgentBinary["OpenFrame Client agent binary"]
+    Caller["Client tool handling logic"] --> Lookup["Model Tool Version Overrides lookup"]
+    AgentBinary --> Lookup
+    Lookup --> Match["Feature-gated tool key match"]
+    Match --> Result["Optional static version"]
+    Result --> Caller

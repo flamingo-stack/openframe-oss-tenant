@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Test as "Service test"
+    participant Client as "API client"
+    participant Api as "Schedule API"
+    Test->>Client: Request schedules
+    Client->>Api: Send query
+    Api->>Client: Return connection payload
+    Client->>Test: Deserialize edge and criteria DTOs
+    Test->>Test: Assert node, cursor, and criteria fields
