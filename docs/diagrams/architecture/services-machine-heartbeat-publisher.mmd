@@ -1,9 +1,0 @@
-flowchart LR
-    RunManager["Machine Heartbeat Run Manager"] -->|"invokes publish"| Publisher["Services Machine Heartbeat Publisher"]
-    ConfigService["Agent Configuration Service"] -->|"machine identifier"| Publisher
-    Publisher -->|"subject and empty heartbeat"| NatsPublisher["NATS Message Publisher"]
-    NatsPublisher -->|"publish and flush"| NatsBroker["NATS"]
-    NatsBroker -->|"machine wildcard subscription"| Listener["Machine Heartbeat Listener"]
-    Listener -->|"machine identifier and receipt time"| StatusService["Machine Status Service"]
-    StatusService -->|"update device status"| DeviceState["Device State"]
-    OfflineScheduler["Offline Detection Scheduler"] -->|"evaluates stale devices"| DeviceState

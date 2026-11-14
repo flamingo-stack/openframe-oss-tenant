@@ -1,7 +1,0 @@
-flowchart TD
-    Request["Spawn request"] --> SelectPlatform{"Supported platform?"}
-    SelectPlatform -->|"macOS"| MacLaunch["Create child in a new session"]
-    SelectPlatform -->|"Windows"| WindowsLaunch["Create detached child with no window"]
-    SelectPlatform -->|"Other"| Unsupported["Return unsupported platform error"]
-    MacLaunch --> Child["Return child handle"]
-    WindowsLaunch --> Child

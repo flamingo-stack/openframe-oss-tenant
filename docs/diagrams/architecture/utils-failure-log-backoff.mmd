@@ -1,8 +1,0 @@
-flowchart LR
-    Caller["Retrying client operation"] -->|"should log?"| Backoff["FailureLogBackoff"]
-    Backoff -->|"logging decision"| Logger["Caller logging layer"]
-    Caller -->|"failed attempt"| Recorder["record failure"]
-    Logger -->|"logged boolean"| Recorder
-    Recorder -->|"updates streak state"| Backoff
-    Caller -->|"successful attempt"| Success["record success"]
-    Success -->|"returns summary and resets"| Backoff

@@ -1,8 +1,0 @@
-flowchart TD
-    Launch["Updater Launched"] --> Watch{"Exit observed while service is alive?"}
-    Watch -->|"No"| Handoff["Updater stops service and replaces binary"]
-    Watch -->|"Yes, success"| NextBoot["Leave state for next boot"]
-    Watch -->|"Yes, failure"| Remove["Remove staged binary"]
-    Remove --> Read["Read or reconstruct update state"]
-    Read --> Fail["Mark failed and invoke update handler"]
-    Fail --> Resume["Clear pending marker and resume tools"]

@@ -1,8 +1,0 @@
-flowchart TD
-    Discover["Discover Test Classes"] --> Filter["Apply Included and Excluded Tags"]
-    Filter --> Plan["Build JUnit Test Plan"]
-    Plan --> Execute["Execute Selected Classes"]
-    Execute --> Setup["Clear Thread Cookie Override"]
-    Setup --> ApiCalls["Call Authenticated Test APIs"]
-    ApiCalls --> Assertions["Assert Domain Results"]
-    Assertions --> Cleanup["Run Class Cleanup When Defined"]

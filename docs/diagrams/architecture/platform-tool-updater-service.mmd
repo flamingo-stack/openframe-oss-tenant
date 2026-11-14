@@ -1,9 +1,0 @@
-flowchart TD
-    UpdateRunner["Shared update runner"] -->|"selects service strategy"| ServiceUpdater["ServiceToolUpdater"]
-    ServiceUpdater -->|"implements"| UpdaterContract["ToolUpdater lifecycle"]
-    ServiceUpdater -->|"uses"| KillService["Tool kill service"]
-    ServiceUpdater -->|"uses"| DownloadService["GitHub download service"]
-    ServiceUpdater -->|"uses"| DirectoryManager["Directory manager"]
-    ServiceUpdater -->|"uses"| SystemService["Platform system service helpers"]
-    ServiceUpdater -->|"uses"| BinaryWriter["Binary writer and lock wait"]
-    ServiceUpdater -->|"uses"| BundleRemoval["macOS application bundle removal"]

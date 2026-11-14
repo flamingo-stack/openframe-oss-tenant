@@ -1,7 +1,0 @@
-flowchart TD
-    DoctorCheck["WebView2 runtime check"] -->|"Missing or per user runtime"| Remediation["Install WebView2 remediation"]
-    Remediation --> HealingCoordinator["Doctor healing coordinator"]
-    HealingCoordinator --> WebviewInstaller["Doctor Healing Webview install"]
-    WebviewInstaller --> Outcome["Healed or failed outcome"]
-    Outcome --> HealingResult["Recorded healing result"]
-    DoctorCheck -->|"Machine wide runtime found"| NoAction["No remediation needed"]

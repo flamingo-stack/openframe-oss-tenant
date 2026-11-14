@@ -1,9 +1,0 @@
-sequenceDiagram
-    participant Test as "Integration Test"
-    participant API as "Assignment GraphQL API"
-    participant Mapper as "Jackson Mapper"
-    participant DTO as "Assignment DTOs"
-    Test->>API: Request assignment connection
-    API->>Mapper: Return JSON response
-    Mapper->>DTO: Map edge, node, and target
-    DTO->>Test: Expose fields and pagination cursor

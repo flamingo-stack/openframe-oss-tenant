@@ -1,9 +1,0 @@
-flowchart TD
-    Input["Read-state rows"] --> Empty{"Rows empty?"}
-    Empty -->|"Yes"| Return["Return without database work"]
-    Empty -->|"No"| Insert["Run unordered bulk insert"]
-    Insert --> Outcome{"Bulk error?"}
-    Outcome -->|"No"| Done["Rows persisted"]
-    Outcome -->|"Yes"| Duplicate{"All errors are duplicate keys?"}
-    Duplicate -->|"Yes"| Idempotent["Log debug and accept batch"]
-    Duplicate -->|"No"| Fail["Rethrow bulk exception"]

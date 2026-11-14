@@ -1,8 +1,0 @@
-flowchart TD
-    Start["A higher-level client starts an HTTP request"] --> Defaults["Reqwest applies default machine header and timeout"]
-    Defaults --> Proxy["Client bypasses proxy usage"]
-    Proxy --> Connection["No idle connection is reused"]
-    Connection --> Dns["A fresh connection performs DNS lookup"]
-    Dns --> Tls["TLS policy follows the configured certificate setting"]
-    Tls --> Send["Request is sent to the selected base URL"]
-    Send --> Result["Response or transport error returns to caller"]

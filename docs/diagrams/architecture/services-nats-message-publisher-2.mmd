@@ -1,9 +1,0 @@
-flowchart TD
-    PublisherType["NatsMessagePublisher"] -->|"stores"| ManagerType["NatsConnectionManager"]
-    PublisherType -->|"implements"| ResultContract["ResultPublisher"]
-    Heartbeat["Machine heartbeat publisher"] -->|"uses"| PublisherType
-    Hostname["Hostname report publisher"] -->|"uses"| PublisherType
-    InstalledAgent["Installed agent message publisher"] -->|"uses"| PublisherType
-    ToolConnection["Tool connection message publisher"] -->|"uses"| PublisherType
-    ResultOutbox["Result outbox run manager"] -->|"depends on"| ResultContract
-    ResultStore["Result store"] -->|"persists encoded results"| ResultOutbox

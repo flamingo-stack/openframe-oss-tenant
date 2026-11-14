@@ -1,8 +1,0 @@
-flowchart LR
-    FleetData["Fleet MDM data"] --> Titles["Fleet software titles"]
-    Titles --> Holders["Software on devices"]
-    Titles --> TitleCves["CVEs for software title"]
-    FleetData --> Cves["Fleet CVE list"]
-    Cves --> CveDetail["CVE detail and affected devices"]
-    DeviceData["Device software inventory"] --> DeviceCves["Device CVE list"]
-    DeviceCves --> Compare["Affected software equals vulnerable installed titles"]

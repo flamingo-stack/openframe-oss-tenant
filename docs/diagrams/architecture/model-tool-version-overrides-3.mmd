@@ -1,6 +1,0 @@
-flowchart LR
-    ToolMessage["Tool installation message"] --> VersionPolicy["Version selection logic"]
-    ToolKey["Tool key"] --> Lookup["Model Tool Version Overrides lookup"]
-    Lookup --> VersionPolicy
-    VersionPolicy --> EffectiveVersion["Effective tool version"]
-    EffectiveVersion --> Download["Asset selection and installation"]

@@ -1,5 +1,0 @@
-flowchart LR
-    InitialConfig["Initial Configuration Service"] -->|"reads local mode and CA path"| Provider["Services Local Tls Config Provider"]
-    LocalCaFile["Configured local CA certificate file"] -->|"PEM bytes"| Provider
-    Provider -->|"builds ClientConfig"| NatsManager["NATS Connection Manager"]
-    NatsManager -->|"TLS client configuration in local mode"| NatsEndpoint["NATS endpoint"]

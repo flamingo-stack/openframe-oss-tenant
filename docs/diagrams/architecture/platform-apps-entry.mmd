@@ -1,6 +1,0 @@
-flowchart LR
-    ClientBinary["Installed OpenFrame Client binary"] --> Registration["Platform Apps Entry"]
-    Registration --> RegistryKey["HKLM uninstall registry key"]
-    RegistryKey --> WindowsSettings["Windows Apps and Features"]
-    WindowsSettings --> UninstallCommand["Elevated uninstall command"]
-    UninstallCommand --> ClientBinary

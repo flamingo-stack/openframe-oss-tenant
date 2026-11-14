@@ -1,6 +1,0 @@
-flowchart LR
-    ServiceCore["Client service layer"] -->|"install or remove request"| Adapter["Service Adapter"]
-    Adapter -->|"native service definition"| NativeManager["Native service manager"]
-    NativeManager -->|"launches"| ClientProcess["OpenFrame Client process"]
-    ClientProcess -->|"run-as-service"| ClientRuntime["Client runtime"]
-    Adapter -->|"optional log paths"| LogDirectories["Log directories"]

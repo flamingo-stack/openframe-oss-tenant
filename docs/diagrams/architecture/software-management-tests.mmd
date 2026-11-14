@@ -1,9 +1,0 @@
-flowchart LR
-    Catalog["Public package catalogs"] --> Search["Package Search Test"]
-    Search --> Bundle["Software Bundle Test"]
-    Bundle --> Api["OpenFrame GraphQL APIs"]
-    Api --> Device["QA Windows device"]
-    Device --> Actions["Software action records"]
-    Actions --> History["Software Action History Test"]
-    Fleet["Fleet MDM software and CVE data"] --> Inventory["Software Inventory Test"]
-    Inventory --> Api

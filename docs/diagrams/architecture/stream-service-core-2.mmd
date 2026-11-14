@@ -1,8 +1,0 @@
-flowchart LR
-    Activities["Fleet activities topic"] --> ActivityStream["Activity stream keyed by activity ID"]
-    HostActivities["Fleet host activities topic"] --> HostStream["Host stream keyed by activity ID"]
-    ActivityStream --> Join["Five-second left join"]
-    HostStream --> Join
-    Join --> Header["Add message-type header"]
-    Header --> EnrichedTopic["Fleet events topic"]
-    EnrichedTopic --> Listener["JSON Kafka Listener"]

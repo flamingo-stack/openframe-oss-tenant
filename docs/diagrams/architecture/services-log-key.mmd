@@ -1,9 +1,0 @@
-flowchart LR
-    Client["OpenFrame Client"] -->|"starts after registration"| Service["Log Key Service"]
-    Stream["Log Stream"] -->|"connection failed signal"| Service
-    Service -->|"reads and saves log key"| InitialConfig["Initial Configuration Service"]
-    Service -->|"reads access token"| AgentConfig["Agent Configuration Service"]
-    Service -->|"Bearer token request"| Endpoint["Backend log key endpoint"]
-    Endpoint -->|"JSON key response"| Service
-    Service -->|"drain and request"| RestartGate["Restart Gate"]
-    RestartGate -->|"safe restart"| Client

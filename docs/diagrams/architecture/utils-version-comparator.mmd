@@ -1,5 +1,0 @@
-flowchart LR
-    Tenant["OpenFrame OSS Tenant"] -->|"runs"| Agent["OpenFrame client agent"]
-    Agent -->|"uses"| Module["Utils Version Comparator"]
-    Module -->|"parses"| Semver["semver Version"]
-    Module -->|"returns"| Ordering["std cmp Ordering"]

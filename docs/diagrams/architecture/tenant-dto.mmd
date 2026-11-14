@@ -1,7 +1,0 @@
-flowchart TD
-    TestScenarios["Test scenarios and fixtures"] --> TenantDto["Tenant Dto"]
-    TenantDto --> TenantPlan["TenantPlan"]
-    TenantDto --> TenantStatus["TenantStatus"]
-    TenantPlan --> PlanValues["FREE, BASIC, PREMIUM, ENTERPRISE"]
-    TenantStatus --> StatusValues["ACTIVE, INACTIVE"]
-    TestScenarios --> PlatformFlows["Tenant-related platform flows"]

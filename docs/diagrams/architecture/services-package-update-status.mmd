@@ -1,9 +1,0 @@
-flowchart LR
-    CommandListener["Package Update Command Handler"] -->|"submits or rejects request"| OrderStore["Order Store"]
-    OrderStore -->|"replaced pending order"| StatusReporter["Status Reporter"]
-    UpdateCoordinator["Package Update Run Manager"] -->|"builds lifecycle reports"| StatusReporter
-    StatusReporter -->|"serialize status event"| DurableStore["Result Store"]
-    DurableStore -->|"flush notification"| OutboxRunner["Result Outbox Run Manager"]
-    OutboxRunner -->|"publish queued payload"| Nats["NATS"]
-    StatusReporter -->|"direct publish when store disabled"| Nats
-    Nats -->|"package update status subject"| Backend["OpenFrame Client Backend"]

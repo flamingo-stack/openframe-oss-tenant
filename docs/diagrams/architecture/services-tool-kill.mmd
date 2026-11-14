@@ -1,9 +1,0 @@
-flowchart LR
-    ToolLifecycle["Tool installation, update, restart, or removal"] --> KillService["Services Tool Kill"]
-    InstalledTool["Installed tool record"] --> KillService
-    KillService --> InstallationKind["Installation type dispatch"]
-    InstallationKind --> ProcessInspector["sysinfo process inspection"]
-    InstallationKind --> ServiceManager["System service manager"]
-    ProcessInspector --> OperatingSystem["Local processes"]
-    ServiceManager --> OperatingSystem
-    KillService --> LifecycleResult["Termination result"]

@@ -1,9 +1,0 @@
-flowchart TD
-    Start["Receive token string"] --> Segments{"Exactly three segments?"}
-    Segments -->|"No"| Reject["Return None"]
-    Segments -->|"Yes"| Trim["Remove trailing equals signs from payload"]
-    Trim --> Decode{"Payload decodes with URL safe Base64?"}
-    Decode -->|"No"| Reject
-    Decode -->|"Yes"| Json{"Payload JSON has numeric exp?"}
-    Json -->|"No"| Reject
-    Json -->|"Yes"| Result["Return JwtTimes"]

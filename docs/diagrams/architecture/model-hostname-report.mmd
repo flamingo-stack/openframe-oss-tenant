@@ -1,9 +1,0 @@
-flowchart LR
-    Kernel["Operating system hostname"] --> Fetcher["Device data fetcher"]
-    Fetcher --> Publisher["Hostname report publisher"]
-    Config["Agent configuration machine ID"] --> Publisher
-    Model["Hostname report message"] --> Publisher
-    Publisher --> Transport["NATS machine hostname subject"]
-    Transport --> Listener["Machine hostname listener"]
-    Listener --> Service["Machine hostname service"]
-    Service --> Device["Stored machine record"]

@@ -1,6 +1,0 @@
-flowchart LR
-    OriginalOwner["Original owner"] -->|"invites and accepts"| ThrowawayAdmin["Throwaway administrator"]
-    ThrowawayAdmin -->|"logs in"| AdminSession["Administrator session"]
-    OriginalOwner -->|"transfers ownership"| InterimOwner["Interim owner"]
-    InterimOwner -->|"fresh login and transfer"| RestoredOwner["Original owner restored"]
-    RestoredOwner -->|"cleanup"| DeletedAdmin["Throwaway user deleted"]

@@ -1,7 +1,0 @@
-flowchart TD
-    CatalogSources["Package catalog sources"] --> Sync["Catalog synchronization"]
-    Sync --> SearchService["Package search services"]
-    SearchService --> Fetcher["PackageSearchDataFetcher"]
-    Fetcher --> Response["Package search response"]
-    Response --> Edge["Packagesearch Dto edge"]
-    Edge --> Test["PackageSearchTest assertions"]

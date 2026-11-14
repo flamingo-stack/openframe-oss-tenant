@@ -1,6 +1,0 @@
-flowchart LR
-    Installation["Installed tool installation"] --> Choice{{"Installation type?"}}
-    Choice -->|"Service"| ServiceStrategy["ServiceToolUpdater"]
-    Choice -->|"Standard"| StandardStrategy["Standard tool updater"]
-    Choice -->|"Graphical application"| GuiStrategy["Graphical application or standard strategy"]
-    ServiceStrategy --> Lifecycle["Prepare, apply, finalize, rollback"]

@@ -1,5 +1,0 @@
-flowchart TD
-    DeviceOverride["Device override"] -->|"highest precedence"| ResolvedMode["Effective remote-access mode"]
-    OrganizationOverride["Organization override"] -->|"used when no device override"| ResolvedMode
-    TenantPolicy["Tenant policy"] -->|"used when no organization override"| ResolvedMode
-    CodeDefault["Code default"] -->|"used when no policy exists"| ResolvedMode

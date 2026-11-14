@@ -1,5 +1,0 @@
-flowchart LR
-    TenantRuntime["OpenFrame OSS Tenant runtime"] -->|"assembles"| MongoArtifact["openframe-data-mongo-sync library"]
-    MongoArtifact -->|"declares"| Repository["AgentLogKeyRepository"]
-    Repository -->|"persists"| MongoDb["MongoDB"]
-    KeyService["Agent log key service"] -->|"uses"| Repository

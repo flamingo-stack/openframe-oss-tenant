@@ -1,9 +1,0 @@
-flowchart TD
-    Caller["Client update decision code"] --> Compare["compare_versions from to"]
-    Compare --> ParseTarget["parse_version to"]
-    Compare --> ParseCurrent["parse_version from"]
-    ParseTarget --> Precedence["precedence target current"]
-    ParseCurrent --> Precedence
-    Precedence --> Result["Option Ordering"]
-    Caller --> Direct["precedence parsed values"]
-    Direct --> Result

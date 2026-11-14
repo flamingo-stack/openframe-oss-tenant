@@ -1,9 +1,0 @@
-flowchart LR
-    ControlPlane["Control plane"] -->|"installation instruction"| Message["Tool Installation Message"]
-    Message -->|"contains"| Downloads["Download configurations"]
-    Message -->|"contains"| Assets["Asset definitions"]
-    Message -->|"resolves versions through"| Overrides["Tool version overrides"]
-    Assets -->|"selects filename with"| Filename["Local filename configuration"]
-    Message -->|"consumed by"| Handler["Tool installation handler"]
-    Handler -->|"delegates to"| Service["Tool installation service"]
-    Service -->|"uses"| Platform["Platform installation facilities"]

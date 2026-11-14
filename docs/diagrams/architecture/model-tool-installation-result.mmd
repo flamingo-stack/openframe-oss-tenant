@@ -1,5 +1,0 @@
-flowchart LR
-    Installer["Installation workflow"] -->|"creates result"| Result["ToolInstallationResult"]
-    Result -->|"Serialize or Deserialize"| Serde["Serde"]
-    Result -->|"tool_agent_id"| Correlation["Tool-agent correlation"]
-    Correlation --> Consumer["Result consumer"]

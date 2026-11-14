@@ -1,7 +1,0 @@
-flowchart TD
-    Service["Application Service"] -->|"repository call"| Repository["External Application Event Repository"]
-    Repository -->|"Spring Data mapping"| Document["External Application Event"]
-    Repository -->|"CRUD and query execution"| MongoDriver["Spring Data MongoDB"]
-    MongoDriver -->|"read and write"| MongoDb["MongoDB"]
-    MongoConfig["Mongo Synchronization Configuration"] -->|"configures"| MongoDriver
-    Document -->|"tenant scoped document"| MongoDb

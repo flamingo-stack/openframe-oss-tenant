@@ -1,9 +1,0 @@
-flowchart LR
-    Response["Registration response"] --> PersistMachine["Write reinstall machine information"]
-    PersistMachine --> MachineWrite{"Write succeeded?"}
-    MachineWrite -->|"No"| MachineLog["Log error and continue"]
-    MachineWrite -->|"Yes"| SaveConfig["Save machine and client credentials"]
-    MachineLog --> SaveConfig
-    SaveConfig --> ConfigWrite{"Configuration saved?"}
-    ConfigWrite -->|"Yes"| Registered["Registration completes"]
-    ConfigWrite -->|"No"| Retry["Processor logs error and retries"]

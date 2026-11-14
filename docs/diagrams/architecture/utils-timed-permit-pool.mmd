@@ -1,7 +1,0 @@
-flowchart LR
-    Caller["Async caller"] -->|"call(what, timeout, closure)"| Pool["Timed Permit Pool"]
-    Pool -->|"acquire owned permit"| Semaphore["Shared Tokio semaphore"]
-    Pool -->|"spawn admitted closure"| Blocking["Tokio blocking worker"]
-    Blocking -->|"result or panic"| Pool
-    Pool -->|"Result value or Permit Pool Error"| Caller
-    Blocking -->|"returns and drops permit"| Semaphore

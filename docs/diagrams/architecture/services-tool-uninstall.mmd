@@ -1,9 +1,0 @@
-flowchart LR
-    ClientUninstall["Client removal workflow"] --> UninstallService["Services Tool Uninstall"]
-    UninstallService --> Inventory["Installed Tools Service"]
-    UninstallService --> Resolver["Tool Command Parameters Resolver"]
-    UninstallService --> Killer["Tool Kill Service"]
-    UninstallService --> Directories["Directory Manager"]
-    UninstallService --> SystemService["System service adapter"]
-    UninstallService --> ToolCommand["Tool uninstall executable"]
-    ToolCommand --> Endpoint["Endpoint operating system"]

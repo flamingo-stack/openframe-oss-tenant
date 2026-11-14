@@ -1,9 +1,0 @@
-flowchart TD
-    Request["Log detail request"] --> Mode{{"Configured store"}}
-    Mode -->|"cassandra"| Cassandra["Cassandra log details service"]
-    Mode -->|"loki"| Loki["Loki log details service"]
-    Mode -->|"both"| Cutover{{"Before Loki boundary?"}}
-    Cutover -->|"Yes"| Cassandra
-    Cutover -->|"No"| Loki
-    Cassandra --> Result["Optional log details"]
-    Loki --> Result

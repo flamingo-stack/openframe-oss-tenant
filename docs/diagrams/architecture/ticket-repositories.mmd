@@ -1,8 +1,0 @@
-flowchart LR
-    Caller["Ticket service or API caller"] --> Contract["Custom Ticket Repository"]
-    Contract --> Implementation["Custom Ticket Repository Implementation"]
-    Implementation --> TenantSupport["Tenant aware repository support"]
-    TenantSupport --> MongoTemplate["Tenant aware Mongo template"]
-    MongoTemplate --> Tickets[("Tenant ticket collection")]
-    Implementation --> Outbox["Optional outbox publisher"]
-    Outbox --> Projections["Ticket projections"]

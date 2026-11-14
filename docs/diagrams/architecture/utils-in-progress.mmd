@@ -1,9 +1,0 @@
-flowchart LR
-    CallerA["Operation caller"] -->|"begin()"| Tracker["InProgress"]
-    CallerB["Status consumer"] -->|"view()"| Tracker
-    Tracker -->|"shared counter"| Counter["Arc AtomicUsize"]
-    Tracker -->|"returns"| Guard["InProgressGuard"]
-    Tracker -->|"returns"| View["InProgressView"]
-    Guard -->|"Drop decrements"| Counter
-    View -->|"is_active() loads"| Counter
-    Counter -->|"count greater than zero"| Status["Active status"]

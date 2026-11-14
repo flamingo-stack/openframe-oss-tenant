@@ -1,9 +1,0 @@
-sequenceDiagram
-    participant Publisher as "Publishing Framework"
-    participant Projection as "Ticket On Time Entries Projection"
-    participant TimeEntries as "Time Entry Projection Repository"
-
-    Publisher->>Projection: Deliver ticket event with tenant context
-    Projection->>TimeEntries: Update title by tenant and ticket identifiers
-    TimeEntries-->>Projection: Return updated record count
-    Projection-->>Publisher: Complete projection application

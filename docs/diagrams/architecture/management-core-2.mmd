@@ -1,8 +1,0 @@
-flowchart LR
-    Initializer["NATS stream initializer"] --> BaseStreams["Required stream definitions"]
-    Provider["Additional stream provider"] --> ExtraStreams["Deployment-specific definitions"]
-    BaseStreams --> StreamService["NATS stream management service"]
-    ExtraStreams --> StreamService
-    StreamService --> JetStream["NATS JetStream"]
-    Initializer --> Legacy["Legacy stream cleanup"]
-    Legacy --> JetStream

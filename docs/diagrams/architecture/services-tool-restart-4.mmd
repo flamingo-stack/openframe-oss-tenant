@@ -1,6 +1,0 @@
-flowchart LR
-    Platform["OpenFrame management plane"] --> Client["OpenFrame Client endpoint agent"]
-    Client --> RestartService["Services Tool Restart"]
-    RestartService --> LocalRegistry["Local installed-tool registry"]
-    RestartService --> LocalProcesses["Tool processes or system services"]
-    LocalProcesses --> Tool["Integrated tool"]

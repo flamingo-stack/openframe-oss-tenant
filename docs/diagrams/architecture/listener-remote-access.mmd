@@ -1,7 +1,0 @@
-flowchart LR
-    Broker["NATS broker"] -->|"machine scoped notification"| Listener["Remote Access Message Listener"]
-    Config["Agent Configuration Service"] -->|"machine identifier"| Listener
-    Connection["NATS Connection Manager"] -->|"active client and replacement signal"| Listener
-    Listener -->|"ensure chat GUI app"| Tools["Tool Run Manager"]
-    Tools -->|"launch when eligible"| Chat["Chat GUI application"]
-    Chat -->|"session resynchronization"| RemoteService["Remote access service"]

@@ -1,9 +1,0 @@
-flowchart TD
-    Tick["Heartbeat Interval Tick"] --> Attempt["Publish Heartbeat"]
-    Attempt --> Result{"Completed before timeout?"}
-    Result -->|"No"| Timeout["Log Timeout, Continue Loop"]
-    Result -->|"Yes"| PublishResult{"Publish successful?"}
-    PublishResult -->|"Yes"| NextTick["Wait for Next Tick"]
-    PublishResult -->|"No"| Failure["Log Publish Failure, Continue Loop"]
-    Timeout --> NextTick
-    Failure --> NextTick

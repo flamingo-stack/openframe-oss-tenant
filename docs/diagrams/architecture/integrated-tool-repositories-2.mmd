@@ -1,9 +1,0 @@
-flowchart TD
-    Start["Receive filter and search"] --> FilterPresent{"Filter supplied?"}
-    FilterPresent -->|"Yes"| AddFilters["Add supplied enabled, type, category, and platform criteria"]
-    FilterPresent -->|"No"| SearchPresent{"Nonblank search?"}
-    AddFilters --> SearchPresent
-    SearchPresent -->|"Yes"| Quote["Quote search text"]
-    Quote --> SearchCriteria["Match name or description without case sensitivity"]
-    SearchPresent -->|"No"| Complete["Return query"]
-    SearchCriteria --> Complete

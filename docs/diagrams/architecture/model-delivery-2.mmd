@@ -1,8 +1,0 @@
-stateDiagram-v2
-    [*] --> Received
-    Received --> Acked: "accepted"
-    Acked --> Done: "completed"
-    Acked --> Failed: "processing error"
-    Received --> Failed: "cannot accept"
-    Done --> [*]
-    Failed --> [*]

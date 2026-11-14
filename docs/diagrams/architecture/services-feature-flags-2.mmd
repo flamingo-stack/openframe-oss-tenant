@@ -1,7 +1,0 @@
-flowchart TD
-    Start["Agent starts"] --> Read["Read feature flags state file"]
-    Read --> Available{"State usable?"}
-    Available -->|"Yes"| Resolve["Resolve flags for running version"]
-    Available -->|"No or missing"| Default["Use empty default state"]
-    Default --> Resolve
-    Resolve --> Runtime["Expose stable running flags"]

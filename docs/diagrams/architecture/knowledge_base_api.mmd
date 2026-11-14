@@ -1,8 +1,0 @@
-flowchart LR
-    Integration["External integration"] -->|"authenticated REST request"| Gateway["OpenFrame gateway"]
-    Gateway -->|"external API traffic"| ExternalApi["External Api application"]
-    ExternalApi -->|"dispatches request"| Controller["Knowledge Base Controller"]
-    Controller -->|"uses domain services"| KnowledgeDomain["Knowledge base domain"]
-    KnowledgeDomain -->|"reads and writes"| MongoRepository["Mongo knowledge base repository"]
-    KnowledgeDomain -->|"emits publish lifecycle"| PublishListener["Publish lifecycle listener"]
-    ExternalApi -->|"returns REST contract"| Integration

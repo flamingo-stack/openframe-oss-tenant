@@ -1,5 +1,0 @@
-flowchart LR
-    TestService["OpenFrame Test Service"] -->|"uses"| ScriptDto["Script Dto"]
-    ScriptDto -->|"serializes requests"| ScriptApi["Script and Schedule API"]
-    ScriptApi -->|"returns JSON"| ScriptDto
-    ScriptDto -->|"supplies test assertions"| TestCases["Script Workflow Tests"]

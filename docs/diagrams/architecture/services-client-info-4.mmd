@@ -1,7 +1,0 @@
-flowchart TD
-    Start["Client startup or version observation"] --> Load["Load persisted client information"]
-    Load --> Compare{"Recorded version equals running version?"}
-    Compare -->|"Yes"| NoWrite["Keep existing record"]
-    Compare -->|"No"| SetVersion["Set current version to running version"]
-    SetVersion --> StampTime["Set last updated timestamp"]
-    StampTime --> Save["Atomically save record"]

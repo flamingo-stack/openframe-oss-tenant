@@ -1,7 +1,0 @@
-flowchart LR
-    Runner["OpenFrame Test Runner"] -->|"runs tagged tests"| Suite["External Api Tests"]
-    Suite -->|"provisions or reads API key"| AdminApi["Tenant API Key Endpoint"]
-    Suite -->|"X-API-Key requests"| Gateway["OpenFrame Gateway"]
-    Gateway -->|"validates key and injects identity"| ExternalApi["External API Service"]
-    ExternalApi -->|"resource responses"| Suite
-    Suite -->|"creates and cleans fixtures"| TenantData["Tenant Data Stores"]

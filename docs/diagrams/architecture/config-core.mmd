@@ -1,8 +1,0 @@
-flowchart LR
-    ClientService["OpenFrame Client Service"] --> ConfigCore["Config Core"]
-    ConfigCore --> LegacyConfig["Legacy Logging Model"]
-    ConfigCore --> StopBudget["Service Stop Budget"]
-    LegacyConfig --> LoggingSubsystem["Logging Subsystem"]
-    StopBudget --> ToolLifecycle["Tool Lifecycle Operations"]
-    StopBudget --> WindowsService["Windows Service Control"]
-    StopBudget --> BinaryReplacement["Binary Replacement"]

@@ -1,5 +1,0 @@
-flowchart LR
-    ServerResponse["Registration response JSON"] -->|"deserialize camelCase fields"| ResponseModel["AgentRegistrationResponse"]
-    ResponseModel -->|"machine ID"| MachineInfo["Persisted machine information"]
-    ResponseModel -->|"machine ID, client ID, client secret"| AgentConfig["Agent configuration"]
-    AgentConfig --> AuthFlow["Later authentication flows"]

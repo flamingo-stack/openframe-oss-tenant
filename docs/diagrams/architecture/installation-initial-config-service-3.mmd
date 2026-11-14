@@ -1,6 +1,0 @@
-flowchart TD
-    Start["Inspect install parameters"] --> AnyInput{"Any install option supplied?"}
-    AnyInput -->|"No"| Deferred["Parameterless install, configuration may arrive through auth"]
-    AnyInput -->|"Yes"| Required{"Server URL, initial key, and organization ID are non-blank?"}
-    Required -->|"Yes"| Build["Build and save configuration"]
-    Required -->|"No"| Reject["Return validation error"]

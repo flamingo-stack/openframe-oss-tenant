@@ -1,8 +1,0 @@
-flowchart TD
-    Register["Machine Registered"] --> Org["Resolve Organization"]
-    Org --> Save["Persist Registration Data"]
-    Save --> TagLoop["Validate and Assign Device Tags"]
-    TagLoop --> Updates["Seed Client Update Delivery"]
-    Updates --> Flags["Seed Feature Flag Delivery"]
-    Flags --> Tools["Process Enabled Tool Installations Asynchronously"]
-    Tools --> Hook["Run Optional Registration Processor"]

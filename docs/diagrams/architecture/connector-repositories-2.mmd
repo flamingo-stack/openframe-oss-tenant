@@ -1,8 +1,0 @@
-sequenceDiagram
-    participant Service as "Connector Service"
-    participant Alerts as "Connector Alert Repository"
-    participant Mongo as "MongoDB"
-    Service->>Alerts: Find unresolved alert by connector name
-    Alerts->>Mongo: Query connector name and resolved false
-    Mongo-->>Alerts: Matching document or no match
-    Alerts-->>Service: Optional connector alert

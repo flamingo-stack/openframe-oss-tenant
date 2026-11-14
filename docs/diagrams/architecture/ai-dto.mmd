@@ -1,8 +1,0 @@
-flowchart LR
-    TestWorkflow["Test workflow"] --> DialogPayload["Dialog payload"]
-    DialogPayload --> DialogEdge["Dialog Edge"]
-    DialogEdge --> DialogResponse["Dialog response"]
-    DialogPayload --> MessageOwner["Message Owner"]
-    DialogPayload --> ContextReference["Context Item Reference"]
-    ContextReference --> ContextType["Context Item Type"]
-    DialogResponse --> AskOption["Ask Option"]

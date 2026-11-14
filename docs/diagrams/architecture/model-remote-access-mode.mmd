@@ -1,9 +1,0 @@
-flowchart LR
-    Installer["Installer or CLI"] -->|"typed mode"| Model["Model Remote Access Mode"]
-    Model -->|"wire name"| InitialConfig["Initial configuration file"]
-    InitialConfig -->|"pending mode"| ModeService["Remote access mode service"]
-    ModeService -->|"authenticated HTTP request"| DeviceEndpoint["Device mode endpoint"]
-    DeviceEndpoint -->|"applied outcome"| ModeService
-    ModeService -->|"clear pending value"| InitialConfig
-    Nats["NATS remote access messages"] --> Listener["Remote access message listener"]
-    Listener --> Tools["Tool run manager"]

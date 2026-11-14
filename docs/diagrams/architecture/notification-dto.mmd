@@ -1,7 +1,0 @@
-flowchart LR
-    ApiResponse["Notification connection response"] --> Deserializer["Jackson deserializer"]
-    Deserializer --> Connection["Notification connection DTO"]
-    Connection --> Edge["Notification Dto"]
-    Edge --> Node["Notification DTO"]
-    Edge --> Cursor["Cursor string"]
-    Connection --> TestCode["Notification integration tests"]

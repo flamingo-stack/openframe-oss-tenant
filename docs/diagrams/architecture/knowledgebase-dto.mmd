@@ -1,6 +1,0 @@
-flowchart LR
-    TestService["OpenFrame Test Service"] -->|"deserializes knowledge-base data"| Author["KnowledgeBase Author"]
-    Author -->|"optional image"| Image["KnowledgeBase Image"]
-    TestService -->|"classifies tag target"| TagType["Tag Entity Type"]
-    ApiResponse["Knowledge-base API response"] -->|"JSON fields"| Author
-    ApiResponse -->|"JSON fields"| Image

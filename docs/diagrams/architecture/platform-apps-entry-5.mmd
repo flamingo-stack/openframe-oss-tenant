@@ -1,7 +1,0 @@
-flowchart TD
-    Start["Unregister requested"] --> OpenRoot["Open HKEY LOCAL MACHINE"]
-    OpenRoot --> DeleteKey["Delete uninstall key and descendants"]
-    DeleteKey --> Missing{"Key exists?"}
-    Missing -->|"No"| Success["Treat as success and log removal"]
-    Missing -->|"Yes"| Success
-    DeleteKey --> Failure["Return contextual deletion error"]

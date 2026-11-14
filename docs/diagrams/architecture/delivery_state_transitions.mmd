@@ -1,7 +1,0 @@
-flowchart TD
-    Sweep["Delivery sweep"] --> Query["Find due records on primary"]
-    Query --> Rows["Oldest due deliveries"]
-    Rows --> Publish["Publish or postpone"]
-    Publish --> Guard["Conditional update"]
-    Guard -->|"matched"| Updated["Current record updated"]
-    Guard -->|"not matched"| Stale["Caller view is stale"]

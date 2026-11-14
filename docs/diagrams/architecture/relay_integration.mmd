@@ -1,9 +1,0 @@
-flowchart TD
-    Node["Relay Node Identifier"] --> Decode["Decode Node Type and Raw Identifier"]
-    Decode --> Select["Select Registered Node Loader"]
-    Select --> Available{"Dependency Available?"}
-    Available -->|"Yes"| Lookup["Service Lookup"]
-    Available -->|"No"| Empty["Return Empty Node"]
-    Lookup --> Result{"Record Found and Permitted?"}
-    Result -->|"Yes"| Value["Return Typed GraphQL Node"]
-    Result -->|"No"| Empty

@@ -1,5 +1,0 @@
-flowchart TD
-    Connection["GraphQL Connection"] --> Edge["Edge"]
-    Edge -->|"node"| Record["Execution Record"]
-    Edge -->|"cursor"| Cursor["Pagination Cursor"]
-    Cursor --> NextPage["Next Page Request"]

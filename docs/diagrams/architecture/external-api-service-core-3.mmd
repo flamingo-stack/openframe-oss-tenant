@@ -1,9 +1,0 @@
-flowchart TD
-    Caller["API Key Caller"] --> TicketController["Ticket Controller"]
-    TicketController --> Principal["API Key Principal Resolver"]
-    Principal --> TicketServices["Ticket Domain Services"]
-    TicketServices --> Tickets["Ticket Records"]
-    TicketServices --> Notes["Ticket Notes and Tags"]
-    TicketServices --> Notifications["Lifecycle Notifications"]
-    TicketController --> TicketMapper["Ticket REST Mapper"]
-    TicketMapper --> Response["Ticket Response"]

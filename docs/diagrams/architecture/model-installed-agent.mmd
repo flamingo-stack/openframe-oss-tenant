@@ -1,6 +1,0 @@
-flowchart LR
-    Runtime["Endpoint Client Runtime"] -->|"creates"| Model["InstalledAgentMessage"]
-    Model -->|"serializes as JSON"| Publisher["Installed Agent Message Publisher"]
-    Publisher -->|"sends through messaging transport"| Backend["OpenFrame Client Service"]
-    Backend -->|"records agent metadata"| DeviceState["Device Agent State"]
-    Serde["Serde"] -->|"derives serialization"| Model

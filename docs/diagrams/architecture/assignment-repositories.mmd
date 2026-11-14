@@ -1,7 +1,0 @@
-flowchart LR
-    Caller["Spring Data Item Assignment Repository"] --> Contract["Custom Item Assignment Repository"]
-    Contract --> Implementation["Custom Item Assignment Repository Implementation"]
-    Implementation --> Support["Tenant Aware Repository Support"]
-    Support --> Template["Tenant Aware Mongo Template"]
-    Template --> Collection[("item_assignments collection")]
-    Collection --> Records["Item Assignment records"]

@@ -1,7 +1,0 @@
-flowchart TD
-    Owner["TicketOwner"] -->|"machine"| Machine["TicketMachine"]
-    Owner -->|"user"| User["TicketUser"]
-    Dialog["TicketDialog"] -->|"token usage list"| Usage["TicketTokenUsage"]
-    StatusCount["TicketStatusDefinitionCount"] -->|"status"| Status["TicketStatusDefinition"]
-    Attachment["TicketAttachment"] -->|"ticket identifier"| Ticket["Ticket"]
-    PageInfo["TicketPageInfo"] -->|"cursors"| TicketList["Ticket list"]

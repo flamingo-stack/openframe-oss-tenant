@@ -1,7 +1,0 @@
-flowchart LR
-    Junit["JUnit Platform"] -->|"test plan callbacks"| Listener["Slack Listener"]
-    Pipeline["Test Pipeline"] -->|"send results"| Listener
-    Listener -->|"summary and details"| Client["Slack Client"]
-    Client -->|"bot token and channel"| BotApi["Slack Bot API"]
-    Client -->|"webhook URL"| Webhook["Slack Incoming Webhook"]
-    Client -->|"not configured"| Logs["Application Logs"]

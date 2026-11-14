@@ -1,9 +1,0 @@
-flowchart LR
-    ClientApp["OpenFrame Client runtime"] -->|"constructs and uses"| ConfigService["Agent Configuration Service"]
-    RegistrationService["Agent Registration Service"] -->|"saves registration fields"| ConfigService
-    AuthService["Agent Authentication Service"] -->|"reads credentials and updates tokens"| ConfigService
-    ConfigService -->|"serializes"| AgentConfig["Agent Configuration"]
-    ConfigService -->|"stores in"| SecureFile["secured directory agent_config.json"]
-    AgentConfig -->|"deserializes from"| SecureFile
-    RegistrationService -->|"calls"| RegistrationApi["Registration client"]
-    AuthService -->|"calls"| AuthApi["Authentication client"]

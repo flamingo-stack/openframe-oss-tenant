@@ -1,9 +1,0 @@
-flowchart TD
-    Request["Uninstall requested"] --> Privilege{"Administrator or root?"}
-    Privilege -->|"No"| Reject["Return privilege error"]
-    Privilege -->|"Yes"| Reinstall{"Reinstall marker set?"}
-    Reinstall -->|"No"| PrepareDeregister["Initialize best effort deregistration"]
-    Reinstall -->|"Yes"| SkipDeregister["Skip deregistration"]
-    PrepareDeregister --> RemoveAlias["Remove legacy alias"]
-    SkipDeregister --> RemoveAlias
-    RemoveAlias --> PlatformUninstall["Run platform uninstall flow"]

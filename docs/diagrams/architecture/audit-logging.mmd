@@ -1,6 +1,0 @@
-flowchart LR
-    App["Application service"] -->|"saves document"| MongoTemplate["Spring Data MongoDB"]
-    MongoTemplate -->|"BeforeSaveEvent"| AuditLogger["Integrated Tool Agent Change Logger"]
-    AuditLogger -->|"INFO record"| LogSink["Application log sink"]
-    MongoTemplate -->|"persists document"| MongoDb["MongoDB"]
-    MongoTemplate -->|"AfterSaveEvent"| AuditLogger

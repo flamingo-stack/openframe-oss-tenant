@@ -1,7 +1,0 @@
-flowchart LR
-    Service["Onboarding application service"] -->|"tenant identifier and progress data"| TenantRepository["Tenant Onboarding Progress Repository"]
-    Service -->|"user identifier, tenant identifier, and progress data"| UserRepository["User Onboarding Progress Repository"]
-    TenantRepository -->|"MongoRepository operations"| MongoDB[("MongoDB")]
-    UserRepository -->|"MongoRepository operations"| MongoDB
-    TenantRepository --> TenantDocument["TenantOnboardingProgress document"]
-    UserRepository --> UserDocument["UserOnboardingProgress document"]

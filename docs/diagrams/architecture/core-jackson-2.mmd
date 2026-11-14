@@ -1,9 +1,0 @@
-flowchart TD
-    Input["Parameterized constructor discovered"] --> Explicit{"Explicit creator annotation?"}
-    Explicit -->|"Yes"| Native["Preserve Jackson decision"]
-    Explicit -->|"No"| Record{"Record type?"}
-    Record -->|"Yes"| Native
-    Record -->|"No"| NoArgs{"No-argument constructor exists?"}
-    NoArgs -->|"No"| Native
-    NoArgs -->|"Yes"| Disable["Disable parameterized creator"]
-    Disable --> SetterPath["Construct with no arguments and bind properties"]

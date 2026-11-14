@@ -1,9 +1,0 @@
-flowchart LR
-    Create["Request Upload URL"] --> Upload["Upload Generated File"]
-    Upload --> Download["Request Download URL"]
-    Download --> Verify["Verify Downloaded Size"]
-    Temp["Create Temporary Attachment"] --> TempUpload["Upload Temporary File"]
-    TempUpload --> Link["Link to Article"]
-    Link --> Verify
-    Temp --> Delete["Delete Temporary Attachment"]
-    Delete --> RejectLink["Verify It Cannot Be Linked"]

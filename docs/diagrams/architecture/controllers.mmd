@@ -1,7 +1,0 @@
-flowchart TD
-    Request["HTTP request"] --> Auth["Gateway authentication"]
-    Auth --> Controller["REST controller"]
-    Controller --> Validation["Request validation"]
-    Validation --> Service["Domain service"]
-    Service --> Data["Repositories and external integrations"]
-    Service --> Response["Response DTO or status"]

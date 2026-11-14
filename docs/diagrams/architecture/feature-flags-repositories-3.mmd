@@ -1,6 +1,0 @@
-flowchart TD
-    Initializer["Feature flag initializer"] -->|"creates or updates configuration"| Repository["FeFeatureFlagsRepository"]
-    Repository -->|"persists"| Document["FeFeatureFlags document"]
-    DataFetcher["Client feature flags data fetcher"] -->|"reads resolved flags"| FeatureService["Feature flag service"]
-    FeatureService -->|"loads overrides"| Repository
-    Document -->|"stored in"| Mongo["MongoDB"]

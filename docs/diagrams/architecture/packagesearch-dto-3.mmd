@@ -1,9 +1,0 @@
-sequenceDiagram
-    participant Test as Package search test
-    participant Json as Response JSON
-    participant Edge as PackageSearchEdge
-    participant Item as PackageSearchItem
-    Test->>Json: Receive package search result
-    Json->>Edge: Bind node and cursor
-    Edge->>Item: Store item as node
-    Test->>Edge: Read node and cursor

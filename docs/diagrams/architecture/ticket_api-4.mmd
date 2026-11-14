@@ -1,8 +1,0 @@
-flowchart TD
-    Start["Validated create or update request"] --> Scope["Resolve API caller context"]
-    Scope --> Persist["Apply ticket change"]
-    Persist --> Activity["Record ticket activity"]
-    Activity --> Response["Map ticket response"]
-    Transition["Validated status transition"] --> Rules["Evaluate status transition rules"]
-    Rules --> History["Record status history"]
-    History --> Updated["Return updated ticket"]

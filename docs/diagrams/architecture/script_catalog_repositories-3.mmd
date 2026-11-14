@@ -1,8 +1,0 @@
-flowchart LR
-    Direction["Requested sort direction"] --> Backward{"Backward page?"}
-    Backward -->|"No"| ForwardScan["Use requested sort direction"]
-    Backward -->|"Yes"| ReverseScan["Flip database scan direction"]
-    ForwardScan --> Compare["Choose ObjectId less than or greater than predicate"]
-    ReverseScan --> Compare
-    Compare --> Limit["Fetch page size plus one"]
-    Limit --> More["Caller determines page availability"]

@@ -1,9 +1,0 @@
-flowchart TD
-    Caller["Tool update orchestration"] -->|"calls run_migration"| MigrationModule["Platform Tool Updater Migration"]
-    InstalledTool["Installed tool and current installation"] --> MigrationModule
-    DownloadConfig["Download configuration and target type"] --> MigrationModule
-    Dependencies["Updater dependencies"] --> MigrationModule
-    MigrationModule -->|"selects"| MigratorContract["Tool Migrator contract"]
-    MigratorContract -->|"macOS and Windows only"| StandardGuiMigrator["Standard to GUI App migrator"]
-    StandardGuiMigrator -->|"returns"| NewInstallation["New installation metadata"]
-    MigrationModule -->|"returns result to"| Caller

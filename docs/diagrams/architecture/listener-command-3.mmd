@@ -1,6 +1,0 @@
-stateDiagram-v2
-    [*] --> InFlight: accepted delivery
-    InFlight --> Settled: done or failed result
-    InFlight --> AwaitingRestart: restart dependent work
-    AwaitingRestart --> Settled: next startup reports completion
-    Settled --> [*]

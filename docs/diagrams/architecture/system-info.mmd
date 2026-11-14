@@ -1,9 +1,0 @@
-flowchart LR
-    Caller["Agent service or telemetry caller"] -->|"requests snapshot"| SystemInfo["System Info"]
-    SystemInfo -->|"locks and refreshes"| Sysinfo["sysinfo System collector"]
-    SystemInfo -->|"queries capacity"| DiskInfo["sys_info disk information"]
-    Sysinfo --> CpuMemory["CPU and memory values"]
-    DiskInfo --> DiskValues["Disk values"]
-    CpuMemory --> Metrics["SystemMetrics snapshot"]
-    DiskValues --> Metrics
-    Metrics --> Caller

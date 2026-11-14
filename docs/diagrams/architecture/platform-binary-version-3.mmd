@@ -1,8 +1,0 @@
-flowchart LR
-    PermissionFailure["Permission preparation failure"] --> NoneResult["None result"]
-    LaunchFailure["Process launch failure"] --> NoneResult
-    TimeoutFailure["Timeout"] --> NoneResult
-    ExitFailure["Non-success exit"] --> NoneResult
-    OutputFailure["Unexpected or empty output"] --> NoneResult
-    ParseFailure["Invalid semantic version"] --> NoneResult
-    NoneResult --> Warning["Tracing warning"]

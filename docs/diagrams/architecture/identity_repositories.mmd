@@ -1,7 +1,0 @@
-flowchart TD
-    Caller["Reactive identity workflow"] --> OAuth["OAuth client lookup"]
-    Caller --> Tenant["Tenant domain lookup"]
-    Caller --> User["User email or tenant lookup"]
-    OAuth --> Mongo[("MongoDB")]
-    Tenant --> Mongo
-    User --> Mongo

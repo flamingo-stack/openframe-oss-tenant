@@ -1,5 +1,0 @@
-flowchart LR
-    InstallRequest["Tool installation workflow"] --> BuildRecord["Build InstalledTool record"]
-    BuildRecord --> Save["Save by tool agent id"]
-    Save --> Inventory["Installed tools inventory"]
-    Inventory --> Available["Tool record available to agent workflows"]

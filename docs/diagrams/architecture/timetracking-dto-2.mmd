@@ -1,7 +1,0 @@
-flowchart TD
-    TestService["OpenFrame test service"] --> Library["OpenFrame OSS Library"]
-    Library --> Artifact["openframe-test-service-core 7.0.11"]
-    Artifact --> Edge["Timetracking Dto: TimeEntryEdge"]
-    Edge --> Jackson["Jackson JSON mapping"]
-    Edge --> Lombok["Lombok generated data API"]
-    Edge --> TimeEntry["TimeEntry payload type"]

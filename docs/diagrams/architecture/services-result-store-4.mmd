@@ -1,8 +1,0 @@
-flowchart LR
-    Result["Final result bytes"] --> Persist["Persist metadata and payload"]
-    Persist --> Count["Check outbox capacity"]
-    Count --> OverCap{"Over configured cap?"}
-    OverCap -->|"No"| Pending["Leave entry pending"]
-    OverCap -->|"Yes"| Sort["Sort entries by creation time"]
-    Sort --> Prune["Delete oldest metadata and payload pairs"]
-    Prune --> Pending

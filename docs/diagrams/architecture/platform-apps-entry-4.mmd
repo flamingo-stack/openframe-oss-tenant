@@ -1,8 +1,0 @@
-flowchart TD
-    Start["Refresh requested"] --> ResolveCurrent["Canonicalize current executable"]
-    ResolveCurrent --> ResolveInstalled["Canonicalize supplied install path"]
-    ResolveInstalled --> Match{"Paths match?"}
-    Match -->|"No"| Skip["Return without registry changes"]
-    Match -->|"Yes"| Register["Call register"]
-    Register --> Registered["Registration updated"]
-    Register --> Warn["Log warning and continue"]

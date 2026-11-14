@@ -1,8 +1,0 @@
-flowchart LR
-    AgentOutput["OpenFrame Client and tool output"] --> LogFile["Local log file"]
-    LogFile --> Parser["Logging Parse"]
-    Parser --> Entries["Structured LogEntry values"]
-    Entries --> Sources["Log source registry"]
-    Sources --> Streamer["NATS log streaming manager"]
-    Streamer --> Nats["NATS log transport"]
-    Streamer --> Rotation["Log rotation manager"]

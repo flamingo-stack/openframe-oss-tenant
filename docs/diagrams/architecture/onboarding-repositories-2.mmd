@@ -1,9 +1,0 @@
-flowchart TD
-    Request["Onboarding workflow"] --> TenantInput["Resolve trusted tenant identifier"]
-    TenantInput --> ScopeCheck{"Tenant identifier present?"}
-    ScopeCheck -->|"No"| Reject["Reject or handle before repository access"]
-    ScopeCheck -->|"Yes"| RepositoryCall["Call explicit repository lookup"]
-    RepositoryCall --> TenantRecord["Tenant progress by tenant identifier"]
-    RepositoryCall --> UserRecord["User progress by user and tenant identifiers"]
-    TenantRecord --> MongoDB[("MongoDB")]
-    UserRecord --> MongoDB

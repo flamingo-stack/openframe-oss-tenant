@@ -1,6 +1,0 @@
-flowchart LR
-    Caller["API Service Caller"] --> Contract["Domain Existence Validator"]
-    Contract --> Default["Default Domain Validator"]
-    Contract -.-> Custom["Tenant Specific Validator"]
-    Default --> Allow["Return False"]
-    Custom --> Check["Evaluate Configured Domain Source"]

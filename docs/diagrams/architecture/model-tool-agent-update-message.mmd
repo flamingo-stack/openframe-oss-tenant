@@ -1,9 +1,0 @@
-flowchart LR
-    Delivery["Command delivery"] --> Handler["Tool update handler"]
-    Handler --> Lock["Tool operation lock"]
-    Lock --> Model["Model Tool Agent Update Message"]
-    Model --> Service["Tool agent update service"]
-    Service --> Registry["Installed tools service"]
-    Service --> Download["GitHub download service"]
-    Service --> Platform["Platform tool updater"]
-    Service --> Publisher["Installed agent publisher"]

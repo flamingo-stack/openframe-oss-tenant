@@ -1,7 +1,0 @@
-flowchart TD
-    DeleteRequest["Delete device tag assignment"] --> DeleteAspect["Around delete advice"]
-    DeleteAspect --> LoadMachine["Load affected machine"]
-    LoadMachine --> LoadAssignments["Load device assignments"]
-    LoadAssignments --> ExcludeDeleted["Exclude pending tag assignment"]
-    ExcludeDeleted --> Publish["Publish updated machine event"]
-    Publish --> Proceed["Proceed with repository deletion"]

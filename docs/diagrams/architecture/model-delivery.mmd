@@ -1,8 +1,0 @@
-flowchart LR
-    ServerCore["OpenFrame Client Core"] -->|"dispatches work"| Nats["NATS"]
-    Nats -->|"delivery message"| Agent["OpenFrame Client Agent"]
-    Agent -->|"creates DeliveryRef"| Model["Model Delivery"]
-    Model -->|"DeliveryResultMessage"| Store["Result Store and Ledger"]
-    Store -->|"queued result"| Outbox["Result Outbox Manager"]
-    Outbox -->|"machine result subject"| Nats
-    Nats -->|"delivery result"| ServerCore

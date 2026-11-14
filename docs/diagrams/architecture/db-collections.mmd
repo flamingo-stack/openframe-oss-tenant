@@ -1,7 +1,0 @@
-flowchart LR
-    TestCase["Integration Test"] --> DbCollections["Db Collections"]
-    DbCollections --> MongoHelper["MongoDB Collection Helper"]
-    MongoHelper --> Organizations["organizations Collection"]
-    MongoHelper --> Tenants["tenants Collection"]
-    Organizations --> OrganizationDto["Organization DTO"]
-    Tenants --> TenantDto["Tenant DTO"]

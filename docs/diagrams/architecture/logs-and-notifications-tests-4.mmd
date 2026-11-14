@@ -1,8 +1,0 @@
-flowchart LR
-    Session["Frontend session"] --> Flags["Read frontend feature flags"]
-    Flags --> AllFlags["No names or empty names"]
-    Flags --> Requested["Known and unknown names"]
-    Session --> Activity["Publish dashboard activity"]
-    Activity --> Invalid["Invalid input returns HTTP 400"]
-    Activity --> Accepted["Valid input returns HTTP 202"]
-    Accepted --> Kafka["Asynchronous Kafka handoff"]

@@ -1,8 +1,0 @@
-sequenceDiagram
-    participant Test as "Test Service"
-    participant Api as "Knowledge-base API"
-    Test->>Api: Request knowledge-base data
-    Api-->>Test: JSON author and image fields
-    Test->>Test: Deserialize into KnowledgeBase Author
-    Test->>Test: Ignore unmapped JSON properties
-    Test->>Test: Use Tag Entity Type for tag assertions

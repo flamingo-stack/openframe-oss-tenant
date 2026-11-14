@@ -1,8 +1,0 @@
-stateDiagram-v2
-    [*] --> Healthy
-    Healthy --> Healthy: "2xx clears state or fewer than five 410 responses"
-    Healthy --> Suspended: "fifth consecutive 410"
-    Suspended --> Healthy: "2xx response"
-    Suspended --> Suspended: "410 response and deadline not eligible"
-    Suspended --> UninstallRequested: "fresh 410 after both time limits"
-    UninstallRequested --> [*]

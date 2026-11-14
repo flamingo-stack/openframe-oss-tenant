@@ -1,9 +1,0 @@
-flowchart TD
-    ReadRequest["Read client info"] --> ReadFile["Read local JSON file"]
-    ReadFile --> Exists{"Record exists?"}
-    Exists -->|"No"| DefaultInfo["Return default client info"]
-    Exists -->|"Yes"| Deserialize["Deserialize OpenFrameClientInfo"]
-    Deserialize --> Caller["Client information service caller"]
-    Caller --> Mutation["Update one or more fields"]
-    Mutation --> Serialize["Serialize pretty JSON"]
-    Serialize --> AtomicWrite["Atomically write local file"]

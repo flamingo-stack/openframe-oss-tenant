@@ -1,6 +1,0 @@
-flowchart LR
-    ProcessingManager["Tool Connection Processing Manager"] -->|"machine and tool identity"| Publisher["Services Tool Connection Message Publisher"]
-    Publisher -->|"ToolConnectionMessage"| NatsPublisher["NATS Message Publisher"]
-    NatsPublisher -->|"publish and flush"| NatsBroker["NATS Broker"]
-    NatsBroker -->|"machine scoped subject"| BackendListener["Client Core Tool Connection Listener"]
-    BackendListener -->|"connection update"| PlatformState["Platform Tool Connection State"]

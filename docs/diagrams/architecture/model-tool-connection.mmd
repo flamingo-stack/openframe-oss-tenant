@@ -1,9 +1,0 @@
-flowchart LR
-    InstalledTool["Installed tool record"] --> ProcessingManager["Tool Connection Processing Manager"]
-    ProcessingManager --> ToolConnection["Tool Connection model"]
-    ToolConnection --> ConnectionService["Tool Connection Service"]
-    ConnectionService --> JsonStore["Local JSON connection store"]
-    ProcessingManager --> Publisher["Tool Connection Message Publisher"]
-    Publisher --> Nats["NATS subject machine.{machine id}.tool-connection"]
-    Nats --> BackendListener["Backend Tool Connection Listener"]
-    BackendListener --> BackendService["Backend Tool Connection Service"]

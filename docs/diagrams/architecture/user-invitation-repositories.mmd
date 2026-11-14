@@ -1,7 +1,0 @@
-flowchart LR
-    Caller["Invitation listing service"] -->|"filter, time, cursor, limit"| Repository["Custom Invitation Repository"]
-    Repository --> Implementation["Custom Invitation Repository Implementation"]
-    Implementation --> Template["Spring Data Mongo Template"]
-    Template --> Database[("MongoDB invitations")]
-    Implementation --> Results["Invitation page or count"]
-    Results --> Caller

@@ -1,9 +1,0 @@
-flowchart TD
-    Start["Service process starts"] --> Select{"Management or Stream?"}
-    Select -->|"Management"| ManageBoot["Run Management Application"]
-    ManageBoot --> ManageScan["Scan management, data, and core packages"]
-    ManageScan --> ManageRuntime["Initialize and schedule operational services"]
-    Select -->|"Stream"| StreamBoot["Run Stream Application"]
-    StreamBoot --> KafkaEnable["Enable Kafka"]
-    KafkaEnable --> StreamScan["Scan stream, data, and Kafka producer packages"]
-    StreamScan --> Listen["Start configured Kafka listeners"]

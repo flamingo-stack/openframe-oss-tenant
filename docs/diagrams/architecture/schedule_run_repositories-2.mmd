@@ -1,8 +1,0 @@
-flowchart LR
-    Api["GraphQL Schedule Run data fetcher"] -->|"schedule identifier, filter, search, sort, cursor"| Service["Schedule Run service"]
-    Service -->|"list and filter data"| Repository["Schedule Run Repositories"]
-    Repository -->|"header query"| Headers["Schedule run collection"]
-    Repository -->|"terminal leaf aggregation"| Leaves["Script execution collection"]
-    Headers -->|"runs, total, facets"| Service
-    Leaves -->|"responded machine counts"| Service
-    Service -->|"Relay connection"| Api
