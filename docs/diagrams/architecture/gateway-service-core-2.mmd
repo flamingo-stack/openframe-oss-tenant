@@ -1,0 +1,11 @@
+flowchart LR
+    Browser["Browser or API consumer"] --> Gateway["Gateway Service Core"]
+    Gateway --> Authz["Authorization Server Core"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> Api["API Service Core"]
+    Gateway --> Client["Client Service Core"]
+    Gateway --> Frontend["OpenFrame frontend"]
+    Gateway --> Redis["Redis cluster"]
+    Gateway --> Mongo["MongoDB"]
+    Gateway --> Cassandra["Cassandra"]
+    Gateway --> NatsWs["NATS WebSocket endpoint"]

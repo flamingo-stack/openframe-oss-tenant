@@ -1,0 +1,12 @@
+flowchart TD
+    Main["OpenFrameAuthorizationServerApplication main"] --> Boot["SpringApplication.run"]
+    Boot --> App["Spring Boot application context"]
+    App --> Authz["com.openframe.authz components"]
+    App --> Core["com.openframe.core components"]
+    App --> Data["com.openframe.data components"]
+    App --> Notify["com.openframe.notification components"]
+    Authz --> Runtime["Authorization Server Core runtime"]
+    Core --> Runtime
+    Data --> Runtime
+    Notify --> Runtime
+    Runtime --> Discovery["Discovery client"]

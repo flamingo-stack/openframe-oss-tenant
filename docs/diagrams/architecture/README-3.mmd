@@ -1,0 +1,29 @@
+flowchart TD
+    Release["Release workflow"] --> Images["Service container images"]
+    Release --> AppChart["App-of-apps Helm chart"]
+
+    AppChart --> Platform["Platform applications"]
+    AppChart --> Datasources["Datasource applications"]
+    AppChart --> Tenant["Tenant application"]
+
+    Platform --> ConfigServer["OpenFrame Config"]
+    Platform --> Ingress["Ingress NGINX"]
+    Platform --> DevTools["Development tools"]
+
+    Datasources --> Mongo["MongoDB"]
+    Datasources --> Redis["Redis Cluster"]
+    Datasources --> Kafka["Kafka"]
+    Datasources --> Nats["NATS"]
+    Datasources --> Cassandra["Cassandra"]
+    Datasources --> Pinot["Pinot"]
+    Datasources --> Mysql["MySQL for Fleet"]
+    Datasources --> Debezium["Debezium Connect"]
+
+    Tenant --> Gateway["OpenFrame Gateway"]
+    Tenant --> Api["OpenFrame API"]
+    Tenant --> Authz["Authorization Server"]
+    Tenant --> Client["OpenFrame Client"]
+    Tenant --> ExternalApi["External API"]
+    Tenant --> Management["OpenFrame Management"]
+    Tenant --> Stream["OpenFrame Stream"]
+    Tenant --> Frontend["OpenFrame Frontend"]

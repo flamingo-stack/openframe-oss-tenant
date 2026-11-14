@@ -1,0 +1,7 @@
+flowchart LR
+    Kafka["Kafka logs-events topic"] -->|"CommonDebeziumMessage and message type"| Listener["Logs Event Listener"]
+    Listener -->|"delegates processing"| Processor["Generic JSON Message Processor"]
+    Bootstrap["Stream Application"] -->|"enables Kafka"| Listener
+    Bootstrap -->|"component scan"| Processor
+    Bootstrap -->|"component scan"| Data["Data Components"]
+    Bootstrap -->|"component scan"| Producer["Kafka Producer Components"]

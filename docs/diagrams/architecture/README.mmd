@@ -1,0 +1,32 @@
+flowchart LR
+    User["Browser or API consumer"] --> Gateway["OpenFrame Gateway"]
+
+    Gateway -->|"Path /sas/**"| Authz["Authorization Server"]
+    Gateway -->|"Path /api/**"| Api["OpenFrame API"]
+    Gateway -->|"Path /clients/**"| Client["OpenFrame Client"]
+    Gateway -->|"Path /api-docs/**"| ExternalApi["External API"]
+    Gateway -->|"Path /**"| Frontend["OpenFrame Frontend"]
+
+    Config["OpenFrame Config Server"] --> Api
+    Config --> Authz
+    Config --> Client
+    Config --> ExternalApi
+    Config --> Gateway
+    Config --> Management["OpenFrame Management"]
+    Config --> Stream["OpenFrame Stream"]
+
+    Api --> Kafka["Kafka"]
+    Api --> Nats["NATS"]
+    Client --> Kafka
+    Client --> Nats
+    ExternalApi --> Kafka
+    ExternalApi --> Nats
+    Management --> Kafka
+    Management --> Nats
+    Stream --> Kafka
+
+    Api --> Mongo["MongoDB"]
+    Authz --> Mongo
+    Authz --> Redis["Redis Cluster"]
+    ExternalApi --> Cassandra["Cassandra"]
+    Gateway --> Redis

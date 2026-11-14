@@ -1,0 +1,12 @@
+flowchart TD
+    Bootstrap["GatewayApplication main method"] --> SpringBoot["Spring Boot application context"]
+    SpringBoot --> Scan["Component scan"]
+    Scan --> GatewayPkg["Gateway package"]
+    Scan --> CorePkg["OpenFrame core package"]
+    Scan --> DataPkg["OpenFrame data package"]
+    Scan --> SecurityPkg["OpenFrame security package"]
+    SpringBoot --> GatewayCore["Gateway service core library"]
+    SpringBoot --> OAuthCore["Security OAuth library"]
+    SpringBoot --> ConfigClient["Spring Cloud Config client"]
+    ConfigClient --> GatewayConfig["Gateway configuration"]
+    GatewayConfig --> ReactiveGateway["Reactive gateway runtime"]

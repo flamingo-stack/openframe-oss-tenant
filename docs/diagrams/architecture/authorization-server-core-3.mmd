@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client as OAuth Client
+    participant Gateway as OpenFrame Gateway
+    participant Authz as Authorization Server Core
+    participant Store as MongoDB and Redis
+    participant Provider as External Identity Provider
+    Client->>Gateway: Request a /sas resource
+    Gateway->>Authz: Forward request with /sas prefix
+    Authz->>Store: Read authorization and session data
+    opt Federated sign in
+        Authz->>Provider: Redirect for provider authorization
+        Provider-->>Authz: Return authorization response
+    end
+    Authz->>Store: Persist or update authorization state
+    Authz-->>Gateway: Return authorization response or token response
+    Gateway-->>Client: Relay response

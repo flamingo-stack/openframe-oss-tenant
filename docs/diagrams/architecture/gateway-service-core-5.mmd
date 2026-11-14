@@ -1,0 +1,8 @@
+flowchart LR
+    Source["Gateway source and Maven descriptor"] --> Build["Maven package for gateway module"]
+    Build --> Jar["Gateway JAR"]
+    Jar --> Image["Temurin JRE runtime image"]
+    Image --> Runtime["Non-root Gateway Service Core process"]
+    Runtime --> Config["Shared and gateway configuration"]
+    Runtime --> Listener["Reactive listener on port 8100"]
+    Runtime --> Management["Management listener on port 8101"]

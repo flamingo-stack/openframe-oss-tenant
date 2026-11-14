@@ -1,0 +1,8 @@
+flowchart TD
+    User["API Consumer"] --> Request["Request API Documentation"]
+    Request --> Gateway["OpenFrame Gateway"]
+    Gateway --> Match{"Matches /api-docs path?"}
+    Match -->|"Yes"| ExternalApi["External Api Service"]
+    ExternalApi --> Springdoc["Springdoc Configuration"]
+    Springdoc --> Response["OpenAPI Document Response"]
+    Match -->|"No"| OtherRoute["Gateway Route Selection"]

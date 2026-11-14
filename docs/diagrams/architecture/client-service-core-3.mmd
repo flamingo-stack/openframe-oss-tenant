@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Runtime as "JVM runtime"
+    participant Main as "ClientApplication"
+    participant Boot as "Spring Boot"
+    participant Context as "Application context"
+    Runtime->>Main: Invoke main(args)
+    Main->>Boot: run(ClientApplication, args)
+    Boot->>Context: Create and prepare context
+    Context->>Context: Scan configured package roots
+    Context->>Context: Skip CassandraHealthIndicator
+    Context->>Context: Apply auto-configuration and initialize beans
+    Context-->>Boot: Context ready
+    Boot-->>Runtime: Client service running

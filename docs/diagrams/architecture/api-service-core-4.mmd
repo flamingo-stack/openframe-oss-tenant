@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Jvm as JVM
+    participant App as ApiApplication
+    participant Log as Application log
+    participant Spring as SpringApplication
+    participant Context as Application context
+    Jvm->>App: invoke main(args)
+    App->>Log: write startup message
+    App->>Spring: run ApiApplication with args
+    Spring->>Context: create and configure context
+    Context->>Context: scan configured package roots
+    Context-->>Spring: initialized components
+    Spring-->>Jvm: application running

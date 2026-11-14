@@ -1,0 +1,14 @@
+flowchart TD
+    MainMethod["ApiApplication main method"] -->|"logs startup"| StartupLog["Startup log"]
+    MainMethod -->|"starts"| SpringBoot["SpringApplication"]
+    SpringBoot -->|"creates"| ApplicationContext["Spring application context"]
+    ApplicationContext -->|"scans"| ApiPackage["com.openframe.api"]
+    ApplicationContext -->|"scans"| DataPackage["com.openframe.data"]
+    ApplicationContext -->|"scans"| CorePackage["com.openframe.core"]
+    ApplicationContext -->|"scans"| NotificationPackage["com.openframe.notification"]
+    ApplicationContext -->|"scans"| KafkaPackage["com.openframe.kafka"]
+    ApiPackage -->|"contributes"| RunningService["OpenFrame API service"]
+    DataPackage -->|"contributes"| RunningService
+    CorePackage -->|"contributes"| RunningService
+    NotificationPackage -->|"contributes"| RunningService
+    KafkaPackage -->|"contributes"| RunningService

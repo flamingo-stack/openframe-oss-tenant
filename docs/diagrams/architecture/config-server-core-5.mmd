@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Pod scheduled"] --> Env["Load ConfigMap and release environment"]
+    Env --> Launch["Start Java application"]
+    Launch --> Library["Initialize Config Server library"]
+    Library --> Clone["Load selected configuration branch"]
+    Clone --> Probe{"Probe resource available?"}
+    Probe -->|"yes"| Ready["Accept configuration requests"]
+    Probe -->|"no"| Retry["Retry until startup threshold"]
+    Retry --> Clone
+    Ready --> Metrics["Publish management and Prometheus endpoints"]

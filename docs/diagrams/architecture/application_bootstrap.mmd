@@ -1,0 +1,6 @@
+flowchart TD
+    Main["main method"] -->|"starts"| SpringBoot["Spring Boot application context"]
+    SpringBoot -->|"enables"| Kafka["Kafka listener infrastructure"]
+    SpringBoot -->|"scans"| Stream["Stream Components"]
+    SpringBoot -->|"scans"| Data["Data Components"]
+    SpringBoot -->|"scans"| Producers["Kafka Producer Components"]

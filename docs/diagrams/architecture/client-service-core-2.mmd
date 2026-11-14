@@ -1,0 +1,8 @@
+flowchart LR
+    App["Client Service Core"] -->|"uses"| Spring["Spring Boot"]
+    App -->|"scans"| ClientPkg["Client components"]
+    App -->|"scans"| Shared["OpenFrame shared packages"]
+    Shared -->|"provides"| DataLayer["Data facilities"]
+    Shared -->|"provides"| SecurityLayer["Security facilities"]
+    Shared -->|"provides"| KafkaLayer["Kafka producer facilities"]
+    App -->|"excludes"| CassandraHealth["Cassandra health indicator"]

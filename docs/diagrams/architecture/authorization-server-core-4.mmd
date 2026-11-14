@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Process starts"] --> Run["Invoke SpringApplication.run"]
+    Run --> Load["Load shared and authorization-server configuration"]
+    Load --> Scan["Scan authz, core, data, and notification packages"]
+    Scan --> Auto["Apply Spring Boot auto-configuration"]
+    Auto --> Connect["Create MongoDB and Redis integrations"]
+    Connect --> Discover["Enable discovery client support"]
+    Discover --> Ready["Serve servlet requests under /sas"]
