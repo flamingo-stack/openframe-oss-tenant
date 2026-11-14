@@ -100,7 +100,7 @@ Flamingo AI records AI requests and responses in its operational logs for up to 
 
 **How we protect it.** Google user data is encrypted in transit between Google and OpenFrame. The OAuth refresh token issued for a connected tenant is encrypted with Google Cloud Key Management Service under a key created for the OpenFrame customer that owns the connection, and is stored only in encrypted form.
 
-**How long we keep it, and how it is deleted.** Directory data is retained for as long as the connection exists. A connection can be disconnected or deleted. When it is disconnected, we delete the stored refresh token and keep the synchronized directory data. When it is deleted, we delete the stored refresh token and the directory data synchronized through it. Audit events already received remain in our logs for up to 90 days. In neither case do we revoke the grant at Google: to end OpenFrame's access, remove it in the Google Admin console or in your Google Account's third-party access settings. Conversations with the AI assistant, facts derived from them and review findings are kept until the customer's data is deleted (section 10). You can request deletion by contacting privacy@flamingo.run. Copies remain in backups for the periods in section 14.
+**How long we keep it, and how it is deleted.** Directory data is retained for as long as the connection exists. A connection can be disconnected or deleted. When it is disconnected, we delete the stored refresh token and keep the synchronized directory data. When it is deleted, we delete the stored refresh token and the directory data synchronized through it. Audit events already received remain in our logs for up to 90 days. In neither case do we revoke the grant at Google: to end OpenFrame's access, remove it in the Google Admin console or in your Google Account's third-party access settings. Conversations with the AI assistant, facts derived from them and review findings are kept until the customer's data is deleted (section 10). You can request deletion by contacting privacy@flamingo.run. Copies remain in backups for the periods in section 10.
 
 **Limited Use.** OpenFrame's use of information received from Google Workspace APIs will adhere to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy) and the [Google Workspace API User Data and Developer Policy](https://developers.google.com/workspace/workspace-api-user-data-developer-policy), including the Limited Use requirements. Data received from Google Workspace APIs is not used to develop, improve, or train non-personalized artificial intelligence or machine learning models, whether by Flamingo AI or by any third party.
 
@@ -176,6 +176,7 @@ An OpenFrame SaaS user can delete their own account in Settings. We then remove 
 - Support requests, and any logs or files sent with them, are kept in our support system for as long as needed to handle the request and to keep a record of it. You can ask us to delete them.  
 - Website analytics data is held by the analytics providers listed in section 15 and is kept no longer than necessary for the purposes in section 3.1.  
 - Form submissions, unfinished-form data, waitlist entries, Website chat conversations and recordings of calls with our team are kept until you ask us to delete them. The chat cookie expires after one year.  
+- Backups: database backups of OpenFrame SaaS are kept for up to 120 days, and backups of the device management database for 30 days. Deleted remote session recordings can be restored for 30 days. Data deleted from the service remains in backups until those periods end.  
 - OpenMSP contributions remain public unless removed by you or as part of community moderation. Account data may be deleted upon request. The record of pages viewed by signed-in OpenMSP users is kept for 365 days.  
 
 
@@ -194,9 +195,9 @@ Flamingo AI implements reasonable technical and organizational safeguards, but *
 Use of Flamingo AI products is entirely at your own risk. Customers are solely responsible for compliance with applicable data protection laws when deploying Flamingo AI software or participating in OpenMSP.  
 
 
-## 14. Backups
+## 14. Text Messaging Opt-In Data
 
-Database backups of OpenFrame SaaS are kept for up to 120 days. Backups of the device management database are kept for 30 days. Deleted remote session recordings can be restored for 30 days. Data deleted from the service remains in backups until those periods end.
+Text messaging originator opt-in data and consent will not be shared with any third parties, excluding aggregators and providers of the Text Message services.
 
 
 ## 15. Service Providers
