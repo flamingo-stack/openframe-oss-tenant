@@ -1,7 +1,7 @@
 # Flamingo AI Payment Terms
 
-**Version:** 1.3  
-**Effective date:** October 29, 2026  
+**Version:** 1.4  
+**Effective date:** December 20, 2026  
 **Applies to:** Paid plans of OpenFrame SaaS, the OpenFrame service hosted by Flamingo AI
 
 
@@ -22,7 +22,7 @@
 
 **2.3** You can activate a paid plan at any time. The trial ends at that moment, and unused trial days and tokens are not carried over.
 
-**2.4** If You do not activate a paid plan by the end of the trial, access to OpenFrame stops, including the connection of Your devices. We keep Your data for 30 days after the trial ends so that You can activate. After that we may delete it, and we email the account owner at least 7 days before we do.
+**2.4** If You do not activate a paid plan by the end of the trial, access to the OpenFrame dashboard stops, apart from billing. OpenFrame agents are not removed from Your devices automatically and may stay connected until You uninstall them. We keep Your data for at least 30 days after the trial ends so that You can activate. After that we may delete it, and we email the account owner at least 7 days before we do.
 
 
 ## 3. Plans and What You Pay For
@@ -57,7 +57,7 @@
 
 **5.3 Order of use.** Free tokens are used first, then purchased tokens, oldest purchase first.
 
-**5.4 Expiry.** Purchased tokens expire 12 months after purchase. The expiry date is set when You buy and is shown at checkout for the tokens bought at activation, on the invoice for every other purchase, and on the Billing page. We email the account owner 30 days before a balance of purchased tokens expires.
+**5.4 Expiry.** Purchased tokens expire 12 months after purchase. The expiry date is set when You buy and is shown at checkout for the tokens bought at activation, on the invoice for every other purchase, and on the Billing page.
 
 **5.5 No cash value.** Tokens are not money. They cannot be transferred or sold, can be used only by the organization that bought them, and are not refundable except as stated in section 9.
 
@@ -68,13 +68,13 @@
 
 **6.1** Automatic top-up is off unless You turn it on. **By turning it on You authorize us to charge Your saved card the amount You chose each time Your token balance falls below Your threshold, without asking You again, until You turn it off.**
 
-**6.2** The threshold is 20% of Your top-up amount unless You set another. You can set a monthly limit on automatic top-ups. When the limit is reached, automatic top-up pauses until the next calendar month and we email the account owner.
+**6.2** The threshold is 20% of Your top-up amount unless You set another. You can set a limit on automatic top-ups over any 30 days. When the limit is reached, automatic top-up pauses until earlier top-ups fall outside the last 30 days, and we email the account owner.
 
 **6.3** We email a receipt for every automatic top-up.
 
 **6.4** If a charge is declined, or Your bank asks for a confirmation that is not completed within one hour, automatic top-up is turned off and we email the account owner. We do not retry. You keep using Your remaining tokens.
 
-**6.5** Automatic top-up is not available during the trial or while Your account is suspended, is paused while an amount is overdue (section 8.2), and is turned off when You cancel as stated in section 7.4. You can turn it off or change it on the Billing page at any time; a change applies to future top-ups only.
+**6.5** Automatic top-up is not available during the trial, is paused while an amount is overdue (section 8.2) or Your account is suspended, and is turned off when You cancel as stated in section 7.4. You can turn it off or change it on the Billing page at any time; a change applies to future top-ups only.
 
 
 ## 7. Renewal, Cancellation and Price Changes
@@ -85,14 +85,14 @@
 
 **7.3 Cancelling.** You can cancel at any time on the Billing page.
 
-- **Pay as you go** ends when You cancel: access stops at once, and a final invoice covers usage up to that day.
+- **Pay as you go** ends when You cancel: access to the dashboard stops at once, apart from billing, and a final invoice covers usage up to that day.
 - **A yearly package** runs to the end of the paid year and works as before until then. Devices above the package are not allowed and are not billed: in any monthly period in which You are over the package, the dashboard is blocked until the next monthly period in which You are within it. Until the paid year ends You can undo the cancellation on the Billing page, as long as nothing is overdue; overdue amounts must be paid first.
 
 After a plan has ended it cannot be restored. To use OpenFrame again, You activate a new paid plan.
 
 **7.4** Cancelling pay as you go turns off new token purchases and automatic top-up at once. Cancelling a yearly package keeps both working until the paid year ends, then turns both off. No free tokens are granted after Your plan ends.
 
-**7.5 After Your plan ends,** access to OpenFrame stops, including the connection of Your devices. Purchased tokens stay on Your account until their expiry date and can be used again if You activate a new paid plan. We keep Your data for 30 days and may then delete it after a 7-day email notice.
+**7.5 After Your plan ends,** access to the OpenFrame dashboard stops, apart from billing. OpenFrame agents are not removed from Your devices automatically and may stay connected until You uninstall them. Purchased tokens stay on Your account until their expiry date and can be used again if You activate a new paid plan. We keep Your data for at least 30 days and may then delete it after a 7-day email notice.
 
 **7.6 Price changes.** We may change prices, pay-as-you-go rates, minimums and token prices. We email the account owner and show a notice in the product at least 30 days before a change applies. A change applies from Your next monthly period, and to a yearly package from its next renewal. It never changes what You have already paid for: a yearly package keeps its price for the paid year, and purchased tokens keep their number. If You do not agree, You may cancel before the change applies.
 
@@ -105,11 +105,11 @@ After a plan has ended it cannot be restored. To use OpenFrame again, You activa
 
 **8.1 Payment.** The first payment when You activate a paid plan, token purchases and automatic top-ups are charged to Your saved payment method. Renewals and usage billed after each monthly period are invoiced: the invoice is emailed to the account owner, is due within 7 days of the invoice date, and is paid from the link in the invoice.
 
-**8.2 Late payment.** An invoice not paid by its due date is overdue, and we email the account owner. We do not retry the payment: You pay from the link in the invoice or on the Billing page. While any amount is overdue You cannot buy or change packages or buy tokens, and automatic top-up is paused. Your devices stay connected, and You can still pay and read invoices. Once all overdue amounts are paid, package changes and token purchases are available again and automatic top-up resumes with Your settings.
+**8.2 Late payment.** An invoice not paid by its due date is overdue, and we email the account owner. We do not retry the payment: You pay from the link in the invoice or on the Billing page. While any amount is overdue You cannot make changes in the dashboard, buy or change packages or buy tokens, and automatic top-up is paused. Your devices stay connected, and You can still view Your data, pay and read invoices. Once all overdue amounts are paid, changes, package changes and token purchases are available again and automatic top-up resumes with Your settings.
 
 **8.3 Suspension.** If an amount is still unpaid 30 days after it fell due, we may suspend access to OpenFrame, including the connection of Your devices, AI features and token purchases. We email the account owner at least 7 days before. Suspension does not delete data or tokens, and token expiry dates keep running. Access returns as soon as all overdue amounts are paid.
 
-**8.4 Termination.** If overdue amounts are still unpaid 30 days after suspension, we may terminate the account. We email the account owner 30 days and 7 days before. On termination Your data is deleted and unused tokens are forfeited. Unpaid amounts remain due.
+**8.4 Termination.** If overdue amounts are still unpaid 30 days after suspension, we may terminate the account. We email the account owner 30 days and 7 days before. On termination Your data may be deleted, after the notice described in section 7.5, and unused tokens are forfeited. Unpaid amounts remain due.
 
 **8.5 Records.** We keep invoices and records of purchases and usage after termination for as long as tax and accounting law requires.
 
