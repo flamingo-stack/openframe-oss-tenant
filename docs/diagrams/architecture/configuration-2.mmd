@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Caller
+    participant Security as "Gateway authentication"
+    participant Context as "Security context"
+    participant Handler as "REST controller or DGS fetcher"
+    Caller->>Security: Send request with credentials
+    Security->>Context: Establish JWT authentication
+    Context->>Handler: Resolve AuthPrincipal when supported
+    Handler->>Handler: Apply endpoint or fetcher authorization

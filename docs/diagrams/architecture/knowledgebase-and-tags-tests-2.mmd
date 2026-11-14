@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Create Root Folder"] --> Draft["Create Draft Article"]
+    Draft --> Read["Read Trees and Item"]
+    Read --> Update["Update Article Fields"]
+    Update --> Publish["Publish Article"]
+    Publish --> Archive["Archive Article"]
+    Archive --> Unarchive["Unarchive Into Folder"]
+    Unarchive --> Cleanup["Archive Created Test Articles"]

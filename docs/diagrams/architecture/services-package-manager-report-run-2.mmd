@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Runtime as Client Runtime
+    participant Runner as Report Run Manager
+    participant Publisher as Report Publisher
+    participant Config as Configuration Service
+    participant Device as Managed Device
+    participant Bus as NATS
+
+    Runtime->>Runner: start()
+    Note over Runner: Spawn detached reporting task
+    Runtime->>Runner: wake handle notification or timer tick
+    Runner->>Publisher: publish() within report timeout
+    Publisher->>Config: get machine identifier
+    Publisher->>Device: determine each manager state
+    Publisher->>Device: check dependencies when enabled
+    Publisher->>Bus: publish machine package manager report
+    alt publish completes
+        Bus-->>Publisher: success
+        Publisher-->>Runner: success
+    else publish returns an error
+        Publisher-->>Runner: error
+        Note over Runner: Log failure, continue loop
+    else deadline expires
+        Note over Runner: Log timeout, continue loop
+    end

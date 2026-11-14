@@ -1,0 +1,7 @@
+flowchart TD
+    InputA["Raw version input"] --> Trim["Trim surrounding whitespace"]
+    Trim --> Prefix["Remove one v or V prefix"]
+    Prefix --> Parse["Parse with semver Version"]
+    Parse --> Valid{"Valid Semantic Version?"}
+    Valid -->|"No"| None["Return None"]
+    Valid -->|"Yes"| Version["Return Version value"]

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Test as "Lifecycle Test"
+    participant Api as "External Knowledge Base API"
+    participant Storage as "Object Storage"
+    Test->>Api: Register attachment metadata
+    Api-->>Test: Attachment metadata and signed upload URL
+    Test->>Storage: PUT file bytes with declared content type
+    Test->>Api: Request signed download URL
+    Api-->>Test: Signed download URL
+    Test->>Storage: GET file bytes
+    Storage-->>Test: Original bytes
+    Test->>Api: Delete attachment
+    Api-->>Test: No content

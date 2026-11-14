@@ -5,7 +5,7 @@
 
 This repository is a service in the OpenFrame ecosystem.
 It publishes: com.openframe:openframe-api, com.openframe:openframe-authorization-server, com.openframe:openframe-client, com.openframe:openframe-config, com.openframe:openframe-external-api, com.openframe:openframe-gateway, com.openframe:openframe-management, com.openframe:openframe-stream, com.openframe:openframe-test, openframe_client.
-Depends on: OpenFrame OSS Library.
+Depends on: com.openframe.oss:fleetmdm 7.0.11, com.openframe.oss:openframe-api-lib 7.0.11, com.openframe.oss:openframe-api-service-core 7.0.11, com.openframe.oss:openframe-authorization-service-core 7.0.11, com.openframe.oss:openframe-client-core 7.0.11, com.openframe.oss:openframe-config-core 7.0.11, com.openframe.oss:openframe-core 7.0.11, com.openframe.oss:openframe-data-device-aspect 7.0.11, com.openframe.oss:openframe-data-mongo-common 7.0.11, com.openframe.oss:openframe-data-mongo-reactive 7.0.11, com.openframe.oss:openframe-data-mongo-sync 7.0.11, com.openframe.oss:openframe-data-redis 7.0.11, com.openframe.oss:openframe-external-api-service-core 7.0.11, com.openframe.oss:openframe-gateway-service-core 7.0.11, com.openframe.oss:openframe-idp-configuration 7.0.11, com.openframe.oss:openframe-management-service-core 7.0.11, com.openframe.oss:openframe-notification-mail 7.0.11, com.openframe.oss:openframe-security-core 7.0.11, com.openframe.oss:openframe-security-oauth 7.0.11, com.openframe.oss:openframe-stream-service-core 7.0.11, com.openframe.oss:openframe-test-service-core 7.0.11, com.openframe.oss:openframe-tool-agent-nats-installation 7.0.11, openframe_agent_lib v0.0.5.
 Details: docs/reference/architecture/ecosystem.md (generated on every merge).
 
 ### Changes that span repositories

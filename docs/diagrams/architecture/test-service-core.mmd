@@ -1,0 +1,17 @@
+flowchart TD
+    Runner["Test Runner Core"] --> Tests["Test Suites"]
+    Runner --> Listener["Slack Integration"]
+
+    Tests --> Auth["Authentication Flows"]
+    Tests --> ApiClients["API and External API Tests"]
+    Tests --> Ui["UI Pages and UI Flow"]
+    Tests --> Dtos["Test DTOs"]
+    Tests --> Db["Database Collection Helpers"]
+    Tests --> Helpers["Retry and Gateway Helpers"]
+
+    Auth --> Platform["OpenFrame Platform"]
+    ApiClients --> Platform
+    Ui --> Platform
+    Db --> Mongo["MongoDB"]
+    Platform --> Gateway["OpenFrame Gateway"]
+    Platform --> Services["OpenFrame Services"]

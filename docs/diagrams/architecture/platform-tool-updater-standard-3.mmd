@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Start standard update"] --> Stop["Stop running tool"]
+    Stop --> Backup["Create executable backup"]
+    Backup --> Apply["Download and write replacement"]
+    Apply -->|"write succeeds"| Finalize["Remove backup"]
+    Finalize --> Restart["Run manager restarts tool"]
+    Apply -->|"write fails"| Rollback["Restore backup"]
+    Rollback --> Failure["Return update failure"]
+    Stop -->|"stop fails"| PrepareFailure["Return preparation failure"]
+    Backup -->|"backup fails"| PrepareFailure

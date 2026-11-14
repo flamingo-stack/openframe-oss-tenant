@@ -1,0 +1,13 @@
+flowchart LR
+    Agent["Endpoint Agent"] --> Registration["Registration Flow"]
+    Registration --> Identity["Machine and Agent Credentials"]
+    Registration --> Organization["Organization Resolution"]
+    Registration --> Tags["Device Tag Assignment"]
+    Registration --> Bootstrap["Initial Deliveries"]
+    Bootstrap --> Router["Delivery Router"]
+    Router --> Agent
+    Scheduler["RMM Schedulers"] --> Dispatch["Script and Software Dispatch"]
+    Dispatch --> Router
+    Router --> Agent
+    Agent --> Results["Execution and Telemetry Results"]
+    Results --> ClientService["OpenFrame Client Service"]

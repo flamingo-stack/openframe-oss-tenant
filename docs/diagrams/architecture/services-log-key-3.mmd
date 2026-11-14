@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Run log key workflow"] --> Missing{"Log key missing?"}
+    Missing -->|"Yes"| Fetch["Fetch with retry policy"]
+    Missing -->|"No"| Clear["Clear initial key"]
+    Clear --> Wait["Wait for connection failure"]
+    Wait --> Fetch
+    Fetch --> Valid{"Non-empty successful response?"}
+    Valid -->|"No"| Fetch
+    Valid -->|"Yes"| Changed{"Key differs from saved key?"}
+    Changed -->|"Yes"| Save["Save key and clear initial key"]
+    Save --> Restart["Request safe restart"]
+    Changed -->|"No"| Delay["Wait maximum retry interval"]
+    Delay --> Wait

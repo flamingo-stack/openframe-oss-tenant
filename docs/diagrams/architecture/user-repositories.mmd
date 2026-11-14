@@ -1,0 +1,9 @@
+flowchart LR
+    Caller["Application service"] --> Contract["CustomUserRepository"]
+    Contract --> Implementation["CustomUserRepositoryImpl"]
+    Implementation --> Template["Tenant-aware MongoTemplate"]
+    Implementation --> Filter["User filters"]
+    Implementation --> Cursor["User cursor or sort key"]
+    Template --> Collection[("User collection")]
+    Collection --> Results["Filtered user records"]
+    Results --> Caller

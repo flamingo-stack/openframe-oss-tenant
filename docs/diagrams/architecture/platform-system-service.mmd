@@ -1,0 +1,10 @@
+flowchart TD
+    ClientLifecycle["OpenFrame Client lifecycle"] --> ServiceCore["Client service orchestration"]
+    ServiceCore --> Adapter["Cross platform service adapter"]
+    ServiceCore --> PlatformSystem["Platform System Service"]
+    PlatformSystem --> MacManager["macOS launchctl"]
+    PlatformSystem --> LinuxManager["Linux systemctl"]
+    PlatformSystem --> WindowsScm["Windows Service Control Manager"]
+    WindowsScm --> AgentProcess["Agent service process"]
+    MacManager --> AgentProcess
+    LinuxManager --> AgentProcess

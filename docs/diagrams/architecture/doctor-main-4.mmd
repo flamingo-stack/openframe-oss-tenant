@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Health check"] --> Admin{"Administrator access?"}
+    Admin -->|"No"| PrivilegeReport["Return administrator failure report"]
+    Admin -->|"Yes"| Runtime["Check WebView2 when applicable"]
+    Runtime --> Config{"Initial configuration state"}
+    Config -->|"Missing"| AwaitingAuth["Return informational awaiting authentication report"]
+    Config -->|"Unreadable or invalid"| ConfigFailure["Return configuration failure report"]
+    Config -->|"Valid server host"| Identity["Load or create local machine identifier"]
+    Identity --> Network["Run network checks"]
+    Network --> Report["Return health check report"]

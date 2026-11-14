@@ -1,0 +1,30 @@
+classDiagram
+    class InstalledTool {
+        tool agent identifier
+        tool identifier
+        tool type
+        version
+        run command arguments
+        agent identifier command arguments
+        optional uninstallation command arguments
+        installation
+        assets
+        state
+    }
+    class Installation {
+        Standard
+        GuiApp
+        Service
+    }
+    class InstalledAsset {
+        identifier
+        version
+        executable
+    }
+    class ToolRecordState {
+        Installing
+        Installed
+    }
+    InstalledTool --> Installation : "one installation"
+    InstalledTool --> InstalledAsset : "zero or more assets"
+    InstalledTool --> ToolRecordState : "one state"

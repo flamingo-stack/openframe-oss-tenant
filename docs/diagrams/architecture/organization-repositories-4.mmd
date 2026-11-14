@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Caller
+    participant Repository as "Organization Repository"
+    participant Mongo as "MongoDB"
+    Caller->>Repository: Build base query from filter and search
+    Repository->>Caller: Return base query
+    Caller->>Repository: Count base query
+    Repository->>Mongo: Count matching documents
+    Mongo->>Repository: Return total
+    Repository->>Caller: Return total
+    Caller->>Repository: Fetch page with base query and cursor
+    Repository->>Mongo: Add keyset, sort, and limit then find
+    Mongo->>Repository: Return page rows
+    Repository->>Caller: Return organization page

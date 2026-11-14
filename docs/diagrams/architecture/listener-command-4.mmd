@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant Server as Management plane
+    participant Nats as NATS broker
+    participant Listener as Command listener
+    participant Handler as Typed handler
+    participant Store as Result store
+    participant Outbox as Result outbox
+    Server->>Nats: Publish machine command
+    Nats->>Listener: Deliver command message
+    Listener->>Handler: begin command
+    alt handler is busy
+        Handler-->>Listener: Busy reason
+        Listener-->>Nats: Leave for later handling
+    else handler accepts
+        Handler-->>Listener: Guard
+        Listener->>Store: Record in flight delivery
+        Listener->>Handler: run command with guard
+        Handler-->>Listener: Outcome
+        alt normal completion or failure
+            Listener->>Store: Settle delivery result
+            Store->>Outbox: Persist outbound result
+            Outbox->>Nats: Publish result
+        else restart dependent outcome
+            Listener->>Store: Mark awaiting restart
+            Listener->>Listener: Coordinate restart gate
+        end
+    end

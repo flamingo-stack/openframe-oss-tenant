@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Image URL update request"] --> Query["Match AuthUser by _id"]
+    Query --> Update["Set imageUrl"]
+    Update --> Write["MongoTemplate updateFirst"]
+    Write --> Version["Spring Data bumps version"]

@@ -1,0 +1,9 @@
+flowchart TD
+    Services["OpenFrame services"] --> Sync["Synchronous Mongo repositories"]
+    Services --> Reactive["Reactive Mongo repositories"]
+    Sync --> Common["Data Mongo Common"]
+    Reactive --> Common
+    Common --> Device["Device document"]
+    Common --> Shared["Shared document values"]
+    Device --> Mongo[("MongoDB devices collection")]
+    Shared --> Mongo

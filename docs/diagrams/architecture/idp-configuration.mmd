@@ -1,0 +1,8 @@
+flowchart LR
+    Management["OpenFrame Management service"] --> Scheduler["Idp Configuration scheduler"]
+    Scheduler -->|"find by client ID"| Repository["Registered client repository"]
+    Scheduler -->|"encode or verify secret"| Encoder["Password encoder"]
+    Repository --> Store["Registered client data"]
+    GatewayConfig["Gateway OAuth properties"] --> Scheduler
+    Gateway["OpenFrame gateway"] -->|"Basic client authentication"| AuthServer["Authorization server"]
+    AuthServer --> Store

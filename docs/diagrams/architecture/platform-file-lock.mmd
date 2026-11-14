@@ -1,0 +1,6 @@
+flowchart LR
+    AgentOperation["OpenFrame client operation"] -->|"I/O error"| Classifier["Sharing violation classifier"]
+    Classifier -->|"Error code 32"| FileLock["Platform File Lock"]
+    Classifier -->|"Other error"| NormalError["Normal error handling"]
+    FileLock -->|"Restart Manager session"| WindowsRM["Windows Restart Manager"]
+    WindowsRM -->|"Holder metadata"| DiagnosticLog["Tracing error log"]

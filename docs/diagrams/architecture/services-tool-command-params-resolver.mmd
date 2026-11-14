@@ -1,0 +1,10 @@
+flowchart LR
+    CommandInput["Tool command arguments"] --> Resolver["Services Tool Command Params Resolver"]
+    Resolver --> InitialConfig["Initial Configuration Service"]
+    Resolver --> AgentConfig["Agent Configuration Service"]
+    Resolver --> Directories["Directory Manager"]
+    InitialConfig --> ServerHost["Configured server host"]
+    AgentConfig --> MachineId["Persisted machine identifier"]
+    Directories --> SecureDir["Secure directory"]
+    Directories --> AssetPath["Tool asset path"]
+    Resolver --> ResolvedArgs["Resolved command arguments"]

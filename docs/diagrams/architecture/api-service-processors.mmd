@@ -1,0 +1,7 @@
+flowchart LR
+    ApiApplication["OpenFrame API application"] --> Controllers["API controllers"]
+    Controllers --> LifecycleServices["Lifecycle services"]
+    LifecycleServices --> ProcessorContracts["Processor contracts"]
+    ProcessorContracts --> DefaultProcessors["Conditional default processors"]
+    DefaultProcessors --> DebugLogs["Debug logs"]
+    CustomProcessors["Deployment-specific processor beans"] -.->|"replace defaults"| ProcessorContracts

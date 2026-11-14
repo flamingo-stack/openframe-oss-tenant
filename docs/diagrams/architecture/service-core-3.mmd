@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant NativeService as Native service
+    participant ServiceCore as Service Core
+    participant ConfigService as Initial Configuration Service
+    participant ClientRuntime as Client runtime
+    NativeService->>ServiceCore: run as service
+    ServiceCore->>ServiceCore: validate directories and platform state
+    ServiceCore->>ConfigService: check configured state
+    alt configuration is absent
+        loop awaiting authentication
+            ServiceCore->>ConfigService: check configured state
+        end
+    end
+    ServiceCore->>ClientRuntime: create client
+    ServiceCore->>ClientRuntime: start

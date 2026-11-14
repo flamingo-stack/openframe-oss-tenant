@@ -1,0 +1,5 @@
+stateDiagram-v2
+    [*] --> Live
+    Live --> Resolved: "Transition to RESOLVED"
+    Resolved --> Archived: "Transition to ARCHIVED"
+    Live --> Archived: "Rejected"

@@ -1,0 +1,14 @@
+flowchart TD
+    Request["Execution request"] --> Track["Increment active script counter"]
+    Track --> Timer["Start elapsed-time timer"]
+    Timer --> Timeout{"Timeout is zero?"}
+    Timeout -->|"Yes"| DefaultTimeout["Use 900 seconds"]
+    Timeout -->|"No"| ClampTimeout["Clamp value to executor range"]
+    DefaultTimeout --> Privilege["Resolve execution privilege"]
+    ClampTimeout --> Privilege
+    Privilege --> Platform{"Supported operating system?"}
+    Platform -->|"Unix or Windows"| Run["Execute platform script"]
+    Platform -->|"Other"| Unsupported["Create unsupported-platform result"]
+    Run --> Normalize["Build correlated RMM result"]
+    Unsupported --> Normalize
+    Normalize --> Return["Return result and drop counter guard"]

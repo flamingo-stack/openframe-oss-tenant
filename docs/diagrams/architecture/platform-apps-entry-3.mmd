@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Register requested"] --> OpenRoot["Open HKEY LOCAL MACHINE"]
+    OpenRoot --> CreateKey["Create or open uninstall key"]
+    CreateKey --> BuildValues["Build display and uninstall values"]
+    BuildValues --> WriteValues["Write each registry value"]
+    WriteValues --> Success["Log registration success"]
+    CreateKey --> CreateError["Return key creation error"]
+    WriteValues --> WriteError["Return value write error"]

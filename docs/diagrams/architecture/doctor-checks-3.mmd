@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Start diagnostic run"] --> InputCheck["Validate required inputs when pre-installing"]
+    InputCheck --> InputDecision{"Inputs valid?"}
+    InputDecision -->|"No"| InputFailure["Return report with command failure"]
+    InputDecision -->|"Yes"| AdminCheck["Verify elevated privileges"]
+    AdminCheck --> AdminDecision{"Privileges present?"}
+    AdminDecision -->|"No"| AdminFailure["Return report with administration failure"]
+    AdminDecision -->|"Yes"| LocalChecks["Run runtime and local storage checks"]
+    LocalChecks --> NetworkChecks["Run configured-server network checks"]
+    NetworkChecks --> Complete["Return aggregated report"]

@@ -1,0 +1,12 @@
+flowchart TD
+    Services["OpenFrame application services"] --> Repositories["Data Mongo Sync Repositories"]
+    Repositories --> Config["Mongo configuration and conversions"]
+    Repositories --> Standard["Spring Data repository interfaces"]
+    Repositories --> Custom["Custom MongoDB query implementations"]
+    Repositories --> Publishing["Publishing projections"]
+    Config --> Mongo["MongoDB"]
+    Standard --> Mongo
+    Custom --> Mongo
+    Publishing --> Mongo
+    Tenant["Tenant-aware Mongo infrastructure"] --> Custom
+    Tenant --> Standard

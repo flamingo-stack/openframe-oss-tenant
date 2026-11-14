@@ -1,0 +1,11 @@
+flowchart TD
+    Input["Receive plaintext string"] --> Key["Build AES 256 GCM key from fixed 32 byte constant"]
+    Key --> KeyReady{"Key accepted?"}
+    KeyReady -->|"No"| KeyError["Return encryption key error"]
+    KeyReady -->|"Yes"| Nonce["Generate fresh 12 byte nonce with OsRng"]
+    Nonce --> Encrypt["Encrypt UTF 8 plaintext with AES 256 GCM"]
+    Encrypt --> EncryptReady{"Encryption succeeds?"}
+    EncryptReady -->|"No"| EncryptError["Return encryption error"]
+    EncryptReady -->|"Yes"| Prefix["Prefix ciphertext with nonce bytes"]
+    Prefix --> Encode["Encode combined bytes with standard Base64"]
+    Encode --> Output["Return encoded string"]

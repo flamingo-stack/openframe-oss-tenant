@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Read tenant mode and create temporary organization"] --> InheritOrg["Verify organization inherits tenant mode"]
+    InheritOrg --> SetOrg["Set organization override"]
+    SetOrg --> ClearOrg["Clear organization override"]
+    ClearOrg --> MissingOrg["Verify unknown organization refusal"]
+    MissingOrg --> ArchiveOrg["Archive temporary organization"]
+    ArchiveOrg --> FindDevice["Find eligible Windows fixture"]
+    FindDevice --> CheckInherited["Verify device inheritance"]
+    CheckInherited --> SetDevice["Set device override"]
+    SetDevice --> ClearDevice["Clear device override"]
+    ClearDevice --> MissingDevice["Verify unknown device refusal"]

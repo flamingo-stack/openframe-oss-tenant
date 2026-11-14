@@ -1,0 +1,12 @@
+flowchart LR
+    Runner["JUnit Test Runner"] --> KnowledgeSuite["Knowledge Base Test"]
+    Runner --> TagSuite["Tags Test"]
+    KnowledgeSuite --> KnowledgeApi["Knowledge Base API"]
+    KnowledgeSuite --> AttachmentApi["Attachment API"]
+    KnowledgeSuite --> TagApi["Tag API"]
+    TagSuite --> TagApi
+    KnowledgeApi --> Graphql["GraphQL Platform API"]
+    TagApi --> Graphql
+    AttachmentApi --> Storage["Attachment Storage"]
+    Graphql --> KnowledgeData["Knowledge Base Data"]
+    Graphql --> TagData["Tag Definitions"]

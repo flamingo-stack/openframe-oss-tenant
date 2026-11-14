@@ -1,0 +1,19 @@
+flowchart TD
+    Request["Registration or invitation flow"] --> Policy["Email domain policy"]
+    Policy --> PolicyEnabled{"Policy enabled?"}
+    PolicyEnabled -->|"No"| AllowDisabled["Allow by policy"]
+    PolicyEnabled -->|"Yes"| LocalLists["Blocked and allowed domain rules"]
+    LocalLists --> LocalDecision{"Resolved locally?"}
+    LocalDecision -->|"Blocked"| Reject["Reject domain"]
+    LocalDecision -->|"Allowed"| AllowLocal["Allow domain"]
+    LocalDecision -->|"No"| Checker["Disposable domain checker"]
+    Checker --> CheckerMode{"External check enabled?"}
+    CheckerMode -->|"No"| Noop["Noop checker"]
+    CheckerMode -->|"Yes"| Kickbox["Kickbox checker"]
+    Kickbox --> HttpClient["Declarative HTTP client"]
+    HttpClient --> ExternalApi["Disposable domain endpoint"]
+    ExternalApi --> Response["Disposable response"]
+    Response --> Disposable{"Positively disposable?"}
+    Disposable -->|"Yes"| Reject
+    Disposable -->|"No or failed"| AllowRemote["Allow by secondary check"]
+    Noop --> AllowRemote

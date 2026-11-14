@@ -1,0 +1,7 @@
+flowchart LR
+    DomainPublishers["Domain publishers"] -->|"typed messages or bytes"| Publisher["Services Nats Message Publisher"]
+    Outbox["Result outbox run manager"] -->|"ResultPublisher contract"| Publisher
+    Publisher -->|"get active client"| ConnectionManager["Services Nats Connection Manager"]
+    ConnectionManager -->|"connected client"| NatsBroker["NATS broker"]
+    Publisher -->|"JetStream publish and acknowledgement"| JetStream["JetStream"]
+    NatsBroker --> JetStream

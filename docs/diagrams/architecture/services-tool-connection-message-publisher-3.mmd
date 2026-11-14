@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Client startup or new tool event"] --> LoadTools["Load installed tools"]
+    LoadTools --> HasTools{"Installed tools available?"}
+    HasTools -->|"No"| Finish["Finish without publication"]
+    HasTools -->|"Yes"| CheckType{"Tool type populated?"}
+    CheckType -->|"No"| Skip["Skip invalid connection publication"]
+    CheckType -->|"Yes"| Acquire["Acquire per-tool processing slot"]
+    Acquire --> Active{"Processing already active?"}
+    Active -->|"No"| Resolve["Resolve tool connection details"]
+    Resolve --> Publish["Publish tool connection message"]
+    Active -->|"Yes"| Wake["Request immediate re-publication"]
+    Publish --> Finish
+    Skip --> Finish
+    Wake --> Finish

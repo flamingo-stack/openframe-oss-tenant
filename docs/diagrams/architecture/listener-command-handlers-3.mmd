@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Tool command arrives"] --> PendingOne{"Client update pending?"}
+    PendingOne -->|"Yes"| BusyUpdate["Busy: client update pending"]
+    PendingOne -->|"No"| Acquire["Try lock for tool agent id"]
+    Acquire --> Locked{"Lock acquired?"}
+    Locked -->|"No"| BusyTool["Busy: tool operation in progress"]
+    Locked -->|"Yes"| MarkBusy["Mark tool as busy"]
+    MarkBusy --> PendingTwo{"Client update pending now?"}
+    PendingTwo -->|"Yes"| BusyAfterLock["Release guard and defer"]
+    PendingTwo -->|"No"| Accepted["Accept guarded operation"]
+    Accepted --> Execute["Install or update tool"]

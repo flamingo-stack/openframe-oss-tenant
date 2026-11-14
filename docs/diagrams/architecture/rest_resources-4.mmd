@@ -1,0 +1,8 @@
+flowchart LR
+    Caller["API Caller"] --> KnowledgeResource["KnowledgeBaseController"]
+    KnowledgeResource --> ContentOperation["Content or Attachment Operation"]
+    ContentOperation --> KnowledgeDomain["Knowledge Base Domain"]
+    KnowledgeDomain --> ContentStore["Content Metadata"]
+    KnowledgeDomain --> AttachmentStore["Attachment Content"]
+    KnowledgeDomain --> ResponseMapper["REST Response Mapping"]
+    ResponseMapper --> Caller

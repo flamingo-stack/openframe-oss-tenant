@@ -1,0 +1,9 @@
+flowchart LR
+    Input["Requested first value"] --> Low{"Less than 1?"}
+    Low -->|"Yes"| One["Use 1"]
+    Low -->|"No"| High{"Greater than 100?"}
+    High -->|"Yes"| Hundred["Use 100"]
+    High -->|"No"| Given["Use requested value"]
+    One --> Query["Connection query"]
+    Hundred --> Query
+    Given --> Query

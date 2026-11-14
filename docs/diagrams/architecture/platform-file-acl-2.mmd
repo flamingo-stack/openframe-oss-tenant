@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Workflow as Update Workflow
+    participant Acl as Platform File Acl
+    participant Win as Windows Utilities
+    participant File as Target File
+    Workflow->>Acl: await ensure writable(path)
+    Acl->>Win: attrib removes restrictive attributes
+    Win-->>Acl: command status
+    Acl->>Win: takeown acquires ownership
+    Win-->>Acl: command status
+    Acl->>Win: icacls grants admin and system full control
+    Win-->>Acl: command status
+    Acl-->>Workflow: successful result
+    Workflow->>File: write or replace executable
+    Workflow->>Acl: await harden executable(path)
+    Acl->>Win: takeown sets Administrators owner
+    Win-->>Acl: command status
+    Acl->>Win: icacls replaces inherited permissions
+    Win-->>Acl: command status
+    Acl-->>Workflow: successful result

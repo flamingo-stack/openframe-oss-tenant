@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "Test Case"
+    participant Collection as "Collection Helper"
+    participant Mongo as "MongoDB"
+
+    Test->>Collection: Request organization or tenant lookup
+    Collection->>Mongo: Get typed collection
+    Collection->>Mongo: Execute exact-match filter
+    Mongo-->>Collection: First document or matching documents
+    Collection-->>Test: DTO, identifier list, or null

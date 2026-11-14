@@ -1,0 +1,12 @@
+flowchart TD
+    Caller["Restart caller"] --> RestartService["ToolRestartService"]
+    RestartService --> ToolOps["ToolOps per-tool lock and busy state"]
+    RestartService --> Registry["InstalledToolsService"]
+    RestartService --> Killer["ToolKillService"]
+    RestartService --> Decision{"Installation type?"}
+    Decision -->|"Service"| SystemService["Operating system service interface"]
+    Decision -->|"Standard or GUI application"| RunManager["ToolRunManager"]
+    Registry --> InstalledTool["InstalledTool and Installation"]
+    Killer --> ProcessState["Tool processes and child processes"]
+    SystemService --> ServiceProcess["Managed service process"]
+    RunManager --> SupervisedProcess["Supervised tool process"]

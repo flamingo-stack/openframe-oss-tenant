@@ -1,0 +1,15 @@
+flowchart TD
+    Tick["Watchdog tick every fifteen seconds"] --> Gap{"Scheduler gap within forty five seconds?"}
+    Gap -->|"No"| Rearm["Record activity and rearm watchdog"]
+    Gap -->|"Yes"| Suspended{"Agent suspended or in grace period?"}
+    Suspended -->|"Yes"| Grace["Refresh suspension grace and skip judgment"]
+    Suspended -->|"No"| Available{"Managed client available?"}
+    Available -->|"No"| Wait["Wait for next probe"]
+    Available -->|"Yes"| Traffic{"Byte counters changed?"}
+    Traffic -->|"Yes"| Healthy["Record activity and eventually reset stall window"]
+    Traffic -->|"No"| Idle{"Idle period exceeds stall window?"}
+    Idle -->|"No"| Wait
+    Idle -->|"Yes"| Replace["Connect and replace managed client"]
+    Replace --> Result{"Replacement succeeds?"}
+    Result -->|"Yes"| Backoff["Triple stall window up to thirty minutes"]
+    Result -->|"No"| Failure["Log replacement failure"]

@@ -1,0 +1,6 @@
+flowchart LR
+    Service["OpenFrame Test Service"] -->|"deserializes remote-access payload"| Edge["RemoteAccessRequestEdge"]
+    Edge -->|"node"| Audit["RemoteAccessRequestAudit"]
+    Edge -->|"cursor"| Cursor["Pagination Cursor"]
+    Audit -->|"embedded technician"| Technician["RemoteAccessTechnician"]
+    Technician -->|"id and name"| Identity["Technician Identity"]

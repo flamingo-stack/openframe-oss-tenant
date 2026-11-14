@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant UpdateService as Update State Service
+    participant FileSystem as Secured State File
+    participant BootHandler as Update Handler
+    participant ClientInfo as Client Info Service
+    participant Cleanup as Update Cleanup Service
+
+    UpdateService->>FileSystem: Atomically save state before updater launch
+    BootHandler->>UpdateService: Load state after client boot
+    UpdateService->>FileSystem: Read and parse JSON
+    FileSystem-->>UpdateService: Parsed state or classified outcome
+    UpdateService-->>BootHandler: Optional update state
+    alt Target version is running
+        BootHandler->>ClientInfo: Record successful update status
+        BootHandler->>UpdateService: Clear state
+        UpdateService->>FileSystem: Remove state file
+    else State is unresolved or failed
+        BootHandler->>ClientInfo: Record failed update status when applicable
+        BootHandler->>Cleanup: Remove update leftovers when failed
+        BootHandler->>UpdateService: Clear terminal state when failed
+    end

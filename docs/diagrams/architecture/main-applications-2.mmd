@@ -1,0 +1,7 @@
+flowchart TD
+    Entrypoint["Application main method"] --> Boot["SpringApplication.run"]
+    Boot --> Scan["Component scan"]
+    Scan --> Local["Local service components"]
+    Scan --> Library["OpenFrame OSS Library components"]
+    Library --> Runtime["Running service"]
+    Config["Config Server configuration"] -.-> Runtime

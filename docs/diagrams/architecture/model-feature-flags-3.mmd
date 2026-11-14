@@ -1,0 +1,11 @@
+flowchart LR
+    Server["Client configuration service"] --> Registration["Registration feature flag delivery"]
+    Server --> Delivery["Feature flag delivery"]
+    Delivery --> Handler["Feature Flags Handler"]
+    Handler --> Service["Feature Flags Service"]
+    Service --> Message["Feature Flags Message"]
+    Message --> Validation["Validate FeatureFlag values"]
+    Validation --> State["Persist Feature Flags State"]
+    State --> Restart["Restart required delivery reference"]
+    Service --> Running["Running Feature Flags"]
+    Running --> Consumers["Delivery and package update capabilities"]

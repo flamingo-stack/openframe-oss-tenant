@@ -1,0 +1,10 @@
+flowchart LR
+    SoftwareList["Software entries"] --> SoftwareItem["Software name and vulnerability list"]
+    SoftwareItem --> HasList{"Vulnerability list present?"}
+    HasList -->|"No"| Skip["Skip software entry"]
+    HasList -->|"Yes"| NestedItem["Nested vulnerability"]
+    NestedItem --> CopyFields["Copy CVE, detail link, and creation time"]
+    SoftwareItem --> AddName["Use parent software name"]
+    CopyFields --> ResultItem["Projected vulnerability"]
+    AddName --> ResultItem
+    ResultItem --> ResultList["Flattened vulnerability list"]

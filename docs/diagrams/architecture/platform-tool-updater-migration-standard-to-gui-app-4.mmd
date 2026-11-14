@@ -1,0 +1,9 @@
+flowchart LR
+    Current["Current installation"] --> CurrentType{"Standard?"}
+    Target["Requested installation type"] --> TargetType{"Gui App?"}
+    CurrentType -->|"Yes"| PlatformCheck{"macOS or Windows?"}
+    TargetType -->|"Yes"| PlatformCheck
+    PlatformCheck -->|"Yes"| Selected["Create Standard To Gui App Migrator"]
+    PlatformCheck -->|"No"| Unsupported["Unsupported migration path"]
+    CurrentType -->|"No"| Other["Use another updater or migration path"]
+    TargetType -->|"No"| Other

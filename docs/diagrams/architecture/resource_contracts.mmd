@@ -1,0 +1,12 @@
+flowchart LR
+    Caller["External API caller"] --> Web["External API web layer"]
+    Web --> Resolver["API caller argument resolver"]
+    Resolver --> Controllers["External API controllers"]
+    Controllers --> Contracts["Resource Contracts"]
+    Contracts --> Mapper["Base REST mapper"]
+    Mapper --> Services["Application services"]
+    Services --> Domain["Domain and data modules"]
+    Services --> Mapper
+    Mapper --> Contracts
+    Contracts --> Web
+    Web --> Caller

@@ -1,0 +1,14 @@
+flowchart TD
+    Caller["Authenticated API caller"] --> Resolver["API caller argument resolver"]
+    Resolver --> Controller["TicketController"]
+    Controller --> Query["Ticket query service"]
+    Controller --> Filter["Ticket filter service"]
+    Controller --> Activity["Ticket activity service"]
+    Controller --> History["Ticket status history service"]
+    Controller --> Statistics["Ticket statistics service"]
+    Query --> Repository["Custom ticket repository"]
+    Filter --> Repository
+    Activity --> Repository
+    History --> Repository
+    Statistics --> Repository
+    Repository --> Store["Tenant MongoDB data"]

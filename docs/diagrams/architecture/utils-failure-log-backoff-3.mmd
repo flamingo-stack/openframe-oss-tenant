@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Healthy
+    Healthy --> EarlyFailures: "record failure"
+    EarlyFailures --> EarlyFailures: "failure, fewer than five"
+    EarlyFailures --> Throttled: "fifth failure recorded"
+    Throttled --> Slow: "streak reaches one hour"
+    Throttled --> Healthy: "record success"
+    Slow --> Healthy: "record success"
+    Slow --> Slow: "failure, hourly logging"

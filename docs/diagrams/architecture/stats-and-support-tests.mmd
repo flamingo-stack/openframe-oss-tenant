@@ -1,0 +1,14 @@
+flowchart LR
+    Runner["Test runner"] --> ToolsTest["Integrated Tools Test"]
+    Runner --> StatsTest["Stats Test, disabled"]
+
+    ToolsTest --> ToolApi["Tool API client"]
+    ToolApi --> GraphApi["Tenant GraphQL API"]
+    GraphApi --> ToolRegistry["Integrated tool registry"]
+
+    StatsTest --> TenantList["Tenant domains JSON resource"]
+    TenantList --> DomainWorkers["Concurrent domain workers"]
+    DomainWorkers --> DeviceApi["Device API client"]
+    DeviceApi --> TenantApis["Tenant device APIs"]
+    DomainWorkers --> OsStats["Normalized OS-version counts"]
+    OsStats --> StatsFile["stats.txt"]

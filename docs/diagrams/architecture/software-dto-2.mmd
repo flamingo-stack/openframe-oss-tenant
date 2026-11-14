@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "Integration test"
+    participant Api as "GraphQL API"
+    participant Inventory as "Software inventory service"
+
+    Test->>Api: Query software data with cursor
+    Api->>Inventory: List inventory page
+    Inventory->>Api: Nodes with pagination metadata
+    Api->>Test: Connection edges with cursors
+    Test->>Api: Query next page using cursor

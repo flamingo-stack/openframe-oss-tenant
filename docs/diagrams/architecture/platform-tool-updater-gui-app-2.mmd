@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Prepare GUI application update"] --> Stop["Stop installed application"]
+    Stop --> Wait["Wait two seconds"]
+    Wait --> Locate["Locate enclosing application bundle"]
+    Locate --> Found{"Bundle found?"}
+    Found -->|"No"| NoBackup["Continue without backup"]
+    Found -->|"Yes"| Exists{"Bundle exists?"}
+    Exists -->|"No, backup exists"| Adopt["Reuse interrupted update backup"]
+    Exists -->|"No, no backup"| NoBackup
+    Exists -->|"Yes"| Clear["Remove stale backup if present"]
+    Clear --> Move["Rename bundle to backup path"]
+    Move --> Context["Return restart update context"]
+    Adopt --> Context
+    NoBackup --> Context

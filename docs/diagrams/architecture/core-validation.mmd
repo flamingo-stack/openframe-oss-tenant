@@ -1,0 +1,9 @@
+flowchart LR
+    Caller["Application or tool argument caller"] --> Contract["Validation contract or predicate request"]
+    Contract --> EmailValidator["ValidEmailValidator"]
+    Contract --> ValuePatterns["ToolArgumentValuePatterns"]
+    ValuePatterns --> ValueKind["ToolArgumentValueKind"]
+    Caller --> Normalization["ToolArgumentNormalizationPatterns"]
+    EmailValidator --> EmailResult["Valid or invalid email"]
+    ValuePatterns --> ArgumentResult["Accepted or rejected argument"]
+    Normalization --> PatternResult["Anchored normalized pattern"]

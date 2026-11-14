@@ -1,0 +1,5 @@
+flowchart LR
+    TestCase[Tests] --> ApiClient[API Client]
+    ApiClient --> Decoder[JSON Decoder]
+    Decoder --> DeviceDto[Device Dto]
+    DeviceDto --> Assertions[Assertions]

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Caller as "Calling service"
+    participant Email as "EmailService provider"
+    participant Transport as "SMTP server or HubSpot API"
+
+    Caller->>Email: Request a notification email
+    Email->>Email: Build link or template properties
+    Email->>Transport: Send message
+    alt Delivery accepted
+        Transport-->>Email: Success response
+        Email-->>Caller: Return normally
+    else Delivery rejected or transport fails
+        Transport-->>Email: Error response
+        Email-->>Caller: Propagate failure
+    end

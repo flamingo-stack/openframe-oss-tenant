@@ -1,0 +1,11 @@
+flowchart TD
+    Request["Tool Update or Service Stop Request"] --> GracefulStop["Request Graceful Stop"]
+    GracefulStop --> WaitGrace["Wait up to 5 Seconds"]
+    WaitGrace --> Stopped{"Process Stopped?"}
+    Stopped -->|"Yes"| Replace["Replace or Update Artifact"]
+    Stopped -->|"No"| ForceKill["Force Kill with Bounded Retries"]
+    ForceKill --> WaitExit["Wait up to 3 Seconds per Attempt"]
+    WaitExit --> Replace
+    Replace --> Unlock["Wait for Exclusive Executable Access"]
+    Unlock --> Start["Start Tool or Service"]
+    Start --> Verify["Verify Running State"]

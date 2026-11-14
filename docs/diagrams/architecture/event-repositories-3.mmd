@@ -1,0 +1,7 @@
+flowchart LR
+    Input["Event Type and Tag Map"] --> Repository["External Application Event Repository"]
+    Repository --> Query["Mongo Query Predicate"]
+    Query --> Match["type equals value"]
+    Query --> Tags["metadata tags equals map"]
+    Match --> Results["Matching Event Documents"]
+    Tags --> Results

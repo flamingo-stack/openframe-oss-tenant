@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Doctor as Doctor Checks
+    participant Resolver as DNS resolver
+    participant Gateway as Configured server
+    participant Proxy as Network proxy
+    Doctor->>Resolver: Resolve host and default port
+    Resolver-->>Doctor: Address candidates
+    Doctor->>Gateway: TCP connection with five second timeout
+    Gateway-->>Doctor: Connection result
+    Doctor->>Gateway: HTTP client request with optional machine identifier
+    Gateway-->>Doctor: Response or connection error
+    Doctor->>Proxy: WebSocket upgrade request for ws/nats
+    Proxy->>Gateway: Forward upgrade when supported
+    Gateway-->>Doctor: HTTP status or connection error

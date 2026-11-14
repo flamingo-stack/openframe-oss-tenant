@@ -1,0 +1,8 @@
+flowchart TD
+    Registration["Owner registration tests"] --> Tenant["Tenant and user lifecycle"]
+    Tenant --> Organization["Default organization provisioning"]
+    Login["Token and password tests"] --> Identity["Authenticated session state"]
+    Onboarding["Onboarding tests"] --> Progress["Persisted user progress"]
+    Identity --> Platform["OpenFrame tenant deployment"]
+    Organization --> Platform
+    Progress --> Platform

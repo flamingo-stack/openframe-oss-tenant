@@ -1,0 +1,8 @@
+flowchart TD
+    Agent["OpenFrame endpoint agent"] -->|"HTTPS registration and token requests"| Gateway["OpenFrame Gateway"]
+    Agent -->|"NATS over WebSocket"| Gateway
+    Gateway -->|"agent service routing"| ClientService["OpenFrame Client service"]
+    ClientService -->|"deliveries and state processing"| Control["Platform control plane"]
+    Agent -->|"log batches"| Nats["NATS messaging"]
+    Agent -->|"heartbeats and results"| Nats
+    Nats --> ClientService

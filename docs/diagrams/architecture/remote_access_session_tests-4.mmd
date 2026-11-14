@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Runner as Test runner
+    participant Api as Remote Access API
+    participant Device as Device endpoint
+    participant Auth as Agent authentication
+    participant Store as Platform records
+    Runner->>Api: Create request for machine id
+    Api->>Store: Persist resolved policy and request
+    alt Approval required
+        Runner->>Auth: Mint device agent token
+        Auth-->>Runner: Agent token
+        Runner->>Device: Acknowledge request
+        Device-->>Runner: HTTP 200
+        Runner->>Device: Approve request
+        Device->>Store: Resolve request as approved
+        Device-->>Runner: Approved status
+    else Policy settled
+        Api-->>Runner: Approved or denied request
+        Runner->>Device: Attempt approval
+        Device-->>Runner: HTTP 409 with settled status
+    end
+    Runner->>Api: Read active session
+    Api-->>Runner: Active session
+    Runner->>Api: End session
+    Api->>Store: End session and expire request
+    Api-->>Runner: Ended session

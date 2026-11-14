@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Service as Application Service
+    participant Repository as Event Repository
+    participant Mongo as MongoDB
+    Service->>Repository: findByUserIdAndTimestampBetween(userId, start, end)
+    Repository->>Mongo: Query user identifier and time range
+    Mongo-->>Repository: Matching event documents
+    Repository-->>Service: List of event records

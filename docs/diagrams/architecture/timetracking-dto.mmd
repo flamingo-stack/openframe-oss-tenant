@@ -1,0 +1,5 @@
+flowchart LR
+    Response["Time-entry connection response"] --> Edge["TimeEntryEdge"]
+    Edge --> Node["node: TimeEntry"]
+    Edge --> Cursor["cursor: String"]
+    Test["Test code"] --> Edge

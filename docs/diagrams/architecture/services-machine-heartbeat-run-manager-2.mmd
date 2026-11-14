@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Client as OpenFrame Client
+    participant Manager as Heartbeat Run Manager
+    participant Publisher as Heartbeat Publisher
+    participant Nats as NATS
+    participant Listener as Server Heartbeat Listener
+    Client->>Manager: start()
+    Manager->>Manager: Spawn periodic task
+    Manager->>Manager: Wait for interval tick
+    Manager->>Publisher: Publish heartbeat within 30 seconds
+    Publisher->>Publisher: Read machine identifier
+    Publisher->>Nats: Publish and flush subject
+    Nats->>Listener: Deliver heartbeat
+    Listener->>Listener: Extract identifier and timestamp receipt
+    alt Publish succeeds
+        Publisher-->>Manager: Success
+    else Publish returns an error
+        Publisher-->>Manager: Error
+        Manager->>Manager: Log failure and continue
+    else Publish exceeds timeout
+        Manager->>Manager: Log timeout and continue
+    end

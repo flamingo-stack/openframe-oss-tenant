@@ -1,0 +1,12 @@
+flowchart TD
+    Operation["Persistence operation"] --> Check["Matched pointcut?"]
+    Check -->|"Machine save"| MachineSave["Process machine save"]
+    Check -->|"Machine writer update"| WriterResult["Use post-update result"]
+    Check -->|"Assignment save"| AssignmentSave["Process assignment save"]
+    Check -->|"Assignment delete"| AssignmentDelete["Build pre-delete replacement"]
+    Check -->|"Tag save"| TagSave["Republish assigned machines"]
+    MachineSave --> Service["Machine Tag Event Service"]
+    WriterResult --> Service
+    AssignmentSave --> Service
+    AssignmentDelete --> Service
+    TagSave --> Service

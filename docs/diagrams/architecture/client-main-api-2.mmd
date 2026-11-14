@@ -1,0 +1,10 @@
+flowchart TD
+    New["Client new"] --> Dirs["Select and check directories"]
+    Dirs --> Config["Load initial and agent configuration"]
+    Config --> Machine["Get or create machine identifier"]
+    Machine --> Http["Build HTTP and download clients"]
+    Http --> Identity["Build registration and authentication services"]
+    Identity --> Nats["Build NATS connection and publisher"]
+    Nats --> Runtime["Build tools, updates, listeners, and reporters"]
+    Runtime --> Store["Open result store or degrade"]
+    Store --> Ready["Return initialized Client"]

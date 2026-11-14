@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Runner as "Test Runner"
+    participant Base as "External Api Base Test"
+    participant Key as "API Key Provisioning"
+    participant Gateway as "Gateway"
+    participant Service as "External API Service"
+
+    Runner->>Base: Start concrete test class
+    Base->>Key: Obtain configured or temporary key
+    Key-->>Base: API key
+    Base->>Gateway: Request with X-API-Key
+    Gateway->>Service: Validated request with derived caller identity
+    Service-->>Gateway: Resource or error response
+    Gateway-->>Base: HTTP response and rate-limit headers
+    Base-->>Runner: Assertions and best-effort cleanup

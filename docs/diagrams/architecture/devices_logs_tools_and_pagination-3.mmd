@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Test as "Device test"
+    participant Api as "ExternalDeviceApi"
+    participant Service as "External API"
+    Test->>Api: List one device
+    Api->>Service: GET devices with limit
+    Service-->>Api: Device response
+    Api-->>Test: Original nickname
+    Test->>Api: Update nickname
+    Api->>Service: PATCH device nickname
+    Service-->>Api: Update accepted
+    Test->>Api: Read device
+    Api->>Service: GET device by machine ID
+    Service-->>Api: Updated device
+    Test->>Api: Restore original nickname
+    Api->>Service: PATCH original nickname
+    Service-->>Api: Restoration accepted

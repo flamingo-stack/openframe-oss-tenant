@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Agent as "Endpoint agent"
+    participant Gateway as "OpenFrame Gateway"
+    participant Client as "Client Service"
+    participant Nats as "NATS JetStream"
+    participant Api as "OpenFrame API"
+
+    Agent->>Gateway: Register or authenticate
+    Gateway->>Client: Route client request
+    Client-->>Agent: Return machine credentials and tokens
+
+    Agent->>Nats: Publish heartbeat, inventory, and results
+    Nats->>Client: Deliver agent events
+    Client->>Api: Persist and expose device state
+
+    Api->>Nats: Publish command or tool delivery
+    Nats->>Agent: Deliver machine scoped work
+    Agent->>Nats: Publish acknowledgement and result

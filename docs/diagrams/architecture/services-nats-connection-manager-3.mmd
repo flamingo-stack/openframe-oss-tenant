@@ -1,0 +1,10 @@
+flowchart TD
+    AuthRequest["NATS requests authorization URL"] --> Suspended{"Agent suspended?"}
+    Suspended -->|"Yes"| Skip["Return authentication error without gateway request"]
+    Suspended -->|"No"| Refresh["Reauthenticate with ten second timeout"]
+    Refresh --> RefreshOk{"Authentication succeeded?"}
+    RefreshOk -->|"No"| AuthError["Return authentication error"]
+    RefreshOk -->|"Yes"| Token["Read refreshed access token"]
+    Token --> TokenOk{"Token available?"}
+    TokenOk -->|"No"| TokenError["Return authentication error"]
+    TokenOk -->|"Yes"| Url["Return refreshed NATS WebSocket URL"]

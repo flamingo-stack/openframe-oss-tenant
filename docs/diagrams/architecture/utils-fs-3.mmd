@@ -1,0 +1,15 @@
+flowchart TD
+    Begin["Write requested"] --> Parent["Resolve parent directory"]
+    Parent --> Directory["Create parent directories"]
+    Directory --> Temp["Create temporary file beside target"]
+    Temp --> Bytes["Write complete byte sequence"]
+    Bytes --> Permissions["Apply Unix file permissions when applicable"]
+    Permissions --> Flush["Flush file contents to storage"]
+    Flush --> Persist["Persist temporary file at target"]
+    Persist --> Success["Replacement complete"]
+    Persist --> Held{"Target held on Windows?"}
+    Held -->|"Yes"| Retry["Retry rename with backoff"]
+    Retry --> RetryDone{"Rename succeeded?"}
+    RetryDone -->|"Yes"| Success
+    RetryDone -->|"No"| Error["Return contextual error"]
+    Held -->|"No"| Error

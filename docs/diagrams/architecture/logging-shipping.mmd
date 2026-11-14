@@ -1,0 +1,7 @@
+flowchart LR
+    Producer["Agent code producing raw log strings"] -->|"send(log)"| Queue["Tokio bounded channel, capacity 1000"]
+    Queue --> Worker["LogShipper background task"]
+    Worker -->|"accumulate up to 100"| Batch["LogBatch"]
+    Batch -->|"HTTP POST as JSON"| Receiver["Configured log endpoint"]
+    Receiver -->|"successful HTTP status"| Done["Batch request completes"]
+    Receiver -->|"transport or status error"| ErrorLog["Tracing error"]

@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Processor as Registration Processor
+    participant Service as Registration Service
+    participant Model as Model Agent Registration
+    participant Client as Registration Client
+    participant Server as Client Service
+    participant Store as Local Credential Store
+    Processor->>Service: Register when no machine identifier exists
+    Service->>Store: Read persisted machine information
+    Service->>Model: Build request from device and install data
+    alt Fresh installation
+        Model->>Client: Provide registration request
+        Client->>Server: POST registration with initial key
+    else Reinstallation
+        Model->>Client: Provide registration request
+        Client->>Server: POST reinstall with initial key and prior credentials
+    end
+    Server-->>Client: Machine and client credentials
+    Client-->>Service: Registration response
+    Service->>Store: Persist machine and client credentials
+    Service-->>Processor: Registration complete

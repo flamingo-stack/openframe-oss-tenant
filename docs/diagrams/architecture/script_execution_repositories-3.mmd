@@ -1,0 +1,9 @@
+flowchart TD
+    Request["History request with tenant and owner"] --> OwnerType{"Owner type?"}
+    OwnerType -->|"Script"| ScriptScope["Match scriptId"]
+    OwnerType -->|"Schedule"| ScheduleScope["Match scheduleId"]
+    OwnerType -->|"Software"| SoftwareScope["Match package manager package name and software action"]
+    ScriptScope --> Filters["Apply common filters and search"]
+    ScheduleScope --> Filters
+    SoftwareScope --> Filters
+    Filters --> Query["Execute MongoDB query"]

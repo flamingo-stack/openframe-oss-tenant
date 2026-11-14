@@ -1,0 +1,9 @@
+flowchart TD
+    DeviceResponse[Device Response] --> InstalledAgent[Installed Agent]
+    DeviceResponse --> Tag[Tag]
+    DeviceResponse --> DeviceConnections[Device With Connections]
+    DeviceConnections --> ToolConnection[Tool Connection]
+    DeviceFilters[Device Filters] --> DeviceFilterOption[Device Filter Option]
+    DeviceFilters --> TagFilterOption[Tag Filter Option]
+    ConnectionStatus[Connection Status] --> DeviceConnections
+    DeviceType[Device Type] --> DeviceResponse

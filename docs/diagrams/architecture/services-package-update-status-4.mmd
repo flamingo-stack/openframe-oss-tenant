@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant NewRequest as New Update Request
+    participant Orders as Order Store
+    participant Reporter as Status Reporter
+    participant Backend as OpenFrame Client Backend
+    NewRequest->>Orders: Replace pending package order
+    Orders->>Reporter: report_superseded(previous order)
+    Reporter->>Reporter: Build failed event with Superseded reason
+    Reporter->>Backend: Deliver status through outbox or NATS

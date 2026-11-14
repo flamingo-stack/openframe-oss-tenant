@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Caller
+    participant Resolver as Services Tool Url Params Resolver
+    participant Config as Initial Configuration Service
+    participant Store as Secured Configuration Store
+    Caller->>Resolver: process(url path)
+    Resolver->>Config: get_server_url()
+    Config->>Store: read initial configuration
+    Store-->>Config: server host
+    Config-->>Resolver: server host or error
+    Resolver-->>Caller: resolved string or error

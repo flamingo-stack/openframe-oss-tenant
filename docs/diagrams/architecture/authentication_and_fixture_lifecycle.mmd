@@ -1,0 +1,9 @@
+flowchart LR
+    Runner["OpenFrame Test Runner"] -->|"starts tagged class"| AuthTest["External Api Auth Test"]
+    AuthTest -->|"inherits setup"| BaseTest["External Api Base Test"]
+    BaseTest -->|"administrator session when key must be minted"| KeyApi["Tenant API Key Endpoint"]
+    BaseTest -->|"X-API-Key request"| Gateway["OpenFrame Gateway"]
+    Gateway -->|"validates key"| KeyFilter["API Key Authentication Filter"]
+    KeyFilter -->|"derived identity"| ExternalApi["External API Service"]
+    ExternalApi -->|"tools probe or error"| AuthTest
+    BaseTest -->|"archives suite-created customers"| CustomerApi["External Customer API"]

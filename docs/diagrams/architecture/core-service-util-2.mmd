@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Resolve a download link template"] --> Placeholder{"Assets placeholder present?"}
+    Placeholder -->|"No"| Unchanged["Return the unchanged link"]
+    Placeholder -->|"Yes"| ProviderCheck["Query the assets base URL provider"]
+    ProviderCheck --> HasValue{"Provider returns text?"}
+    HasValue -->|"Yes"| Dynamic["Use the dynamic base URL"]
+    HasValue -->|"No"| Static["Read the configured static base URL"]
+    Dynamic --> Substitute["Substitute the assets placeholder"]
+    Static --> Substitute
+    Substitute --> Output["Return the resolved download link"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Request["State change request"] --> SetState["Set record state"]
+    SetState --> Found{"Matching record?"}
+    Found -->|"Yes"| Persist["Persist updated inventory"]
+    Persist --> Success["Return true"]
+    Found -->|"No"| Missing["Return false"]

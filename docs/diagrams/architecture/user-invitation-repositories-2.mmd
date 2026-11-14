@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Build common pending invitation criteria"] --> Filter["Apply expiration, role, and email filters"]
+    Filter --> CursorCheck{"Cursor supplied?"}
+    CursorCheck -->|"No"| Sort["Sort by createdAt descending, then id descending"]
+    CursorCheck -->|"Yes"| After["Add records after cursor in descending order"]
+    After --> Sort
+    Sort --> Limit["Apply requested page limit"]
+    Limit --> Query["Execute MongoDB query"]
+    Query --> Page["Return invitation page"]

@@ -1,0 +1,15 @@
+flowchart TD
+    Start["Receive ScriptParams"] --> Interpreter{"Supported shell?"}
+    Interpreter -->|"No"| Unsupported["Return startup error code 85"]
+    Interpreter -->|"Yes"| Write["Create support directory and write temporary script"]
+    Write --> Written{"Write successful?"}
+    Written -->|"No"| WriteError["Return startup error code 85"]
+    Written -->|"Yes"| Guard["Install temporary file cleanup guard"]
+    Guard --> Probe["Try opening temporary script"]
+    Probe --> Ready{"Readable?"}
+    Ready -->|"Yes"| Privilege{"Requested privilege"}
+    Ready -->|"No lock"| LockError["Return startup error code 85"]
+    Privilege -->|"Agent"| Normal["Run normal process"]
+    Privilege -->|"User or elevated user"| User["Run as interactive user"]
+    Normal --> Finish["Return ExecResult and remove temporary file"]
+    User --> Finish

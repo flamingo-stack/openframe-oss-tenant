@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Installed tool"] --> InstallationType{"Installation type?"}
+    InstallationType -->|"Standard"| Standard["Standard Tool Updater"]
+    InstallationType -->|"Service"| Service["Service Tool Updater"]
+    InstallationType -->|"GUI app on macOS"| Gui["GUI App Tool Updater"]
+    InstallationType -->|"GUI app on non macOS"| Fallback["Standard Tool Updater fallback"]
+    Standard --> Contract["Tool Updater lifecycle"]
+    Service --> Contract
+    Gui --> Contract
+    Fallback --> Contract

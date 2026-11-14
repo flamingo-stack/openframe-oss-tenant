@@ -1,0 +1,14 @@
+flowchart TD
+    Finalize["Finalize updated GUI application"] --> DeleteBackup["Try to remove old backup"]
+    DeleteBackup --> WaitUser["Wait for console user"]
+    WaitUser --> HasBundleId{"Bundle identifier present?"}
+    HasBundleId -->|"Yes"| Resolve["Resolve configured arguments"]
+    Resolve --> Preferences["Write application preferences"]
+    Preferences --> ChatCheck{"Chat tool?"}
+    ChatCheck -->|"Yes"| Background["Use background launch argument"]
+    ChatCheck -->|"No"| EmptyArgs["Use no direct arguments"]
+    HasBundleId -->|"No"| DirectArgs["Use configured direct arguments"]
+    Background --> Launch["Launch as console user"]
+    EmptyArgs --> Launch
+    DirectArgs --> Launch
+    Launch --> Done["Log launch outcome"]

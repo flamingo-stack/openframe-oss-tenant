@@ -1,0 +1,8 @@
+flowchart LR
+    Scope["Users, Organizations, and Time Range"] --> Completed["Completed Time Entries Only"]
+    Completed --> Duration["Sum Duration Seconds"]
+    Completed --> EntryCount["Count Entries"]
+    Completed --> DayKey["Derive Calendar Day"]
+    DayKey --> ActiveDays["Count Distinct Days"]
+    Completed --> TicketGroup["Group by Ticket Identifier"]
+    TicketGroup --> TicketTotals["Duration Totals per Ticket"]

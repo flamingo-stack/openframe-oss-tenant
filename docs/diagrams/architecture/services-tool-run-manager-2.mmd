@@ -1,0 +1,18 @@
+flowchart TD
+    Start["Run requested"] --> Load["Load installed tool records"]
+    Load --> Empty{"No records?"}
+    Empty -->|"Yes"| Finish["Return without launching"]
+    Empty -->|"No"| CheckInstall["Inspect records marked Installing"]
+    CheckInstall --> Artifact{"Artifact present?"}
+    Artifact -->|"No"| AwaitInstall["Keep Installing and await reinstall"]
+    Artifact -->|"Yes"| Service{"Service installation?"}
+    Service -->|"Yes"| KeepInstall["Keep Installing for verified repair"]
+    Service -->|"No"| MarkInstalled["Persist Installed state"]
+    AwaitInstall --> Supervise["Attempt supervision for each record"]
+    KeepInstall --> Supervise
+    MarkInstalled --> Supervise
+    Supervise --> Unique{"Already supervised?"}
+    Unique -->|"No"| Spawn["Create tool supervisor"]
+    Unique -->|"Yes"| Skip["Skip duplicate supervisor"]
+    Spawn --> Finish
+    Skip --> Finish

@@ -1,0 +1,8 @@
+flowchart LR
+    Client["OpenID Connect Client"] --> Discovery["OpenID Configuration"]
+    Discovery --> Endpoints["Authorization Token UserInfo and JWKS Endpoints"]
+    Client --> Token["Access Token"]
+    Token --> UserInfoEndpoint["UserInfo Operation"]
+    UserInfoEndpoint --> Input["UserInfoRequest"]
+    Input --> Claims["UserInfo Claims or Error"]
+    Claims --> Client

@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Consumer
+    participant Gateway
+    participant Resource
+    participant Resolver
+    participant Mapper
+    participant Domain
+    Consumer->>Gateway: HTTP request
+    Gateway->>Resource: Forwarded external API request
+    Resource->>Resolver: Resolve API caller
+    Resolver-->>Resource: Caller context
+    Resource->>Domain: Invoke domain operation
+    Domain-->>Resource: Domain result
+    Resource->>Mapper: Map result to response contract
+    Mapper-->>Resource: External response model
+    Resource-->>Gateway: HTTP response
+    Gateway-->>Consumer: Response

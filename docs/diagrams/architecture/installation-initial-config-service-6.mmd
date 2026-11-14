@@ -1,0 +1,8 @@
+flowchart TD
+    Install["Client installation"] --> InitialConfig["Installation Initial Config Service"]
+    InitialConfig --> Persisted["Persisted initial configuration"]
+    Persisted --> Auth["Initial authentication"]
+    Auth --> Registration["Agent registration"]
+    Registration --> Runtime["Running client services"]
+    Persisted --> Logging["Logging key consumption"]
+    Persisted --> RemoteAccess["Remote access mode processing"]

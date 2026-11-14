@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Restart requested"] --> Close["Set closing latch"]
+    Close --> WaitCommands["Wait for command read guards"]
+    WaitCommands --> CommandDone{"Command drain finished?"}
+    CommandDone -->|"No"| WarnCommands["Log command drain timeout"]
+    CommandDone -->|"Yes"| CheckBusy["Check background activity"]
+    WarnCommands --> CheckBusy
+    CheckBusy --> Busy{"Any activity busy?"}
+    Busy -->|"Yes and before deadline"| PollBusy["Sleep for poll interval"]
+    PollBusy --> CheckBusy
+    Busy -->|"Still busy at deadline"| WarnBusy["Log forced restart warning"]
+    Busy -->|"No"| WaitUpdate["Wait while client update pending and tools idle"]
+    WarnBusy --> WaitUpdate
+    WaitUpdate --> Signal["Notify restart consumer"]

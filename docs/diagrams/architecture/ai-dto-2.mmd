@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Test as "Test workflow"
+    participant Api as "AI dialog API"
+    participant Mapper as "Jackson mapper"
+    Test->>Api: Request dialog data
+    Api->>Mapper: Return response payload
+    Mapper->>Test: Deserialize Dialog Edge and Message Owner
+    Test->>Test: Inspect context references and model provenance
+    Test->>Test: Inspect Ask Option values when clarification occurs

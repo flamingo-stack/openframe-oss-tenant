@@ -1,0 +1,5 @@
+flowchart TD
+    PendingOrders["Pending orders"] --> SourceSort["Manual before automatic"]
+    SourceSort --> AgeSort["Oldest receipt time first"]
+    AgeSort --> TieSort["Request identifier tie break"]
+    TieSort --> WorkerChoice["Next worker candidate"]

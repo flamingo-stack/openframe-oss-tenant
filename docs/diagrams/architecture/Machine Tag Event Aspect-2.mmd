@@ -1,0 +1,9 @@
+flowchart TD
+    Aspect["Machine Tag Event Aspect"] --> Contract["Machine Tag Event Service"]
+    Contract --> Service["Machine Tag Event Service implementation"]
+    Service --> MachineRepo["Machine repository"]
+    Service --> AssignmentRepo["Tag assignment repository"]
+    Service --> TagRepo["Tag repository"]
+    Service --> TenantProvider["Tenant identifier provider"]
+    Service --> Producer["Retrying Kafka producer"]
+    Producer --> Topic["Configured outbound devices topic"]

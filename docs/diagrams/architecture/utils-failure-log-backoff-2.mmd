@@ -1,0 +1,15 @@
+flowchart TD
+    Start["Begin attempt"] --> Check["Call should log"]
+    Check --> Attempt["Run operation"]
+    Attempt --> Outcome{"Attempt succeeded?"}
+    Outcome -->|"No"| Emit{"Logging permitted?"}
+    Emit -->|"Yes"| Write["Emit failure log"]
+    Emit -->|"No"| Skip["Suppress repeated failure log"]
+    Write --> RecordLogged["Call record failure with true"]
+    Skip --> RecordQuiet["Call record failure with false"]
+    RecordLogged --> Retry["Continue caller retry policy"]
+    RecordQuiet --> Retry
+    Outcome -->|"Yes"| Recover["Call record success"]
+    Recover --> Summary{"Was there a prior failure streak?"}
+    Summary -->|"Yes"| Report["Use returned count and duration"]
+    Summary -->|"No"| Clean["No recovery summary"]

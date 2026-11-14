@@ -1,0 +1,11 @@
+flowchart LR
+    ClientRuntime["OpenFrame Client runtime"] -->|"constructs and starts"| RunManager["Package Manager Report Run Manager"]
+    Trigger["On-demand caller"] -->|"uses wake handle"| Wake["Tokio notification"]
+    Wake -->|"wakes report loop"| RunManager
+    Timer["Periodic timer"] -->|"ticks at report cadence"| RunManager
+    RunManager -->|"calls publish()"| Publisher["Package Manager Report Publisher"]
+    Publisher -->|"reads machine identifier"| Config["Agent Configuration Service"]
+    Publisher -->|"resolves manager state"| State["Package Manager State"]
+    State -->|"probes Brew, Choco, Winget"| Host["Managed device"]
+    Publisher -->|"publishes report"| Nats["NATS message publisher"]
+    Nats -->|"machine package manager subject"| Platform["OpenFrame platform"]

@@ -1,0 +1,11 @@
+flowchart LR
+    RemoteRequest["Remote execution request"] --> Listener["Execution listener"]
+    Listener --> Service["Execution service"]
+    Service --> Contract["Script parameters"]
+    Contract --> Executor["Executor Unix"]
+    Executor --> Identity["Run as resolution"]
+    Executor --> TempFile["Temporary script file"]
+    Executor --> Child["Unix child process"]
+    Child --> Result["Execution result"]
+    Result --> Service
+    Service --> RmmResult["RMM result"]

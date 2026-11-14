@@ -1,0 +1,19 @@
+classDiagram
+    class TenantPlan {
+        <<enumeration>>
+        FREE
+        BASIC
+        PREMIUM
+        ENTERPRISE
+    }
+    class TenantStatus {
+        <<enumeration>>
+        ACTIVE
+        INACTIVE
+    }
+    class TenantTestData {
+        plan: TenantPlan
+        status: TenantStatus
+    }
+    TenantTestData --> TenantPlan : selects
+    TenantTestData --> TenantStatus : selects

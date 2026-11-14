@@ -1,0 +1,7 @@
+flowchart LR
+    ServiceManager["Operating system service manager"] --> ClientService["OpenFrame client service"]
+    ClientService --> Caller["Lifecycle operation"]
+    Caller --> DetachedProcess["Platform Detached Process"]
+    DetachedProcess --> ClientBinary["Installed client binary"]
+    ServiceManager -->|"stops service"| ClientService
+    ClientBinary --> DetachedWork["Detached subcommand work"]

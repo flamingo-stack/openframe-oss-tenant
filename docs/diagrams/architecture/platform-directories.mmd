@@ -1,0 +1,13 @@
+flowchart LR
+    ClientRuntime["OpenFrame endpoint client"] --> DirectoryManager["DirectoryManager"]
+    DirectoryManager --> PathPolicy["Platform path policy"]
+    DirectoryManager --> PermissionPolicy["Platform permissions"]
+    DirectoryManager --> FileSystem["Host filesystem"]
+    Logging["Logging subsystem"] --> DirectoryManager
+    ToolLifecycle["Tool installation and update flows"] --> DirectoryManager
+    ClientUpdate["Client update flow"] --> DirectoryManager
+    Uninstall["Uninstall flow"] --> DirectoryManager
+    DirectoryManager --> LoggingPaths["Logs and user logs"]
+    DirectoryManager --> ToolPaths["Tool folders and assets"]
+    DirectoryManager --> SecurePaths["Secured storage"]
+    DirectoryManager --> UpdatePaths["Update staging"]

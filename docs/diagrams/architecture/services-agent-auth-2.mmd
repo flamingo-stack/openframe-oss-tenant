@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant Startup as Agent Startup
+    participant InitialProcessor as Initial Authentication Processor
+    participant AgentAuth as Services Agent Auth
+    participant Config as Agent Configuration Service
+    participant AuthClient as Auth Client
+    participant Gateway as OpenFrame Gateway
+    participant SharedToken as Shared Token Service
+
+    Startup->>InitialProcessor: start
+    InitialProcessor->>Config: get access token
+    alt access token exists
+        InitialProcessor-->>Startup: skip initial authentication
+    else no access token
+        loop until authentication succeeds
+            InitialProcessor->>AgentAuth: authenticate initial
+            AgentAuth->>Config: get client credentials
+            AgentAuth->>AuthClient: authenticate with secret
+            AuthClient->>Gateway: POST token request with client credentials
+            Gateway-->>AuthClient: agent token response
+            AuthClient-->>AgentAuth: agent token response
+            AgentAuth->>Config: update access and refresh tokens
+            AgentAuth->>SharedToken: encrypt and atomically write access token
+            AgentAuth-->>InitialProcessor: success
+            InitialProcessor-->>Startup: continue startup
+        end
+    end

@@ -1,0 +1,9 @@
+flowchart TD
+    UninstallFlow["Windows uninstall workflow"] -->|"binary still exists"| CleanupLaunch["Execute binary cleanup script"]
+    CleanupLaunch --> StagingDirectory["Update staging directory"]
+    CleanupLaunch --> ScriptFile["Unique PowerShell script"]
+    ScriptFile --> PowerShell["Detached hidden PowerShell process"]
+    PowerShell --> WaitForClient["Wait for OpenFrame client exit"]
+    WaitForClient --> RemoveBinary["Remove installed binary"]
+    RemoveBinary --> RemoveScript["Remove helper script"]
+    RemoveScript --> EmptyDirectoryCleanup["Remove empty bin, staging, and parent directories"]

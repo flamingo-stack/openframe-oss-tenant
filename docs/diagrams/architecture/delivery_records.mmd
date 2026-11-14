@@ -1,0 +1,8 @@
+flowchart TD
+    Producer["Dispatcher or scheduler"] --> Delivery["Machine Delivery Repository"]
+    Delivery --> CustomOps["Custom transition operations"]
+    Producer --> Payload["Machine Delivery Payload Repository"]
+    Producer --> Rollout["Machine Delivery Rollout Repository"]
+    Delivery --> DeliveryDb[("Delivery records")]
+    Payload --> PayloadDb[("Payload records")]
+    Rollout --> RolloutDb[("Rollout records")]

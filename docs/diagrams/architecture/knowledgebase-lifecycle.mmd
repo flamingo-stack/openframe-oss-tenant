@@ -1,0 +1,9 @@
+flowchart TD
+    Folder["Create Root Folder"] --> Article["Create Draft Article"]
+    Article --> Queries["Read Folders, Trees, and Items"]
+    Queries --> Changes["Rename, Move, and Update"]
+    Changes --> States["Publish, Archive, and Unarchive"]
+    Article --> Attachments["Upload, Link, Download, and Delete Attachments"]
+    Article --> ArticleTags["Add and Remove Article Tag"]
+    States --> Finalize["Archive Tracked Articles"]
+    ArticleTags --> Finalize

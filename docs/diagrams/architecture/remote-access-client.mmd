@@ -1,0 +1,9 @@
+flowchart LR
+    InitConfig["Initial configuration"] --> ModeService["Remote access mode service"]
+    NatsListener["Remote access message listener"] --> ModeService
+    ModeService --> RemoteClient["Remote Access Client"]
+    ConfigService["Agent configuration service"] -->|"access token"| RemoteClient
+    HttpFactory["Agent HTTP client factory"] -->|"configured HTTP client"| RemoteClient
+    RemoteClient -->|"PUT device mode"| ClientService["OpenFrame client service"]
+    ClientService -->|"settled outcome"| RemoteClient
+    RemoteClient --> ModeService

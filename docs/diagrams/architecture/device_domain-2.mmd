@@ -1,0 +1,6 @@
+flowchart LR
+    Metrics["Health metrics"] --> Health["Device Health"]
+    Processes["Active processes"] --> Health
+    Alerts["Operational alerts"] --> Health
+    Controls["Compliance requirements"] --> Compliance["Compliance summary"]
+    Security["Security settings and alerts"] --> SecurityState["Security summary"]

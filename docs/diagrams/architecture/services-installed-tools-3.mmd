@@ -1,0 +1,9 @@
+flowchart TD
+    Mutation["Save, set state, or delete"] --> Lock["Acquire shared writer lock"]
+    Lock --> Load["Load current inventory"]
+    Load --> Change["Apply record mutation"]
+    Change --> Serialize["Serialize complete collection"]
+    Serialize --> TempFile["Create JSON temporary file"]
+    TempFile --> Write["Write and synchronize temporary file"]
+    Write --> Replace["Rename temporary file over inventory"]
+    Replace --> Release["Release writer lock"]

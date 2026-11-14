@@ -1,0 +1,10 @@
+flowchart TD
+    Schedule["Script schedule fields"] --> CountLoader["Schedule device count loader"]
+    CountLoader --> CountService["Schedule script device service"]
+    CountService --> Counts["Counts keyed by schedule ID"]
+    Counts --> OrderedCounts["Ordered counts with zero default"]
+
+    Execution["Execution history fields"] --> ScriptLoader["Script data loader"]
+    ScriptLoader --> ScriptService["Script service"]
+    ScriptService --> Scripts["Scripts including soft-deleted records"]
+    Scripts --> ScriptName["Resolved display name"]

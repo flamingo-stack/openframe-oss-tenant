@@ -1,0 +1,10 @@
+flowchart LR
+    Client["GraphQL client"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> Api["OpenFrame API service"]
+    Api --> Fetchers["Api Service Fetchers"]
+    Fetchers --> Relay["Relay ID codec"]
+    Fetchers --> Mappers["GraphQL mappers"]
+    Fetchers --> Services["Application services"]
+    Fetchers --> Loaders["Request data loaders"]
+    Services --> Stores["Tenant data stores and projections"]
+    Loaders --> Stores

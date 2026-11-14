@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Read current argument"] --> IsKey{"Starts with double dash?"}
+    IsKey -->|"No"| Skip["Ignore token and advance"]
+    IsKey -->|"Yes"| NextValue{"Next token exists and is not a key?"}
+    NextValue -->|"Yes"| Pair["Emit stripped key and next value"]
+    NextValue -->|"No"| Flag["Emit stripped key and value 1"]
+    Pair --> AdvanceTwo["Advance two positions"]
+    Flag --> AdvanceOne["Advance one position"]
+    Skip --> More{"More arguments?"}
+    AdvanceTwo --> More
+    AdvanceOne --> More
+    More -->|"Yes"| Start
+    More -->|"No"| Result["Return ordered pairs"]

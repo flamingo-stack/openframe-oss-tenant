@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Test as "External Tickets Test"
+    participant Gateway as "OpenFrame Gateway"
+    participant Api as "External API Service"
+    participant Ticket as "Ticket Resource"
+
+    Test->>Gateway: Create ticket with API key
+    Gateway->>Api: Forward authenticated request with caller identity
+    Api->>Ticket: Create and assign ticket number
+    Ticket-->>Api: Created ticket
+    Api-->>Test: Ticket response
+    Test->>Gateway: Add internal note
+    Gateway->>Api: Forward derived user identity
+    Api->>Ticket: Store note with resolved author
+    Api-->>Test: Note response with author ID
+    Test->>Gateway: Transition using advertised status
+    Gateway->>Api: Authenticated transition request
+    Api->>Ticket: Apply legal lifecycle transition
+    Api-->>Test: Updated ticket response

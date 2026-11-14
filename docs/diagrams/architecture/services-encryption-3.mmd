@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Caller
+    participant Service as EncryptionService
+    participant Random as OsRng
+    participant Cipher as AES 256 GCM
+    participant Encoder as Base64
+    Caller->>Service: encrypt(plaintext)
+    Service->>Cipher: construct with fixed key bytes
+    Service->>Random: fill 12 byte nonce
+    Random-->>Service: nonce
+    Service->>Cipher: encrypt(nonce, plaintext bytes)
+    Cipher-->>Service: authenticated ciphertext
+    Service->>Service: concatenate nonce and ciphertext
+    Service->>Encoder: encode combined bytes
+    Encoder-->>Service: Base64 text
+    Service-->>Caller: Result encrypted text

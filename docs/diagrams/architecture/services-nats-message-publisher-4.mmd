@@ -1,0 +1,14 @@
+flowchart TD
+    ResultReady["Result payload ready"] --> Persist["Persist entry in result store"]
+    Persist --> Wake["Wake result outbox"]
+    Wake --> Load["Load pending payload"]
+    Load --> LimitCheck{"Payload within limit?"}
+    LimitCheck -->|"No"| Skip["Skip entry and log warning"]
+    LimitCheck -->|"Yes"| AckCheck{"Stream acknowledgement required?"}
+    AckCheck -->|"No"| RawPublish["Publish raw and flush"]
+    AckCheck -->|"Yes"| JetStreamPublish["Publish through JetStream"]
+    RawPublish --> Delivered{"Publish succeeded?"}
+    JetStreamPublish --> Ack["Wait for JetStream acknowledgement"]
+    Ack --> Delivered
+    Delivered -->|"Yes"| Remove["Remove outbox entry"]
+    Delivered -->|"No or timeout"| Retry["Retain entry for a later flush"]

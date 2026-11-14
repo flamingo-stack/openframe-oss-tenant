@@ -1,0 +1,15 @@
+flowchart LR
+    Delivery["NATS delivery"]
+    Listener["Command listener"]
+    Handler["Package update handler"]
+    Support["Package manager support check"]
+    Store["Durable order store"]
+    Worker["Package update worker"]
+    Status["Package update status stream"]
+    Delivery --> Listener
+    Listener --> Handler
+    Handler --> Support
+    Handler --> Store
+    Support -->|"rejection"| Status
+    Store --> Worker
+    Worker --> Status

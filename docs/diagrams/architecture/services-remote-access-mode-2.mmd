@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Start service"] --> ReadConfig["Read pending remote access mode"]
+    ReadConfig --> HasValue{"Mode present?"}
+    HasValue -->|"No"| NoTask["Return no task"]
+    HasValue -->|"Yes"| ParseMode["Parse wire value"]
+    ReadConfig -->|"Read error"| LogReadError["Log error and return no task"]
+    ParseMode --> ValidMode{"Supported value?"}
+    ValidMode -->|"No"| ClearInvalid["Log warning and clear pending value"]
+    ClearInvalid --> NoTask
+    ValidMode -->|"Yes"| Spawn["Spawn background apply task"]
+    Spawn --> Retry["Retry backend update until settled"]
+    Retry --> Terminal["Receive device mode outcome"]
+    Terminal --> LogOutcome["Log terminal outcome"]
+    LogOutcome --> ClearPending["Clear pending mode"]

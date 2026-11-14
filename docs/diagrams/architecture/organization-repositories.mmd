@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["Organization query caller"] -->|"filter and search"| Contract["Custom Organization Repository"]
+    Contract -->|"implemented by"| Repository["Custom Organization Repository Implementation"]
+    Repository -->|"builds criteria"| Query["MongoDB Query"]
+    Query -->|"find or count"| Mongo["MongoDB organization collection"]
+    Repository -->|"page cursor"| Cursor["Organization keyset cursor"]
+    Cursor -->|"adds keyset criteria"| Query

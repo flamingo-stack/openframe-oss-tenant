@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph PublicApi["Public Windows API"]
+        FileQuery["get locking processes"]
+        DirectoryQuery["get directory lock holders"]
+        LockLogger["log file lock info"]
+        Formatter["format locking processes"]
+    end
+    subgraph QueryLayer["Restart Manager query layer"]
+        DirectoryWalk["Bounded directory walk"]
+        Encoding["UTF 16 path encoding"]
+        Session["Restart Manager session"]
+        NativeList["Native process list"]
+    end
+    subgraph Models["Diagnostic models"]
+        SimpleModel["Locking Process"]
+        RichModel["Lock Holder"]
+    end
+    FileQuery --> Encoding
+    DirectoryQuery --> DirectoryWalk
+    DirectoryWalk --> Encoding
+    Encoding --> Session
+    Session --> NativeList
+    NativeList --> SimpleModel
+    NativeList --> RichModel
+    LockLogger --> FileQuery
+    LockLogger --> Formatter
+    Formatter --> SimpleModel

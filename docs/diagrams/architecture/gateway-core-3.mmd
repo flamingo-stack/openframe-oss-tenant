@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client as "Browser or Agent"
+    participant Gateway as "Gateway Core"
+    participant Resolver as "Tool Upstream Resolver"
+    participant Tool as "Integrated Tool"
+
+    Client->>Gateway: WebSocket upgrade request
+    Gateway->>Gateway: Authenticate and authorize request
+    Gateway->>Resolver: Resolve tool destination
+    Resolver->>Gateway: Upstream URI
+    Gateway->>Tool: Open upstream WebSocket
+    Tool->>Gateway: Upgrade accepted
+    Gateway->>Tool: Relay client frames
+    Tool->>Gateway: Relay tool frames
+    Gateway->>Client: Relay tool frames

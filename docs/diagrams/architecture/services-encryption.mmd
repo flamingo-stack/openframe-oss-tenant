@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["OpenFrame Client caller"] -->|"plaintext string"| EncryptionService["EncryptionService"]
+    EncryptionService -->|"32 byte key material"| AesGcm["AES 256 GCM"]
+    OsRng["Operating system random generator"] -->|"12 byte nonce"| AesGcm
+    AesGcm -->|"ciphertext with authentication tag"| Combine["Nonce and ciphertext combiner"]
+    Combine -->|"combined bytes"| Base64["Standard Base64 encoder"]
+    Base64 -->|"encoded encrypted string"| Caller

@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Receive tool identifier, configuration, and directories"] --> TypeCheck{"Installation type is Service?"}
+    TypeCheck -->|"No"| NoSupport["Return no result"]
+    TypeCheck -->|"Yes"| NameCheck{"Service name configured?"}
+    NameCheck -->|"No"| NoName["Return no result"]
+    NameCheck -->|"Yes"| PlatformCheck{"Supported platform?"}
+    PlatformCheck -->|"macOS"| MacProbe["Check LaunchDaemon plist"]
+    PlatformCheck -->|"Windows"| WindowsProbe["Check Windows service existence"]
+    PlatformCheck -->|"Other Unix"| Unsupported["Return no result"]
+    MacProbe --> ExistsCheck{"Service evidence exists?"}
+    WindowsProbe --> ExistsCheck
+    ExistsCheck -->|"No"| Missing["Return no result"]
+    ExistsCheck -->|"Yes"| ResolvePath["Resolve tool executable path"]
+    ResolvePath --> ServiceRecord["Return Service installation record"]

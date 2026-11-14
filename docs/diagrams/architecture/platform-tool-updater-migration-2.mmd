@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Caller as Tool Update Orchestrator
+    participant Module as Migration Module
+    participant Migrator as Selected Tool Migrator
+    Caller->>Module: run_migration(tool, config, target type, dependencies)
+    Module->>Module: Create migrator for source and target types
+    Module->>Migrator: prepare(tool)
+    Migrator-->>Module: Migration context
+    Module->>Migrator: migrate(tool, config, context)
+    alt migration succeeds
+        Migrator-->>Module: New installation
+        Module->>Migrator: finalize(tool, new installation, context)
+        Migrator-->>Module: Complete
+        Module-->>Caller: New installation
+    else migration fails
+        Migrator-->>Module: Error
+        Module->>Migrator: rollback(tool, context)
+        Migrator-->>Module: Rollback result or error
+        Module-->>Caller: Migration error
+    end

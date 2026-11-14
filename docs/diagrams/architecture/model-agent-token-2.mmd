@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Refresh as Token refresh manager
+    participant Auth as Agent authentication service
+    participant Client as Authentication client
+    participant Endpoint as Client token endpoint
+    participant Config as Configuration service
+    participant Shared as Shared token service
+    Refresh->>Auth: Reauthenticate
+    Auth->>Client: Try refresh credential grant
+    Client->>Endpoint: Submit refresh credential
+    alt Refresh credential succeeds
+        Endpoint-->>Client: Agent token response
+    else Refresh credential fails
+        Auth->>Client: Request client credentials grant
+        Client->>Endpoint: Submit client identifier and secret
+        Endpoint-->>Client: Agent token response
+    end
+    Client-->>Auth: Parsed response
+    Auth->>Config: Save access and refresh credentials
+    Auth->>Shared: Encrypt and write access credential
+    Auth-->>Refresh: Renewal succeeded

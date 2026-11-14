@@ -1,0 +1,13 @@
+flowchart LR
+    AdminDialog["Administrative Dialog"] --> Renamed["Renamed and Listed"]
+    Renamed --> Archived["Archived"]
+    Archived --> Restored["Restored Active"]
+
+    ClientDialog["Client Fae Dialog"] --> Direct["Direct Technician Mode"]
+    Direct --> TechRequired["Ticket Requires Technician"]
+    TechRequired --> ClientMessage["Client Sends Message"]
+    ClientMessage --> Unread["Technician Unread Count"]
+    Unread --> Read["Technician Marks Read"]
+    Read --> OnHold["On Hold"]
+    OnHold --> Resolved["Resolved"]
+    Resolved --> ClientCleanup["Fixture Cleanup"]

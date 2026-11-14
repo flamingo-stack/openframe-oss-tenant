@@ -1,0 +1,7 @@
+flowchart LR
+    ApiService["Knowledge Base Service"] -->|"listing and counts"| Repository["Knowledgebase Repositories"]
+    Repository -->|"custom query contract"| Implementation["Mongo Template Implementation"]
+    Implementation -->|"read queries"| Mongo["MongoDB Knowledge Base Items"]
+    ApiService -->|"standard CRUD"| StandardRepo["Knowledge Base Item Repository"]
+    StandardRepo -->|"extends"| Repository
+    ExternalApi["External Knowledge Base Controller"] -->|"API requests"| ApiService

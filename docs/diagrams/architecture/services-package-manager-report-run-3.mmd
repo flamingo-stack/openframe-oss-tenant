@@ -1,0 +1,9 @@
+flowchart TD
+    Detect["Local manager detection"] --> State["Manager state resolution"]
+    State --> Report["Periodic state report"]
+    Report --> Platform["Platform inventory and policy"]
+    Platform --> Command["Package update command"]
+    Command --> Orders["Package update order handling"]
+    Orders --> Gate["Update gate decision"]
+    Gate --> Execute["Package update execution"]
+    Execute --> Status["Package update status report"]

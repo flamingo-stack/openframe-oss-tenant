@@ -1,0 +1,16 @@
+flowchart LR
+    Runner["JUnit Test Runner"] --> Tickets["TicketsTest"]
+    Runner --> Time["TimeTrackingTest"]
+    Tickets --> TicketApi["Ticket API"]
+    Tickets --> DeviceApi["Device API"]
+    Tickets --> UserApi["User API"]
+    Tickets --> TagApi["Tag API"]
+    Tickets --> AttachmentApi["Attachment API"]
+    Time --> TimeApi["Time Tracking API"]
+    TicketApi --> Graphql["GraphQL API"]
+    DeviceApi --> Graphql
+    UserApi --> Graphql
+    TagApi --> Graphql
+    TimeApi --> Graphql
+    AttachmentApi --> Storage["Presigned File Storage"]
+    Graphql --> TicketDomain["Ticket And Time Tracking Domain"]

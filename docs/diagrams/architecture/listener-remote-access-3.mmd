@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Nats as NATS broker
+    participant Listener as Remote Access Message Listener
+    participant Manager as Tool Run Manager
+    participant Chat as Chat GUI application
+    Nats->>Listener: Publish matching remote access notification
+    Listener->>Listener: Log received subject
+    Listener->>Manager: Spawn ensure GUI app task
+    Listener-->>Nats: Continue receiving notifications
+    Manager->>Manager: Check tool state and installed record
+    alt Eligible GUI tool
+        Manager->>Chat: Launch application when needed
+        Chat->>Chat: Synchronize current sessions
+    else Updating or not a GUI installation
+        Manager->>Manager: Leave launch to updater or take no action
+    end

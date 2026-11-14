@@ -1,0 +1,12 @@
+flowchart TD
+    Input["Canonical email address or domain"] --> Select{"Block type?"}
+    Select -->|"Address"| AddressCheck["Address source checks repository identifier"]
+    Select -->|"Domain"| DomainCheck["Domain source checks repository identifier"]
+    AddressCheck --> AddressResult{"Mongo read succeeds?"}
+    DomainCheck --> DomainResult{"Mongo read succeeds?"}
+    AddressResult -->|"Yes"| AddressDecision["Return whether identifier exists"]
+    DomainResult -->|"Yes"| DomainDecision["Return whether identifier exists"]
+    AddressResult -->|"No"| AddressWarn["Log domain-only warning"]
+    DomainResult -->|"No"| DomainWarn["Log domain warning"]
+    AddressWarn --> AllowAddress["Return false and allow lookup"]
+    DomainWarn --> AllowDomain["Return false and allow lookup"]

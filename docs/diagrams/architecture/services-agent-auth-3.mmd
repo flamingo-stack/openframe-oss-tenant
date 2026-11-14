@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Reauthentication requested"] --> LoadRefresh["Load persisted refresh token"]
+    LoadRefresh --> RefreshRequest["Request token using refresh grant"]
+    RefreshRequest --> RefreshOk{"Refresh succeeds?"}
+    RefreshOk -->|"Yes"| SaveRefresh["Save returned token pair"]
+    RefreshOk -->|"No"| LoadCredentials["Load client identifier and client secret"]
+    LoadCredentials --> SecretRequest["Request token using client credentials grant"]
+    SecretRequest --> SecretOk{"Request succeeds?"}
+    SecretOk -->|"Yes"| SaveSecret["Save returned token pair"]
+    SecretOk -->|"No"| Failure["Return contextual authentication error"]
+    SaveRefresh --> ShareRefresh["Update encrypted shared access token"]
+    SaveSecret --> ShareSecret["Update encrypted shared access token"]
+    ShareRefresh --> Success["Return token response"]
+    ShareSecret --> Success

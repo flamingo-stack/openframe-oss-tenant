@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Client as Client Main Api
+    participant Local as Local State
+    participant Http as Platform HTTP
+    participant Nats as NATS Gateway
+    participant Work as Listeners and Managers
+
+    Client->>Work: Start deactivation supervisor
+    Client->>Local: Reconcile version and record boot state
+    Client->>Local: Seed last known good state
+    Client->>Local: Initialize log streaming
+    Client->>Http: Register machine
+    Client->>Http: Authenticate agent
+    Client->>Work: Start log key, token refresh, remote access mode
+    Client->>Nats: Connect and start watchdog
+    Client->>Nats: Publish client version and installed tool versions
+    Client->>Local: Handle pending client update
+    Client->>Work: Start command listeners
+    Client->>Local: Recover persisted result outbox
+    Client->>Work: Start result outbox and execution listeners
+    Client->>Work: Start reporting, tools, packages, and self healing
+    Client->>Local: Initialize metrics and verify directories

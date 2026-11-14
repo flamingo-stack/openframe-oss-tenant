@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Admin as Administrator
+    participant Agent as "Client Agent Session"
+    participant Dialog as "Dialog API"
+    participant Ticket as "Ticket API"
+
+    Admin->>Dialog: Switch Fae dialog to direct mode
+    Admin->>Ticket: Move backing ticket to technician required
+    Agent->>Dialog: Send client chat message
+    Agent->>Dialog: Read own dialog state
+    Admin->>Dialog: Read technician dialog state
+    Admin->>Dialog: Mark messages read
+    Admin->>Dialog: Set on hold and resolve

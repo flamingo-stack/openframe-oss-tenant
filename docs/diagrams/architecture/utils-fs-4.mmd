@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Read requested"] --> Read["Read file bytes"]
+    Read --> Exists{"File exists?"}
+    Exists -->|"No"| Missing["Return missing outcome"]
+    Exists -->|"Read error"| ReadError["Return contextual error"]
+    Exists -->|"Yes"| Parse["Deserialize JSON"]
+    Parse --> Valid{"Valid JSON for requested type?"}
+    Valid -->|"Yes"| Parsed["Return parsed outcome"]
+    Valid -->|"No"| Move["Rename file with corrupt suffix"]
+    Move --> Warn["Log size, zero-byte signal, and parse error"]
+    Warn --> Corrupt["Return corrupt outcome"]

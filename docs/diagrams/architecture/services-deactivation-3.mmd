@@ -1,0 +1,15 @@
+flowchart TD
+    Receive["Receive gateway status"] --> GoneCheck{{"HTTP 410 Gone?"}}
+    GoneCheck -->|"Yes"| RecordGone["Create or retain gone timestamp"]
+    RecordGone --> Persist["Persist timestamp in secured directory"]
+    Persist --> Count["Increment consecutive gone count"]
+    Count --> Threshold{{"Five consecutive responses?"}}
+    Threshold -->|"No"| Wait["Continue normal status processing"]
+    Threshold -->|"Yes"| Suspend["Set suspension gate and queue tool stop"]
+    Suspend --> Deadline{{"Two hours gone and one hour process grace elapsed?"}}
+    Deadline -->|"No"| Probe["Use bounded exponential probe delay"]
+    Deadline -->|"Yes"| Request["Request idempotent uninstall"]
+    GoneCheck -->|"No"| SuccessCheck{{"HTTP success?"}}
+    SuccessCheck -->|"Yes"| Recover["Clear count marker and backoff"]
+    Recover --> Restart["Clear suspension and queue tool restart when suspended"]
+    SuccessCheck -->|"No"| Unchanged["Leave deactivation state unchanged"]

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Manager as Machine Timezone Run Manager
+    participant Fetcher as Device Data Fetcher
+    participant Publisher as Services Machine Timezone Publisher
+    participant Config as Agent Configuration Service
+    participant Nats as NATS JetStream
+    Manager->>Fetcher: Resolve system time zone
+    Fetcher-->>Manager: Time zone or no value
+    Manager->>Publisher: publish_timezone(timezone)
+    Publisher->>Config: get_machine_id()
+    Config-->>Publisher: Machine identifier
+    Publisher->>Publisher: Serialize JSON message
+    Publisher->>Nats: Publish to machine identifier subject
+    Nats-->>Publisher: Publish acknowledgement
+    Publisher-->>Manager: Success

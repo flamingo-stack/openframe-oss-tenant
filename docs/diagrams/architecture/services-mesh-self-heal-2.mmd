@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Watching
+    Watching --> Suspended: "Tenant deactivated"
+    Suspended --> Watching: "Tenant reactivated"
+    Watching --> Updating: "Tool operation active"
+    Updating --> Watching: "Operation complete"
+    Watching --> Healthy: "Healthy marker observed"
+    Healthy --> Watching: "Continue polling"
+    Watching --> Unhealthy: "Failure, silence, disconnect, or invalid msh"
+    Unhealthy --> CoolingDown: "Refresh and restart attempted"
+    CoolingDown --> Watching: "Cooldown elapsed"

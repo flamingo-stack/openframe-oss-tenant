@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Active: "begin increments from zero"
+    Active --> Active: "another begin or one guard drops"
+    Active --> Idle: "last guard drops"
+    Idle --> Idle: "view checks inactive"
+    Active --> Active: "view checks active"

@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Parameterized install"] --> Args{"Required arguments valid?"}
+    Args -->|"No"| ArgReport["Return command failure report"]
+    Args -->|"Yes"| Admin{"Administrator access?"}
+    Admin -->|"No"| AdminReport["Return administrator failure report"]
+    Admin -->|"Yes"| Runtime["Check WebView2 when applicable"]
+    Runtime --> Storage["Check install path, data paths, disk space, and service configuration"]
+    Storage --> Identity["Load or create local machine identifier"]
+    Identity --> Network["Run network checks"]
+    Network --> Report["Return pre-install report"]

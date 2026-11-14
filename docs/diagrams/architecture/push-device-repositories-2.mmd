@@ -1,0 +1,11 @@
+flowchart TD
+    Request["Register user push token"] --> Cleanup["Remove token from other tenants"]
+    Cleanup --> Upsert["Upsert current tenant token"]
+    Upsert --> Created{"New row created?"}
+    Created -->|"Yes"| NewRegistration["Return created"]
+    Created -->|"No"| ExistingRegistration["Return re-associated"]
+    Upsert -->|"Duplicate key"| Recover["Update winning row"]
+    Recover --> Matched{"Row matched?"}
+    Matched -->|"Yes"| ExistingRegistration
+    Matched -->|"No"| Retry["Retry upsert"]
+    Retry --> Created

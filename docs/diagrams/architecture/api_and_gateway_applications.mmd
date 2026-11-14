@@ -1,0 +1,10 @@
+flowchart LR
+    User["Browser, API consumer, or integration"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> Api["OpenFrame API"]
+    Gateway --> External["OpenFrame External API"]
+    Gateway --> Client["OpenFrame Client Service"]
+    Gateway --> Frontend["OpenFrame Frontend"]
+    Api --> Data["Data, Core, Notification, and Kafka components"]
+    External --> Data
+    Gateway --> Security["Core, Data, and Security components"]

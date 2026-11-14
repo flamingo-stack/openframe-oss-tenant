@@ -1,0 +1,7 @@
+flowchart TD
+    AppClose["Platform App Close"] --> Executor["Script executor"]
+    Executor --> PowerShell["PowerShell on Windows"]
+    AppClose --> Sysinfo["sysinfo process API"]
+    AppClose --> MacSession["macOS user session utilities"]
+    AppClose --> WindowsSession["Windows session launcher"]
+    AppClose --> Tracing["Structured tracing logs"]

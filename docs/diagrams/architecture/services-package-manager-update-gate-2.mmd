@@ -1,0 +1,14 @@
+flowchart TD
+    Input["Resolved identity and process list"] --> IsApp{"Application identity?"}
+    IsApp -->|"no"| ClearNoApp["Return Clear"]
+    IsApp -->|"yes"| UnderDir["Keep images under installation directory"]
+    UnderDir --> NoService["Exclude service processes"]
+    NoService --> RootOnly["Exclude child image equal to parent image"]
+    RootOnly --> MainImage{"Main images known?"}
+    MainImage -->|"yes"| NameMatch["Keep matching executable names"]
+    MainImage -->|"no"| AcceptUnknown["Keep qualifying root processes"]
+    NameMatch --> Holders["Build holder records"]
+    AcceptUnknown --> Holders
+    Holders --> AnyHolder{"Any holders?"}
+    AnyHolder -->|"no"| Clear["Return Clear"]
+    AnyHolder -->|"yes"| Blocked["Return Blocked Running"]

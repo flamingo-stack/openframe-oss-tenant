@@ -1,0 +1,10 @@
+flowchart LR
+    Server["OpenFrame services"] -->|"execution message"| Nats["NATS subject"]
+    Nats -->|"machine specific subscription"| Listener["Listener Execution"]
+    Listener --> Config["Agent configuration service"]
+    Listener --> Executor["Execution service"]
+    Executor --> Platform["Unix or Windows script executor"]
+    Listener --> Store["Result store"]
+    Store --> Outbox["Result outbox run manager"]
+    Outbox -->|"result or acknowledgement"| Nats
+    Nats --> Server

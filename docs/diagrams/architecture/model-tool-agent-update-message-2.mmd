@@ -1,0 +1,14 @@
+flowchart TD
+    Receive["Receive update message"] --> Lookup["Load installed tool record"]
+    Lookup --> Found{"Record found?"}
+    Found -->|"No"| Skip["Skip orphaned update"]
+    Found -->|"Yes"| Inspect["Inspect state and tool artifact"]
+    Inspect --> Repair{"Repair required?"}
+    Repair -->|"Yes"| SelectTool["Select main tool update"]
+    Repair -->|"No"| CompareTool["Compare tool versions"]
+    CompareTool --> SelectAssets["Select eligible asset updates"]
+    SelectTool --> SelectAssets
+    SelectAssets --> Work{"Any update selected?"}
+    Work -->|"No"| Report["Publish installed versions"]
+    Work -->|"Yes"| Apply["Download and apply updates"]
+    Apply --> Finalize["Finalize repair state and publish versions"]

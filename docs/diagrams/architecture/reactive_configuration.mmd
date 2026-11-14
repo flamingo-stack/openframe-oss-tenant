@@ -1,0 +1,5 @@
+flowchart LR
+    Bootstrap["Spring application bootstrap"] --> Config["MongoReactiveConfig"]
+    Config --> Scan["Scan reactive repository package"]
+    Scan --> Beans["Generated repository beans"]
+    Beans --> Services["Reactive service consumers"]

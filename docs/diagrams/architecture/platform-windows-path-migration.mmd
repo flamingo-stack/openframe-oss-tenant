@@ -1,0 +1,7 @@
+flowchart LR
+    AgentStartup["OpenFrame client execution context"] --> Migration["Platform Windows Path Migration"]
+    Migration --> RegistryApi["Windows registry API"]
+    RegistryApi --> MachinePath["Machine Path registry value"]
+    Migration --> TraceLog["Tracing information and warnings"]
+    MachinePath --> WindowsResolver["Windows environment expansion"]
+    WindowsResolver --> SystemTools["System tool resolution"]

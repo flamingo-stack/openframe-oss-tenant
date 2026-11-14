@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Runner as Package manager report runner
+    participant Publisher as Report publisher
+    participant State as Services Package Manager State
+    participant Manager as Manager ID
+    participant Nats as NATS
+    Runner->>Publisher: start reporting cycle
+    Publisher->>Publisher: determine console user presence
+    loop each known manager
+        Publisher->>State: state_of(manager, console user)
+        State->>Manager: await presence()
+        Manager-->>State: present, absent, or unknown
+        State->>State: evaluate support and session
+        State-->>Publisher: ManagerState
+    end
+    Publisher->>Nats: publish package manager report

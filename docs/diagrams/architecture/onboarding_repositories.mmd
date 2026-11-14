@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Gateway as "WebFlux gateway"
+    participant Repository as "Onboarding repository"
+    participant Mongo as "MongoDB"
+    Gateway->>Repository: Request onboarding progress with explicit identifiers
+    Repository->>Mongo: Query onboarding collection
+    Mongo->>Repository: Return document or empty result
+    Repository->>Gateway: Return Mono result

@@ -1,0 +1,11 @@
+flowchart TD
+    Base["ExternalApiBaseTest"] --> Gate["External API key condition"]
+    Base --> DeviceSuite["External Devices Test"]
+    Base --> LogSuite["External Logs Test"]
+    Base --> ToolSuite["External Tools Test"]
+    Base --> PaginationSuite["External Pagination Test"]
+    DeviceSuite --> DeviceDtos["Device and filter DTOs"]
+    LogSuite --> LogDtos["Log and filter DTOs"]
+    ToolSuite --> ToolDtos["Tool and filter DTOs"]
+    PaginationSuite --> PageInfo["PageInfo DTO"]
+    PaginationSuite --> RawCalls["Raw HTTP responses"]

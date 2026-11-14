@@ -1,0 +1,24 @@
+flowchart TD
+    Start["Reserved installation message"] --> Existing["Read installed tool record"]
+    Existing --> Healthy{"Healthy record and no reinstall?"}
+    Healthy -->|"Yes"| NoOp["Return without download"]
+    Healthy -->|"No"| Resolve["Resolve OS download configuration"]
+    Resolve --> Replace{"Existing record with reinstall?"}
+    Replace -->|"Yes"| PrepareReplace["Mark installing, stop tool, run optional uninstall, clear directory and connection"]
+    Replace -->|"No"| PrepareRepair["Mark existing record installing when applicable"]
+    PrepareReplace --> PrepareFolder["Create or recreate tool directory"]
+    PrepareRepair --> PrepareFolder
+    PrepareFolder --> ClearHolder["Stop holders and validate service is clear"]
+    ClearHolder --> Download["Download primary tool and resolve executable path"]
+    Download --> Assets["Download or refresh declared assets"]
+    Assets --> InstallCmd{"Installer command supplied?"}
+    InstallCmd -->|"Yes"| Execute["Stop tool, remove prior service, execute with timeout"]
+    InstallCmd -->|"No"| Verify["Build installation descriptor"]
+    Execute --> Verify
+    Verify --> ServiceCheck{"Service installation?"}
+    ServiceCheck -->|"Yes"| CheckRunning["Verify service is running"]
+    ServiceCheck -->|"No"| Persist["Save Installed tool record"]
+    CheckRunning --> Persist
+    Persist --> StartTool["Start tool and connection processing"]
+    StartTool --> Publish["Publish installed version"]
+    Publish --> Complete["Installation complete"]

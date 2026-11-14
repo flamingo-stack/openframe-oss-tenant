@@ -1,0 +1,10 @@
+flowchart LR
+    Registry["Installed Tools Service"] -->|"InstalledTool records"| Manager["Services Tool Run Manager"]
+    Resolver["Tool Command Parameters Resolver"] -->|"Resolved arguments and paths"| Manager
+    Operations["Tool Operations"] -->|"Busy lock and release signal"| Manager
+    Killer["Tool Kill Service"] -->|"Stop leftovers"| Manager
+    Manager -->|"Read and update state"| Registry
+    Manager -->|"Start service tools"| PlatformService["Platform Service Helper"]
+    Manager -->|"Launch and observe"| StandardProcess["Standard Tool Process"]
+    Manager -->|"Launch in user session"| GuiProcess["GUI Application"]
+    Manager -->|"Reap helpers"| OrphanCleanup["Connection Helper Cleanup"]

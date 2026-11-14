@@ -1,0 +1,12 @@
+flowchart TD
+    Services["OpenFrame services"] --> SyncModule["Data Mongo Retry Machine Service"]
+    SyncModule --> Retry["Optimistic retry listener"]
+    SyncModule --> Versions["Agent version service"]
+    SyncModule --> Schedule["Schedule criteria resolver"]
+    SyncModule --> Projection["Software and vulnerability projectors"]
+    SyncModule --> Packages["Package manager handlers and matching"]
+    Retry --> Mongo["MongoDB repositories"]
+    Versions --> Mongo
+    Schedule --> Mongo
+    Projection --> Mongo
+    Packages --> Catalog["Package catalog repository"]

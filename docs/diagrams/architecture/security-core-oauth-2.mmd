@@ -1,0 +1,8 @@
+flowchart TD
+    Input["Configured PEM Public Key"] --> Normalize["Remove PEM Markers and Whitespace"]
+    Normalize --> Decode["Base64 Decode"]
+    Decode --> Spec["Create X509 Encoded Key Spec"]
+    Spec --> Factory["RSA Key Factory"]
+    Factory --> PublicKey["RSA Public Key"]
+    PublicKey --> JwtDecoder["Nimbus JWT Decoder"]
+    JwtDecoder --> Verify["Verify JWT Signature"]

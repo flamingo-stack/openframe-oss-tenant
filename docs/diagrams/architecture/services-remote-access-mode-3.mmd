@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Service as Remote Access Mode Service
+    participant Retry as Retry Helper
+    participant Deactivation as Deactivation Service
+    participant Client as Remote Access Client
+    participant Backend as Backend
+    Service->>Retry: Start update with retry timing
+    Retry->>Deactivation: Observe active lifecycle
+    Retry->>Client: Set device mode
+    Client->>Backend: Authenticated mode request
+    alt settled response
+        Backend-->>Client: Applied or terminal refusal
+        Client-->>Retry: Device mode outcome
+        Retry-->>Service: Settled outcome
+        Service->>Service: Log outcome and clear pending mode
+    else nonsettled failure
+        Backend-->>Client: Request error
+        Client-->>Retry: Error
+        Retry->>Deactivation: Recheck lifecycle before retry
+        Retry->>Client: Retry after scheduled delay
+    end

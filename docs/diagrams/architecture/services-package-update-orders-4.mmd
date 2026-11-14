@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Handler as Package update handler
+    participant Store as Order store
+    participant Disk as Orders JSON
+    participant Worker as Update worker
+    Handler->>Store: submit(message, sequence)
+    Store->>Disk: atomically write pending state
+    Store->>Worker: notify change
+    Worker->>Store: pending(machine identifier)
+    Worker->>Store: start installing(request identifier)
+    Worker->>Store: finish(request identifier)
+    Store->>Disk: atomically write completed state
+    Store->>Worker: notify change

@@ -1,0 +1,17 @@
+flowchart TD
+    StopRequest["Stop service request"] --> StopCall["Issue bounded SCM stop call"]
+    StopCall --> StopState{"Stopped or missing?"}
+    StopState -->|"yes"| StopComplete["Return success"]
+    StopState -->|"no or SCM failure"| ForceStop["Inspect service status"]
+    ForceStop --> PidAvailable{"Process ID available?"}
+    PidAvailable -->|"yes"| KillTree["Terminate process tree"]
+    PidAvailable -->|"no"| ResolvePath["Resolve configured executable path"]
+    ResolvePath --> KillPath["Terminate matching executable processes"]
+    KillTree --> Recheck["Poll service state"]
+    KillPath --> Recheck
+    Recheck --> Cleared{"Stopped or missing?"}
+    Cleared -->|"yes"| StopComplete
+    Cleared -->|"no and attempts remain"| ForceStop
+    Cleared -->|"no and delete allowed"| DeleteService["Delete service and confirm removal"]
+    Cleared -->|"no and delete forbidden"| StopError["Return error"]
+    DeleteService --> StopComplete

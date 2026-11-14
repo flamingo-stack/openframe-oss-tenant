@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Api as API Service
+    participant Provider as GatewayTenantDomainProvider
+    participant Tenant as Tenant Domain Service
+    Client->>Gateway: HTTP request with Host
+    Gateway->>Gateway: Resolve host to tenant domain
+    Gateway->>Api: Forward request with gateway-stamped header
+    Api->>Provider: currentTenantDomain()
+    Provider-->>Tenant: Optional tenant domain
+    alt Header is absent or no servlet request exists
+        Tenant->>Tenant: Use tenant record fallback
+    else Header is available
+        Tenant->>Tenant: Use gateway-resolved domain
+    end

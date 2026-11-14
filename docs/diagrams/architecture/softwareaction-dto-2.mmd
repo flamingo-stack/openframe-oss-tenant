@@ -1,0 +1,8 @@
+flowchart TD
+    TestCase["Software action history test"] --> Client["GraphQL or API client"]
+    Client --> Connection["Software action run connection"]
+    Connection --> Edge["Software action run edge"]
+    Edge --> Run["Software action run"]
+    Edge --> Cursor["Cursor"]
+    Run --> Assertions["Run field assertions"]
+    Cursor --> Pagination["Pagination assertions"]

@@ -1,0 +1,25 @@
+flowchart TD
+    LoopStart["Worker loop"] --> MachineId["Read machine identifier"]
+    MachineId --> MachineIdOk{"Identifier available?"}
+    MachineIdOk -->|"No"| WaitForId["Log warning and sleep poll interval"]
+    WaitForId --> LoopStart
+    MachineIdOk -->|"Yes"| Pending["Load pending orders"]
+    Pending --> Reconcile["Abandon removed progress entries"]
+    Reconcile --> HasOrders{"Orders pending?"}
+    HasOrders -->|"No"| ChangedWait["Wait for order-store change"]
+    ChangedWait --> LoopStart
+    HasOrders -->|"Yes"| RestartPending{"Restart signal pending?"}
+    RestartPending -->|"Yes"| WakeWait["Wait for change or next wake time"]
+    RestartPending -->|"No"| Eligible{"Order eligible or revision changed?"}
+    Eligible -->|"No"| NextOrder["Evaluate next order"]
+    Eligible -->|"Yes"| Refresh["Reread current order"]
+    Refresh --> Present{"Order still present?"}
+    Present -->|"No"| NextOrder
+    Present -->|"Yes"| Look["Inspect and execute order"]
+    Look --> Verdict{"Execution verdict"}
+    Verdict -->|"Continue"| Schedule["Store next eligible time"]
+    Verdict -->|"Finished"| Finish["Persist order completion"]
+    Schedule --> NextOrder
+    Finish --> NextOrder
+    NextOrder --> WakeWait
+    WakeWait --> LoopStart

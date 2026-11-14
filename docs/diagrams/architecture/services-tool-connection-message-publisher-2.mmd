@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Manager as Tool Connection Processing Manager
+    participant Publisher as Services Tool Connection Message Publisher
+    participant Transport as NATS Message Publisher
+    participant Nats as NATS Broker
+    Manager->>Publisher: publish(machine id, agent tool id, tool type)
+    Publisher->>Publisher: Build machine subject and message
+    Publisher->>Transport: publish(subject, message)
+    Transport->>Transport: Serialize message to JSON
+    Transport->>Nats: Publish payload
+    Transport->>Nats: Flush client
+    Nats-->>Transport: Publish accepted or error
+    Transport-->>Publisher: Result
+    Publisher-->>Manager: Result with publication context

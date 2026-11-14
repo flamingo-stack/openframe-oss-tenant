@@ -1,0 +1,7 @@
+flowchart TD
+    Construct["Construct resolver with initial configuration service"] --> Receive["Receive tool URL path"]
+    Receive --> Load["Load configured server host"]
+    Load --> ReadOk{"Configuration read succeeds?"}
+    ReadOk -->|"No"| ReturnError["Return configuration error"]
+    ReadOk -->|"Yes"| Replace["Replace all server URL placeholders"]
+    Replace --> ReturnUrl["Return resolved URL string"]

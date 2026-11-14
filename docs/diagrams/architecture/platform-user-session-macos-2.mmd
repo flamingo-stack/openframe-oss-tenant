@@ -1,0 +1,10 @@
+flowchart LR
+    Discovery["Console-user discovery"] --> Stat["stat reads console owner"]
+    Discovery --> Identity["id resolves numeric UID"]
+    Readiness["GUI readiness check"] --> PgrepDesktop["pgrep finds Dock and Finder"]
+    Liveness["Process liveness check"] --> PgrepPath["pgrep matches executable path"]
+    Launch["User-context launch"] --> Exists["Executable path check"]
+    Launch --> Preferred["launchctl asuser"]
+    Preferred --> Bundle["open application bundle"]
+    Preferred --> Direct["Direct executable launch"]
+    Preferred --> Fallback["sudo user fallback"]

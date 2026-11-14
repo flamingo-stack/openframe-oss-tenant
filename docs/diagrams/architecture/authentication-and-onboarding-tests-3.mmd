@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Test as "Auth Tokens Test"
+    participant Flow as "Authentication flow"
+    participant Auth as "Authentication API"
+    participant User as "User API"
+
+    Test->>Flow: Login configured user
+    Flow-->>Test: Session cookies
+    Test->>Auth: Refresh session
+    Auth-->>Test: Replacement cookies
+    Test->>User: Read current user with replacement cookies
+    User-->>Test: Authenticated response
+    Test->>Auth: Logout session
+    Auth-->>Test: Cleared cookies
+    Test->>Auth: Attempt refresh with old cookies
+    Auth-->>Test: HTTP 401

@@ -1,0 +1,8 @@
+flowchart LR
+    Caller["Script catalog service"] -->|"list, count, or facets"| Contract["CustomScriptRepository"]
+    Contract -->|"implemented by"| Implementation["CustomScriptRepositoryImpl"]
+    Implementation -->|"find and count"| Scripts["Script collection"]
+    Implementation -->|"resolve tag assignments"| Tags["tag_assignments collection"]
+    Implementation -->|"aggregate facets"| Scripts
+    Scripts -->|"Script documents"| Implementation
+    Implementation -->|"page or counts"| Caller

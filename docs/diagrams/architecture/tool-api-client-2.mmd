@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Installer as Tool installation workflow
+    participant Client as Tool Api Client
+    participant Config as Agent configuration service
+    participant Api as Tool API
+    Installer->>Client: get_tool_asset(tool ID, asset path)
+    Client->>Config: get_access_token()
+    Config-->>Client: access token
+    Client->>Api: GET asset with Bearer token
+    alt successful HTTP status
+        Api-->>Client: asset bytes
+        Client-->>Installer: bytes
+    else unsuccessful HTTP status
+        Api-->>Client: status and error body
+        Client-->>Installer: error with status and body
+    else token or transport failure
+        Client-->>Installer: contextual error
+    end

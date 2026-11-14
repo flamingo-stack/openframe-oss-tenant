@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Registration requested"] --> HasInfo{"Persisted machine info?"}
+    HasInfo -->|"No"| Fresh["Build fresh registration request"]
+    Fresh --> Register["POST register endpoint with initial key"]
+    HasInfo -->|"Yes"| Reinstall["Add machine ID and client secret headers"]
+    Reinstall --> Restore["POST reinstall endpoint with initial key"]
+    Register --> Success{"Success status?"}
+    Restore --> Success
+    Success -->|"Yes"| Decode["Deserialize registration response"]
+    Decode --> Persist["Caller persists credentials and configuration"]
+    Success -->|"No"| Secret{"401 and CLIENT SECRET code?"}
+    Secret -->|"Yes"| Invalid["Return ClientSecretInvalid"]
+    Secret -->|"No"| Failure["Return contextual transport or server error"]

@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Processor as Initial Authentication Processor
+    participant Config as Agent Configuration Service
+    participant Auth as Agent Authentication Service
+    participant Client as Authentication Client
+    participant Endpoint as Client Token Endpoint
+    Processor->>Config: Read access token
+    Config-->>Processor: Empty token
+    Processor->>Auth: Authenticate initially
+    Auth->>Config: Read client credentials
+    Config-->>Auth: Client identifier and secret
+    Auth->>Client: Authenticate with secret
+    Client->>Endpoint: Form request using client credentials grant
+    Endpoint-->>Client: Token response
+    Client-->>Auth: Parsed token response
+    Auth->>Config: Persist access and refresh tokens
+    Config-->>Auth: Save complete
+    Auth-->>Processor: Authentication complete

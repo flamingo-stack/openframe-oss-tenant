@@ -1,0 +1,6 @@
+flowchart LR
+    Caller["Client lifecycle or tool management caller"] -->|"snapshot() or alive()"| Module["Platform Process Snapshot"]
+    Module -->|"refresh process metadata"| Sysinfo["sysinfo System process view"]
+    Sysinfo -->|"process entries"| Module
+    Module -->|"Windows session lookup"| WinApi["Windows ProcessIdToSessionId"]
+    Module -->|"RunningProcess records"| Caller

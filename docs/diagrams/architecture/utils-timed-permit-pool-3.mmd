@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant C1 as Caller One
+    participant P as Timed Permit Pool
+    participant S as Semaphore
+    participant W as Blocking Worker
+    C1->>P: call with timeout and closure
+    P->>S: acquire owned permit
+    S-->>P: permit
+    P->>W: spawn closure with permit
+    P-->>C1: Timed Out after execution window
+    Note over W: Closure keeps running with permit
+    W-->>S: Closure exits and permit drops
+    participant C2 as Caller Two
+    C2->>P: call with timeout and closure
+    P->>S: acquire owned permit
+    S-->>P: permit becomes available
+    P->>W: spawn closure with permit

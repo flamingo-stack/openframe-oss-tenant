@@ -1,0 +1,15 @@
+flowchart LR
+    UpdateService["Update State Service"]
+    DirectoryManager["Directory Manager"]
+    StateModel["Update State model"]
+    JsonUtilities["JSON file utilities"]
+    StateFile["secured directory update state JSON"]
+    ClientUpdate["Client Update Service"]
+    UpdateHandler["Update Handler Service"]
+
+    ClientUpdate -->|"save and clear"| UpdateService
+    UpdateHandler -->|"load save and clear"| UpdateService
+    UpdateService -->|"secured_dir"| DirectoryManager
+    UpdateService -->|"serialize and parse"| StateModel
+    UpdateService -->|"atomic write and quarantine"| JsonUtilities
+    UpdateService -->|"read write remove"| StateFile

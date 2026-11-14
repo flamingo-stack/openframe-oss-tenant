@@ -1,0 +1,11 @@
+flowchart LR
+    UninstallFlow["Client uninstall flow"] -->|"creates"| DeregistrationService["DeregistrationService"]
+    DeregistrationService -->|"reads before wipe"| AgentConfig["Agent configuration service"]
+    AgentConfig -->|"machine ID and client secret"| Credentials["In-memory credentials"]
+    DeregistrationService -->|"fallback read"| PersistedInfo["Persisted machine info"]
+    DeregistrationService -->|"reads server settings"| InitialConfig["Initial configuration service"]
+    InitialConfig -->|"server URL and local mode"| HttpClient["Dedicated HTTP client"]
+    Credentials -->|"authenticates"| RegistrationClient["Registration client"]
+    HttpClient -->|"sends request"| RegistrationClient
+    RegistrationClient -->|"POST uninstall notification"| Platform["OpenFrame platform"]
+    UninstallFlow -->|"continues regardless"| LocalWipe["Local uninstall and cleanup"]

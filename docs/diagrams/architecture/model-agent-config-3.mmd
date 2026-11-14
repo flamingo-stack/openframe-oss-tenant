@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Authentication required"] --> Refresh["Load refresh token"]
+    Refresh --> Attempt["Attempt refresh token authentication"]
+    Attempt --> Success{"Refresh succeeds?"}
+    Success -->|"Yes"| SaveRefresh["Persist replacement tokens"]
+    Success -->|"No"| Credentials["Load client identifier and secret"]
+    Credentials --> ClientAuth["Authenticate with client credentials"]
+    ClientAuth --> SaveClient["Persist replacement tokens"]
+    SaveRefresh --> Ready["Continue with current credentials"]
+    SaveClient --> Ready

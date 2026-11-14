@@ -1,0 +1,8 @@
+flowchart LR
+    Request["Agent Registration Request"] --> RegClient["Registration Client"]
+    MachineInfo["Persisted Machine Info"] --> RegClient
+    InitialKey["Initial installation key"] --> RegClient
+    Http["Configured reqwest client"] --> RegClient
+    RegClient --> Response["Agent Registration Response"]
+    RegClient --> RegError["Registration error classification"]
+    RegClient --> Dereg["Deregistration outcome"]

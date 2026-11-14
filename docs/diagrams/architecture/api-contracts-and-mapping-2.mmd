@@ -1,0 +1,11 @@
+flowchart TD
+    Request["GraphQL or HTTP mutation input"] --> Binding["API binding"]
+    Binding --> Validation["Jakarta Bean Validation"]
+    Validation --> InputContract["Create or update software bundle input"]
+    InputContract --> Mapping["Service-level mapping"]
+    Mapping --> Domain["RMM software domain model"]
+    Domain --> Dispatch["Software dispatch workflow"]
+
+    Query["Audit or organization query"] --> QueryMapping["Service-level mapping"]
+    QueryMapping --> DisplayContract["Address, contact, or filter option"]
+    DisplayContract --> Response["API response"]

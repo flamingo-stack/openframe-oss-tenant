@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Caller as Caller
+    participant Detector as Platform Installation Detector
+    participant Probe as Platform Service Probe
+    participant Dirs as Directory Manager
+    Caller->>Detector: detect actual installation
+    Detector->>Detector: Check installation type and service name
+    Detector->>Probe: Probe configured service
+    alt Service exists
+        Probe-->>Detector: Existing service evidence
+        Detector->>Dirs: Resolve tool executable path
+        Dirs-->>Detector: Executable path
+        Detector-->>Caller: Service installation record
+    else No service or unsupported path
+        Probe-->>Detector: No matching evidence
+        Detector-->>Caller: No result
+    end

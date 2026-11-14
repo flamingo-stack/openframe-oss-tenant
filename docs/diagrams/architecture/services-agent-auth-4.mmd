@@ -1,0 +1,9 @@
+flowchart LR
+    RefreshManager["Token Refresh Run Manager"] -->|"start or scheduled refresh"| Reauthenticate["Services Agent Auth reauthenticate"]
+    Reauthenticate -->|"gateway status"| Deactivation["Deactivation Service"]
+    Reauthenticate -->|"success"| TokenStore["Configuration and encrypted shared token"]
+    TokenStore -->|"next refresh schedule"| RefreshManager
+    Reauthenticate -->|"failure or timeout"| Retry["Retry interval"]
+    Retry --> RefreshManager
+    Deactivation -->|"suspended"| ProbeDelay["Next probe delay"]
+    ProbeDelay --> RefreshManager

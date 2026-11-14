@@ -1,0 +1,13 @@
+flowchart LR
+    UpdateFlow["Client update or tool update flow"] --> CloseApi["Platform App Close"]
+    CloseApi --> CloseRequest["ask to close"]
+    CloseApi --> Relaunch["reopen"]
+    CloseRequest --> WindowsClose["Windows PowerShell CloseMainWindow"]
+    CloseRequest --> UnixClose["Unix SIGTERM"]
+    Relaunch --> MacLaunch["macOS console user launcher"]
+    Relaunch --> WindowsLaunch["Windows session launcher"]
+    Relaunch --> Unsupported["Unsupported platform warning"]
+    WindowsClose --> TargetApp["Target graphical application"]
+    UnixClose --> TargetApp
+    MacLaunch --> UpdatedApp["Updated graphical application"]
+    WindowsLaunch --> UpdatedApp

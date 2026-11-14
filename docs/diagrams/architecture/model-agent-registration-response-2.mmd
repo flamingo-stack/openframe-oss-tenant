@@ -1,0 +1,13 @@
+flowchart TD
+    AgentRuntime["Endpoint agent runtime"] --> RegistrationService["Agent registration service"]
+    RegistrationService --> RequestModel["Agent registration request"]
+    RegistrationService --> RegistrationClient["Registration client"]
+    RegistrationClient --> FreshDecision{"Saved machine information?"}
+    FreshDecision -->|"No"| RegisterEndpoint["Register endpoint"]
+    FreshDecision -->|"Yes"| ReinstallEndpoint["Reinstall endpoint"]
+    RegisterEndpoint --> ServerProcessor["Client service registration processor"]
+    ReinstallEndpoint --> ServerProcessor
+    ServerProcessor --> ResponseModel["Model Agent Registration Response"]
+    ResponseModel --> RegistrationService
+    RegistrationService --> MachineInfo["Persisted machine information"]
+    RegistrationService --> Configuration["Agent configuration"]

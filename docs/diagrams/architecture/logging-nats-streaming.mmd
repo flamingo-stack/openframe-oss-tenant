@@ -1,0 +1,13 @@
+flowchart LR
+    AgentLog["OpenFrame log file"] --> Registry["Log source registry"]
+    MeshLog["MeshCentral log file"] --> Registry
+    Registry --> Manager["Log streaming run manager"]
+    InitialConfig["Initial configuration"] --> Manager
+    AgentConfig["Agent configuration"] --> Manager
+    MachineId["Machine ID service"] --> Manager
+    LogKey["Log key service"] --> Connection["NATS log connection"]
+    Manager --> Connection
+    Connection -->|"WebSocket and JetStream"| Nats["NATS logs endpoint"]
+    Nats -->|"publish acknowledgement"| Connection
+    Connection --> Manager
+    Manager --> Rotation["Log rotation manager"]

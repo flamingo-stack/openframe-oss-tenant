@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Installer as Tool Installation Service
+    participant Downloader as GitHub Download Service
+    participant ToolApi as Tool API Client
+    participant Files as Managed File System
+    participant Records as Installed Tools Service
+    Installer->>Downloader: Select configuration for current OS
+    Downloader-->>Installer: Resolved configuration
+    Installer->>Downloader: Download primary tool
+    Downloader-->>Installer: Executable path or relative path
+    loop Each declared asset
+        Installer->>Installer: Select filename for current OS
+        alt Tool API asset
+            Installer->>Installer: Resolve URL parameters
+            Installer->>ToolApi: Fetch asset bytes
+            ToolApi-->>Installer: Asset bytes
+        else GitHub asset
+            Installer->>Downloader: Download and extract asset
+            Downloader-->>Installer: Asset bytes
+        end
+        Installer->>Files: Write asset to managed path
+        opt Executable asset
+            Installer->>Files: Apply executable permissions and hardening
+        end
+    end
+    Installer->>Records: Save installed record

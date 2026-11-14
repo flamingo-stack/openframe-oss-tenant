@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Handler as Services Update Handler
+    participant Info as Client Information Service
+    participant Store as Result Store
+    participant Clean as Update Cleanup Service
+    participant Lkg as Last Known Good Service
+    Handler->>Info: set status failed
+    Handler->>Store: settle awaiting delivery as failed
+    Handler->>Clean: cleanup all artifacts
+    Handler->>Lkg: prune updater transcripts
+    Handler->>Handler: clear update state

@@ -1,0 +1,12 @@
+flowchart TD
+    UpdateService["Tool Agent Update Service"] --> Updater["Platform Tool Updater"]
+    Updater --> MigrationFactory["Migration Factory"]
+    MigrationFactory --> Migrator["Standard To Gui App Migrator"]
+    Migrator --> KillService["Tool Kill Service"]
+    Migrator --> DirectoryManager["Directory Manager"]
+    Migrator --> DownloadService["GitHub Download Service"]
+    Migrator --> ParamsResolver["Tool Command Parameters Resolver"]
+    Migrator --> UserSession["User Session Launcher"]
+    Migrator --> InstalledTool["Installed Tool Metadata"]
+    DownloadService --> Artifact["Gui App Artifact"]
+    UserSession --> GuiApp["Running Gui App"]

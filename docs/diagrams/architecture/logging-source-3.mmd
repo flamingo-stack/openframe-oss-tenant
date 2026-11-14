@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Caller
+    participant Registry
+    participant Source
+    participant OffsetFile
+    Caller->>Registry: read_all(max total)
+    Registry->>Source: read(quota)
+    Source-->>Registry: entries and pending offset
+    Registry-->>Caller: deduplicated batch
+    alt delivery accepted
+        Caller->>Registry: commit_all()
+        Registry->>Source: commit()
+        Source->>OffsetFile: write committed offset
+    else delivery rejected or unavailable
+        Caller->>Registry: rollback_all()
+        Registry->>Source: rollback()
+        Note over Source: pending offset returns to committed offset
+    end

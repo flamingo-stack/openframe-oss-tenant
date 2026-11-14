@@ -1,0 +1,8 @@
+flowchart LR
+    ApiResponse["Schedule API response"] --> Criteria["ScheduleDeviceCriteria"]
+    ApiResponse --> Edge["ScriptScheduleEdge"]
+    Edge --> Node["ScriptSchedule node"]
+    Edge --> Cursor["Pagination cursor"]
+    Criteria --> Assertions["Test assertions"]
+    Node --> Assertions
+    Cursor --> Assertions

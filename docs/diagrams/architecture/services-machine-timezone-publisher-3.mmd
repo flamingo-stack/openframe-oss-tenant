@@ -1,0 +1,9 @@
+flowchart TD
+    Delivery["JetStream delivery"] --> Extract["Extract machine identifier from subject"]
+    Extract --> Decode["Decode JSON time-zone message"]
+    Decode --> Valid{"Nonblank time zone?"}
+    Valid -->|"No"| EmptyAck["Acknowledge without update"]
+    Valid -->|"Yes"| Update["Update machine time zone"]
+    Update --> Ack["Acknowledge message"]
+    Decode -->|"Decode or processing failure"| Retry["Leave message unacknowledged"]
+    Update -->|"Processing failure"| Retry

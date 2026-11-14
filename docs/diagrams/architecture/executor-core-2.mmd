@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Listener as Execution listener
+    participant Service as Execution service
+    participant Core as Executor Core
+    participant OS as Platform executor
+    participant Process as Script process
+    Listener->>Service: execution request
+    Service->>Service: resolve timeout and privilege
+    Service->>Core: ScriptParams
+    Core->>OS: execute script
+    OS->>Process: launch temporary script
+    Process-->>OS: output, exit code, timeout state
+    OS-->>Core: ExecResult
+    Core-->>Service: ExecResult
+    Service-->>Listener: RMM result

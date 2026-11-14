@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Operator as "Deployment operator"
+    participant Management as "Management service"
+    participant Store as "Registered client store"
+    participant Gateway as "OpenFrame gateway"
+    participant Auth as "Authorization server"
+    Operator->>Management: Start with rotated secret
+    Management->>Store: Replace hash after mismatch check
+    Operator->>Gateway: Start with same rotated secret
+    Gateway->>Auth: Authenticate using Basic client credentials
+    Auth->>Store: Verify secret against stored hash
+    Store-->>Auth: Match
+    Auth-->>Gateway: Process OAuth request

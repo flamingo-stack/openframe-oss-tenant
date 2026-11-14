@@ -1,0 +1,15 @@
+flowchart LR
+    WritePath["Machine, tag, or assignment write"] --> Aspect["Machine Tag Event Aspect"]
+    Aspect --> Service["Machine Tag Event Service"]
+    Service --> MachineRepo["Machine Repository"]
+    Service --> AssignmentRepo["Tag Assignment Repository"]
+    Service --> TagRepo["Tag Repository"]
+    Service --> TenantProvider["Tenant ID Provider"]
+    MachineRepo --> Service
+    AssignmentRepo --> Service
+    TagRepo --> Service
+    TenantProvider --> Service
+    Service --> Message["Machine Pinot Message"]
+    Message --> Producer["Retrying Kafka Producer"]
+    Producer --> Topic["Outbound devices topic"]
+    Topic --> Projection["Device analytics projection"]

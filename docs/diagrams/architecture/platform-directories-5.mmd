@@ -1,0 +1,8 @@
+flowchart LR
+    ToolRequest["Tool lifecycle request"] --> ToolId["Tool agent identifier"]
+    ToolId --> Folder["Resolve tool folder"]
+    Folder --> Executable["Resolve executable path"]
+    Folder --> Asset["Resolve asset path"]
+    Asset --> Exists{{"Artifact exists and is valid?"}}
+    Exists -->|"Yes"| UseArtifact["Continue lifecycle operation"]
+    Exists -->|"No"| AcquireArtifact["Download or install flow supplies artifact"]

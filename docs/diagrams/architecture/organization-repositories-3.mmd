@@ -1,0 +1,7 @@
+flowchart TD
+    Request["Base query and page request"] --> CursorCheck{"Cursor supplied?"}
+    CursorCheck -->|"No"| Sort["Add selected sort and limit"]
+    CursorCheck -->|"Yes"| Resolve["Parse cursor or resolve legacy identifier cursor"]
+    Resolve --> Keyset["Add rows past cursor in active direction"]
+    Keyset --> Sort
+    Sort --> Fetch["Fetch organizations from MongoDB"]

@@ -1,0 +1,7 @@
+flowchart LR
+    TestCase["Execution History Test"] -->|"deserializes GraphQL response"| ScheduleEdge["ScheduleRunEdge"]
+    TestCase -->|"deserializes GraphQL response"| ScriptEdge["ScriptExecutionEdge"]
+    ScheduleEdge -->|"node"| ScheduleRun["ScheduleRun"]
+    ScriptEdge -->|"node"| ScriptExecution["ScriptExecution"]
+    ScheduleRun -->|"captures dispatch outcome"| ScheduleService["Schedule Execution Service"]
+    ScriptExecution -->|"captures execution outcome"| ScriptService["Script Execution Service"]

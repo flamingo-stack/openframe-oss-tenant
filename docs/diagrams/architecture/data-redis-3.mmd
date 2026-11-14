@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Service as "Application service"
+    participant Cache as "Redis cache manager"
+    participant Builder as "Key builder"
+    participant Redis as "Redis Cluster"
+    Service->>Cache: Read or write cache entry
+    Cache->>Builder: Compute cache prefix
+    Builder->>Cache: Return tenant-aware prefix
+    Cache->>Redis: Read or write serialized value
+    Redis->>Cache: Cached value or cache miss
+    Cache->>Service: Value or method execution

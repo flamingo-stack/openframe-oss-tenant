@@ -1,0 +1,11 @@
+flowchart TD
+    CreateFolder["Create folder request"] --> Controller["Knowledge Base Controller"]
+    CreateArticle["Create article request"] --> Controller
+    ChangeItem["Rename, move, update, or unarchive request"] --> Controller
+    AttachmentInput["Attachment creation request"] --> Controller
+    Controller --> Domain["Knowledge base domain"]
+    Domain --> Items["Items response"]
+    Domain --> Tags["Tags response"]
+    Domain --> AttachmentMeta["Attachment response"]
+    Domain --> UploadResult["Attachment upload response"]
+    Domain --> DownloadResult["Attachment download response"]

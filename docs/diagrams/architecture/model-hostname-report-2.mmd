@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant OS as Operating system
+    participant Fetcher as Device data fetcher
+    participant Publisher as Hostname report publisher
+    participant NATS as NATS
+    participant Listener as Machine hostname listener
+    participant Service as Machine hostname service
+
+    Publisher->>Fetcher: Request hostname
+    Fetcher->>OS: Read hostname with platform fallbacks
+    OS-->>Fetcher: Valid hostname or no value
+    Fetcher-->>Publisher: Hostname value
+    Publisher->>NATS: Publish JSON on machine scoped hostname subject
+    NATS->>Listener: Deliver message
+    Listener->>Listener: Extract machine ID and validate hostname
+    Listener->>Service: Update hostname
+    Service-->>Listener: Update complete
+    Listener->>NATS: Acknowledge message

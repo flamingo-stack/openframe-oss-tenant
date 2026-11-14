@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Consumer
+    participant Controller as Ticket Controller
+    participant Ticket as Ticket Domain
+    participant Activity as Ticket Activity Service
+    participant Repository as Ticket Repository
+    Consumer->>Controller: Assign, link, tag, or note change
+    Controller->>Ticket: Validate and apply requested mutation
+    Ticket->>Repository: Persist ticket state
+    Repository-->>Ticket: Updated ticket state
+    Ticket->>Activity: Record activity when applicable
+    Activity-->>Controller: Activity processing complete
+    Controller-->>Consumer: Updated ticket or note response

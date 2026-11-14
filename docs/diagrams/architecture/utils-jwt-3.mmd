@@ -1,0 +1,8 @@
+flowchart LR
+    Claims["JwtTimes"] --> Iat{"iat present?"}
+    Iat -->|"No"| NoLifetime["Return None"]
+    Iat -->|"Yes"| Subtract{"exp minus iat succeeds?"}
+    Subtract -->|"No"| NoLifetime
+    Subtract -->|"Yes"| Positive{"Lifetime greater than zero?"}
+    Positive -->|"No"| NoLifetime
+    Positive -->|"Yes"| Ttl["Return lifetime in seconds"]

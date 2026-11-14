@@ -1,0 +1,6 @@
+flowchart LR
+    Props["Redis key properties"] --> Builder["Openframe Redis key builder"]
+    Builder --> Tenant["Tenant-scoped key"]
+    Builder --> Global["Global key"]
+    Tenant --> Cluster["Redis Cluster hash slot"]
+    Global --> Cluster

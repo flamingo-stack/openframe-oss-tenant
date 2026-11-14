@@ -1,0 +1,15 @@
+flowchart TD
+    Start["start()"] --> Spawn["Spawn background task"]
+    Spawn --> Begin["Begin subscription attempt"]
+    Begin --> Client["Get current NATS client"]
+    Client --> Machine["Read machine identifier"]
+    Machine --> Subject["Build remote access subject"]
+    Subject --> Subscribe["Subscribe to NATS subject"]
+    Subscribe --> Active["Receive messages or replacement signal"]
+    Active -->|"message"| Handle["Dispatch GUI application check"]
+    Handle --> Active
+    Active -->|"stream ends"| Retry["Wait reconnection delay"]
+    Active -->|"client replaced"| Retry
+    Client -->|"client unavailable"| Retry
+    Subscribe -->|"subscription error"| Retry
+    Retry --> Begin

@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Delivery as Command Delivery
+    participant Handler as Tool Update Handler
+    participant Ops as Tool Operations
+    participant Service as Update Service
+    participant Store as Installed Tools Service
+    participant Runtime as Download and Platform Runtime
+    participant Publish as Installed Agent Publisher
+    Delivery->>Handler: Tool agent update message
+    Handler->>Ops: Acquire tool operation guard
+    Ops-->>Handler: Guard
+    Handler->>Service: Process message under guard
+    Service->>Store: Load installed tool and assets
+    Store-->>Service: Installed state
+    Service->>Service: Select tool and asset changes
+    alt no eligible change
+        Service->>Publish: Publish current installed versions
+    else update or repair needed
+        Service->>Runtime: Download and apply selected artifacts
+        Runtime-->>Service: Success or failure
+        Service->>Store: Finalize repaired installation state
+        Service->>Publish: Publish installed versions
+    end

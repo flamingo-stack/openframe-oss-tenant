@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Caller as Doctor workflow
+    participant Healing as Doctor Healing
+    participant Installer as WebView2 installer
+    Caller->>Healing: heal(results)
+    Healing->>Healing: pending(results)
+    loop Each unique remediation in first-seen order
+        Healing->>Healing: Log action start
+        Healing->>Installer: install()
+        Installer-->>Healing: Healed or Failed(error)
+        Healing->>Healing: Log outcome
+        Healing->>Healing: Append HealResult
+    end
+    Healing-->>Caller: Vec HealResult

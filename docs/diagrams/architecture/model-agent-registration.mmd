@@ -1,0 +1,9 @@
+flowchart LR
+    DeviceData["Device data fetcher"] -->|"machine facts"| RegistrationService["Agent registration service"]
+    InitialConfig["Initial configuration service"] -->|"organization, user, tags"| RegistrationService
+    PersistedInfo["Persisted machine information"] -->|"selects registration mode"| RegistrationService
+    RegistrationService -->|"builds request"| RegistrationModel["Model Agent Registration"]
+    RegistrationModel -->|"JSON body"| RegistrationClient["Registration client"]
+    RegistrationClient -->|"HTTPS POST"| ClientService["Client service"]
+    ClientService -->|"machine and client credentials"| RegistrationResponse["Registration response"]
+    RegistrationResponse -->|"persist"| AgentConfig["Agent configuration service"]

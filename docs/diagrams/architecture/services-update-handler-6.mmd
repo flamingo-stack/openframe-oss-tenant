@@ -1,0 +1,9 @@
+flowchart LR
+    Publish["Publish running version"] --> MachineId{"Machine identifier available?"}
+    MachineId -->|"No"| LogId["Log failure"]
+    MachineId -->|"Yes"| Send["Publish installed-agent message"]
+    Send --> Delivered{"Publish succeeded?"}
+    Delivered -->|"Yes"| Complete["Version announced"]
+    Delivered -->|"No and attempts remain"| Wait["Wait one second"]
+    Wait --> Send
+    Delivered -->|"No on final attempt"| LogPublish["Log final failure"]

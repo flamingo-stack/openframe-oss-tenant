@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Caller
+    participant Persistence as "Machine Info Persistence"
+    participant Store as "Platform Store"
+    Caller->>Persistence: write complete record
+    Persistence->>Persistence: validate required fields
+    Persistence->>Persistence: serialize JSON
+    Persistence->>Store: apply secure storage write
+    Store-->>Persistence: write result
+    alt write succeeds
+        Persistence-->>Caller: success
+    else write fails
+        Persistence-->>Caller: contextual error
+    end

@@ -1,0 +1,13 @@
+flowchart LR
+    Command["Update Command"] --> Service["Services Client Update"]
+    Service --> Lock["Update Guard"]
+    Service --> Tools["Tool Run Manager"]
+    Service --> ToolOps["Tool Operations"]
+    Service --> Packages["Package Upgrade View"]
+    Service --> Download["GitHub Download Service"]
+    Service --> State["Update State Service"]
+    Service --> Recovery["Last Known Good Service"]
+    Service --> Info["Client Information Service"]
+    Service --> Launcher["Platform Updater Launcher"]
+    Launcher --> Script["Platform Update Script"]
+    Script --> Binary["OpenFrame Client Binary"]

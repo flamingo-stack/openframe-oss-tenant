@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Agent
+    participant Client as "Client Service"
+    participant Registration as "Registration Processor"
+    participant Store as "Tenant Data Store"
+    participant Auth as "Token Generators"
+    participant Bus as "NATS"
+
+    Agent->>Client: Registration or authentication request
+    Client->>Registration: Validate and process agent identity
+    Registration->>Store: Resolve organization and persist agent state
+    Store-->>Registration: Registration state
+    Registration->>Auth: Create access and refresh tokens
+    Auth-->>Registration: Agent tokens
+    Registration->>Bus: Publish connection or lifecycle event
+    Registration-->>Client: Registration response
+    Client-->>Agent: Credentials and agent state

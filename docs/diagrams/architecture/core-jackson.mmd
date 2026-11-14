@@ -1,0 +1,9 @@
+flowchart TD
+    Boot["Spring Boot startup"] --> AutoConfig["Jackson2CompatibilityAutoConfiguration"]
+    AutoConfig --> Customizer["Highest precedence JsonMapperBuilderCustomizer"]
+    Customizer --> Compatibility["Jackson 2 compatibility policy"]
+    Compatibility --> Mapper["Spring-managed JsonMapper"]
+    Compatibility --> Introspector["PreferNoArgsConstructorIntrospector"]
+    Introspector --> Reads["Compatible JSON deserialization"]
+    Mapper --> Reads
+    BootDefaults["Spring Boot customizers"] --> Mapper

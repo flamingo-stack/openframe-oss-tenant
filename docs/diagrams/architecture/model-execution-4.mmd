@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Server as "Control plane"
+    participant Broker as "NATS"
+    participant Listener as "Execution listener"
+    participant Service as "Execution service"
+    participant Host as "Local executor"
+    Server->>Broker: Publish execution payload
+    Broker->>Listener: Deliver payload
+    Listener->>Service: Parsed execution request or requests
+    Service->>Host: Invoke selected shell
+    Host-->>Service: Output, exit code, duration, timeout state
+    Service-->>Broker: Publish RmmResult
+    Listener-->>Broker: Publish ExecutionAck when applicable
+    Broker-->>Server: Deliver result and acknowledgement

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Detector as Deactivation Service
+    participant Queue as Command Channel
+    participant Supervisor as Tokio Supervisor
+    participant Tools as Tool Run Manager
+    participant Client as Client Uninstaller
+    Detector->>Queue: StopTools
+    Queue->>Supervisor: StopTools
+    Supervisor->>Tools: stop_all()
+    Detector->>Queue: RestartTools
+    Queue->>Supervisor: RestartTools
+    Supervisor->>Tools: restart_all()
+    Detector->>Queue: Uninstall
+    Queue->>Supervisor: Uninstall
+    Supervisor->>Client: spawn detached uninstall

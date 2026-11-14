@@ -1,0 +1,10 @@
+flowchart TD
+    Manager["DirectoryManager"] --> Logs["Logs directory"]
+    Manager --> Support["Application support directory"]
+    Manager --> Secured["Secured directory"]
+    Manager --> UserLogs["Optional user logs directory"]
+    Support --> ToolFolder["Per tool folder"]
+    ToolFolder --> ToolExecutable["Tool executable"]
+    ToolFolder --> ToolAsset["Tool asset"]
+    Support --> AgentBinary["Default agent binary"]
+    Secured --> SensitiveState["Security-sensitive state"]

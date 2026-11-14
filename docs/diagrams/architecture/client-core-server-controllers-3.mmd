@@ -1,0 +1,12 @@
+flowchart TD
+    AgentStatus["Agent package status"] --> StatusListener["Package update status listener"]
+    StatusListener -->|"valid event"| Processor["Status processor"]
+    Processor --> DuplicateCheck{"Duplicate or stale?"}
+    DuplicateCheck -->|"Yes"| Rollup["Recalculate request status"]
+    DuplicateCheck -->|"No"| Reducer["Reduce device state"]
+    Reducer --> Deadline["Schedule or cancel deadline force"]
+    Deadline --> History["Record execution history"]
+    History --> StateStore["Save device state"]
+    StateStore --> Retry["Consider auto-update retry"]
+    Retry --> Rollup
+    Rollup --> RequestStore["Update aggregate request status"]

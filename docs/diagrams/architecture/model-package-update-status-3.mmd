@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Control as Update control plane
+    participant Client as Endpoint client
+    participant Gate as Package update gate
+    participant Reporter as Status reporter
+    participant Broker as Message broker
+    participant Server as Status consumer
+    Control->>Client: Deliver package update request
+    Client->>Gate: Check update readiness
+    alt Update is blocked
+        Gate-->>Reporter: Waiting reason and phase
+        Reporter->>Broker: Publish waiting status
+    else Request is rejected or superseded
+        Client-->>Reporter: Failure reason and detail
+        Reporter->>Broker: Publish failed status
+    else Update proceeds
+        Client-->>Reporter: Completion or failure detail
+        Reporter->>Broker: Publish terminal status
+    end
+    Broker->>Server: Deliver machine status event

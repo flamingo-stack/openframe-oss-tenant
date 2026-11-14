@@ -1,0 +1,27 @@
+flowchart TD
+    Receive["Receive package update command"]
+    HasSequence{{"Delivery has sequence?"}}
+    Failed["Return failed outcome"]
+    Resolve["Resolve package manager"]
+    Supported{{"Manager supported locally?"}}
+    Reject["Publish not supported status"]
+    Countdown["Derive countdown"]
+    Submit["Submit order to durable store"]
+    Accepted["Return done outcome"]
+    Stale["Log stale request"]
+    Superseded["Publish superseded status"]
+    StoreFailure["Return failed outcome"]
+    Receive --> HasSequence
+    HasSequence -->|"no"| Failed
+    HasSequence -->|"yes"| Resolve
+    Resolve --> Supported
+    Supported -->|"no"| Reject
+    Reject --> Accepted
+    Supported -->|"yes"| Countdown
+    Countdown --> Submit
+    Submit -->|"accepted"| Accepted
+    Submit -->|"stale"| Stale
+    Stale --> Accepted
+    Submit -->|"superseded"| Superseded
+    Superseded --> Accepted
+    Submit -->|"store error"| StoreFailure

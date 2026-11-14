@@ -1,0 +1,13 @@
+flowchart TD
+    TestCase["Script Test Case"] -->|"builds"| RunRequest["Run Script Request"]
+    TestCase -->|"builds"| ScheduleRequest["Create Script Schedule Request"]
+    RunRequest -->|"request JSON"| ScriptApi["Script API"]
+    ScheduleRequest -->|"request JSON"| ScriptApi
+    ScriptApi -->|"assignment counters"| AssignmentResponse["Schedule Assign Device Response"]
+    ScriptApi -->|"schedule summary"| Schedule["Script Schedule"]
+    ScriptApi -->|"paginated results"| History["Schedule Execution History"]
+    ScriptApi -->|"author fields"| Author["Script Author"]
+    AssignmentResponse --> Assertions["Test Assertions"]
+    Schedule --> Assertions
+    History --> Assertions
+    Author --> Assertions

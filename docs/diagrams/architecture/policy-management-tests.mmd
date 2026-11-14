@@ -1,0 +1,12 @@
+flowchart LR
+    Runner["JUnit Test Runner"] --> Base["Base Test Session Setup"]
+    Base --> PolicyTests["Policy Test Classes"]
+    Base --> KeyTests["API Key Test Class"]
+    PolicyTests --> MonitoringApi["Monitoring API Client"]
+    PolicyTests --> DeviceApi["Device API Client"]
+    KeyTests --> ApiKeyApi["API Key API Client"]
+    MonitoringApi --> Fleet["Fleet Policy Service"]
+    DeviceApi --> Fleet
+    ApiKeyApi --> TenantApi["OpenFrame API"]
+    Fleet --> Results["Policy and Host Results"]
+    TenantApi --> KeyStore["User Scoped API Keys"]

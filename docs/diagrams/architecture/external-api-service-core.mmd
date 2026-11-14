@@ -1,0 +1,9 @@
+flowchart LR
+    Consumer["Integration Consumer"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> ExternalApi["External Api Service"]
+    ExternalApi --> Controllers["External Api Service Core Controllers"]
+    Controllers --> Domain["Shared API Domain Services"]
+    Domain --> Storage["Tenant Data Stores"]
+    Controllers --> OpenApi["OpenAPI Documentation"]
+    Gateway --> Identity["Gateway Injected Caller Identity"]
+    Identity --> Controllers

@@ -1,0 +1,12 @@
+flowchart TD
+    Request["Migration request"] --> Compare["Compare current and target installation types"]
+    Compare --> Same{"Types match?"}
+    Same -->|"Yes"| NoMigration["Return no migration needed"]
+    Same -->|"No"| Supported{"Standard to GUI app?"}
+    Supported -->|"Yes on macOS or Windows"| Migrator["Standard to GUI App Migrator"]
+    Supported -->|"No"| Reject["Return unsupported migration error"]
+    Migrator --> Prepare["Prepare migration context"]
+    Prepare --> Migrate["Migrate artifact and installation"]
+    Migrate --> Success{"Migration succeeds?"}
+    Success -->|"Yes"| Finalize["Finalize new installation"]
+    Success -->|"No"| Rollback["Attempt migration rollback"]

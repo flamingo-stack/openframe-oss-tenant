@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Delivery as Update Delivery
+    participant Update as Services Client Update
+    participant Download as Download Service
+    participant State as Update State Service
+    participant Launcher as Updater Launcher
+    participant Tools as Tool Run Manager
+    Delivery->>Update: reserve(message)
+    Update->>Update: acquire guard and check conflicts
+    Delivery->>Update: apply(message, guard)
+    Update->>Download: select configuration and download artifact
+    Download-->>Update: extracted binary
+    Update->>Update: stage and verify binary version
+    Update->>State: save updater launched state
+    Update->>Launcher: launch updater with paths and version
+    Launcher-->>Update: launch handle
+    Update->>Tools: signal shutdown
+    Update-->>Delivery: launched

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Publisher as "Publishing runtime"
+    participant Aggregate as "Organization Aggregate Spec"
+    participant Projection as "Organization on Tickets Projection"
+    participant TicketRepo as "Ticket projection repository"
+
+    Publisher->>Aggregate: Convert organization to event
+    Aggregate->>Publisher: Organization event and projections
+    Publisher->>Projection: Apply published record
+    Projection->>TicketRepo: Update names by tenant and organization ID
+    TicketRepo->>Projection: Updated ticket count
+    Projection->>Publisher: Projection completes
