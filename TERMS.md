@@ -1,7 +1,7 @@
 # Flamingo AI Terms of Service
 
-**Version:** 1.0  
-**Effective date:** October 14, 2026  
+**Version:** 1.1  
+**Effective date:** December 20, 2026  
 **Applies to:** OpenFrame SaaS, OpenMSP and the Flamingo Website
 
 
@@ -49,7 +49,7 @@ If a signed order form or master agreement between You and Flamingo AI conflicts
 
 - AI output can be wrong or incomplete. Review it before You rely on it, and review a proposed action before You approve it.
 - You are responsible for the actions You approve and for the automation You switch on.
-- To produce a response, the content of a request is sent to the AI provider configured for Your organization, as described in the Privacy Policy. We do not use Your data to train AI models, and we do not allow those providers to do so.
+- To produce a response, the content of a request and the data needed to answer it are sent to the AI providers named in the Privacy Policy. We do not use Your data to train AI models, and we do not allow those providers to do so.
 - The AI models available change from time to time, as described in the Payment Terms.
 
 **3.4 Third-party services.** The Services connect to services run by others, such as Google Workspace, Microsoft 365 and the upstream projects OpenFrame includes. Your use of those services is governed by their own terms. We are not responsible for them.
@@ -84,9 +84,9 @@ We may suspend access that breaks this section, as described in section 12.
 
 **5.4 Security.** We protect Customer Data with the technical and organizational measures described in our [Trust Center](https://www.flamingo.run/trust-center). You are responsible for the security of Your own devices, networks and accounts.
 
-**5.5 Getting Your data out.** You can export Customer Data through the product while Your account is active. What happens to it when an account ends is set out in section 12 and, for paid plans, in the Payment Terms.
+**5.5 Getting Your data out.** While Your account is active You can retrieve Customer Data through the OpenFrame API, and You can ask us for an export of data the API does not cover. What happens to it when an account ends is set out in section 12 and, for paid plans, in the Payment Terms.
 
-**5.6 Usage data.** We may collect and use data about how the Services are used and how they perform, in a form that does not identify You or any person, to run and improve the Services.
+**5.6 Usage data.** We may collect and use data about how the Services are used and how they perform, for the purposes described in the Privacy Policy.
 
 
 ## 6. OpenMSP Community Content
@@ -139,7 +139,7 @@ Each of us may receive information from the other that is marked confidential or
 
 **12.1 Term.** These Terms apply from the day You accept them until Your account is closed.
 
-**12.2 Ending it Yourself.** You can stop using the Services and close Your account at any time. For a paid plan, cancellation works as the Payment Terms describe.
+**12.2 Ending it Yourself.** You can stop using the Services at any time. A user can delete their own account in the product. To close Your organization's account, contact us at support@flamingo.run; the account is treated as closed on the day we receive the request. For a paid plan, cancellation works as the Payment Terms describe.
 
 **12.3 Suspension.** We may suspend access to the Services, in whole or in part, if You break section 4, if Your use puts the Services or other customers at risk, or if the law requires it. We give notice before we suspend where we reasonably can, limit the suspension to what is needed, and restore access when the cause is resolved. Suspension for non-payment follows the Payment Terms.
 
@@ -150,7 +150,7 @@ Each of us may receive information from the other that is marked confidential or
 - for non-payment, as the Payment Terms describe; or
 - with at least 90 days' notice, if we stop offering the Services. Refunds in that case are set out in the Payment Terms.
 
-**12.5 After the end.** Your right to use the Services stops. Unless the Payment Terms give a different period, we keep Customer Data for 30 days after the end so that You can ask for an export, and may then delete it. Sections 5.6, 6.1, 9, 10, 11, 13 and 14, and any amounts You owe, continue after the end.
+**12.5 After the end.** Your right to use the Services stops. Unless the Payment Terms give a different period, we keep Customer Data for at least 30 days after the end so that You can ask for an export, and may then delete it. OpenFrame agents are not removed from Your devices automatically; until You uninstall them they may keep sending data, which we handle as Customer Data. Sections 5.6, 6.1, 9, 10, 11, 13 and 14, and any amounts You owe, continue after the end.
 
 
 ## 13. Claims by Others
@@ -164,7 +164,7 @@ Each of us may receive information from the other that is marked confidential or
 
 ## 14. General
 
-**14.1 Changes to these Terms.** We may change these Terms. The version and effective date are stated at the top. For a change that materially reduces Your rights, we email the account owner at least 30 days before it applies. If You do not agree, You may close Your account before the change applies. Using the Services after that date means You accept the change.
+**14.1 Changes to these Terms.** We may change these Terms. The version and effective date are stated at the top. For a change that materially reduces Your rights, we email the account owner at least 30 days before it applies. If You do not agree, You may ask us to close Your account before the change applies. Using the Services after that date means You accept the change.
 
 **14.2 Governing law.** These Terms are governed by the laws of the State of Delaware, USA, without regard to its conflict of laws rules. The state and federal courts located in Delaware have exclusive jurisdiction over any dispute, and each party accepts their jurisdiction.
 
