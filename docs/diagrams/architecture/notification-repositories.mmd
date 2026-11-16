@@ -1,12 +1,10 @@
-flowchart LR
-    Api["Notification API and data fetchers"] --> Repository["Custom Notification Repository"]
-    Repository --> ReadState["Notification read-state collection"]
-    Repository --> Notification["Notification collection"]
-    Api --> Settings["Custom Notification Settings Repository"]
-    Settings --> Preferences["Notification settings collection"]
-    Writer["Notification delivery writer"] --> ReadStateWriter["Custom Notification Read-State Repository"]
-    ReadStateWriter --> ReadState
-    Repository --> TenantScope["Tenant-aware Mongo template"]
-    Settings --> TenantScope
-    ReadStateWriter --> TenantScope
-    TenantScope --> Mongo["MongoDB"]
+flowchart TD
+    Caller["Application service or GraphQL data fetcher"] --> Repository["Notification Repositories"]
+    Repository --> TenantSupport["TenantAwareRepositorySupport"]
+    TenantSupport --> MongoTemplate["TenantAwareMongoTemplate"]
+    MongoTemplate --> ReadState["Notification read-state documents"]
+    MongoTemplate --> Notification["Notification documents"]
+    MongoTemplate --> Settings["Notification settings documents"]
+    ReadState --> Page["Notification page with recipient status"]
+    Notification --> Page
+    Settings --> PreferenceResult["Stored user preferences"]

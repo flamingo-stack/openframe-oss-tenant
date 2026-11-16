@@ -1,8 +1,0 @@
-flowchart TD
-    User["Operator or API consumer"] --> Api["API data fetcher or service"]
-    Api --> Repository["Script Schedule Repositories"]
-    Repository --> Mongo["MongoDB schedule data"]
-    Api --> Scheduler["Schedule processing service"]
-    Scheduler --> Delivery["Device delivery pipeline"]
-    Delivery --> Agent["OpenFrame client on device"]
-    Agent --> Results["Execution result processing"]

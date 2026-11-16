@@ -1,8 +1,8 @@
 flowchart LR
-    ClientRuntime["OpenFrame Client runtime"] -->|"starts"| PermissionMonitor["PermissionMonitor"]
-    PermissionMonitor -->|"performs health check"| DirectoryManager["DirectoryManager"]
-    DirectoryManager -->|"ensures and validates"| ManagedDirectories["Logs, application support, secured, user logs"]
-    PermissionMonitor -->|"records local metrics"| MetricsStore["MetricsStore"]
-    PermissionMonitor -->|"writes operational events"| Tracing["Tracing logs"]
-    DirectoryManager -->|"reports failure"| PermissionMonitor
-    PermissionMonitor -->|"attempts remediation"| DirectoryManager
+    ClientRuntime["OpenFrame Client runtime"] --> Monitor["PermissionMonitor"]
+    Monitor -->|"perform health check"| DirectoryManager["DirectoryManager"]
+    DirectoryManager -->|"ensure directories"| ManagedPaths["Managed agent directories"]
+    DirectoryManager -->|"validate permissions"| ManagedPaths
+    Monitor -->|"record local values"| MetricsStore["MetricsStore"]
+    Monitor -->|"on check failure"| Remediation["Permission remediation"]
+    Remediation -->|"fix permissions"| DirectoryManager

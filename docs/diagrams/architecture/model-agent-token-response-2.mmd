@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Registration as Registration Processor
+    participant Config as Agent Configuration Service
+    participant Auth as Agent Authentication Service
+    participant Client as Auth Client
+    participant Endpoint as Client OAuth Token Endpoint
+    participant Shared as Shared Token Service
+    participant Refresh as Token Refresh Run Manager
+
+    Registration->>Config: Save machine and client credentials
+    Auth->>Config: Read client credentials
+    Auth->>Client: Request client credentials grant
+    Client->>Endpoint: POST token form
+    Endpoint-->>Client: AgentTokenResponse JSON
+    Client-->>Auth: AgentTokenResponse
+    Auth->>Config: Persist access and refresh tokens
+    Auth->>Shared: Encrypt and write access token
+    Refresh->>Auth: Reauthenticate when scheduled
+    Auth->>Client: Try refresh token grant
+    Endpoint-->>Client: Replacement AgentTokenResponse JSON
+    Client-->>Auth: Replacement AgentTokenResponse
+    Auth->>Config: Replace persisted tokens
+    Auth->>Shared: Replace encrypted shared access token

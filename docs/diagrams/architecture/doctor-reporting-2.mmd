@@ -1,0 +1,15 @@
+flowchart TD
+    Start["Start diagnostic"] --> Mode{"Diagnostic mode?"}
+    Mode -->|"Full pre-install or authentication"| Args["Validate required arguments"]
+    Mode -->|"Parameterless pre-install"| Admin["Check administrator privileges"]
+    Mode -->|"Health check"| Admin
+    Args --> ArgsValid{"Arguments valid?"}
+    ArgsValid -->|"No"| ArgsReport["Return report with failure"]
+    ArgsValid -->|"Yes"| Admin
+    Admin --> AdminValid{"Administrator privileges available?"}
+    AdminValid -->|"No"| AdminReport["Return report with failure"]
+    AdminValid -->|"Yes"| Local["Run applicable runtime, disk, directory, and configuration checks"]
+    Local --> ConfigValid{"Health configuration valid?"}
+    ConfigValid -->|"No"| ConfigReport["Return report"]
+    ConfigValid -->|"Yes or not applicable"| Network["Run network checks"]
+    Network --> FinalReport["Return Doctor Report"]

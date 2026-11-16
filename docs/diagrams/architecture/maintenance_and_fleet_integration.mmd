@@ -1,0 +1,10 @@
+flowchart TD
+    Tool["Fleet MDM Integrated Tool"] --> ApiUrl["Resolve API URL"]
+    ApiUrl --> Setup["Attempt Fleet Setup"]
+    Setup -->|"setup succeeds"| AdminToken["Use Setup Token"]
+    Setup -->|"client error"| AdminLogin["Login as Administrator"]
+    AdminLogin --> AdminToken
+    AdminToken --> ApiUser["Create API Only User"]
+    ApiUser -->|"already exists"| ApiLogin["Login as API User"]
+    ApiUser --> ApiToken["Return API Token"]
+    ApiLogin --> ApiToken

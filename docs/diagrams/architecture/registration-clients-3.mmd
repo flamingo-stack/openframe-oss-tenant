@@ -1,0 +1,9 @@
+flowchart TD
+    UninstallStart["Agent uninstall starts"] --> CredentialsCheck{"Saved credentials available?"}
+    CredentialsCheck -->|"no"| SkipReport["Skip platform notification"]
+    CredentialsCheck -->|"yes"| DeregisterCall["POST uninstall with machine credentials"]
+    DeregisterCall --> SuccessCheck{"Response accepted?"}
+    SuccessCheck -->|"success"| Reported["Mark deregistration reported"]
+    SuccessCheck -->|"401, 403, 404, or 410"| Terminal["Treat machine as already gone"]
+    SuccessCheck -->|"other failure"| RetryPolicy["Deregistration service retry policy"]
+    RetryPolicy --> ExitRetry["One final attempt before exit when unreported"]

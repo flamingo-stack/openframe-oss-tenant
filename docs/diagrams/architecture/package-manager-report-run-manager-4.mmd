@@ -1,0 +1,13 @@
+flowchart TD
+    Trigger["Tick or Wake Signal"] --> RunManager["Package Manager Report Run Manager"]
+    RunManager --> Publisher["Package Manager Report Publisher"]
+    Publisher --> MachineId["Read Machine Identifier"]
+    Publisher --> Session["Check Console User Session"]
+    Publisher --> Managers["Resolve Manager States"]
+    Managers --> Brew["Probe Brew"]
+    Managers --> Choco["Probe Chocolatey"]
+    Managers --> Winget["Probe Winget"]
+    Managers --> Report["Build Package Manager Report"]
+    Publisher --> Dependencies["Optionally Add Dependency States"]
+    Dependencies --> Report
+    Report --> Nats["Publish to Machine Specific NATS Subject"]

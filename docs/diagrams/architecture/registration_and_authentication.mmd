@@ -1,0 +1,14 @@
+flowchart LR
+    Agent["OpenFrame Device Agent"] -->|"register, reinstall, uninstall"| AgentController["Agent Controller"]
+    Agent -->|"token request"| AuthController["Agent Auth Controller"]
+    AgentController --> RegistrationService["Agent Registration Service"]
+    AgentController --> UninstallService["Agent Uninstall Service"]
+    RegistrationService --> FlagsService["Registration Feature Flags Service"]
+    AuthController --> AuthService["Agent Auth Service"]
+    AuthService --> AccessTokens["Access Token Generator"]
+    AuthService --> RefreshTokens["Refresh Token Generator"]
+    AccessTokens --> JwtService["JWT Service"]
+    RefreshTokens --> JwtService
+    FlagsService --> ConfigurationService["Client Configuration Service"]
+    FlagsService --> DeliveryRouter["Delivery Router"]
+    DeliveryRouter --> Agent

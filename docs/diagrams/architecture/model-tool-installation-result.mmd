@@ -1,5 +1,6 @@
 flowchart LR
-    Installer["Installation workflow"] -->|"creates result"| Result["ToolInstallationResult"]
-    Result -->|"Serialize or Deserialize"| Serde["Serde"]
-    Result -->|"tool_agent_id"| Correlation["Tool-agent correlation"]
-    Correlation --> Consumer["Result consumer"]
+    CommandMessage["Tool installation command"] --> Handler["Tool installation handler"]
+    Handler --> InstallationService["Tool installation service"]
+    InstallationService --> InstalledTools["Installed tools service"]
+    InstallationService --> ResultModel["Model Tool Installation Result"]
+    ResultModel --> ResultPayload["Serialized tool agent identifier"]

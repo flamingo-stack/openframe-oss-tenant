@@ -1,9 +1,18 @@
 flowchart LR
-    Runtime["OpenFrame endpoint client runtime"] --> InfoService["OpenFrame client info service"]
-    UpdateService["OpenFrame client update service"] --> InfoService
-    InfoService --> InfoModel["OpenFrameClientInfo"]
-    InfoModel --> Status["ClientUpdateStatus"]
-    InfoService --> InfoFile["Local client info JSON file"]
-    UpdateService --> UpdateState["Separate update state service"]
-    UpdateService --> ToolManager["Tool run manager"]
-    UpdateService --> Downloader["GitHub download service"]
+    Model["Model Client Info"]
+    InfoService["Client Information Service"]
+    UpdateService["Client Update Service"]
+    Handler["Update Handler Service"]
+    State["Update State Service"]
+    Storage["Secured Client Info File"]
+    Binary["Running Client Binary"]
+    Publisher["Installed Agent Publisher"]
+
+    InfoService -->|"reads and writes"| Model
+    InfoService -->|"atomic JSON persistence"| Storage
+    UpdateService -->|"sets update status"| InfoService
+    UpdateService -->|"creates phase state"| State
+    Handler -->|"reconciles version and failure status"| InfoService
+    Handler -->|"reads update phase"| State
+    Binary -->|"supplies running version"| Handler
+    Handler -->|"reports running version"| Publisher

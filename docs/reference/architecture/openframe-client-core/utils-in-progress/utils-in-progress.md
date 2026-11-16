@@ -1,133 +1,118 @@
 # Utils In Progress
 
-Utils In Progress is a small, concurrency-safe activity indicator used by the OpenFrame Client agent. Its implementation is supplied by the `openframe_agent_lib` Cargo dependency from the OpenFrame OSS Library and runs inside this repository's client deployment. It lets one part of the agent begin a tracked operation while another part observes whether any tracked work remains active.
+Utils In Progress is a small, in-memory activity indicator used by the OpenFrame client agent. It exposes a reference-counted counter: work calls `begin`, observers obtain `view`, and an `InProgressView` reports whether one or more guarded operations are active. The implementation is supplied by the OpenFrame OSS Library's `openframe_agent_lib` artifact and runs within this repository's OpenFrame client.
 
-The implementation is intentionally scope-based: `begin` returns a guard, and dropping that guard decrements the shared count. This includes stack unwinding caused by a panic, so callers do not need a separate completion call in normal control flow.
+Its scope is deliberately narrow. It does not identify operations, queue work, persist state, or provide completion notifications. It answers one concurrency-safe question: whether the shared count is greater than zero.
 
-**Implementation source:** [OpenFrame OSS Library `in_progress.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/utils/in_progress.rs)
+**Source:** [in progress implementation](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/utils/in_progress.rs)
 
 ## Responsibilities
 
-- Track the number of currently scoped operations with a shared atomic counter.
-- Provide a lightweight read-only view for status consumers.
-- Keep tracking state valid across cloned handles by sharing the same counter.
-- Release an operation automatically when its guard leaves scope, including during panic unwinding.
-
-This utility is a local coordination primitive. It does not persist state, send messages, schedule work, serialize data, or itself prevent duplicate work. It only reports whether at least one holder currently owns an operation guard.
+- Start a tracked operation with `InProgress::begin`.
+- Keep the operation active for the lifetime of its returned `InProgressGuard`.
+- End the operation automatically when that guard is dropped, including during stack unwinding caused by a panic.
+- Produce cloneable, read-only observation handles with `InProgress::view`.
+- Report activity through `InProgressView::is_active` without exposing the counter itself.
 
 ## Architecture
 
-`InProgress` owns an `Arc<AtomicUsize>`. Cloning the tracker shares that allocation. `view` produces an `InProgressView` over the same allocation, and `begin` increments the counter before producing an `InProgressGuard`. The guard's `Drop` implementation decrements the counter.
+`InProgress` and `InProgressView` each hold an `Arc<AtomicUsize>` that refers to the same counter. Creating a guard increments the counter; dropping the guard decrements it. A view performs a load and maps any positive value to `true`.
 
 ```mermaid
 flowchart LR
-    CallerA["Operation caller"] -->|"begin()"| Tracker["InProgress"]
-    CallerB["Status consumer"] -->|"view()"| Tracker
-    Tracker -->|"shared counter"| Counter["Arc AtomicUsize"]
-    Tracker -->|"returns"| Guard["InProgressGuard"]
-    Tracker -->|"returns"| View["InProgressView"]
-    Guard -->|"Drop decrements"| Counter
-    View -->|"is_active() loads"| Counter
-    Counter -->|"count greater than zero"| Status["Active status"]
+    WorkerA["Worker A"] -->|"begin"| Counter["Shared AtomicUsize counter"]
+    WorkerB["Worker B"] -->|"begin"| Counter
+    Counter -->|"guard owns shared reference"| GuardA["InProgressGuard"]
+    Counter -->|"guard owns shared reference"| GuardB["InProgressGuard"]
+    Observer["Observer"] -->|"view"| View["InProgressView"]
+    View -->|"load and compare"| Counter
+    GuardA -->|"drop decrements"| Counter
+    GuardB -->|"drop decrements"| Counter
 ```
 
 ### Components
 
-| Component | Role | Behavior |
+| Component | Role | Shared state interaction |
 |---|---|---|
-| `InProgress` | Mutable tracking handle | Defaults to a zero counter. `begin` increments the counter and creates a guard. `view` creates an observer over the same counter. |
-| `InProgressGuard` | Scoped ownership token | Its destructor decrements the counter. The `must_use` annotation warns when a returned guard is immediately discarded, which would end the operation at once. |
-| `InProgressView` | Read-only observer | `is_active` returns `true` when the counter is greater than zero. |
-
-## Public Operations
-
-### Begin an operation
-
-`InProgress::begin` performs a sequentially consistent atomic increment and returns an `InProgressGuard`. The operation remains represented in the counter while that guard is retained.
-
-A caller should bind the returned guard to a variable whose lifetime exactly covers the work being tracked. Dropping it early makes the activity invisible to observers even if the work continues.
-
-### Create an observer
-
-`InProgress::view` returns an `InProgressView` backed by the same atomic counter. Views can be cloned and distributed to status checks without granting the ability to start or finish operations.
-
-### Check activity
-
-`InProgressView::is_active` performs a sequentially consistent atomic load and tests whether the value is greater than zero. The result means that an operation guard existed at the instant of that load; it is not a reservation or an exclusive lock.
+| `InProgress` | Cloneable owner used to start tracked work and create views. | Holds `Arc<AtomicUsize>`. Its default state has a count of zero. |
+| `InProgressGuard` | RAII lifetime token returned by `begin`. | Increments the count when created and decrements it in `Drop`. |
+| `InProgressView` | Cloneable observer handle. | Loads the count and returns active when it is greater than zero. |
+| `AtomicUsize` | Shared counter. | All mutations and reads use sequentially consistent ordering. |
 
 ## Operation Lifecycle
 
-The counter represents the number of outstanding guards, rather than a single Boolean. This preserves correct activity reporting when multiple operations overlap.
+The counter represents the number of guards that have not yet been dropped. Nested and concurrent operations are therefore supported: activity remains reported until the final guard is released.
+
+```mermaid
+sequenceDiagram
+    participant Worker as Worker
+    participant Progress as InProgress
+    participant Guard as InProgressGuard
+    participant Observer as InProgressView
+    Worker->>Progress: begin()
+    Progress->>Progress: fetch_add(1, SeqCst)
+    Progress-->>Worker: guard
+    Observer->>Progress: is_active()
+    Progress->>Progress: load(SeqCst)
+    Progress-->>Observer: true while count is positive
+    Worker->>Guard: scope ends or panic unwinds
+    Guard->>Progress: Drop fetch_sub(1, SeqCst)
+    Observer->>Progress: is_active()
+    Progress-->>Observer: false after final guard drops
+```
+
+### State Model
 
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
-    Idle --> Active: "begin increments from zero"
-    Active --> Active: "another begin or one guard drops"
-    Active --> Idle: "last guard drops"
-    Idle --> Idle: "view checks inactive"
-    Active --> Active: "view checks active"
+    Idle --> Active: begin increments count
+    Active --> Active: additional begin
+    Active --> Active: guard drop and count remains positive
+    Active --> Idle: final guard drop
 ```
 
-```mermaid
-sequenceDiagram
-    participant Worker as Operation Worker
-    participant Tracker as In Progress
-    participant Guard as Operation Guard
-    participant Observer as Status Observer
-    Worker->>Tracker: begin()
-    Tracker->>Tracker: increment shared counter
-    Tracker-->>Worker: guard
-    Worker->>Observer: work is running
-    Observer->>Tracker: view().is_active()
-    Tracker-->>Observer: true while count is positive
-    Worker->>Guard: scope exits or panic unwinds
-    Guard->>Tracker: drop decrements counter
-    Observer->>Tracker: view().is_active()
-    Tracker-->>Observer: false after last guard drops
-```
+## API Behavior and Guarantees
+
+### Starting work
+
+`InProgress::begin` performs `fetch_add(1, Ordering::SeqCst)` and returns an `InProgressGuard`. The guard retains a clone of the counter reference, so the tracked operation remains associated with the same shared state even if the original `InProgress` handle is moved or dropped.
+
+The guard is annotated with `must_use`. Discarding it immediately ends the activity interval, so callers must bind it for the scope that represents the work.
+
+### Observing work
+
+`InProgress::view` creates an `InProgressView` backed by the same counter. `InProgressView::is_active` executes `load(Ordering::SeqCst) > 0`; it does not reserve work or alter the count. A view is a point-in-time observation, so an operation can start or finish immediately after the read.
+
+### Completion and panic safety
+
+`InProgressGuard` implements `Drop`, where it calls `fetch_sub(1, Ordering::SeqCst)`. Rust runs this destructor when a normal scope exits and while unwinding from a panic. This RAII design prevents the common failure mode in which an early return or panic leaves a manual activity flag set indefinitely.
 
 ## Concurrency Semantics
 
-All reads and updates use `Ordering::SeqCst`. Consequently, counter changes and observations participate in a single sequentially consistent order across threads. This is stronger than required for a simple active flag but gives straightforward, globally ordered behavior to consumers.
+The module uses `Arc` and `AtomicUsize`, allowing cloned owners, guards, and views to share the counter across threads. Every atomic operation uses `Ordering::SeqCst`, giving a single global ordering for these counter operations. This is stronger than the minimum required merely to count operations, but makes the activity transitions straightforward to reason about.
 
-The utility provides only a point-in-time status observation:
+The abstraction relies on balanced use: each active guard is dropped once after `begin` has incremented the count. Callers should not attempt to model individual task identity or cancellation with the counter; it is aggregate state only.
 
-- A `true` result means the counter was positive during the load.
-- A `false` result does not prohibit another thread from calling `begin` immediately afterward.
-- A `true` result does not guarantee that the operation will still be active after the check completes.
+## Integration Guidance
 
-Consumers that need ownership, exclusion, queuing, or a stable decision must use an additional synchronization or coordination mechanism. Utils In Progress should remain limited to activity visibility.
-
-## Usage Pattern
-
-The intended pattern keeps the guard alive for the full critical work scope and gives an observer to code that needs status reporting.
+Use Utils In Progress around an operation whose duration must be visible to another part of the client process. Keep the guard local and let scope exit determine completion.
 
 ```rust
-let tracker = InProgress::default();
-let status = tracker.view();
-
-{
-    let _operation = tracker.begin();
-    assert!(status.is_active());
-    // Perform the tracked operation while _operation remains in scope.
-}
-
-assert!(!status.is_active());
+let work = in_progress.begin();
+perform_operation().await?;
+drop(work);
 ```
 
-The leading underscore in `_operation` suppresses an unused-variable warning while retaining the guard. Do not write `tracker.begin();` without binding the result: the temporary guard is dropped at the end of that statement, immediately decrementing the counter.
+In most cases, explicit `drop` is unnecessary; retaining the guard until the enclosing scope ends is clearer and preserves the intended lifetime. Obtain an `InProgressView` where a component only needs to query activity, rather than giving that component the ability to start additional tracked operations.
 
-## Integration Boundaries
+## Limits
 
-Utils In Progress belongs to the Rust OpenFrame Client implementation from the OpenFrame OSS Library. The tenant repository consumes the library as `openframe_agent_lib` version `v0.0.5`; it does not define the utility locally. The module is therefore an in-process agent concern, independent of the tenant services, gateway routes, NATS connections, or persistent data stores.
-
-Within the broader client, it is suitable for exposing whether a background workflow is currently running. It must not be interpreted as a distributed activity signal: its counter exists only in the process that owns the `InProgress` handles.
+- The state is process-local and is reset when the client restarts.
+- The counter has no operation metadata, timeout, wait primitive, or callback mechanism.
+- `is_active` provides a snapshot, not a guarantee that the system will remain idle after it returns `false`.
+- The module does not synchronize the work itself; it only reports aggregate activity.
 
 ## Maintenance Notes
 
-- Preserve the guard-based API: manual decrement methods make early returns and panic paths easier to leak.
-- Keep increments and decrements balanced. The implementation assumes every constructed guard is dropped exactly once; violating that invariant can cause the unsigned counter to underflow.
-- Treat `is_active` as telemetry or UI state, not as a lock-acquisition test.
-- If changing memory ordering, document the intended cross-thread guarantees and verify that observers still meet their requirements.
-- Add tests for nested guards, cloned trackers, cloned views, and guard release during unwinding whenever lifecycle behavior changes.
+Preserve the guard-based decrement path when changing this module. Replacing it with a manually managed completion call would weaken early-return and panic safety. If additional state is needed, keep the observation contract explicit: consumers currently depend on `is_active` being a non-mutating, aggregate predicate over the shared counter.

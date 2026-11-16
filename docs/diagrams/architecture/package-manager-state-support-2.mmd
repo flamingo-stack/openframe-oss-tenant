@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Resolve Manager State"] --> PresentCheck{"Presence Present?"}
+    PresentCheck -->|"yes"| Present["PRESENT"]
+    PresentCheck -->|"no"| SupportedCheck{"Supported?"}
+    SupportedCheck -->|"no"| Unsupported["UNSUPPORTED"]
+    SupportedCheck -->|"yes"| AbsentCheck{"Presence Absent?"}
+    AbsentCheck -->|"no"| UnknownProbe["UNKNOWN"]
+    AbsentCheck -->|"yes"| SessionCheck{"Console User Present?"}
+    SessionCheck -->|"yes"| Missing["MISSING"]
+    SessionCheck -->|"no"| UnknownSession["UNKNOWN"]

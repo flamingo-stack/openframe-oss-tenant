@@ -1,9 +1,9 @@
 flowchart TD
-    Input["Read-state rows"] --> Empty{"Rows empty?"}
-    Empty -->|"Yes"| Return["Return without database work"]
-    Empty -->|"No"| Insert["Run unordered bulk insert"]
-    Insert --> Outcome{"Bulk error?"}
-    Outcome -->|"No"| Done["Rows persisted"]
-    Outcome -->|"Yes"| Duplicate{"All errors are duplicate keys?"}
-    Duplicate -->|"Yes"| Idempotent["Log debug and accept batch"]
-    Duplicate -->|"No"| Fail["Rethrow bulk exception"]
+    Input["Notification read-state rows"] --> EmptyCheck{"Rows supplied?"}
+    EmptyCheck -->|"no"| Return["Return without Mongo operation"]
+    EmptyCheck -->|"yes"| BulkInsert["Execute unordered bulk insert"]
+    BulkInsert --> Outcome{"Bulk error?"}
+    Outcome -->|"no"| Success["Insertion complete"]
+    Outcome -->|"yes"| DuplicateOnly{"All errors are duplicate key 11000?"}
+    DuplicateOnly -->|"yes"| Idempotent["Log debug message and continue"]
+    DuplicateOnly -->|"no"| Rethrow["Propagate bulk operation exception"]

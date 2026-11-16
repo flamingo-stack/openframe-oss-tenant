@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> Registered
+    Registered --> Supervised: "manager accepts tool"
+    Supervised --> Waiting: "tool operation is busy"
+    Waiting --> Supervised: "operation is released"
+    Supervised --> Launching: "standard or graphical launch"
+    Launching --> Running: "process stays up"
+    Launching --> Retrying: "launch fails or exits quickly"
+    Running --> Retrying: "process exits"
+    Retrying --> Launching: "delay expires"
+    Supervised --> Stopped: "shutdown or unsupervised"
+    Waiting --> Stopped: "shutdown or unsupervised"
+    Running --> Stopped: "shutdown or unsupervised"
+    Stopped --> [*]

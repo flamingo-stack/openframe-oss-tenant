@@ -1,8 +1,0 @@
-flowchart LR
-    CommandFlow["Command or delivery workflow"] -->|"accepts a delivery"| Ledger["Services Result Store Ledger"]
-    RestartFlow["Agent restart workflow"] -->|"recovers or settles records"| Ledger
-    Ledger -->|"read and write transactions"| Redb["Result Store Redb database"]
-    Ledger -->|"delivery ledger table"| DeliveryTable["delivery_ledger"]
-    Ledger -->|"sequence table"| SequenceTable["delivery_sequence"]
-    Ledger -->|"settled result transaction"| Outbox["Result Store outbox"]
-    Outbox -->|"later publication"| Publisher["Result publisher"]

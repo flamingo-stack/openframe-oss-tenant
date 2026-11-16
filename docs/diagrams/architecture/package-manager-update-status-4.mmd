@@ -1,0 +1,7 @@
+flowchart TD
+    Event["Package update status event"] --> Subject["Machine-specific status subject"]
+    Subject --> Stream["NATS JetStream"]
+    Stream --> Listener["Package update status listener"]
+    Listener --> Processor["Package update status processor"]
+    Processor --> DeviceState["Device update state"]
+    Processor --> ExecutionRecord["Package update execution record"]

@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Receive device-mode request"] --> Token["Load access token"]
+    Token --> Send["Send authenticated PUT"]
+    Send --> Status["Classify response status"]
+    Status -->|"2xx"| Applied["Applied"]
+    Status -->|"404"| Unsupported["Not Supported"]
+    Status -->|"409"| Override["Override Exists"]
+    Status -->|"other status or transport failure"| Retryable["Return error for caller retry"]

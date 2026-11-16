@@ -1,135 +1,151 @@
 # Utils Fs
 
-Utils Fs is the OpenFrame Client agent's small, defensive persistence boundary for JSON-backed local state. It is implemented by the `openframe_agent_lib` dependency from OpenFrame OSS Library and runs inside this repository's OpenFrame Client deployment. Its responsibilities are deliberately narrow: write complete replacement files, distinguish absence from corruption, and move malformed JSON out of the active path so later writes can recover normally.
+Utils Fs is the OpenFrame Client agent's small persistence boundary for JSON state. It is implemented by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library and is assembled into the client runtime by this repository. Its design protects state readers from partially written files and lets callers recover from malformed persisted state without preventing a fresh write.
 
-The implementation is maintained in [the OpenFrame OSS Library source](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/utils/fs.rs). OpenFrame OSS Tenant consumes the library as Cargo artifact `openframe_agent_lib` version `0.0.5`.
+**Source:** [OpenFrame OSS Library `fs.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/utils/fs.rs)
 
 ## Responsibilities
 
-- **Durable replacement writes:** Create a temporary file in the target directory, write the full byte sequence, flush it to storage, then persist it at the destination.
-- **Safe JSON reads:** Treat a missing file as an expected state and report other read failures with path context.
-- **Corruption containment:** If JSON decoding fails, log diagnostic metadata and rename the bad file with a `.corrupt` suffix before reporting the condition.
-- **Explicit caller outcomes:** Represent missing, corrupt, and successfully parsed files separately, while providing a convenience conversion to an optional parsed value.
+- Write byte content atomically in the target directory.
+- Synchronize temporary-file content before replacement to reduce the risk of a renamed but incomplete file after power loss.
+- Restore Unix permissions to `0644` for persisted files so normal user processes can read files created through the helper.
+- Read deserializable JSON while distinguishing missing, corrupt, and successfully parsed state.
+- Quarantine malformed JSON as a sibling file with a `.corrupt` suffix and emit structured warnings instead of repeatedly consuming the broken file.
+- On Windows, retry replacement when a target is temporarily held by another process and report lock-holder diagnostics if retries are exhausted.
 
-Utils Fs does not define the JSON schemas, choose persistence locations, or interpret recovered state. Those concerns belong to the calling client services and platform directory management.
+Utils Fs deliberately does not define state schemas, choose persistence paths, or retry general I/O errors. Callers own those policies and supply the concrete type through Serde deserialization.
 
-## Architecture and Placement
+## Architecture and Boundaries
 
 ```mermaid
 flowchart LR
-    Client["OpenFrame Client agent"]
-    Services["Client services"]
-    Utils["Utils Fs"]
-    Temp["Same directory temporary file"]
-    State["JSON state file"]
-    Quarantine["Quarantined corrupt file"]
-    Client --> Services
-    Services --> Utils
-    Utils --> Temp
-    Temp --> State
-    Utils --> Quarantine
+    ClientRuntime["OpenFrame Client runtime"] --> StateOwner["State-owning service"]
+    StateOwner --> JsonApi["Utils Fs JSON read API"]
+    StateOwner --> WriteApi["Utils Fs atomic write API"]
+    JsonApi --> LocalFile["Persistent JSON file"]
+    WriteApi --> TempFile["Same-directory temporary file"]
+    TempFile --> Replace["Atomic replacement"]
+    Replace --> LocalFile
+    JsonApi --> Quarantine["Sibling corrupt file"]
+    Quarantine --> LocalDirectory["Persistent state directory"]
+    LocalFile --> LocalDirectory
 ```
 
-The module sits below agent services that persist lightweight local state, such as registration data, update state, client information, or durable work records. It accepts a filesystem path and caller-owned bytes or a caller-selected deserialization type. The module has no network, database, or message-bus dependency.
+The caller-facing portion consists of `atomic_write`, `read_json_or_quarantine`, and `parse_json_or_quarantine`. `JsonFile<T>` represents the result of a tolerant read, while its `parsed` convenience method projects either a parsed value or `None`. The internal quarantine-path helper derives the sibling name used for a malformed file.
 
-### Component Model
+The module is part of the OpenFrame Client Core utility layer. It complements platform directory and permission facilities, which decide where durable agent data belongs and establish the containing directory's access policy. Utils Fs only creates the direct parent directory necessary for an atomic write.
+
+## Component Model
 
 | Component | Role | Observable result |
 |---|---|---|
-| Atomic write operation | Replaces the destination only after a complete temporary file has been written and flushed. | Readers avoid an in-progress partial file, and a successful return means the replacement step completed. |
-| JSON file outcome | Models the three possible read states: missing, corrupt, or parsed. | Callers can differentiate initial startup from damaged persisted state. |
-| Read and quarantine operation | Reads bytes from a path and delegates JSON decoding. | A missing file becomes the missing outcome, while non-missing read failures remain errors with path context. |
-| Parse and quarantine operation | Deserializes caller-selected JSON and isolates malformed input. | Valid bytes become the parsed outcome and invalid bytes become the corrupt outcome. |
-| Parsed value helper | Converts the outcome into an optional value. | Missing and corrupt states both produce no value for callers that do not need the distinction. |
+| `atomic_write` | Creates a same-directory temporary file, writes content, synchronizes it, and persists it over the destination. | The destination changes as a replacement operation rather than exposing an in-place partial write. |
+| `JsonFile<T>` | Result enum for tolerant JSON reads. | `Missing`, `Corrupt`, or `Parsed(T)`. |
+| `JsonFile::parsed` | Consumes a read result and extracts a value when present. | `Some(T)` only for the parsed variant. |
+| `read_json_or_quarantine` | Reads a path and delegates JSON decoding and malformed-file handling. | Missing files are normal; other read failures retain context and return an error. |
+| `parse_json_or_quarantine` | Deserializes supplied bytes and quarantines invalid source content. | Parsed data or a corrupt result after a rename attempt and warning. |
 
-## Dependency Boundaries
+## Atomic Write Process
 
-```mermaid
-flowchart TD
-    Caller["Agent service"] -->|"supplies path and type"| Reader["Read and quarantine operation"]
-    Caller -->|"supplies path and bytes"| Writer["Atomic write operation"]
-    Reader --> Parser["Parse and quarantine operation"]
-    Parser --> Json["JSON deserializer"]
-    Writer --> TempFile["Temporary file facility"]
-    Writer --> FileSystem["Operating system filesystem"]
-    Parser --> FileSystem
-    FileSystem --> Log["Warning log on corruption"]
-```
-
-The implementation depends on a JSON deserializer for typed decoding, a temporary-file facility for safely creating a file beside its destination, structured tracing for warnings, and operating-system filesystem primitives. It supplies a generic boundary rather than a domain-specific storage abstraction: the caller determines the JSON type and path.
-
-On Unix-like systems, the temporary file permissions are set to mode `0644` before persistence because the temporary-file default is more restrictive. This aligns the eventual file with the normal permissions expected from a standard write. On Windows, replacement can fail when an antivirus scanner, backup process, or similar process briefly holds the target. In that case, the implementation retries a rename after progressively longer delays of 100, 200, 400, 800, and 1600 milliseconds. When retries still fail, it logs the relevant locking-process diagnostics when available and attempts to remove the temporary file.
-
-## Write Flow
+The write path places the temporary file in the same directory as the destination. This is essential because the final persistence step can replace the destination atomically only when both paths are on the same filesystem.
 
 ```mermaid
 flowchart TD
-    Begin["Write requested"] --> Parent["Resolve parent directory"]
-    Parent --> Directory["Create parent directories"]
-    Directory --> Temp["Create temporary file beside target"]
-    Temp --> Bytes["Write complete byte sequence"]
-    Bytes --> Permissions["Apply Unix file permissions when applicable"]
-    Permissions --> Flush["Flush file contents to storage"]
-    Flush --> Persist["Persist temporary file at target"]
-    Persist --> Success["Replacement complete"]
-    Persist --> Held{"Target held on Windows?"}
-    Held -->|"Yes"| Retry["Retry rename with backoff"]
-    Retry --> RetryDone{"Rename succeeded?"}
-    RetryDone -->|"Yes"| Success
-    RetryDone -->|"No"| Error["Return contextual error"]
-    Held -->|"No"| Error
+    Start["Caller supplies destination and content"] --> Parent["Resolve parent directory"]
+    Parent --> Ensure["Create parent directory if needed"]
+    Ensure --> Temp["Create same-directory temporary file"]
+    Temp --> Write["Write all content bytes"]
+    Write --> Permissions["Apply Unix read permissions"]
+    Permissions --> Sync["Synchronize temporary file"]
+    Sync --> Persist["Persist temporary file over destination"]
+    Persist --> Success{"Persist succeeded?"}
+    Success -->|"yes"| Complete["Return success"]
+    Success -->|"no on Windows lock"| Retry["Retry rename with delays"]
+    Success -->|"no otherwise"| Failure["Return contextual error"]
+    Retry --> RetryResult{"Rename succeeded?"}
+    RetryResult -->|"yes"| Complete
+    RetryResult -->|"no"| Diagnose["Log lock-holder diagnostics and remove temporary file"]
+    Diagnose --> Failure
 ```
 
-### Atomicity and Durability Properties
+### Durability and replacement semantics
 
-The temporary file is created in the target's parent directory. This is important because the final persistence operation is a rename within the same directory rather than a copy between filesystems. The code writes all supplied content before attempting the replacement, then calls a full file synchronization before that replacement. The synchronization protects against a failure mode where a rename survives a power loss but written data has not reached durable storage, which could otherwise leave a zero-filled or incomplete state file.
+`atomic_write` calls `sync_all` before the replacement step. The documented intent is to avoid a power-loss case where a rename becomes visible but file content has not reached durable storage, which can manifest as a zero-filled file. It then persists the named temporary file over the destination. On Unix, the temporary file's default restrictive permissions are changed to `0644` before persistence.
 
-The operation creates missing parent directories. It returns a contextual error if the path has no parent directory, temporary-file creation fails, writing fails, flushing fails, or the final replacement cannot be completed. It does not silently fall back to a non-atomic direct write.
+On Windows, a failed replacement caused by access-denied or sharing-violation errors triggers a bounded retry sequence. The fallback uses rename attempts separated by increasing delays of 100, 200, 400, 800, and 1600 milliseconds. If all attempts fail, the module logs diagnostics for both the target and temporary paths, tries to remove the temporary file, and returns the underlying failure with destination context.
 
-## Read and Recovery Flow
+## JSON Read and Recovery Flow
+
+`read_json_or_quarantine` treats a missing file as expected state, not as an error. It returns `JsonFile::Missing`. A readable file is decoded through `parse_json_or_quarantine`; non-not-found read failures instead propagate as contextual errors because the module cannot safely classify them as absent or malformed state.
 
 ```mermaid
 flowchart TD
-    Start["Read requested"] --> Read["Read file bytes"]
-    Read --> Exists{"File exists?"}
-    Exists -->|"No"| Missing["Return missing outcome"]
-    Exists -->|"Read error"| ReadError["Return contextual error"]
-    Exists -->|"Yes"| Parse["Deserialize JSON"]
-    Parse --> Valid{"Valid JSON for requested type?"}
-    Valid -->|"Yes"| Parsed["Return parsed outcome"]
-    Valid -->|"No"| Move["Rename file with corrupt suffix"]
-    Move --> Warn["Log size, zero-byte signal, and parse error"]
-    Warn --> Corrupt["Return corrupt outcome"]
+    ReadStart["Read requested JSON path"] --> ReadFile{"Read succeeded?"}
+    ReadFile -->|"not found"| Missing["Return Missing"]
+    ReadFile -->|"other error"| ReadError["Return contextual read error"]
+    ReadFile -->|"bytes read"| Decode["Deserialize JSON bytes"]
+    Decode --> Valid{"Valid JSON for target type?"}
+    Valid -->|"yes"| ParsedValue["Return Parsed value"]
+    Valid -->|"no"| Rename["Rename source to sibling corrupt file"]
+    Rename --> Warn["Emit warning with size and parse error"]
+    Warn --> Corrupt["Return Corrupt"]
 ```
 
-A missing state file is normal for first use and does not produce an error. A different read failure, such as an access or device error, is propagated because the caller cannot safely assume there is no prior state.
+### Quarantine behavior
 
-For malformed JSON, Utils Fs attempts to move the source to a sibling path formed by appending `.corrupt` to its filename. The warning includes the original path, byte size, deserialization failure, and whether the nonempty file contains only zero bytes. The move is best effort: even if it cannot be completed, the function logs that failure and returns the corrupt outcome so the caller can begin fresh state rather than consuming invalid data.
+For invalid JSON, Utils Fs appends `.corrupt` to the original file name in the same directory and attempts a rename. It returns `JsonFile::Corrupt` whether or not that rename succeeds, because the supplied content has already failed deserialization. The warning records the source path, byte count, parser error, and whether the bytes were entirely zeroes. The latter is useful when investigating interrupted or damaged persistence.
 
-## Caller Contract
+A subsequent state save can therefore create a clean replacement file while preserving the malformed content when the rename succeeded. If a `.corrupt` sibling already exists, the rename itself may fail; that failure is warned about rather than converted into a read error.
 
-### Writing State
+## Component Interaction
 
-Use the atomic write operation whenever replacing a complete file whose readers must not observe partially serialized content. Serialize the domain value before calling the operation, and treat an error as a failed persistence attempt. The helper writes bytes exactly as supplied and does not serialize, encrypt, validate, or merge them.
+```mermaid
+sequenceDiagram
+    participant Owner as State-owning service
+    participant Fs as Utils Fs
+    participant Disk as Local filesystem
+    Owner->>Fs: read_json_or_quarantine(path)
+    Fs->>Disk: read(path)
+    alt file missing
+        Fs-->>Owner: JsonFile::Missing
+    else valid JSON
+        Fs-->>Owner: JsonFile::Parsed(value)
+    else invalid JSON
+        Fs->>Disk: rename(path, path.corrupt)
+        Fs-->>Owner: JsonFile::Corrupt
+    end
+    Owner->>Fs: atomic_write(path, serialized state)
+    Fs->>Disk: create temp, write, sync, replace
+    Fs-->>Owner: success or contextual error
+```
 
-### Reading State
+## Integration Guidance
 
-Use the read and quarantine operation with the expected deserialization type. Handle outcomes according to the state owner's recovery policy:
+Use Utils Fs for small local state whose loss or reset can be recovered by higher-level client services. Typical callers should:
 
-- **Missing:** Initialize defaults or wait until the service has data to save.
-- **Parsed:** Continue with the returned value.
-- **Corrupt:** Initialize safe replacement state and preserve logs plus the quarantined file for diagnosis when it was successfully moved.
+1. Select and secure an application-owned directory through the platform directory and permission facilities.
+2. Call `read_json_or_quarantine` with the desired deserialization type.
+3. Treat `Missing` and `Corrupt` as inputs to initialization or recovery, while preserving operational visibility through the emitted warnings.
+4. Serialize the replacement state in the owning service.
+5. Use `atomic_write` to publish the complete replacement document.
 
-Use the parsed value helper only when missing and corrupt can intentionally share the same fallback behavior. Otherwise, match the three outcomes directly so corruption remains visible in service-level decisions and telemetry.
+Do not assume that `Corrupt` contains a recoverable value: the type intentionally exposes only the state classification. Do not use this helper for multi-file transactions, concurrent state merging, or durable database semantics; atomic replacement protects a single destination file, not coordination across independent writers.
 
-## Operational Considerations
+## Failure Handling Summary
 
-- A `.corrupt` file is diagnostic evidence, not a valid fallback. Do not automatically parse it as part of normal startup.
-- The corruption path appends a suffix to the current filename. Operators should collect it before cleanup if the underlying failure needs investigation.
-- A successful write replaces the prior file; it is not an append or transactional history mechanism.
-- Windows replacement may block the caller thread during its short retry window. Callers should account for that behavior when choosing execution contexts.
-- File ownership, directory permissions, paths, encryption, retention, and schema migrations remain the responsibility of higher-level client and platform modules.
+| Situation | Module behavior | Caller responsibility |
+|---|---|---|
+| Parent directory does not exist during write | Creates it. | Ensure the selected path and directory permissions are appropriate. |
+| Write, synchronization, or replacement fails | Returns an error enriched with the affected path where applicable. | Surface, retry, or degrade according to the owning service's policy. |
+| Destination is temporarily held on Windows | Retries bounded rename attempts. | Handle the returned failure after retry exhaustion. |
+| JSON file is absent | Returns `Missing`. | Initialize default state if appropriate. |
+| JSON content is malformed | Attempts quarantine, logs a warning, and returns `Corrupt`. | Rebuild state and write a clean replacement if safe. |
+| JSON path cannot be read for another reason | Returns a contextual error. | Investigate access, filesystem, or device failures. |
 
-## Relationship to the OpenFrame Client
+## Maintenance Notes
 
-Utils Fs is a foundational local-state primitive within the OpenFrame Client agent supplied by OpenFrame OSS Library. Higher-level client services own registration, authentication, update, delivery, and tool-management workflows; this module protects the small JSON files those workflows choose to persist. Keeping file replacement and malformed-input recovery here gives those services a consistent failure boundary without coupling the utility to any one state schema or workflow.
+- Keep temporary files in the destination directory; moving them elsewhere can invalidate atomic replacement assumptions.
+- Preserve the explicit synchronization step when changing write behavior, because it addresses a durability failure mode rather than merely flushing language-level buffers.
+- Maintain the distinction between missing, corrupt, and unreadable files. Collapsing these states would hide operational faults or remove recovery behavior.
+- Any change to Windows replacement handling should retain bounded retries and meaningful diagnostics, as antivirus and backup software can transiently hold agent files open.
+- Quarantine preserves evidence only when its rename succeeds. Operational tooling should collect warnings and `.corrupt` files when investigating recurring state damage.

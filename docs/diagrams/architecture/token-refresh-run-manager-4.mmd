@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client as OpenFrame Client
+    participant Manager as Token Refresh Run Manager
+    participant Auth as Agent Auth Service
+    participant Endpoint as Client Token Endpoint
+    participant Storage as Token Storage
+
+    Client->>Manager: start()
+    Manager->>Manager: Set immediate first refresh
+    Manager->>Auth: reauthenticate()
+    Auth->>Endpoint: Refresh token grant
+    Endpoint-->>Auth: Agent token response
+    Auth->>Storage: Persist token pair and shared token
+    Auth-->>Manager: Successful response
+    Manager->>Manager: Derive boot clock deadline
+    Manager->>Manager: Wait until deadline

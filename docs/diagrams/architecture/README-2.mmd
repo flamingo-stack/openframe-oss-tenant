@@ -1,17 +1,18 @@
-flowchart TD
-    Gateway["Gateway"] --> Identity["Authorization Server"]
-    Gateway --> CoreApi["OpenFrame API"]
-    Gateway --> AgentApi["Client Service"]
-    Gateway --> IntegrationApi["External API"]
+sequenceDiagram
+    participant Endpoint as "Managed Endpoint"
+    participant Gateway as "OpenFrame Gateway"
+    participant Client as "Client Service"
+    participant Nats as "NATS"
+    participant Kafka as "Kafka"
+    participant Stream as "Stream Service"
+    participant Data as "Platform Data Stores"
 
-    Management["Management Service"] --> Bootstrap["Configuration and stream initialization"]
-    Management --> Catalogs["Package catalog synchronization"]
-    Management --> Delivery["Client and tool update publishing"]
-
-    AgentApi --> Agent["OpenFrame endpoint agent"]
-    Agent --> Nats["NATS messaging"]
-    Nats --> AgentApi
-
-    Stream["Stream Service"] --> Kafka["Kafka events"]
-    Kafka --> Logs["Cassandra and Loki event logs"]
-    Kafka --> Analytics["Pinot projections"]
+    Endpoint->>Gateway: Register or authenticate
+    Gateway->>Client: Forward client request
+    Client->>Data: Persist machine and credential state
+    Client->>Nats: Deliver commands and tool work
+    Nats->>Endpoint: Receive command or update
+    Endpoint->>Nats: Publish telemetry and execution results
+    Client->>Kafka: Publish delivery and event records
+    Kafka->>Stream: Consume platform events
+    Stream->>Data: Store logs, execution history, and projections

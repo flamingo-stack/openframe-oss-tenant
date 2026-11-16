@@ -1,0 +1,9 @@
+flowchart TD
+    Incoming["Inbound script request"] --> Normalize["Execution Service resolves timeout and privilege"]
+    Normalize --> Run["Script Executor runs temporary script"]
+    Run --> Outcome{"Process outcome"}
+    Outcome -->|"Started"| Capture["Capture output, exit code, and timeout"]
+    Outcome -->|"Could not start"| StartError["Return code 85 with error text"]
+    Capture --> Build["Build RMM result"]
+    StartError --> Build
+    Build --> Delivery["Client result delivery workflow"]

@@ -1,7 +1,11 @@
 flowchart TD
-    InputA["Raw version input"] --> Trim["Trim surrounding whitespace"]
-    Trim --> Prefix["Remove one v or V prefix"]
-    Prefix --> Parse["Parse with semver Version"]
-    Parse --> Valid{"Valid Semantic Version?"}
-    Valid -->|"No"| None["Return None"]
-    Valid -->|"Yes"| Version["Return Version value"]
+    Start["Receive source and target strings"] --> ParseSource["Normalize and parse source"]
+    ParseSource --> SourceValid{"Source valid?"}
+    SourceValid -->|"no"| Invalid["Return None"]
+    SourceValid -->|"yes"| ParseTarget["Normalize and parse target"]
+    ParseTarget --> TargetValid{"Target valid?"}
+    TargetValid -->|"no"| Invalid
+    TargetValid -->|"yes"| Compare["Compare target against source"]
+    Compare --> Components["Use major, minor, patch, and prerelease"]
+    Components --> IgnoreBuild["Ignore build metadata"]
+    IgnoreBuild --> Ordered["Return Less, Equal, or Greater"]

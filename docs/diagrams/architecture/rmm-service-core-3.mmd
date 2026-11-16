@@ -1,0 +1,10 @@
+flowchart TD
+    ProjectRequest["Tenant and Software Title"] --> Rollup["Roll Up Device Software"]
+    Rollup --> Exists{"Rollup Exists?"}
+    Exists -->|"no"| Delete["Delete Tenant Software Record"]
+    Exists -->|"yes"| BuildProgram["Build Installed Program Keys"]
+    BuildProgram --> MatchCheck{"Keys Changed or Match Stale?"}
+    MatchCheck -->|"yes"| Match["Match Package Catalog"]
+    MatchCheck -->|"no"| PreserveMatch["Keep Stored Match"]
+    Match --> Save["Save Software Projection"]
+    PreserveMatch --> Save

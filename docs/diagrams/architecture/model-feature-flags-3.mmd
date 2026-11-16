@@ -1,11 +1,19 @@
-flowchart LR
-    Server["Client configuration service"] --> Registration["Registration feature flag delivery"]
-    Server --> Delivery["Feature flag delivery"]
-    Delivery --> Handler["Feature Flags Handler"]
-    Handler --> Service["Feature Flags Service"]
-    Service --> Message["Feature Flags Message"]
-    Message --> Validation["Validate FeatureFlag values"]
-    Validation --> State["Persist Feature Flags State"]
-    State --> Restart["Restart required delivery reference"]
-    Service --> Running["Running Feature Flags"]
-    Running --> Consumers["Delivery and package update capabilities"]
+sequenceDiagram
+    participant CP as Control Plane
+    participant H as Feature Flags Handler
+    participant S as Feature Flags Service
+    participant F as State File
+    participant A as Client Agent
+    CP->>H: Deliver flags with sequence and delivery reference
+    H->>S: Apply message for machine
+    S->>S: Validate entries and resolve against running version
+    S->>F: Persist machine, sequence, and accepted flags
+    alt Effective flags changed
+        S->>F: Persist awaiting restart reference
+        S-->>H: Restart required
+        H-->>A: Request restart through delivery flow
+        A->>S: Report restart completion
+        S->>F: Clear awaiting restart reference
+    else Effective flags unchanged
+        S-->>H: Unchanged
+    end

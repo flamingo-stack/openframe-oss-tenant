@@ -1,0 +1,9 @@
+flowchart TD
+    Deactivation["Deactivation Service"] -->|"requests client uninstall"| ClientUninstall["Client platform uninstaller"]
+    ClientUninstall -->|"creates dependencies"| ToolUninstall["Tool Uninstall Service"]
+    ToolUninstall -->|"reads inventory"| InstalledTools["Installed Tools Service"]
+    ToolUninstall -->|"resolves arguments"| Params["Tool Command Parameters Resolver"]
+    ToolUninstall -->|"stops processes"| Kill["Tool Kill Service"]
+    ToolUninstall -->|"locates executable"| Directories["Directory Manager"]
+    ToolUninstall -->|"runs configured command"| ToolProcess["Integrated tool process"]
+    ToolUninstall -->|"removes residual service"| SystemService["System service adapter"]

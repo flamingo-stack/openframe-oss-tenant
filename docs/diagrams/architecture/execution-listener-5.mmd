@@ -1,0 +1,15 @@
+flowchart TD
+    Payload["Acknowledgement or result payload"] --> Storage{"Result store enabled?"}
+    Storage -->|"yes"| Enqueue["Enqueue outbound record"]
+    Enqueue --> Enqueued{"Enqueued?"}
+    Enqueued -->|"yes"| Notify["Notify result outbox"]
+    Enqueued -->|"no"| Drop["Log dropped message"]
+    Storage -->|"no"| Retry["Spawn fallback publisher"]
+    Retry --> AckRequired{"Stream acknowledgement required?"}
+    AckRequired -->|"yes"| AckPublish["Publish with acknowledgement"]
+    AckRequired -->|"no"| RawPublish["Publish raw"]
+    AckPublish --> Outcome{"Published?"}
+    RawPublish --> Outcome
+    Outcome -->|"no"| Backoff["Retry with bounded exponential delay"]
+    Backoff --> Outcome
+    Outcome -->|"yes"| Delivered["Delivery complete"]

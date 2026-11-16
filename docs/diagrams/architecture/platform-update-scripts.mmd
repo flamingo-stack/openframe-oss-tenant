@@ -1,14 +1,7 @@
-flowchart TD
-    UpdateService["Client update service"] -->|"stages binary and parameters"| Launcher["Platform updater launcher"]
-    Launcher -->|"Windows"| WindowsScript["PowerShell update script"]
-    Launcher -->|"macOS"| MacJob["launchd one-shot updater job"]
-    MacJob -->|"runs"| MacScript["Bash update script"]
-    WindowsScript -->|"stops, swaps, starts"| ClientService["OpenFrame Client service"]
-    MacScript -->|"stops, swaps, starts"| ClientService
-    WindowsScript -->|"writes phase"| UpdateState["Update state file"]
-    MacScript -->|"writes phase"| UpdateState
-    ClientService -->|"writes version"| BootMarker["Boot marker"]
-    BootMarker -->|"validates target version"| WindowsScript
-    BootMarker -->|"validates target version"| MacScript
-    WindowsScript -->|"restores on failure"| Reserve["Last-known-good or previous binary"]
-    MacScript -->|"restores on failure"| Reserve
+flowchart LR
+    UpdateService["Client Update Service"] -->|"reserves and applies update"| Launcher["Platform Updater Launcher"]
+    Launcher -->|"starts external updater"| Scripts["Platform Update Scripts"]
+    Scripts -->|"stops, swaps, and starts"| ClientService["OpenFrame Client Service"]
+    ClientService -->|"writes version marker"| BootMarker["Boot Marker"]
+    Scripts -->|"updates phase"| UpdateState["Update State"]
+    Scripts -->|"restores on failure"| Reserve["Last Known Good Reserve"]

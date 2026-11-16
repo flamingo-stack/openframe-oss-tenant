@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Handler as Handler
+    participant Ledger as Result Store Ledger
+    participant Database as Embedded Result Database
+    participant Outbox as Result Outbox
+    participant Runner as Outbox Run Manager
+    participant Bus as Message Bus
+    Handler->>Ledger: delivery_settle(subject, result message)
+    Ledger->>Database: Write settled ledger record
+    Ledger->>Database: Write outbox payload in same transaction
+    Ledger-->>Handler: Settlement complete
+    Runner->>Outbox: Read pending payload
+    Runner->>Bus: Publish result
+    Bus-->>Runner: Publish succeeds
+    Runner->>Outbox: Remove delivered payload

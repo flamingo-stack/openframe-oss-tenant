@@ -1,9 +1,9 @@
 flowchart LR
-    CallerA["Operation caller"] -->|"begin()"| Tracker["InProgress"]
-    CallerB["Status consumer"] -->|"view()"| Tracker
-    Tracker -->|"shared counter"| Counter["Arc AtomicUsize"]
-    Tracker -->|"returns"| Guard["InProgressGuard"]
-    Tracker -->|"returns"| View["InProgressView"]
-    Guard -->|"Drop decrements"| Counter
-    View -->|"is_active() loads"| Counter
-    Counter -->|"count greater than zero"| Status["Active status"]
+    WorkerA["Worker A"] -->|"begin"| Counter["Shared AtomicUsize counter"]
+    WorkerB["Worker B"] -->|"begin"| Counter
+    Counter -->|"guard owns shared reference"| GuardA["InProgressGuard"]
+    Counter -->|"guard owns shared reference"| GuardB["InProgressGuard"]
+    Observer["Observer"] -->|"view"| View["InProgressView"]
+    View -->|"load and compare"| Counter
+    GuardA -->|"drop decrements"| Counter
+    GuardB -->|"drop decrements"| Counter

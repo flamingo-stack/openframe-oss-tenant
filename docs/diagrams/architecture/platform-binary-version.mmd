@@ -1,8 +1,0 @@
-flowchart LR
-    Caller["Client update or information workflow"] -->|"binary path and timeout"| Probe["Platform Binary Version"]
-    Probe -->|"prepare executable"| Writer["Binary Writer"]
-    Probe -->|"run --version"| Candidate["Candidate client binary"]
-    Candidate -->|"standard output and exit status"| Probe
-    Probe -->|"parse semantic version"| Comparator["Version Comparator"]
-    Probe -->|"Version or None"| Caller
-    Probe -->|"warnings"| Logs["Tracing logs"]

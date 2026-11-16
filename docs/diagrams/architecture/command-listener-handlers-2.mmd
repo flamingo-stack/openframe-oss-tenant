@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Broker as NATS
+    participant Listener as Command Listener
+    participant Handler as Command Listener Handlers
+    participant Service as Backing Service
+    participant Store as Delivery State
+
+    Broker->>Listener: Machine command delivery
+    Listener->>Handler: begin(command)
+    alt admission accepted
+        Handler-->>Listener: Guard
+        Listener->>Handler: run(machine id, delivery, command, guard)
+        Handler->>Service: Apply operation
+        Service-->>Handler: Success or error
+        Handler-->>Listener: Outcome
+        Listener->>Store: Record and settle result
+        Listener-->>Broker: Delivery result
+    else resource busy
+        Handler-->>Listener: Busy reason
+        Listener-->>Broker: Busy result
+    end

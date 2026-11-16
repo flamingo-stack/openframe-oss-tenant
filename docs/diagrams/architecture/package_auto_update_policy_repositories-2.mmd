@@ -1,8 +1,0 @@
-flowchart TD
-    Interface["Custom repository interface"] --> Implementation["MongoDB custom repository implementation"]
-    Implementation --> Template["MongoTemplate"]
-    Template --> BulkOps["Unordered bulk upserts"]
-    Template --> MultiUpdate["Multi-document disable update"]
-    BulkOps --> Collection["package auto update policies"]
-    MultiUpdate --> Collection
-    StandardRepository["Spring Data policy repository"] --> Interface

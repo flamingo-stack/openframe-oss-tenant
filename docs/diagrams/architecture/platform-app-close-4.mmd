@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Coordinator as Upgrade coordinator
+    participant Close as Platform App Close
+    participant OS as Operating system
+    participant Launcher as User session launcher
+    Coordinator->>Close: ask_to_close(process IDs)
+    alt Windows target
+        Close->>OS: PowerShell CloseMainWindow requests
+        OS-->>Close: Script result
+    else Non-Windows target
+        Close->>OS: SIGTERM per visible process
+        OS-->>Close: Signal outcome
+    end
+    Close-->>Coordinator: Close request finished
+    Coordinator->>Coordinator: Replace application binary
+    Coordinator->>Close: reopen(image, session, user)
+    alt macOS or Windows target
+        Close->>Launcher: Launch application for interactive user
+        Launcher-->>Close: Launch success or error
+    else Other target
+        Close->>Close: Log unsupported relaunch
+    end
+    Close-->>Coordinator: Relaunch boolean

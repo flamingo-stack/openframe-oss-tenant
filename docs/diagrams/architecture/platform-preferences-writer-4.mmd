@@ -1,6 +1,0 @@
-flowchart TD
-    Input["write(bundle identifier, preferences)"] --> Target{"Build target is macOS?"}
-    Target -->|"Yes"| MacPath["Resolve console user and write each preference"]
-    Target -->|"No"| OtherPath["Return success without side effects"]
-    MacPath --> Complete["Return success or first error"]
-    OtherPath --> Complete

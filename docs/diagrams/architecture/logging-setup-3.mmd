@@ -1,0 +1,12 @@
+flowchart LR
+    Event["Tracing Event"] --> Visitor["JSON Field Visitor"]
+    SpanScope["Enclosing Span Fields"] --> Context["Merged Context"]
+    Visitor --> Context
+    Context --> Entry["Structured Log Entry"]
+    Entry --> Serialize["Serialize to JSON"]
+    Serialize --> FileWrite["Append and Flush File"]
+    Serialize --> Severity{"Info or lower?"}
+    Severity -->|"yes"| Stdout["Standard Output"]
+    Severity -->|"no"| Stderr["Standard Error"]
+    Event --> Counter["Increment log count by level"]
+    Counter --> JsonMetrics["JSON Layer Metrics Store"]

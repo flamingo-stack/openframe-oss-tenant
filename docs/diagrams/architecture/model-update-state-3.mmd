@@ -1,10 +1,12 @@
 flowchart TD
-    Begin["Client startup"] --> Load["Load update state"]
-    Load --> Present{"State record present?"}
-    Present -->|"No"| Normal["Continue normal startup"]
-    Present -->|"Yes"| Compare["Compare running and target versions"]
-    Compare --> Match{"Versions match?"}
-    Match -->|"Yes"| Success["Complete successful update handling"]
-    Match -->|"No"| Phase{"Launched or verifying phase?"}
-    Phase -->|"Yes"| Retain["Keep state for next boot"]
-    Phase -->|"No"| Failure["Mark failed, report, clean, clear state"]
+    Request["Client update message"] --> UpdateService["OpenFrame Client Update Service"]
+    UpdateService --> State["UpdateState"]
+    UpdateService --> StateService["Update State Service"]
+    StateService --> StateFile["Secured update_state.json"]
+    UpdateService --> Updater["Platform updater"]
+    Updater --> StateFile
+    Startup["Client startup"] --> Handler["Update Handler Service"]
+    Handler --> StateService
+    Handler --> ClientInfo["Client information service"]
+    Handler --> Cleanup["Update cleanup service"]
+    Handler --> KnownGood["Last-known-good service"]

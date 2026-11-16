@@ -1,7 +1,0 @@
-flowchart TD
-    Caller["API Key Caller"] --> KnowledgeBaseController["Knowledge Base Controller"]
-    KnowledgeBaseController --> Principal["API Key Principal Resolver"]
-    KnowledgeBaseController --> AttachmentService["Attachment Service"]
-    AttachmentService --> UploadResponse["Attachment Metadata and Signed Upload URL"]
-    Caller --> UploadUrl["Signed Upload URL"]
-    KnowledgeBaseController --> DownloadResponse["Signed Download URL"]

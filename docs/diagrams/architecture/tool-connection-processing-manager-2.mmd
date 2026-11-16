@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Runtime as Client Runtime
+    participant Manager as Connection Manager
+    participant Registry as Installed Tools Service
+    participant Resolver as Parameters Resolver
+    participant Tool as Local Tool
+    participant Config as Agent Configuration Service
+    participant Publisher as Connection Publisher
+    participant Store as Connection Store
+    Runtime->>Manager: Start processing
+    Manager->>Registry: Load installed tools
+    Manager->>Manager: Reserve per-tool loop
+    Manager->>Registry: Reload current tool record
+    Manager->>Resolver: Expand identifier command arguments
+    Resolver-->>Manager: Resolved arguments
+    Manager->>Tool: Run identifier command
+    Tool-->>Manager: Agent-side identifier
+    Manager->>Config: Get machine identifier
+    Config-->>Manager: Machine identifier
+    Manager->>Publisher: Publish connection mapping
+    Publisher-->>Manager: Publish result
+    Manager->>Store: Save local connection record

@@ -1,10 +1,10 @@
 sequenceDiagram
-    participant Test
-    participant Client
-    participant Decoder
-    participant Dto
-    Test->>Client: Request device data
-    Client->>Decoder: Provide response payload
-    Decoder->>Dto: Deserialize known fields
-    Dto->>Test: Return typed values
-    Test->>Test: Assert state and metadata
+    participant Test as "Integration Test"
+    participant Api as "Device API"
+    participant Jackson as "Jackson"
+    participant Dto as "Device Dto"
+    Test->>Api: Query device, tags, or filters
+    Api->>Jackson: Return JSON response
+    Jackson->>Dto: Deserialize known fields
+    Note over Jackson,Dto: Unknown response fields are ignored
+    Dto->>Test: Provide typed data for assertions

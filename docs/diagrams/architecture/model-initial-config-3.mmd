@@ -1,17 +1,16 @@
 sequenceDiagram
     participant Installer
-    participant InstallService
-    participant ConfigService
-    participant AuthProcessor
-    participant RegistrationProcessor
-    participant Backend
-    Installer->>InstallService: Provide install parameters
-    InstallService->>ConfigService: Save initial configuration
-    AuthProcessor->>ConfigService: Read bootstrap credentials
-    AuthProcessor->>Backend: Authenticate with initial key
-    Backend-->>AuthProcessor: Access token
-    RegistrationProcessor->>ConfigService: Read configuration state
-    RegistrationProcessor->>Backend: Register endpoint
-    Backend-->>RegistrationProcessor: Machine identity
-    ConfigService->>ConfigService: Save log key and clear initial key
-    ConfigService->>ConfigService: Clear acknowledged remote access mode
+    participant Setup as Installation Config Service
+    participant Store as Initial Config Service
+    participant Auth as Initial Authentication Processor
+    participant AgentConfig as Agent Configuration Service
+    Installer->>Setup: provide bootstrap inputs
+    Setup->>Store: save Initial Configuration
+    Auth->>AgentConfig: read access token
+    alt no access token
+        Auth->>Auth: attempt initial authentication
+        Auth->>AgentConfig: store registration and tokens
+    else access token exists
+        Auth->>Auth: skip initial authentication
+    end
+    Store->>Store: save log key and clear initial key when applicable

@@ -1,24 +1,6 @@
-sequenceDiagram
-    participant UpdateService as Tool Agent Update Service
-    participant Runner as Shared Update Runner
-    participant Updater as Standard Tool Updater
-    participant Kill as Tool Kill Service
-    participant Files as Endpoint File System
-    participant Download as Download Service
-    participant RunManager as Tool Run Manager
-    UpdateService->>Runner: Request tool update
-    Runner->>Updater: prepare(installed tool)
-    Updater->>Kill: Stop tool by tool identifier
-    Kill-->>Updater: Tool stopped
-    Updater->>Files: Clear aside file and create backup
-    Files-->>Updater: Backup path
-    Updater-->>Runner: Update context, restart required
-    Runner->>Updater: apply(installed tool, download configuration)
-    Updater->>Download: Download selected operating system artifact
-    Download->>Files: Write replacement executable
-    Files-->>Updater: Replacement written
-    Updater-->>Runner: No installation change
-    Runner->>Updater: finalize(installed tool, update context)
-    Updater->>Files: Remove backup
-    Updater-->>Runner: Finalized
-    Runner->>RunManager: Resume normal tool lifecycle
+flowchart TD
+    Start["Installed tool"] --> InstallationType{"Installation type?"}
+    InstallationType -->|"Standard"| StandardUpdater["Standard tool updater"]
+    InstallationType -->|"Service"| ServiceUpdater["Service tool updater"]
+    InstallationType -->|"GUI application on macOS"| GuiUpdater["GUI application updater"]
+    InstallationType -->|"GUI application on other systems"| FallbackUpdater["Standard tool updater fallback"]

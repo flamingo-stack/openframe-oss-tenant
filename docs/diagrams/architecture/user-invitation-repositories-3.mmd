@@ -1,0 +1,8 @@
+flowchart TD
+    UserRequest["User query"] --> ListChoice{"Listing contract?"}
+    ListChoice -->|"Email page"| EmailFilters["Apply list filters and token search"]
+    EmailFilters --> EmailCursor["Advance by email and identifier"]
+    EmailCursor --> EmailSort["Sort email ascending then identifier ascending"]
+    ListChoice -->|"Search continuation"| SearchFilters["Apply query filter"]
+    SearchFilters --> TimeCursor["Advance by creation time and identifier"]
+    TimeCursor --> TimeSort["Sort creation time descending then identifier descending"]

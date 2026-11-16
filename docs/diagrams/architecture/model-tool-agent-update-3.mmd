@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant Server as Control Plane
+    participant Listener as Command Listener
+    participant Handler as Tool Update Handler
+    participant Service as Update Service
+    participant Store as Installed Tools Store
+    participant Updater as Platform Updater
+    participant Publisher as Version Publisher
+    Server->>Listener: ToolAgentUpdateMessage
+    Listener->>Handler: Dispatch update command
+    Handler->>Service: Process under tool lock
+    Service->>Store: Load installed tool
+    alt update or repair required
+        Service->>Updater: Prepare update
+        Updater-->>Service: Update context
+        Service->>Updater: Apply selected artifact
+        alt apply succeeds
+            Updater->>Updater: Finalize update
+            Updater-->>Service: Updated installation state
+            Service->>Store: Persist updated record
+        else apply fails
+            Updater->>Updater: Attempt rollback
+            Updater-->>Service: Return failure
+        end
+    else versions already current
+        Service->>Publisher: Publish installed versions
+    end

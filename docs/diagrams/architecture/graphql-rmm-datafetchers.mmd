@@ -1,0 +1,10 @@
+flowchart LR
+    Client["GraphQL client"] --> Api["OpenFrame API service"]
+    Api --> Fetchers["Graphql Rmm Datafetchers"]
+    Fetchers --> Relay["Relay ID codec"]
+    Fetchers --> Services["RMM and device services"]
+    Fetchers --> Loaders["Request DataLoaders"]
+    Services --> Data["Tenant scoped data and dispatch"]
+    Loaders --> Data
+    Data --> Response["GraphQL response and connection"]
+    Response --> Client

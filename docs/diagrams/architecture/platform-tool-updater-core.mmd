@@ -1,0 +1,18 @@
+flowchart LR
+    ControlPlane["Control-plane update message"] --> UpdateService["Tool agent update service"]
+    UpdateService --> Registry["Installed tools registry"]
+    UpdateService --> Core["Platform Tool Updater Core"]
+    Core --> Selector["Updater selector"]
+    Selector --> Standard["Standard tool updater"]
+    Selector --> Service["Service tool updater"]
+    Selector --> Gui["Graphical application updater"]
+    Core --> Migration["Migration selector"]
+    Core --> Download["GitHub download service"]
+    Core --> Process["Tool kill service"]
+    Core --> Directories["Directory manager"]
+    Download --> Archive["Validated archive payload"]
+    Standard --> Endpoint["Endpoint tool files"]
+    Service --> Endpoint
+    Gui --> Endpoint
+    Migration --> Endpoint
+    UpdateService --> Versions["Installed-version publication"]

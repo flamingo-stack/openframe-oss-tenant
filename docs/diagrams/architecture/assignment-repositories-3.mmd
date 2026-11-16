@@ -1,5 +1,8 @@
 flowchart LR
-    Item["Item identifier"] --> Group["Group assignments by target type"]
-    Group --> Totals["Typed assignment counts"]
-    Target["Item type and target"] --> Reverse["Find matching assignments"]
-    Reverse --> ItemIds["Assigned item identifiers"]
+    Tenant["Current Tenant ID"] --> Template["Tenant Aware Mongo Template"]
+    Template --> QueryOps["Find and Count Operations"]
+    QueryOps --> ScopedQuery["tenantId Constraint"]
+    Tenant --> Aggregate["Explicit Aggregation Match"]
+    Aggregate --> Group["Group by Target Type"]
+    ScopedQuery --> Collection[("Item Assignments")]
+    Group --> Collection

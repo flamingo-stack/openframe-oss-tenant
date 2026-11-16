@@ -1,8 +1,8 @@
 flowchart LR
-    Caller["Retrying client operation"] -->|"should log?"| Backoff["FailureLogBackoff"]
-    Backoff -->|"logging decision"| Logger["Caller logging layer"]
-    Caller -->|"failed attempt"| Recorder["record failure"]
-    Logger -->|"logged boolean"| Recorder
-    Recorder -->|"updates streak state"| Backoff
-    Caller -->|"successful attempt"| Success["record success"]
-    Success -->|"returns summary and resets"| Backoff
+    Caller["Agent task or retry loop"] -->|"should_log()"| Backoff["FailureLogBackoff"]
+    Caller -->|"attempt operation"| Operation["External or local operation"]
+    Operation -->|"failure"| Caller
+    Caller -->|"record_failure(logged)"| Backoff
+    Operation -->|"success"| Caller
+    Caller -->|"record_success()"| Backoff
+    Caller -->|"emit selected failure and recovery logs"| LogSink["Configured log sink"]

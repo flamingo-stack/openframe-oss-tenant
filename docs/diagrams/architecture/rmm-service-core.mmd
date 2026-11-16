@@ -1,0 +1,12 @@
+flowchart TD
+    Dispatch["RMM Dispatch or Stream Processing"] --> Resolver["Schedule Criteria Device Resolver"]
+    Resolver --> MachineRepository["Machine Repository"]
+    Dispatch --> PackageHandlers["Brew and Winget Package Handlers"]
+    PackageHandlers --> AgentScripts["Package Manager Script Codes and Arguments"]
+    InventoryEvents["Device Software Inventory"] --> AggregationRepository["Device Software Aggregation Repository"]
+    AggregationRepository --> SoftwareProjector["Software Projector"]
+    AggregationRepository --> VulnerabilityProjector["Vulnerability Projector"]
+    SoftwareProjector --> PackageMatcher["Software Package Matcher"]
+    PackageMatcher --> CatalogRepository["Package Catalog Repository"]
+    SoftwareProjector --> SoftwareRepository["Software Repository"]
+    VulnerabilityProjector --> VulnerabilityRepository["Vulnerability Repository"]

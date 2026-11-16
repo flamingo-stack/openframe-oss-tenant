@@ -1,172 +1,217 @@
 # Model Package Update Status
 
-Model Package Update Status defines the Rust wire model for reporting the lifecycle of one software package update performed by the OpenFrame endpoint client. It correlates a status event with a request, a device, the requested package, and the request source, then describes exactly one outcome: waiting, completed, or failed.
+Model Package Update Status is the wire contract used by the OpenFrame endpoint client to report the lifecycle of one package-update request for one machine. It is implemented by the `openframe_agent_lib` dependency from the OpenFrame OSS Library and is run in this repository by the OpenFrame client. The model is published on NATS, consumed by the server-side client core, and converted into per-device and request-level software-update state.
 
-The implementation is supplied by the **OpenFrame OSS Library** as part of the `openframe_agent_lib` Cargo artifact (version `v0.0.5` consumed by this repository). The tenant repository runs the client that assembles this library code; the model source itself is maintained in the library repository at [package update status source](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/package_update_status.rs).
+The implementation is in the [OpenFrame OSS Library source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/package_update_status.rs). This repository consumes `openframe_agent_lib` version `v0.0.5`.
 
 ## Responsibilities
 
-The module provides a stable, serializable event contract that lets a server-side consumer distinguish between these update outcomes:
+The module defines:
 
-- **Waiting** — the request cannot proceed yet because an application is running, the package manager is busy, or an interactive user session is unavailable.
-- **Done** — the package was upgraded or was already at the latest version, together with reboot and relaunch facts.
-- **Failed** — the request could not complete, including manager, close, timeout, support, installation, upgradeability, and supersession failures.
+- A stable, machine-scoped NATS subject for package-update status events.
+- `PackageUpdateStatusMessage`, the event envelope that correlates an update request, machine, package, source, versions, event time, and lifecycle state.
+- A three-state lifecycle: `WAITING`, `DONE`, and `FAILED`.
+- State-specific payloads that describe blockers, successful completion, and failures without mixing unrelated fields.
+- Enumerations for wait causes and phases, completion results, and failure categories.
 
-It does not run a package manager, decide whether an update may start, or persist delivery state. Those responsibilities belong to the client package-update services and the platform's status-processing components.
+It does not execute an update, select a package manager, persist device state, or decide retry policy. Those responsibilities belong to the package-update runner and server-side status-processing components.
 
-## System Position
-
-A package-update command contains a package reference and an update source. The endpoint client accepts or rejects that work, may postpone it while a gate is blocked, and emits a status message keyed to the target machine. The server side consumes those status events to update device and execution state.
+## Position in the Update Architecture
 
 ```mermaid
 flowchart LR
-    UpdateRequest["Package update request"] --> CommandHandler["Package update command handler"]
-    CommandHandler --> OrderStore["Update order store"]
-    CommandHandler --> StatusReporter["Status reporter"]
-    OrderStore --> UpdateWorker["Package update worker"]
-    UpdateWorker --> UpdateGate["Update gate"]
-    UpdateGate --> StatusReporter
-    StatusReporter --> StatusModel["Model Package Update Status"]
-    StatusModel --> StatusSubject["Machine status subject"]
-    StatusSubject --> ServerListener["Server status listener"]
-    ServerListener --> StatusProcessor["Server status processor"]
+    UpdateOrder["Package update order"] --> AgentRunner["Endpoint package update runner"]
+    AgentRunner --> StatusModel["Model Package Update Status"]
+    StatusModel --> NatsSubject["Machine scoped NATS subject"]
+    NatsSubject --> StatusListener["Server status listener"]
+    StatusListener --> StatusProcessor["Server status processor"]
+    StatusProcessor --> DeviceState["Per device update state"]
+    StatusProcessor --> RequestState["Request roll up state"]
+    StatusProcessor --> ExecutionHistory["Execution history"]
 ```
 
-The model depends on two adjacent endpoint-client models:
+The endpoint-side model carries `PackageRef` and `UpdateSource` values from the package-update request model. The server listener resolves the machine identity from the subject, deserializes the payload, validates required identifiers and state, then applies the event to the matching tenant, request, and device state.
 
-- `PackageRef` identifies a package through a Winget identifier, a Chocolatey identifier, or a Homebrew package name and kind.
-- `UpdateSource` records whether the request is automatic or manual and can record an administrative or end-user origin.
+## NATS Routing Contract
 
-These are included in every status event so consumers can correlate status without reconstructing request context.
-
-## Message Contract
-
-`PackageUpdateStatusMessage` is the top-level event. Rust Serde uses camel-case field names for this structure, omits optional fields when they are absent, and serializes its status enums in screaming-snake-case values.
-
-| Field | Purpose | Presence |
-|---|---|---|
-| `eventId` | Identifies this lifecycle event. | Required |
-| `requestId` | Correlates all events for one update request. | Required |
-| `machineId` | Identifies the endpoint that produced the event. | Required |
-| `at` | Carries the event timestamp as a string. | Required |
-| `source` | Preserves the update source and optional origin. | Required |
-| `package` | Identifies the requested package. | Required |
-| `installedVersion` | Version found before or during processing. | Optional |
-| `availableVersion` | Version offered by the package manager. | Optional |
-| `state` | Selects `WAITING`, `DONE`, or `FAILED`. | Required |
-| `waiting` | Supplies waiting-specific detail. | Optional, used for waiting events |
-| `done` | Supplies completion-specific detail. | Optional, used for completed events |
-| `failed` | Supplies failure-specific detail. | Optional, used for failed events |
-
-The `state` value is the discriminator. Producers should populate the detail object that corresponds to that state and omit unrelated detail objects. Consumers should interpret missing optional version and detail fields as unavailable rather than inventing values.
-
-### Routing Subject
-
-`package_update_status_subject(machine_id)` builds the per-machine routing subject:
+`PACKAGE_UPDATE_STATUS_KIND` is `package-update.status`. The `package_update_status_subject` function constructs the target subject as follows:
 
 ```text
-machine.{machine identifier}.package-update.status
+machine.<machine ID>.package-update.status
 ```
 
-The fixed kind is `package-update.status`; substituting the machine identifier scopes the event stream to one endpoint. A publisher and subscriber must derive the same subject from the same machine identifier.
+The machine identifier is embedded in the subject as well as in the message body. The server listener extracts the identifier from the subject and uses it to locate the machine. It also requires non-empty `eventId`, `requestId`, and `machineId` fields plus a non-null state before processing. Malformed or incomplete messages are acknowledged and rejected rather than retried; unexpected processing failures are left unacknowledged for the messaging system to redeliver.
 
-## Status Details
+## Message Envelope
 
-### Waiting
+`PackageUpdateStatusMessage` is serialized using camel-case property names. It contains both correlation data and one lifecycle-specific detail object.
 
-A `WAITING` event includes `Waiting` detail:
+| Field | Required | Purpose |
+|---|---:|---|
+| `eventId` | Yes | Unique event identifier used for duplicate detection. |
+| `requestId` | Yes | Correlates every lifecycle event with one package-update request. |
+| `machineId` | Yes | Identifies the endpoint that emitted the event. |
+| `at` | Yes | Event timestamp, used by the server to discard stale events. |
+| `source` | Yes | Identifies where the requested update originated. |
+| `package` | Yes | Identifies the target package through the shared package reference model. |
+| `installedVersion` | No | Version observed as installed by the endpoint. |
+| `availableVersion` | No | Version the package manager reported as available. |
+| `state` | Yes | One of `WAITING`, `DONE`, or `FAILED`. |
+| `waiting` | No | Detail for a `WAITING` event. |
+| `done` | No | Detail for a `DONE` event. |
+| `failed` | No | Detail for a `FAILED` event. |
 
-| Field | Meaning |
-|---|---|
-| `reason` | The condition blocking progress: `APP_RUNNING`, `MANAGER_BUSY`, or `NO_USER_SESSION`. |
-| `phase` | The wait interaction phase: `PROMPT` or `COUNTDOWN`. |
-| `holders` | Zero or more applications currently holding the relevant resource. |
-| `closesAt` | Optional timestamp by which the wait or close window is expected to end. |
+Optional fields are omitted from serialized output when absent. Consumers should interpret the `state` field first and then read only its matching detail object. The model itself does not enforce that the matching object is present, so producers must emit internally consistent messages and consumers must tolerate absent optional detail.
 
-Each `HolderInfo` records an application name and, when known, the associated user. An empty holder list is valid because a blocking condition can be detected without a named process or user.
+### Package and Source Context
 
-### Completion
+The status model reuses the request’s `PackageRef` and `UpdateSource` values. A package reference can identify a Windows Package Manager package, a Homebrew package with its brew kind and name, or a Chocolatey package. Repeating the package and source on every event makes each lifecycle update independently interpretable without requiring the original update order.
 
-A `DONE` event carries `Done` detail:
-
-| Field | Meaning |
-|---|---|
-| `result` | `UPGRADED` when the client changed the installed package, or `ALREADY_LATEST` when no package change was needed. |
-| `rebootRequired` | Whether the completed operation requires a system restart. |
-| `relaunched` | Whether the updated application was relaunched. |
-
-Completion is therefore not synonymous with a binary replacement: `ALREADY_LATEST` is a successful terminal result.
-
-### Failure
-
-A `FAILED` event carries `Failed` detail. Although `Failed` is not separately listed in the module-tree summary, it is the structure declared by the source and used by the top-level `failed` field.
-
-| Failure reason | Meaning |
-|---|---|
-| `MANAGER_ERROR` | The package manager returned an error. |
-| `MANAGER_MISSING` | The required package manager is unavailable. |
-| `CLOSE_FAILED` | An application could not be closed for the update. |
-| `TIMEOUT` | The operation exceeded its allowed wait or execution time. |
-| `NOT_SUPPORTED` | The requested update is unsupported on this device or manager. |
-| `SUPERSEDED` | A newer request replaced this request for the same package. |
-| `NOT_INSTALLED` | The requested package is not installed. |
-| `NOT_UPGRADABLE` | The package is installed but cannot be upgraded. |
-
-`exitCode` and `message` are optional diagnostics. A failure does not require either value, allowing failures detected before a package-manager process starts to use the same contract.
-
-## Lifecycle and Data Flow
-
-The status model represents one event in a lifecycle rather than a mutable in-place record. A request can produce one or more waiting events before it reaches a terminal completion or failure event.
+## Lifecycle Model
 
 ```mermaid
 stateDiagram-v2
     [*] --> Waiting
-    Waiting --> Waiting: Block persists or phase changes
-    Waiting --> Done: Update completes
-    Waiting --> Failed: Update cannot proceed
-    Done --> [*]
-    Failed --> [*]
+    Waiting --> Waiting: blocker or phase changes
+    Waiting --> Done: update completes
+    Waiting --> Failed: update cannot complete
+    [*] --> Done
+    [*] --> Failed
 ```
 
-The package-update status reporter has explicit paths for rejected and superseded work. For a rejected request it produces a failure containing the supplied reason and detail text. For superseded work it produces `SUPERSEDED` with the diagnostic message that a newer request for the same package replaced it. This ensures requests that never execute still produce an observable terminal status.
+A request can first report a terminal result when no wait is needed. `WAITING` is therefore an observable interim state, not a mandatory phase. `DONE` and `FAILED` are terminal outcomes for the endpoint’s update attempt.
+
+### Waiting
+
+A `Waiting` payload communicates why the update cannot proceed yet:
+
+| Property | Meaning |
+|---|---|
+| `reason` | `APP_RUNNING`, `MANAGER_BUSY`, or `NO_USER_SESSION`. |
+| `phase` | `PROMPT` while the user is being asked to close an application, or `COUNTDOWN` while waiting toward closure or enforcement. |
+| `holders` | Zero or more application and optional user pairs that identify running blockers. |
+| `closesAt` | Optional time at which the wait window is expected to end. |
+
+`HolderInfo` describes a blocking application through its `app` name and, when known, the associated `user`. An empty holder list is valid because a wait reason may not be attributable to a specific process.
+
+### Done
+
+A `Done` payload describes a completed endpoint attempt:
+
+| Property | Meaning |
+|---|---|
+| `result` | `UPGRADED` when an update was applied, or `ALREADY_LATEST` when no newer version was needed. |
+| `rebootRequired` | Whether the resulting installation needs a machine reboot. |
+| `relaunched` | Whether the updated application was relaunched. |
+
+Both completion results are successful terminal outcomes. They differ operationally: `ALREADY_LATEST` records that the order was processed but did not change the installed package.
+
+### Failed
+
+A `Failed` payload conveys the failure category and optional diagnostic data:
+
+| Reason | Interpretation |
+|---|---|
+| `MANAGER_ERROR` | The selected package manager returned an error. |
+| `MANAGER_MISSING` | The required package manager is unavailable. |
+| `CLOSE_FAILED` | A required application close operation failed. |
+| `TIMEOUT` | The update operation exceeded its allowed time. |
+| `NOT_SUPPORTED` | This package-update operation is unsupported on the endpoint. |
+| `SUPERSEDED` | A newer request replaced this request for the same package. |
+| `NOT_INSTALLED` | The target package is not installed. |
+| `NOT_UPGRADABLE` | The package manager reports that the package cannot be upgraded. |
+
+`exitCode` and `message` are optional. The endpoint status reporter uses `SUPERSEDED` with a message indicating that a newer request replaced the prior order. It uses other failure reasons when rejecting an update order before it can execute.
+
+## Event Processing and State Reduction
 
 ```mermaid
 sequenceDiagram
-    participant Control as Update control plane
-    participant Client as Endpoint client
-    participant Gate as Package update gate
-    participant Reporter as Status reporter
-    participant Broker as Message broker
-    participant Server as Status consumer
-    Control->>Client: Deliver package update request
-    Client->>Gate: Check update readiness
-    alt Update is blocked
-        Gate-->>Reporter: Waiting reason and phase
-        Reporter->>Broker: Publish waiting status
-    else Request is rejected or superseded
-        Client-->>Reporter: Failure reason and detail
-        Reporter->>Broker: Publish failed status
-    else Update proceeds
-        Client-->>Reporter: Completion or failure detail
-        Reporter->>Broker: Publish terminal status
-    end
-    Broker->>Server: Deliver machine status event
+    participant Runner as Endpoint runner
+    participant Nats as NATS
+    participant Listener as Status listener
+    participant Processor as Status processor
+    participant Store as Device state store
+    participant History as Execution history
+    Runner->>Nats: Publish status event
+    Nats->>Listener: Deliver machine status event
+    Listener->>Listener: Validate identifiers and state
+    Listener->>Processor: Process machine and event
+    Processor->>Store: Load device request state
+    Processor->>Processor: Ignore duplicate or stale event
+    Processor->>Store: Apply current state and save
+    Processor->>History: Record execution outcome
+    Processor->>Store: Recompute request roll up
+    Listener->>Nats: Acknowledge processed event
 ```
 
-## Component Relationships
+The server processor makes status delivery resilient to at-least-once messaging:
 
-| Component | Relationship to this module |
-|---|---|
-| `PackageUpdateHandler` | Accepts package-update commands and holds an update-order store and a status reporter. |
-| `PackageUpdateRunManager` | Starts the asynchronous package-update worker lifecycle. |
-| `StatusReporter` | Builds and publishes status events, including explicit rejection and supersession failures. |
-| Update gate | Determines whether an update can proceed or must wait, providing the conditions represented by waiting detail. |
-| Server status listener and processor | Consume the client event and apply it to server-side package-update and device state. |
+1. It looks up the machine using the subject-derived identifier. Events for unknown machines are ignored.
+2. It loads or creates state keyed by tenant, request, and machine.
+3. An event whose `eventId` matches the stored last event is treated as a duplicate. The processor does not reapply it, but rechecks the request roll-up.
+4. An event whose `at` value is earlier than the stored last event time is treated as stale and skipped.
+5. For a new event, the reducer replaces prior state-specific detail, records the versions and event identity, maps the lifecycle state to device status, and saves the result.
+6. The processor updates execution history and recomputes the request-level result from all target devices.
 
-## Maintenance Guidance
+The request is `COMPLETED` only when every device is terminal and none failed. It is `FAILED` when every device is terminal and at least one failed. Otherwise, it is `WAITING` when any device is waiting, `IN_PROGRESS` when any device is in progress, or `SCHEDULED` when neither condition applies.
 
-- Treat `requestId`, `machineId`, `source`, and `package` as correlation data on every event. Removing or changing them breaks consumers that join status with a dispatched request.
-- Keep enum values backward compatible. They are serialized protocol values rather than local-only Rust implementation details.
-- Add a new state detail object only alongside a clear discriminator and consumer support. Do not overload waiting or failure fields with unrelated data.
-- Preserve optional-field behavior for versions, user names, deadlines, exit codes, and messages. The contract intentionally represents unavailable information by omission.
-- When adding a failure reason, update endpoint reporting and server-side processing together so the outcome stays terminal and observable.
+## Deadline Interaction
+
+The server recognizes a timed waiting workflow for requests configured in wait mode with a deadline. When it receives the first `WAITING` event whose reason is `APP_RUNNING`, it derives a device deadline from the event time plus the configured deadline duration and schedules a forced delivery. If the update finishes before that deadline, the pending force is cancelled. If completion is reported after the deadline, the ordinary wait delivery is withdrawn because the force delivery owns the final result.
+
+This behavior makes the waiting payload operational: `reason`, `phase`, and `closesAt` communicate progress to clients, while the first application-running wait can start server-side enforcement.
+
+## JSON Example
+
+The following is a representative waiting event. Values are illustrative and the package and source shapes follow their shared model definitions.
+
+```json
+{
+  "eventId": "event-7d4d",
+  "requestId": "request-238a",
+  "machineId": "machine-19",
+  "at": "2026-11-14T21:25:22Z",
+  "source": {
+    "kind": "MANUAL"
+  },
+  "package": {
+    "winget": {
+      "id": "Contoso.App"
+    }
+  },
+  "installedVersion": "4.1.0",
+  "availableVersion": "4.2.0",
+  "state": "WAITING",
+  "waiting": {
+    "reason": "APP_RUNNING",
+    "phase": "COUNTDOWN",
+    "holders": [
+      {
+        "app": "Contoso App",
+        "user": "alex"
+      }
+    ],
+    "closesAt": "2026-11-14T21:30:22Z"
+  }
+}
+```
+
+The exact serialized representation of `source` and `package` is governed by their shared Rust enums. Integrators should use the endpoint client’s serializers rather than hand-constructing those polymorphic values.
+
+## Implementation Guidance
+
+- Generate a new `eventId` for each emitted lifecycle event, even when the request and package are unchanged.
+- Preserve the same `requestId`, machine identity, source, and package across every event for one update attempt.
+- Use an event timestamp that progresses monotonically for a given request and machine; earlier events can be discarded as stale.
+- Emit only the detail object that corresponds to `state`, and omit irrelevant optional fields.
+- Include installed and available versions whenever the package manager can determine them, because the server persists these values for the device state.
+- Treat `DONE` as terminal whether the result is `UPGRADED` or `ALREADY_LATEST`.
+- Include an actionable `message` and package-manager `exitCode` for failures when available.
+- Do not infer a retry from this contract. Retry scheduling and package-removal checks are server-side policy decisions.
+
+## Maintenance Notes
+
+Changing enum spellings, JSON field names, subject construction, or the meaning of terminal states is a protocol change. The endpoint Rust client and the Java listener must remain compatible because the listener deserializes events from the machine-scoped NATS subject and maps the state-specific payloads into persisted software-action state and execution history.
+
+When adding a lifecycle state or detail field, update the endpoint producer, server listener validation, state reducer, execution recorder, persistence schema, and user-facing software-action projections together. Ensure duplicate and stale-event behavior remains deterministic for the new state.

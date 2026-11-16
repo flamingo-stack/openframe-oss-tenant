@@ -1,9 +1,15 @@
 flowchart LR
     Dispatcher["Delivery dispatcher"] -->|"creates or updates"| DeliveryRepo["Machine Delivery Repository"]
-    DeliveryRepo -->|"delegates custom operations"| DeliveryImpl["Custom Machine Delivery Repository"]
-    DeliveryRepo -->|"stores rows"| DeliveryCollection[("Machine delivery collection")]
-    DeliveryImpl -->|"scoped reads and guarded updates"| DeliveryCollection
-    PayloadRepo["Machine Delivery Payload Repository"] -->|"primary read"| PayloadCollection[("Delivery payload collection")]
-    RolloutRepo["Machine Delivery Rollout Repository"] -->|"cursor and count updates"| RolloutCollection[("Delivery rollout collection")]
-    SequenceRepo["Machine Delivery Sequence Repository"] -->|"atomic increment"| SequenceCollection[("Tenant sequence collection")]
-    Agent["Endpoint agent"] -->|"acknowledgement or result"| DeliveryImpl
+    DeliveryRepo --> CustomRepo["Custom delivery implementation"]
+    CustomRepo --> TenantTemplate["Tenant-aware Mongo template"]
+    TenantTemplate --> DeliveryStore[("Machine deliveries")]
+
+    Dispatcher -->|"stores or reads body"| PayloadRepo["Payload repository"]
+    PayloadRepo --> PayloadStore[("Delivery payloads")]
+
+    RolloutWorker["Rollout worker"] --> RolloutRepo["Rollout repository"]
+    RolloutRepo --> RolloutStore[("Delivery rollouts")]
+    RolloutWorker --> SequenceRepo["Sequence repository"]
+    SequenceRepo --> SequenceStore[("Tenant sequences")]
+
+    AgentResult["Agent acknowledgement or result"] --> CustomRepo

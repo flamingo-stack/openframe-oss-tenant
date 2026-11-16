@@ -1,0 +1,7 @@
+flowchart LR
+    ProcessingManager["Tool Connection Processing Manager"] -->|"calls publish()"| Publisher["Tool Connection Message Publisher"]
+    Publisher -->|"builds"| Message["Tool Connection Message"]
+    Publisher -->|"delegates to"| NatsPublisher["NATS Message Publisher"]
+    NatsPublisher -->|"publishes and flushes"| NatsBroker["NATS broker"]
+    NatsBroker -->|"subject"| Subject["machine.{machineId}.tool-connection"]
+    BackendListener["Backend Tool Connection Listener"] -->|"consumes"| NatsBroker

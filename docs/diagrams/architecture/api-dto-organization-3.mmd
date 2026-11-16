@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Client as API Client
+    participant Api as OpenFrame API
+    participant Dto as Api Dto Organization
+    participant Query as Organization Query Handling
+    participant Store as Organization Data Store
+    Client->>Api: Organization query with sort selection
+    Api->>Dto: Bind OrganizationSortField
+    Dto-->>Api: LAST_ACTIVITY accepted
+    Api->>Query: Request activity ordered organizations
+    Query->>Store: Fetch organizations in supported order
+    Store-->>Query: Ordered organization records
+    Query-->>Api: Organization result
+    Api-->>Client: Query response

@@ -1,15 +1,12 @@
 flowchart TD
-    Start["Begin attempt"] --> Check["Call should log"]
-    Check --> Attempt["Run operation"]
-    Attempt --> Outcome{"Attempt succeeded?"}
-    Outcome -->|"No"| Emit{"Logging permitted?"}
-    Emit -->|"Yes"| Write["Emit failure log"]
-    Emit -->|"No"| Skip["Suppress repeated failure log"]
-    Write --> RecordLogged["Call record failure with true"]
-    Skip --> RecordQuiet["Call record failure with false"]
-    RecordLogged --> Retry["Continue caller retry policy"]
-    RecordQuiet --> Retry
-    Outcome -->|"Yes"| Recover["Call record success"]
-    Recover --> Summary{"Was there a prior failure streak?"}
-    Summary -->|"Yes"| Report["Use returned count and duration"]
-    Summary -->|"No"| Clean["No recovery summary"]
+    Start["Call should_log before an attempt"] --> Metadata{"Failure timestamps present?"}
+    Metadata -->|"no"| LogNow["Allow log"]
+    Metadata -->|"yes"| Early{"Recorded failures fewer than 5?"}
+    Early -->|"yes"| LogNow
+    Early -->|"no"| Long{"Failing for at least 1 hour?"}
+    Long -->|"no"| Throttled{"At least 2 minutes since last logged failure?"}
+    Long -->|"yes"| Slow{"At least 1 hour since last logged failure?"}
+    Throttled -->|"yes"| LogNow
+    Throttled -->|"no"| Suppress["Suppress this failure log"]
+    Slow -->|"yes"| LogNow
+    Slow -->|"no"| Suppress

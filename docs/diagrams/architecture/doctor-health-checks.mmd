@@ -1,0 +1,15 @@
+flowchart TD
+    Invocation["Client diagnostic invocation"] --> Runner["Doctor Reporting runner"]
+    Runner --> Checks["Doctor Health Checks"]
+    Checks --> CommandChecks["Command and privilege checks"]
+    Checks --> RuntimeChecks["Windows runtime check"]
+    Checks --> DiskChecks["Directory and disk checks"]
+    Checks --> NetworkChecks["Network checks"]
+    CommandChecks --> Results["Check results"]
+    RuntimeChecks --> Results
+    DiskChecks --> Results
+    NetworkChecks --> Results
+    Results --> Report["Doctor report"]
+    Report --> Output["Console output"]
+    Report --> Healing["Optional Doctor Healing"]
+    Healing --> Installer["WebView2 installer"]

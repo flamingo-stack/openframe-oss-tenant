@@ -1,0 +1,8 @@
+flowchart LR
+    TicketViews["Minimal ticket views"] --> CandidateFilter["Filter relevant tickets"]
+    CandidateFilter --> MachineLookup["Bulk machine lookup"]
+    MachineLookup --> Compare["Compare projected and source values"]
+    Compare --> Match["No mismatch"]
+    Compare --> Drift["Reconciliation mismatch"]
+    Drift --> Republish["Republish source machine"]
+    Republish --> Projections["Run both projections"]

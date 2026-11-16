@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Dispatched
+    Dispatched --> Acknowledged: ACKED
+    Dispatched --> Completed: DONE
+    Dispatched --> Failed: FAILED
+    Acknowledged --> Completed: DONE
+    Acknowledged --> Failed: FAILED
+    Completed --> [*]
+    Failed --> [*]

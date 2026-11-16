@@ -1,0 +1,11 @@
+flowchart LR
+    Client["OpenFrame Client"] --> Kill["Tool Kill Service"]
+    Installer["Tool Installation Service"] --> Kill
+    Updater["Tool Updater"] --> Kill
+    Runner["Tool Run Manager"] --> Kill
+    Restart["Tool Restart Service"] --> Kill
+    Kill --> Installed["Installed Tool Model"]
+    Kill --> Snapshot["Process Snapshot via sysinfo"]
+    Kill --> ServiceManager["System Service Manager"]
+    ServiceManager --> HostService["Host Operating System Service"]
+    Snapshot --> HostProcess["Host Tool Processes"]

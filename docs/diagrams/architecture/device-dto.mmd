@@ -1,5 +1,9 @@
 flowchart LR
-    TestCase[Tests] --> ApiClient[API Client]
-    ApiClient --> Decoder[JSON Decoder]
-    Decoder --> DeviceDto[Device Dto]
-    DeviceDto --> Assertions[Assertions]
+    Api["OpenFrame API or GraphQL response"] --> Json["Jackson deserialization"]
+    Json --> DeviceDto["Device Dto"]
+    DeviceDto --> TestCode["Integration-test assertions"]
+    DeviceDto --> DeviceView["DeviceWithConnections"]
+    DeviceView --> ToolConnection["ToolConnection records"]
+    ToolConnection --> ConnectionState["ConnectionStatus"]
+    DeviceDto --> Filters["Device and tag filter options"]
+    DeviceDto --> Inventory["InstalledAgent and Tag"]

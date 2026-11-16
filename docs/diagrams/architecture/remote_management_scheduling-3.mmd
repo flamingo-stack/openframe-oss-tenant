@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Software schedule or bundle fire"] --> Packages["Iterate configured packages"]
+    Packages --> Manager["Resolve package manager handler"]
+    Manager --> Script["Find active canonical software script"]
+    Script --> Compatible{"OS compatible targets?"}
+    Compatible -->|"No"| Skip["Log and skip package"]
+    Compatible -->|"Yes"| Eligible["Evaluate package update eligibility"]
+    Eligible --> Order["Enable policy and dispatch update order"]
+    Eligible --> Direct["Queue execution rows"]
+    Direct --> Publish["Publish software message per machine"]
+    Publish --> Retry["Store payload for retry"]

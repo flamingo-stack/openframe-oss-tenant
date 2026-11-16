@@ -1,12 +1,13 @@
-sequenceDiagram
-    participant Installer
-    participant Parser as Model Device Tag
-    participant Config as Initial Configuration
-    participant Client as Endpoint Client
-    participant Server as Registration Service
-    Installer->>Parser: provide tag arguments
-    Parser->>Parser: split, trim, reject invalid, group values
-    Parser->>Config: return DeviceTag collection
-    Config->>Client: supply tags during registration
-    Client->>Server: send registration request with tags
-    Server->>Server: validate, create or find, assign each tag
+flowchart TD
+    Start["Receive raw tag vector"] --> Iterate["Read next raw argument"]
+    Iterate --> Split{"Contains equals sign?"}
+    Split -->|"No"| Skip["Ignore argument"]
+    Split -->|"Yes"| Trim["Trim key and value"]
+    Trim --> Valid{"Key and value non-empty?"}
+    Valid -->|"No"| Skip
+    Valid -->|"Yes"| Group["Append value under key"]
+    Group --> More{"More arguments?"}
+    Skip --> More
+    More -->|"Yes"| Iterate
+    More -->|"No"| Build["Create one Device Tag per map entry"]
+    Build --> Finish["Return Device Tag vector"]

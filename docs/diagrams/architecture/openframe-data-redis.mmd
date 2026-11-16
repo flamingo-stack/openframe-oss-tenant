@@ -1,0 +1,14 @@
+flowchart LR
+    ApiService["Openframe API service"] --> RedisModule["Openframe Data Redis"]
+    RedisModule --> RedisConfig["Redis configuration"]
+    RedisModule --> CacheConfig["Cache configuration"]
+    RedisModule --> LettuceConfig["Lettuce client configuration"]
+    RedisModule --> KeyConfig["Redis key configuration"]
+    RedisConfig --> Templates["Synchronous and reactive templates"]
+    CacheConfig --> CacheManager["Tenant-aware cache manager"]
+    KeyConfig --> KeyBuilder["Openframe Redis key builder"]
+    KeyBuilder --> CacheManager
+    LettuceConfig --> Lettuce["Lettuce connections"]
+    Templates --> RedisCluster[("Redis cluster")]
+    CacheManager --> RedisCluster
+    Lettuce --> RedisCluster

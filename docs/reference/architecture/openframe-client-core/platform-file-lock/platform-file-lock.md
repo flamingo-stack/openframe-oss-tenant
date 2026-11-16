@@ -1,163 +1,165 @@
 # Platform File Lock
 
-Platform File Lock is the Windows-only diagnostic layer used by the OpenFrame client agent to explain sharing-violation failures. It asks the Windows Restart Manager which applications hold a target file or the contents of a directory, turns that data into compact diagnostic models, and writes actionable error logs. It identifies holders only; it does not stop, restart, or otherwise evict processes.
+Platform File Lock is the Windows-specific diagnostic layer used by the OpenFrame client agent to identify processes that prevent a file or installation directory from being changed. It wraps the Windows Restart Manager API, converts its process records into agent-friendly types, and emits actionable error logs for Windows sharing violations.
 
-The implementation is supplied by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library and runs in this repository's OpenFrame client distribution. Its source is [`file_lock.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/file_lock.rs).
+The implementation is supplied by the **OpenFrame OSS Library** through the `openframe_agent_lib` dependency used by this repository's client runtime. Its source is [file_lock.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/file_lock.rs).
 
 ## Scope and Platform Boundary
 
-Every type and function in this module is compiled only when the Rust target OS is Windows. The code uses Windows Restart Manager APIs to open a session, register resources, and retrieve locking applications. Consequently, it is not a portable lock abstraction and it does not provide a fallback implementation on other targets.
+Every public type and function in this module is compiled only when the Rust target OS is Windows. The module relies on the Windows Restart Manager functions `RmStartSession`, `RmRegisterResources`, `RmGetList`, and `RmEndSession`; it is therefore a diagnostic and holder-enumeration facility, not a cross-platform file-lock abstraction.
 
-The module recognizes a file-in-use error by the Windows sharing-violation code `32`. That narrow classification prevents ordinary I/O errors from triggering a Restart Manager query or being reported as lock contention.
+It has two complementary uses:
 
-```mermaid
-flowchart LR
-    AgentOperation["OpenFrame client operation"] -->|"I/O error"| Classifier["Sharing violation classifier"]
-    Classifier -->|"Error code 32"| FileLock["Platform File Lock"]
-    Classifier -->|"Other error"| NormalError["Normal error handling"]
-    FileLock -->|"Restart Manager session"| WindowsRM["Windows Restart Manager"]
-    WindowsRM -->|"Holder metadata"| DiagnosticLog["Tracing error log"]
-```
+- **File-level diagnostics**: given a path that caused a sharing violation, identify the locking processes and log their names and process IDs.
+- **Directory-level inspection**: enumerate regular files recursively under a directory, register them in one Restart Manager session, and return deduplicated holder records suitable for a caller that must decide how to proceed safely.
+
+The module reports lock ownership only. It does not terminate processes, stop services, delete files, or perform an eviction. A caller must make any remediation decision from the returned `LockHolder` metadata.
 
 ## Architecture
 
-The module has three layers:
-
-| Layer | Components | Responsibility |
-|---|---|---|
-| Query infrastructure | `wide`, `decode_utf16`, `query_rm_holders` | Converts Rust paths to NUL-terminated UTF-16, owns the Restart Manager session lifecycle, registers resources, and maps native process records into Rust values. |
-| Diagnostic models and queries | `LockingProcess`, `LockHolder`, `get_locking_processes`, `get_directory_lock_holders` | Presents either concise file-holder details or richer directory-holder metadata suitable for callers that need to make a safety decision. |
-| Logging and presentation | `format_locking_processes`, `log_file_lock_info` | Formats known holders and emits a differentiated error message for identified, unidentified, or query-failure cases. |
-
 ```mermaid
-flowchart TD
-    subgraph PublicApi["Public Windows API"]
-        FileQuery["get locking processes"]
-        DirectoryQuery["get directory lock holders"]
-        LockLogger["log file lock info"]
-        Formatter["format locking processes"]
-    end
-    subgraph QueryLayer["Restart Manager query layer"]
-        DirectoryWalk["Bounded directory walk"]
-        Encoding["UTF 16 path encoding"]
-        Session["Restart Manager session"]
-        NativeList["Native process list"]
-    end
-    subgraph Models["Diagnostic models"]
-        SimpleModel["Locking Process"]
-        RichModel["Lock Holder"]
-    end
-    FileQuery --> Encoding
-    DirectoryQuery --> DirectoryWalk
-    DirectoryWalk --> Encoding
-    Encoding --> Session
-    Session --> NativeList
-    NativeList --> SimpleModel
-    NativeList --> RichModel
-    LockLogger --> FileQuery
-    LockLogger --> Formatter
-    Formatter --> SimpleModel
+flowchart LR
+    Caller["OpenFrame Client Update or File Operation"] -->|"path and operation"| Diagnostic["Platform File Lock"]
+    Diagnostic -->|"register resources"| RestartManager["Windows Restart Manager API"]
+    RestartManager -->|"process records"| Diagnostic
+    Diagnostic -->|"LockingProcess records"| FileResult["File Lock Diagnostics"]
+    Diagnostic -->|"LockHolder records"| DirectoryResult["Directory Lock Inspection"]
+    FileResult -->|"structured error message"| TraceLog["Tracing Error Log"]
 ```
 
-### Restart Manager Session Handling
+### Internal Query Lifecycle
 
-`query_rm_holders` is the internal shared query path. For a nonempty set of already encoded paths it:
+The shared internal query accepts NUL-terminated UTF-16 resource paths. It starts a Restart Manager session, registers all supplied paths, and obtains the holder list with the API's required two-call pattern:
 
-1. Starts a Restart Manager session.
-2. Installs a local drop guard so `RmEndSession` is attempted when the function leaves scope, including error paths.
-3. Registers all paths in that one session.
-4. Calls `RmGetList` once to determine capacity. The expected `ERROR_MORE_DATA` response is accepted at this stage.
-5. Allocates `RM_PROCESS_INFO` records, retrieves the full list, and translates them to `LockHolder` values.
-
-The translation preserves the process identifier, application name, raw application type, terminal-services session identifier, restartability flag, and optional service short name. The raw application type is intentionally retained; callers that need to judge whether a holder can safely be displaced can interpret Restart Manager classifications without a lossy conversion.
-
-## Public Types and Functions
-
-### Locking Process
-
-`LockingProcess` is the concise result returned for a single file. It contains the holder's `pid` and `name`; its display representation is `name (PID: pid)`. `format_locking_processes` joins those representations with commas and returns `No processes detected` for an empty slice.
-
-`get_locking_processes` accepts a file path string, runs the shared query for that one resource, and projects each rich native result down to `LockingProcess`.
-
-### Lock Holder
-
-`LockHolder` is the richer directory-query result. Its fields are:
-
-| Field | Meaning |
-|---|---|
-| `pid` | Windows process identifier. |
-| `app_name` | Restart Manager application name. |
-| `app_type` | Raw Restart Manager application classification. The source notes that the critical classification value is `1000`. |
-| `ts_session_id` | Terminal Services session identifier reported by Windows. |
-| `restartable` | Whether Restart Manager reports that the application can be restarted. |
-| `service_short_name` | Service name when Windows classifies the holder as a service; otherwise absent. |
-
-`get_directory_lock_holders` recursively collects directory entries up to the internal cap of `1024` paths, registers the collected paths in one session, then sorts and deduplicates results by process identifier. A process holding several registered files therefore appears once in the returned collection. If no entries are collected, the directory path itself is registered as a fallback.
-
-The path cap bounds a potentially expensive recursive scan and native registration request. It also means a directory query describes the discovered prefix of a large tree rather than guaranteeing coverage beyond `1024` entries.
-
-## File Lock Diagnostic Flow
-
-`log_file_lock_info` is intended to be called after an I/O operation fails. It first checks whether the error is the sharing violation that denotes a locked file. For a different error, it returns `false` and does nothing. For a sharing violation, it returns `true` after logging one of three outcomes: known holders, no holders returned, or a failed holder query.
-
-```mermaid
-flowchart TD
-    Start["I O operation fails"] --> CheckError{{"Sharing violation?"}}
-    CheckError -->|"No"| Ignore["Return false without lock log"]
-    CheckError -->|"Yes"| Query["Query locking processes"]
-    Query --> HasHolders{{"Holders returned?"}}
-    HasHolders -->|"Yes"| Format["Format name and PID list"]
-    Format --> KnownLog["Log known locking holders"]
-    HasHolders -->|"No"| UnknownLog["Log locked file with unknown holder"]
-    Query -->|"Query error"| FailureLog["Log lock query failure"]
-    KnownLog --> Completed["Return true"]
-    UnknownLog --> Completed
-    FailureLog --> Completed
-```
-
-This behavior keeps diagnosis best-effort. Failure to enumerate a holder does not replace the original I/O failure, and the module does not retry the underlying operation.
-
-## Relationship to Client Update Handling
-
-The module belongs to the Rust OpenFrame client runtime, not to a server endpoint or deployment service. Its primary responsibility is observability around Windows resource contention during local agent activity.
-
-The adjacent executable-writing logic uses the same sharing-violation classifier when it probes whether an executable has become exclusively openable. It waits and polls while the error remains a sharing violation, warns if the configured wait limit expires, and otherwise proceeds. Platform File Lock provides the more detailed holder-enumeration and logging capability needed when an operation must explain a lock failure.
+1. The first `RmGetList` call determines the number of records. `ERROR_MORE_DATA` is expected at this stage; other errors fail the query.
+2. If no records are required, the query returns an empty list.
+3. The implementation allocates `RM_PROCESS_INFO` records and calls `RmGetList` again to retrieve holder data.
+4. The fields are decoded into `LockHolder` values.
+5. A local RAII guard calls `RmEndSession` as the query scope exits, including an error path after the session starts.
 
 ```mermaid
 sequenceDiagram
-    participant Writer as "Executable writer"
-    participant Probe as "Exclusive open probe"
-    participant Lock as "Platform File Lock"
-    participant RM as "Windows Restart Manager"
-    Writer->>Probe: Probe executable availability
-    Probe-->>Writer: Sharing violation
-    Writer->>Lock: Classify Windows error
-    Lock-->>Writer: File in use
-    Writer->>Probe: Wait and retry until deadline
-    Note over Writer,Probe: On deadline, the writer warns and can continue startup
-    Writer->>Lock: Request lock diagnostics after failed operation
-    Lock->>RM: Register path and query holders
-    RM-->>Lock: Process metadata
-    Lock-->>Writer: Structured diagnostic log
+    participant Caller
+    participant LockModule as "Platform File Lock"
+    participant RestartManager as "Windows Restart Manager"
+    Caller->>LockModule: Request holder query
+    LockModule->>RestartManager: RmStartSession
+    LockModule->>RestartManager: RmRegisterResources
+    LockModule->>RestartManager: RmGetList count query
+    RestartManager-->>LockModule: Required record count or ERROR_MORE_DATA
+    alt holders found
+        LockModule->>RestartManager: RmGetList data query
+        RestartManager-->>LockModule: RM_PROCESS_INFO records
+        LockModule-->>Caller: Lock holder records
+    else no holders
+        LockModule-->>Caller: Empty holder list
+    end
+    LockModule->>RestartManager: RmEndSession on scope exit
 ```
 
-The module tree also includes process snapshots, update gating, tool updating, and binary writing. Those components address whether updates should run, how processes are managed, and how binaries are replaced. Platform File Lock deliberately does not make those policy decisions; it provides Windows holder evidence that such workflows can use for troubleshooting or safe-eviction decisions.
+## Public Data Model
 
-## Failure Semantics and Operational Notes
+### Locking Process
 
-- Restart Manager failures are converted to descriptive `String` errors that identify the failed native step, such as session start, resource registration, list sizing, or list retrieval.
-- Empty input to the internal query returns an empty holder collection without opening a native session.
-- UTF-16 app and service buffers are decoded up to their first NUL terminator and converted lossily, so malformed native text cannot prevent diagnostics from being produced.
-- Directory traversal ignores unreadable directories and entries whose file type cannot be obtained. This makes the query resilient but can reduce coverage when filesystem inspection is incomplete.
-- The native session is cleaned up through the scoped guard even when a later step fails.
-- The source includes tests only for Windows targets, matching the module's platform-specific API.
+`LockingProcess` is the compact representation returned by `get_locking_processes`. It contains:
 
-## Maintenance Guidance
+| Field | Meaning |
+|---|---|
+| `pid` | Windows process identifier reported by Restart Manager. |
+| `name` | Application name reported by Restart Manager. |
 
-When changing this module, preserve the distinction between detection, reporting, and remediation:
+Its display representation is `name (PID: pid)`. `format_locking_processes` formats a slice of these records as a comma-separated list and returns `No processes detected` for an empty slice. This supports concise, human-readable error logging.
 
-1. Keep Restart Manager session cleanup reliable on all return paths.
-2. Do not broaden the error classifier without confirming that the additional Windows error represents lock contention.
-3. Preserve the `1024` directory registration bound, or replace it with an explicitly bounded strategy, to avoid unbounded scans and oversized native calls.
-4. Keep directory-result deduplication keyed by process identifier so one holder is not reported repeatedly for multiple files.
-5. Treat holder metadata as diagnostic evidence. Any decision to close, restart, or terminate a process belongs to a higher-level update or tool-management workflow and must account for critical applications, services, restartability, and user sessions.
+### Lock Holder
+
+`LockHolder` preserves the additional data needed by higher-level code making a safety decision:
+
+| Field | Meaning |
+|---|---|
+| `pid` | Holder process identifier. |
+| `app_name` | Application name from Restart Manager. |
+| `app_type` | Raw Windows Restart Manager application-type value. The implementation notes that `RmCritical` is `1000`. |
+| `ts_session_id` | Terminal Services session identifier reported for the holder. |
+| `restartable` | Whether Restart Manager reports the holder as restartable. |
+| `service_short_name` | Service short name when Restart Manager classifies the holder as a service; otherwise absent. |
+
+The presence of service and restartability information is intentional: directory queries provide richer context than the file-level diagnostic result and avoid forcing a caller to re-query the operating system before choosing a safe next step.
+
+## Core Operations
+
+### File Holder Lookup
+
+`get_locking_processes(file_path)` converts one file path to Windows UTF-16, queries Restart Manager, and maps the resulting holders to `LockingProcess` values. This path deliberately discards the richer holder metadata because its consumer needs a concise lock-owner list for diagnostic output.
+
+### Directory Holder Lookup
+
+`get_directory_lock_holders(dir)` recursively collects paths beneath a target directory and registers the collected resources in a single Restart Manager session. Collection is bounded at **1,024** paths (`MAX_RM_FILES`) so a directory scan cannot produce an unbounded registration request. If no entries are collected, the directory path itself is registered, which preserves inspection for a directory containing only subdirectories or no readable files.
+
+After querying, the results are sorted by process ID and deduplicated by process ID. A process that holds multiple registered files therefore appears once in the returned collection.
+
+```mermaid
+flowchart TD
+    Start["Directory query requested"] --> Collect["Recursively collect filesystem entries"]
+    Collect --> Limit{"Reached 1,024 paths?"}
+    Limit -->|"No"| More["Continue traversing entries"]
+    More --> Collect
+    Limit -->|"Yes"| Query["Register collected paths in one session"]
+    Collect --> Empty{"Any paths collected?"}
+    Empty -->|"Yes"| Query
+    Empty -->|"No"| Directory["Register directory path"]
+    Directory --> Query
+    Query --> Holders["Query Restart Manager holders"]
+    Holders --> Dedupe["Sort and deduplicate by process ID"]
+    Dedupe --> Result["Return LockHolder records"]
+```
+
+The recursive collector ignores directories that cannot be read and entries whose file type cannot be obtained. It stops descending once the file-registration cap is reached. Consequently, a directory query is a bounded diagnostic snapshot, not a proof that no lock exists outside the collected resource set.
+
+### Sharing-Violation Logging
+
+`log_file_lock_info(error, file_path, operation)` first checks whether the I/O error is Windows error `32` (`ERROR_SHARING_VIOLATION`). It returns `false` without logging for any other error. For a sharing violation, it queries holders and always returns `true` after issuing one of three error messages:
+
+| Query outcome | Logged diagnostic |
+|---|---|
+| One or more holders | The operation, file path, and formatted application and PID list. |
+| No holders reported | The file is locked but the locking process could not be identified. |
+| Restart Manager query fails | The file is locked and the holder query error is included. |
+
+```mermaid
+flowchart TD
+    IoError["I/O error during file operation"] --> Sharing{"Windows error 32?"}
+    Sharing -->|"No"| NotHandled["Return false"]
+    Sharing -->|"Yes"| Lookup["Get locking processes"]
+    Lookup --> Found{"Processes found?"}
+    Found -->|"Yes"| Details["Log process names and PIDs"]
+    Found -->|"No"| Unknown["Log unidentified lock holder"]
+    Lookup -->|"Query error"| QueryError["Log holder query failure"]
+    Details --> Handled["Return true"]
+    Unknown --> Handled
+    QueryError --> Handled
+```
+
+## Integration and Operational Considerations
+
+Platform File Lock runs inside the OpenFrame client agent supplied by the OpenFrame OSS Library. It is particularly relevant when an agent update, tool update, uninstall, or executable replacement encounters a Windows sharing violation. The module turns the opaque operating-system error into a diagnostic that names the locking application when Restart Manager can identify it.
+
+The module depends on the following Windows behaviors and APIs:
+
+- Path conversion through Windows UTF-16 encoding, including a terminating NUL code unit.
+- Restart Manager session creation, resource registration, and holder enumeration.
+- Windows I/O error code `32` to classify a file as being in use.
+- `tracing::error` for structured error-level diagnostics.
+
+Maintain these invariants when changing the implementation:
+
+1. Keep all Windows-only code behind the appropriate target guard so non-Windows builds do not import Windows APIs.
+2. End every successfully started Restart Manager session, including early returns and failures after startup.
+3. Preserve the two-step `RmGetList` protocol and treat `ERROR_MORE_DATA` as expected only for the count query.
+4. Retain bounded directory traversal and process-ID deduplication to keep directory checks predictable.
+5. Treat holder information as diagnostic input. The module itself makes no claim that a process may safely be stopped or restarted.
+
+## Error Semantics
+
+The lookup functions return `Result` with a string error describing the failed Restart Manager operation, such as session creation, resource registration, count retrieval, or data retrieval. An empty successful list means the API did not report holders for the registered resources at query time; it does not change the original I/O error or guarantee that a subsequent file operation will succeed.
+
+For support and troubleshooting discussions, use the OpenMSP Slack community rather than GitHub Issues or Discussions.

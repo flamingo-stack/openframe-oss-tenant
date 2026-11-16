@@ -1,9 +1,0 @@
-flowchart TD
-    Admin["Administrator Context"] --> DialogApi["Dialog API"]
-    Admin --> TicketApi["Ticket API"]
-    Agent["Temporary Agent Session"] --> MessageApi["Message API"]
-    DeviceApi["Device API"] --> Target["Configured Enrolled Device"]
-    Target --> Agent
-    DialogApi --> Dialog["Fae Dialog"]
-    TicketApi --> Ticket["Backing Ticket"]
-    MessageApi --> Dialog

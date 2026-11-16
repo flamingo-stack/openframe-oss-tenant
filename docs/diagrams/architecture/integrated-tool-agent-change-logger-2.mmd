@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Producer as Configuration or Publication Service
+    participant Repository as Mongo Repository
+    participant Listener as Change Logger
+    participant Database as MongoDB
+    participant Logs as Application Logs
+    Producer->>Repository: save integrated tool agent
+    Repository->>Listener: before save event
+    Listener->>Logs: write save before summary
+    Repository->>Database: persist document
+    Database-->>Repository: save completed
+    Repository->>Listener: after save event
+    Listener->>Logs: write save after summary
+    Repository-->>Producer: persisted agent

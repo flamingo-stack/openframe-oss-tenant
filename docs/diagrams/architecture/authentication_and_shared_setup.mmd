@@ -1,0 +1,7 @@
+flowchart TD
+    Request["External API Request"] --> KeyPresent{"API Key Present?"}
+    KeyPresent -->|"no"| Reject["401 Unauthorized"]
+    KeyPresent -->|"yes"| KeyValid{"Key Valid?"}
+    KeyValid -->|"no"| Reject
+    KeyValid -->|"yes"| Identity["Gateway Injects Trusted Identity"]
+    Identity --> Resource["External API Resource"]

@@ -1,0 +1,6 @@
+flowchart LR
+    JUnit["JUnit Platform"] -->|"lifecycle events"| Listener["Slack Listener"]
+    Listener -->|"summary and ordered details"| Client["Slack Client"]
+    Client -->|"bot token and channel"| SlackApi["Slack Web API"]
+    Client -->|"webhook URL"| Webhook["Slack Incoming Webhook"]
+    Client -->|"when Slack is absent"| Logs["Application Logs"]

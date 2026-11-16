@@ -1,17 +1,11 @@
-sequenceDiagram
-    participant Updater as Tool Updater
-    participant Budget as Config Core
-    participant Service as Platform Service Manager
-    participant Binary as Binary Writer
-    Updater->>Budget: Read lifecycle limits
-    Updater->>Service: Request graceful stop
-    Service-->>Updater: Stopped or timeout
-    alt Service did not stop
-        Updater->>Service: Force terminate within retry budget
-        Service-->>Updater: Exit outcome
-    end
-    Updater->>Binary: Write replacement binary
-    Binary->>Budget: Read synchronization and unlock limits
-    Binary-->>Updater: Binary ready or warning
-    Updater->>Service: Start with retry and call deadlines
-    Service-->>Updater: Running state
+flowchart TD
+    UpdateRequest["Update or restart request"] --> AcquireGuard["Acquire tool update guard"]
+    AcquireGuard --> StopAttempt["Request graceful stop"]
+    StopAttempt --> Stopped{"Process or service stopped?"}
+    Stopped -->|"yes"| ReplaceBinary["Replace and synchronize executable"]
+    Stopped -->|"no"| Escalate["Force-kill within retry budget"]
+    Escalate --> Recheck["Poll process or service state"]
+    Recheck --> Stopped
+    ReplaceBinary --> WaitUnlock["Wait for executable unlock"]
+    WaitUnlock --> StartService["Start process or service with retry backoff"]
+    StartService --> ReleaseGuard["Release tool lock and updating flag"]

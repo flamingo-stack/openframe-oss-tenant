@@ -1,9 +1,20 @@
 flowchart TD
-    Operation["Requested privileged operation"] --> Capability["Select required capability"]
-    Capability --> AdminNeed{"Administrative capability?"}
-    AdminNeed -->|"Yes"| Admin["Evaluate is_admin()"]
-    AdminNeed -->|"No"| ReadLogs["Evaluate system log access"]
-    Admin --> Result{"Available?"}
-    ReadLogs --> Result
-    Result -->|"Yes"| Proceed["Run caller workflow"]
-    Result -->|"No"| Warn["Warn or reject according to caller policy"]
+    Start[MaintenanceTask]
+    Need[DetermineMode]
+    Inspect[InspectTarget]
+    Match{ModeMatches}
+    Capability{CapabilityPresent}
+    Repair[ApplyMode]
+    Confirm[VerifyMode]
+    Error[ReportError]
+    Continue[Continue]
+
+    Start --> Need
+    Need --> Inspect
+    Inspect --> Match
+    Match -->|yes| Continue
+    Match -->|no| Capability
+    Capability -->|yes| Repair
+    Capability -->|no| Error
+    Repair --> Confirm
+    Confirm --> Match

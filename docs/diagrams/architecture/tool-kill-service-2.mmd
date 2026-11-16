@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Stop Installed Tool"] --> Variant{"Installation type?"}
+    Variant -->|"GUI application"| Gui["Stop by executable path"]
+    Variant -->|"Standard executable"| StandardPath{"Executable path available?"}
+    StandardPath -->|"Yes"| StopPath["Stop by executable path"]
+    StandardPath -->|"No"| StopTool["Stop by tool command pattern"]
+    StopPath --> StopTool
+    Variant -->|"System service"| StopService["Request service-manager stop"]
+    StopService --> ServicePath{"Executable path available?"}
+    ServicePath -->|"Yes"| Cleanup["Stop remaining processes by path"]
+    ServicePath -->|"No"| Complete["Stop workflow complete"]
+    Gui --> Complete
+    StopTool --> Complete
+    Cleanup --> Complete

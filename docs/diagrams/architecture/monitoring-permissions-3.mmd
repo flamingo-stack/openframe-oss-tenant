@@ -4,23 +4,20 @@ sequenceDiagram
     participant Directories as Directory Manager
     participant Metrics as Metrics Store
     Runtime->>Monitor: start monitoring
-    loop At configured interval
-        Monitor->>Metrics: record check timestamp
+    loop Every configured interval
+        Monitor->>Metrics: record timestamp gauge
         Monitor->>Directories: perform health check
         alt Check succeeds
             Directories-->>Monitor: success
-            Monitor->>Monitor: log success
         else Check fails
             Directories-->>Monitor: error
-            Monitor->>Monitor: log failure
-            Monitor->>Metrics: record error entry
+            Monitor->>Metrics: record error counter
             Monitor->>Directories: fix permissions
             alt Repair succeeds
                 Directories-->>Monitor: success
-                Monitor->>Metrics: record repair entry
+                Monitor->>Metrics: record repair counter
             else Repair fails
                 Directories-->>Monitor: error
-                Monitor->>Monitor: log repair failure
             end
         end
     end

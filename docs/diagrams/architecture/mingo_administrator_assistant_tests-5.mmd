@@ -1,0 +1,10 @@
+flowchart LR
+    Prompt["Prompt names target host"] --> Resolve["Mingo resolves machine"]
+    Resolve --> Approval["Approval decision"]
+    Approval --> Execute["Run action or query"]
+    Execute --> Target["Target managed device"]
+    Execute --> Control["Control device when applicable"]
+    Target --> SshA["SSH verification on target"]
+    Control --> SshB["SSH verification on control"]
+    SshA --> ScopeAssert["Assert intended state"]
+    SshB --> ScopeAssert

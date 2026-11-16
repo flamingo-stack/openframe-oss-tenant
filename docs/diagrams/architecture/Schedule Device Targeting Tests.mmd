@@ -1,0 +1,9 @@
+flowchart LR
+    Suite["Schedule Device Targeting Tests"] -->|"creates and deletes scripts"| ScriptApi["Script API test client"]
+    Suite -->|"creates schedules and changes targets"| ScheduleApi["Script Schedule API test client"]
+    Suite -->|"selects enrolled target"| DeviceApi["Device API test client"]
+    DeviceApi -->|"returns machine"| Machine["Enrolled machine"]
+    ScriptApi -->|"returns script"| Script["Script"]
+    ScheduleApi -->|"returns state and picker"| Schedule["Script schedule"]
+    Schedule -->|"targets"| Machine
+    ScheduleApi -->|"GraphQL requests"| Platform["OpenFrame platform"]

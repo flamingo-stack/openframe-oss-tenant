@@ -1,0 +1,12 @@
+flowchart TD
+    Receive["Receive message and enrichment"] --> Validate{"Message valid?"}
+    Validate -->|"no"| Drop["Return without transformation"]
+    Validate -->|"yes"| Transform["Transform to destination model"]
+    Transform --> Resolve["Resolve operation type"]
+    Resolve --> Known{"Operation available?"}
+    Known -->|"no"| Ignore["Return without persistence"]
+    Known -->|"yes"| Dispatch["Dispatch operation"]
+    Dispatch --> Create["Create handler"]
+    Dispatch --> Read["Read handler"]
+    Dispatch --> Update["Update handler"]
+    Dispatch --> Delete["Delete handler"]

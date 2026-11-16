@@ -1,12 +1,26 @@
-flowchart TD
-    Start["Start SaaS login"] --> Discover["Discover tenant"]
-    Discover --> Login["Request oauth login with tenant"]
-    Login --> Init["Follow authorization redirect"]
-    Init --> Page["Fetch login page"]
-    Page --> TokenCheck{{"CSRF input present?"}}
-    TokenCheck -->|"Yes"| AddToken["Add CSRF field to form"]
-    TokenCheck -->|"No"| PlainForm["Use credential form without CSRF field"]
-    AddToken --> Submit["Post credentials with session cookie"]
-    PlainForm --> Submit
-    Submit --> Code["Continue redirect to authorization code"]
-    Code --> Tokens["Complete redirect and select token cookies"]
+sequenceDiagram
+    participant Test as Test
+    participant Flow as AuthFlowSAAS
+    participant Tenant as TenantApi
+    participant Auth as Authorization Server
+
+    Test->>Flow: discoverTenant()
+    Flow->>Tenant: Discover tenant for user
+    Tenant-->>Flow: Tenant identifier
+    Test->>Flow: startFlow()
+    Flow->>Auth: GET oauth login with tenant
+    Auth-->>Flow: 302 with location and cookies
+    Test->>Flow: initAuth()
+    Flow->>Auth: GET redirect location
+    Auth-->>Flow: 302 with next location and cookies
+    Test->>Flow: postCredentials()
+    Flow->>Auth: GET login page with cookies
+    Auth-->>Flow: 200 with login page and session cookies
+    Flow->>Auth: POST credentials with optional CSRF token
+    Auth-->>Flow: 302 with next location and cookies
+    Test->>Flow: getAuthCode()
+    Flow->>Auth: GET next location with session cookie
+    Auth-->>Flow: 302 with next location
+    Test->>Flow: extractTokens()
+    Flow->>Auth: GET final location with all cookies
+    Auth-->>Flow: 302 with token cookies

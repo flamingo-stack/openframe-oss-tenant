@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Runner as Test Runner
+    participant Suite as Test Suite
+    participant Tenant as OpenFrame Tenant
+    participant Verify as Test Verification
+    participant Report as Slack Listener
+
+    Runner->>Suite: Discover and execute selected tests
+    Suite->>Tenant: Authenticate and invoke API or UI workflow
+    Tenant-->>Suite: Return response or rendered state
+    Suite->>Verify: Assert typed DTO, database state, or UI result
+    Verify-->>Suite: Test outcome
+    Suite->>Report: Publish lifecycle result
+    Report-->>Runner: Aggregate run summary

@@ -1,9 +1,0 @@
-flowchart LR
-    Filters["Active filter values"] --> Base["Tenant and shared filter criteria"]
-    Base --> PlatformScope["Remove platform constraint"]
-    Base --> AuthorScope["Remove author constraint"]
-    PlatformScope --> Unwind["Unwind supported platforms"]
-    Unwind --> PlatformGroup["Group and count platform"]
-    AuthorScope --> AuthorGroup["Group and count author"]
-    PlatformGroup --> PlatformFacet["Platform count map"]
-    AuthorGroup --> AuthorFacet["Author count map"]

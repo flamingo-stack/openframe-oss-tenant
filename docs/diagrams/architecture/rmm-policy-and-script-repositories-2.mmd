@@ -1,8 +1,0 @@
-flowchart LR
-    Schedule["Script schedule"] --> Run["Schedule execution header"]
-    Run --> Leaves["Per-machine script executions"]
-    Leaves --> RunStatus["Responded device and status aggregation"]
-    Script["Script catalog entry"] --> Leaves
-    SoftwareAction["Software action result"] --> Leaves
-    Leaves --> ActionSummary["Software action summary"]
-    Policy["Package auto-update policy"] --> Machine["Target machine"]

@@ -1,140 +1,157 @@
 # Model Tool Connection
 
-Model Tool Connection defines the local record used by the OpenFrame Client agent to track the association between an installed integrated tool and its server-side tool-agent identity. It is implemented by the `ToolConnection` Rust type in the OpenFrame OSS Library's `openframe_agent_lib` artifact, version `0.0.5`, which this repository consumes at runtime.
+Model Tool Connection defines the compact, persistent record that associates an installed local tool with the server-side tool-agent identity used by OpenFrame. It is implemented by the Rust `openframe_client` library from OpenFrame OSS Library and runs as part of this repository's OpenFrame client deployment.
 
-The model is deliberately small: it records the identity supplied by the local installation, the identity assigned to the agent-side tool, and whether that relationship has been published. The surrounding client services persist the record and publish a compact connection notification to NATS so the OpenFrame Client backend can maintain the device-to-tool relationship.
+The model is deliberately a data contract: it has no methods or validation logic of its own. Its value is in retaining the identity mapping that lets the agent publish a tool-connection event and lets the platform associate that installed tool with the correct managed device.
 
-**Source:** [Tool Connection model in OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/tool_connection.rs)
+## Scope and Ownership
 
-## Purpose and Scope
+The Rust definition is [`ToolConnection`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/tool_connection.rs). It derives `Debug`, `Clone`, `Serialize`, `Deserialize`, `PartialEq`, `Eq`, and `Default`.
 
-A tool installation has two identifiers with different responsibilities:
+The module is part of the `openframe_client` Cargo artifact, version `0.1.0`, which this repository consumes through OpenFrame OSS Library version `7.0.11`. The record is serialized for local persistence, so its field names form part of the client-side stored-data contract.
 
-| Field | Meaning | Used for |
-|---|---|---|
-| `tool_agent_id` | Identifier for the server-side integrated tool-agent record. | Local persistence identity and replacement of a previously saved connection. |
-| `agent_tool_id` | Identifier reported by the installed tool agent. | The identity delivered to the backend in the connection message. |
-| `published` | Local publication-state flag. | Records whether the connection was successfully published by the agent workflow. |
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct ToolConnection {
+    pub tool_agent_id: String,
+    pub agent_tool_id: String,
+    pub published: bool,
+}
+```
 
-The type derives `Debug`, `Clone`, `Serialize`, `Deserialize`, `PartialEq`, `Eq`, and `Default`. Consequently, it can be logged during diagnostics, duplicated by asynchronous workflows, encoded to and decoded from persisted JSON, compared in tests or reconciliation logic, and instantiated with default field values.
+## Data Contract
 
-This model does not contain credentials, connection endpoints, executable paths, or tool configuration. It represents only the identity mapping and its local publication state.
+| Field | Type | Meaning | Lifecycle owner |
+|---|---|---|---|
+| `tool_agent_id` | `String` | Identifies the locally installed tool-agent record. The client-side connection store uses this value as its replacement and deletion key. | Tool installation and update workflow |
+| `agent_tool_id` | `String` | Identifies the corresponding platform-side agent-tool association. It is the identifier sent with a connection publication. | Tool-connection processing workflow |
+| `published` | `bool` | Records whether the connection has been published successfully. The field supports durable progress tracking across client restarts. | Tool-connection processing workflow |
+
+`Default` creates an empty record with empty string identifiers and `published` set to `false`. Empty identifiers are therefore structurally possible; validation must be supplied by the workflow that creates or publishes a record. In particular, the processing manager rejects installed tools with an empty tool type before it tries to publish a connection.
 
 ## Architecture
 
-The model belongs to the Rust OpenFrame Client running on a managed endpoint. It is consumed by local persistence and processing services in the same library; the tenant deployment includes the Java OpenFrame Client backend listener that receives the resulting NATS message.
+The model sits between installed-tool metadata, a client-local JSON-backed connection store, and the NATS event path consumed by the Java client service. It is not itself a transport message: the Rust publisher builds a separate `ToolConnectionMessage` containing `tool_type` and `agent_tool_id`.
 
 ```mermaid
 flowchart LR
-    InstalledTool["Installed tool record"] --> ProcessingManager["Tool Connection Processing Manager"]
-    ProcessingManager --> ToolConnection["Tool Connection model"]
-    ToolConnection --> ConnectionService["Tool Connection Service"]
-    ConnectionService --> JsonStore["Local JSON connection store"]
-    ProcessingManager --> Publisher["Tool Connection Message Publisher"]
-    Publisher --> Nats["NATS subject machine.{machine id}.tool-connection"]
-    Nats --> BackendListener["Backend Tool Connection Listener"]
-    BackendListener --> BackendService["Backend Tool Connection Service"]
+    InstalledTool["Installed tool metadata"] --> Processor["Tool connection processing manager"]
+    Processor --> Record["ToolConnection record"]
+    Record --> Store["Client-local connection store"]
+    Processor --> Publisher["Tool connection message publisher"]
+    Publisher --> Nats["NATS subject machine ID tool connection"]
+    Nats --> Listener["Java tool connection listener"]
+    Listener --> PlatformService["Platform tool connection service"]
+    PlatformService --> PlatformStore["Platform connection data"]
+    PlatformStore --> ApiLoader["GraphQL tool connection data loader"]
 ```
 
 ### Component Responsibilities
 
 | Component | Responsibility | Relationship to Model Tool Connection |
 |---|---|---|
-| `ToolConnection` | Serializable local mapping of tool-agent identity, installed-agent identity, and publication state. | Defines the persisted record. |
-| Tool Connection Service | Reads the complete connection list from a JSON file and serializes writes through a mutex. A save replaces an entry having the same `tool_agent_id`, or appends a new entry. | Owns durable local storage for `ToolConnection` records. |
-| Tool Connection Processing Manager | Enumerates installed tools at startup and processes newly installed tools. It skips tools with an empty tool type and prevents concurrent processing for the same tool. | Resolves and persists connection state while arranging publication. |
-| Tool Connection Message Publisher | Builds a transport message from the machine ID, agent tool ID, and tool type, then publishes it through the NATS publisher. | Sends the externally consumable representation; the persisted `published` flag is not part of the shown wire model. |
-| Backend Tool Connection Listener | Consumes messages from the `TOOL_CONNECTIONS` stream using the `machine.*.tool-connection` subject and delegates to the backend service. | Applies the reported mapping to backend state. |
+| `ToolConnectionProcessingManager` | Scans installed tools at startup and processes newly installed tools. It avoids concurrent processing for the same tool and can wake an existing loop for immediate republishing. | Creates, updates, and uses connection state while coordinating publication. |
+| `ToolConnectionService` in the Rust client | Reads and persists the local connection collection. Saves replace an existing entry with the same `tool_agent_id`; deletions use that same key. | Stores `ToolConnection` records durably. |
+| `ToolConnectionMessagePublisher` | Builds a per-machine NATS topic and publishes a message containing `agent_tool_id` and `tool_type`. | Sends the platform-facing projection of a connection. |
+| `ToolConnectionListener` in the Java client service | Consumes `machine.*.tool-connection` from the `TOOL_CONNECTIONS` stream, extracts the machine identifier from the subject, and delegates to the platform service. | Receives the published representation rather than the full Rust record. |
+| Platform `ToolConnectionService` | Validates and stores the platform-side relationship after the listener delivers it. | Materializes the device-visible relationship. |
+| `ToolConnectionDataLoader` | Batch-loads connections for machine identifiers for GraphQL resolution. | Exposes persisted platform connections to API execution. |
 
-## Data Contracts
+## Local Persistence Semantics
 
-The local persistence contract and the wire contract are intentionally distinct.
-
-```mermaid
-classDiagram
-    class ToolConnection {
-        +String tool_agent_id
-        +String agent_tool_id
-        +bool published
-    }
-    class ToolConnectionMessage {
-        +String tool_type
-        +String agent_tool_id
-    }
-    ToolConnectionService --> ToolConnection : persists
-    ToolConnectionMessagePublisher --> ToolConnectionMessage : publishes
-```
-
-`ToolConnectionMessage` includes `tool_type` and `agent_tool_id`. The machine identity is carried by the NATS subject constructed by the publisher rather than shown as a payload field. The backend listener extracts the machine ID from the subject, deserializes the payload, obtains the delivery count, and calls its backend Tool Connection Service with the machine ID, tool type, agent tool ID, and whether the delivery is the final attempt.
-
-The local `tool_agent_id` is not shown in the message contract. It is used by the client-side persistence service as the key for replacing an existing connection record.
-
-## Connection Publication Flow
-
-The processing manager supports two entry points:
-
-- `run` loads all installed tools when the agent starts. It deliberately re-resolves and republishes each eligible tool because a tool-agent ID may change outside the local process, such as after a tool re-key or backend data reset.
-- `run_new_tool` handles a new installation. If a loop for that tool is already active, it signals that loop for immediate republication instead of creating a concurrent processor.
+The Rust client-side service treats `tool_agent_id` as the record identity. A save operation serializes access with an asynchronous mutex, loads the existing collection, replaces a matching entry or appends a new entry, then persists the complete collection. Deletion performs the same serialized read-modify-write sequence and reports whether it removed anything.
 
 ```mermaid
 flowchart TD
-    Start["Agent starts or a tool is installed"] --> LoadTools["Load installed tools or the new installed tool"]
-    LoadTools --> HasType{"Tool type present?"}
-    HasType -->|"No"| Skip["Log warning and skip publication"]
-    HasType -->|"Yes"| Acquire{"Processing slot available?"}
-    Acquire -->|"No"| Wake["Notify existing processor when available"]
-    Acquire -->|"Yes"| Resolve["Resolve tool connection identities"]
-    Resolve --> Save["Save Tool Connection in local JSON store"]
-    Save --> Publish["Publish tool type and agent tool ID to NATS"]
-    Publish --> Receive["Backend listener receives delivery"]
-    Receive --> Apply["Backend service records machine tool connection"]
+    SaveRequest["Save ToolConnection"] --> Lock["Acquire async writer lock"]
+    Lock --> Load["Read persisted connection list"]
+    Load --> Match{"Matching tool-agent ID?"}
+    Match -->|"yes"| Replace["Replace existing record"]
+    Match -->|"no"| Append["Append new record"]
+    Replace --> Persist["Persist complete list"]
+    Append --> Persist
+    Persist --> Release["Release writer lock"]
 ```
 
-## Delivery and Acknowledgement Behavior
+The reader uses a JSON read-or-quarantine helper and returns an empty list when no parsed data is available. This allows the client to recover to an empty in-memory connection list when the persistence layer does not provide a parsed collection, while surfacing read failures through the service result.
 
-The publication path uses the NATS message publisher and reports an error if the publish operation fails. The publisher contains a noted future enhancement to wait for an acknowledgement and retry after a failure; therefore callers must continue to treat a successful local publish call and an acknowledged backend update as separate concerns.
+## Publication and Platform Processing Flow
 
-On the backend, the listener uses a durable consumer named `tool-connection-processor-v2` and delivery group `tool-connection`. For a successfully handled message it explicitly acknowledges the NATS delivery. If parsing, machine-ID extraction, or backend processing throws an exception, it leaves the message unacknowledged so NATS can redeliver it. The listener passes final-attempt information derived from the NATS delivery count to its service.
+At client startup, the processing manager loads installed tools. If there are no installed tools, it exits successfully without publishing. For each tool, it requires a non-empty tool type, prevents duplicate concurrent processing for that tool, and processes the connection. The manager deliberately re-resolves and republishes during every start because the server-side agent identifier can change independently, such as after a tool re-key or a database reset.
 
 ```mermaid
 sequenceDiagram
-    participant Agent as OpenFrame Client Agent
-    participant Nats as NATS
-    participant Listener as Backend Listener
-    participant Service as Backend Service
-    Agent->>Nats: Publish tool connection message
-    Nats->>Listener: Deliver message on matching subject
-    Listener->>Listener: Extract machine ID and deserialize payload
-    Listener->>Service: Add tool connection
-    alt Processing succeeds
-        Listener->>Nats: Acknowledge delivery
-    else Processing fails
-        Listener->>Nats: Leave delivery unacknowledged
-        Nats-->>Listener: Redeliver according to consumer policy
+    participant Manager as Tool connection manager
+    participant Installed as Installed tools service
+    participant Store as Connection store
+    participant Publisher as NATS publisher
+    participant Listener as Java connection listener
+    participant Platform as Platform connection service
+
+    Manager->>Installed: Load installed tools
+    Installed-->>Manager: Installed tool list
+    loop Each eligible installed tool
+        Manager->>Store: Load or save connection state
+        Manager->>Publisher: Publish machine ID, agent-tool ID, tool type
+        Publisher-->>Listener: Deliver NATS message
+        Listener->>Platform: Add machine tool connection
+        Platform-->>Listener: Processed connection
+        Listener-->>Publisher: Acknowledge delivery
     end
 ```
 
-## Persistence Semantics
+On the platform side, the listener only acknowledges the NATS message after `addToolConnection` completes. If parsing, machine-ID extraction, or service processing throws an exception, it leaves the message unacknowledged so the messaging system can redeliver it. The listener determines whether the current delivery is the last attempt and passes that fact to the platform service.
 
-The client-side service loads an array of `ToolConnection` values from its configured JSON file. A read that has no parsed data yields an empty list. When saving, the service acquires its writer mutex, reloads the current list, replaces the record with a matching `tool_agent_id` if one exists, otherwise appends the record, and persists the updated collection.
+## New Tool and Concurrent Processing Behavior
 
-This makes `tool_agent_id` the local upsert key. Maintainers should preserve that behavior when changing the model: changing its meaning or allowing duplicate tool-agent IDs would alter reconciliation behavior and could leave stale local mappings.
+A new installation invokes `run_new_tool`. The manager first checks that the tool has a type. It then attempts to mark the tool as running:
 
-## Operational Considerations
+- If no worker currently owns the tool, the manager starts a new processing loop.
+- If a worker already owns the tool and a wake signal is registered, the manager notifies that worker so it republishes without waiting for its normal cycle.
+- If a worker owns the tool but no wake signal is available, it skips duplicate processing.
 
-- **Tool type is required for publication.** The manager rejects an installed tool whose tool type is empty because the backend rejects such messages.
-- **Startup is a reconciliation point.** Republishing on startup repairs backend mappings that become stale when an external change alters an agent tool ID.
-- **Per-tool concurrency is controlled.** The manager tracks running tools and wake signals to prevent duplicate connection processors while still allowing a reinstall to trigger prompt republication.
-- **Storage failures matter.** Read and write errors are contextualized by the local connection-file path and should be surfaced in agent diagnostics.
-- **Wire compatibility matters.** Adding or renaming fields in the message contract requires compatible changes in the backend listener and its message deserialization.
+```mermaid
+flowchart TD
+    NewTool["Newly installed tool"] --> TypeCheck{"Tool type present?"}
+    TypeCheck -->|"no"| Skip["Log warning and skip publication"]
+    TypeCheck -->|"yes"| LockCheck{"Processing loop already running?"}
+    LockCheck -->|"no"| StartLoop["Start tool connection processing"]
+    LockCheck -->|"yes"| WakeCheck{"Wake signal available?"}
+    WakeCheck -->|"yes"| Notify["Notify existing loop for immediate republish"]
+    WakeCheck -->|"no"| Ignore["Avoid duplicate processing"]
+```
 
-## Maintenance Checklist
+## Integration Boundaries
 
-When modifying Model Tool Connection or its workflow:
+### Rust Client Boundary
 
-1. Keep `tool_agent_id` stable as the local persistence replacement key, unless a coordinated migration is introduced.
-2. Verify JSON serialization compatibility for existing endpoint state before adding or making fields mandatory.
-3. Confirm that an empty tool type remains rejected before a message is published.
-4. Preserve per-tool processing exclusion and wake-up behavior to avoid duplicate workers after reinstall events.
-5. Test both successful acknowledgement and unacknowledged redelivery behavior through the NATS consumer path.
-6. Coordinate any transport-contract change with the backend `TOOL_CONNECTIONS` listener and its service.
+Model Tool Connection is implemented in the OpenFrame OSS Library, not in this repository's Java services. The tenant repository packages and deploys the surrounding OpenFrame client service, while the agent library supplies the local record, local connection store, processing manager, and NATS publisher.
+
+The client configuration provides the machine identity used to construct the NATS subject. The published payload intentionally contains the platform-relevant `agent_tool_id` and the installed tool type. It does not expose the local `tool_agent_id` or `published` flag as part of that payload.
+
+### Platform Boundary
+
+The tenant deployment includes the Java OpenFrame client service, which runs the NATS listener. The listener subscribes to the `TOOL_CONNECTIONS` stream using the subject pattern `machine.*.tool-connection`, with the `tool-connection-processor-v2` consumer and the `tool-connection` delivery group. It extracts the machine ID from the message subject, deserializes the payload, records the connection through the platform service, and acknowledges only after successful processing.
+
+The API service's GraphQL `ToolConnectionDataLoader` subsequently asks the platform API `ToolConnectionService` for connections for a batch of machine IDs. This separates asynchronous device reporting from API query resolution.
+
+## Reliability and Maintenance Notes
+
+- **Preserve identifier meaning.** Changing either identifier or changing `tool_agent_id` matching semantics can orphan local records, duplicate persisted entries, or break cleanup during tool removal.
+- **Maintain serialization compatibility.** `ToolConnection` is persisted through Serde. Renaming fields or changing their types requires a migration strategy for existing local data.
+- **Keep publication and persistence distinct.** The model contains local progress state, while the wire message contains the identifiers the platform needs. Do not assume the wire payload can reconstruct the complete local record.
+- **Expect repeated publication.** Startup republishing is intentional to reconcile platform mappings after remote identity changes. Consumers must treat connection updates as safe to process repeatedly.
+- **Preserve acknowledgement ordering.** The listener's success-only acknowledgement is the retry boundary. Acknowledge before durable platform processing would lose a connection on failure.
+- **Use tool-level concurrency protection.** The processing manager's running-tool and wake-signal coordination prevents overlapping connection workflows for the same tool while allowing a reinstall to request an immediate retry.
+
+## Testing Focus
+
+The provided source declares no tests specifically for the Rust data model. Maintain coverage at the workflow boundaries:
+
+1. Serialize and deserialize a populated record, including `published` values of both `true` and `false`.
+2. Verify save replacement uses `tool_agent_id`, rather than `agent_tool_id`, as the identity key.
+3. Verify deletion returns `true` only when it removed a matching local record.
+4. Verify an empty tool type is not published.
+5. Verify a restart republishes eligible installed tools after the platform mapping changes.
+6. Verify listener failures leave a NATS message unacknowledged and successful processing acknowledges it.
+7. Verify batched API reads return the connections belonging to each requested machine.

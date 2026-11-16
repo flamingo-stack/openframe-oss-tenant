@@ -1,0 +1,9 @@
+flowchart TD
+    Owner["Active Tenant Owner"] --> CreateAdmin["Create Temporary Administrator"]
+    CreateAdmin --> VerifyAdmin["Verify Administrator Cannot Transfer"]
+    VerifyAdmin --> TransferOut["Owner Transfers Ownership"]
+    TransferOut --> NewOwner["Temporary User Becomes Owner"]
+    NewOwner --> FreshLogin["Authenticate as New Owner"]
+    FreshLogin --> TransferBack["Transfer Ownership Back"]
+    TransferBack --> DeleteAdmin["Delete Temporary Administrator"]
+    DeleteAdmin --> RejectDeleted["Reject Deleted Transfer Target"]

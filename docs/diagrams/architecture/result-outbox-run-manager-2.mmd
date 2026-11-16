@@ -1,0 +1,6 @@
+flowchart TD
+    Subject["Stored result subject"] --> Decision{{"Requires stream acknowledgement?"}}
+    Decision -->|"yes"| Stream["publish_acked through JetStream"]
+    Decision -->|"no"| Raw["publish_raw and flush"]
+    Stream --> Success["Remove durable outbox entry"]
+    Raw --> Success

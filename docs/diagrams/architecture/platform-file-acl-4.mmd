@@ -1,0 +1,10 @@
+flowchart TD
+    Start["ACL Operation Requested"] --> WindowsCheck{"Windows target?"}
+    WindowsCheck -->|"yes"| RunCommands["Run Windows ACL commands"]
+    WindowsCheck -->|"no"| NoOp["Return successful no-op"]
+    RunCommands --> CommandResult{"Command succeeded?"}
+    CommandResult -->|"yes"| Continue["Continue remaining steps"]
+    CommandResult -->|"no"| Warning["Log warning and continue"]
+    Continue --> ReturnSuccess["Return success"]
+    Warning --> ReturnSuccess
+    NoOp --> ReturnSuccess

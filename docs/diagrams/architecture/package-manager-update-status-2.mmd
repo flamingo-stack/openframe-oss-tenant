@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> Received
+    Received --> Rejected: "Request cannot enter order store"
+    Received --> Pending: "Order accepted"
+    Pending --> Superseded: "Newer matching package request"
+    Pending --> Waiting: "Update gate delays execution"
+    Waiting --> Installing: "Gate permits execution"
+    Installing --> Done: "Upgraded or already latest"
+    Installing --> Failed: "Manager or execution failure"
+    Rejected --> [*]
+    Superseded --> [*]
+    Done --> [*]
+    Failed --> [*]

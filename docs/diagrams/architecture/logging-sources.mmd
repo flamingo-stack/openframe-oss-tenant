@@ -1,0 +1,17 @@
+flowchart LR
+    ClientRuntime["OpenFrame Client runtime"] --> Registry["LogSourceRegistry"]
+    Registry --> OpenframeSource["FileLogSource: openframe"]
+    Registry --> MeshSource["FileLogSource: meshcentral-agent"]
+    OpenframeSource --> OpenframeLog["OpenFrame log file"]
+    MeshSource --> MeshLog["MeshCentral log file"]
+    OpenframeSource --> OpenframeOffset["Persisted offset file"]
+    MeshSource --> MeshOffset["Persisted offset file"]
+    OpenframeSource --> Parser["Log parser"]
+    MeshSource --> Parser
+    Parser --> Entries["LogEntry collection"]
+    Entries --> Consumer["Batch consumer"]
+    Consumer --> Decision{"Delivery succeeded?"}
+    Decision -->|"yes"| Commit["commit_all"]
+    Decision -->|"no"| Rollback["rollback_all"]
+    Commit --> OpenframeOffset
+    Commit --> MeshOffset

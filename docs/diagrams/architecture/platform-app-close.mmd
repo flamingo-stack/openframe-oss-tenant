@@ -1,13 +1,11 @@
 flowchart LR
-    UpdateFlow["Client update or tool update flow"] --> CloseApi["Platform App Close"]
-    CloseApi --> CloseRequest["ask to close"]
-    CloseApi --> Relaunch["reopen"]
-    CloseRequest --> WindowsClose["Windows PowerShell CloseMainWindow"]
-    CloseRequest --> UnixClose["Unix SIGTERM"]
-    Relaunch --> MacLaunch["macOS console user launcher"]
-    Relaunch --> WindowsLaunch["Windows session launcher"]
-    Relaunch --> Unsupported["Unsupported platform warning"]
-    WindowsClose --> TargetApp["Target graphical application"]
-    UnixClose --> TargetApp
-    MacLaunch --> UpdatedApp["Updated graphical application"]
-    WindowsLaunch --> UpdatedApp
+    UpgradeFlow["Client update workflow"] -->|"process IDs and image path"| AppClose["Platform App Close"]
+    AppClose -->|"Windows close request"| PowerShell["PowerShell user script"]
+    AppClose -->|"Unix close request"| SysInfo["sysinfo process signal API"]
+    AppClose -->|"macOS relaunch"| MacSession["macOS console-user launcher"]
+    AppClose -->|"Windows relaunch"| WindowsSession["Windows session launcher"]
+    PowerShell --> WindowsApps["Windows GUI applications"]
+    SysInfo --> UnixApps["Unix GUI applications"]
+    MacSession --> MacApps["macOS application"]
+    WindowsSession --> WindowsApps
+    AppClose --> Telemetry["Structured tracing events"]

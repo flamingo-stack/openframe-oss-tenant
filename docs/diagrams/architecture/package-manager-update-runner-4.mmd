@@ -1,0 +1,11 @@
+flowchart TD
+    Evaluate["Evaluate Package Update"] --> Identity{"Application identity resolved?"}
+    Identity -->|"no"| BlockUnknown["Block as undetermined"]
+    Identity -->|"yes"| Snapshot{"Process snapshot resolved?"}
+    Snapshot -->|"no"| BlockUnknown
+    Snapshot -->|"yes"| Application{"Is target an application?"}
+    Application -->|"no"| Clear["Gate clear"]
+    Application -->|"yes"| Holders{"Matching non-service holders found?"}
+    Holders -->|"yes"| BlockRunning["Block and describe holders"]
+    Holders -->|"no"| Clear
+    Clear --> Install["Proceed with worker installation path"]

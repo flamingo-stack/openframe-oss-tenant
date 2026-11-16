@@ -1,0 +1,10 @@
+flowchart TD
+    Command["Tool install or update command"] --> PendingOne{"Client update pending?"}
+    PendingOne -->|"yes"| BusyClient["Return busy: client update pending"]
+    PendingOne -->|"no"| Lock{"Tool lock available?"}
+    Lock -->|"no"| BusyTool["Return busy: tool busy"]
+    Lock -->|"yes"| Mark["Mark tool busy and retain guard"]
+    Mark --> PendingTwo{"Client update pending now?"}
+    PendingTwo -->|"yes"| BusyAfterLock["Release guard and return busy"]
+    PendingTwo -->|"no"| Run["Run reserved install or update"]
+    Run --> Outcome["Map service result to outcome"]

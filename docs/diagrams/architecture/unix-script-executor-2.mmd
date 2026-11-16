@@ -1,0 +1,13 @@
+flowchart TD
+    Execute["execute_script"] --> Identity["resolve run-as identity"]
+    Identity --> TempFile["Create temporary script"]
+    TempFile --> Guard["TempFileGuard cleanup"]
+    Guard --> Command["Build direct script command"]
+    Command --> Environment["Apply environment variables"]
+    Environment --> Preexec["Configure child pre-exec"]
+    Preexec --> Runner["Execute with timeout"]
+    Runner --> Outcome["ExecResult"]
+    Identity --> SpawnFailure["Start failure result"]
+    TempFile --> SpawnFailure
+    Preexec --> SpawnFailure
+    SpawnFailure --> Outcome

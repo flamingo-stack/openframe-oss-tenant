@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Producer as Log producer
+    participant Shipper as LogShipper
+    participant Worker as Shipping task
+    participant Http as Log endpoint
+    Producer->>Shipper: send log string
+    Shipper->>Worker: enqueue through bounded channel
+    Worker->>Worker: add log to current batch
+    alt Batch reaches 100 entries
+        Worker->>Http: POST LogBatch JSON
+        Http-->>Worker: success or error response
+    else No new log for 30 seconds
+        Worker->>Http: POST non-empty LogBatch JSON
+        Http-->>Worker: success or error response
+    end
+    alt Request failure
+        Worker->>Worker: emit tracing error and clear batch
+    else Request success
+        Worker->>Worker: clear batch
+    end

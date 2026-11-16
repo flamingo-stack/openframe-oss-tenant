@@ -1,156 +1,130 @@
 # Platform Machine Info Persistence
 
-Platform Machine Info Persistence preserves an OpenFrame Client registration identity across uninstall and reinstall cycles. It is implemented by the `machine_info_persistence.rs` platform module in the OpenFrame OSS Library and is assembled into this repository's OpenFrame Client runtime through the `openframe_agent_lib` dependency.
+Platform Machine Info Persistence preserves an OpenFrame client registration identity across an uninstall and later reinstall. It is implemented by the `openframe_agent_lib` dependency from OpenFrame OSS Library and is run by the Rust client assembled in this repository. The module stores a single JSON record containing the machine identifier, client secret, and an optional user identifier; it is intentionally separate from ordinary runtime configuration.
 
-The module stores only the information needed to recognize a previously enrolled endpoint: a machine identifier, the associated client secret, and an optional user identifier. It deliberately treats a missing store differently from an unreadable, incomplete, or corrupted store: only confirmed absence permits a caller to proceed as a fresh installation.
+The implementation is in [machine info persistence source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/machine_info_persistence.rs).
 
-**Implementation source:** [OpenFrame OSS Library: Machine Info Persistence](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/machine_info_persistence.rs)
+## Responsibilities and boundaries
 
-## Responsibilities and Boundaries
+The module has a deliberately small API:
 
-The module provides a small persistence boundary rather than registration or authentication behavior itself.
+| Component | Responsibility |
+| --- | --- |
+| `PersistedMachineInfo` | Serializable registration record containing `machine_id`, `client_secret`, and optional `user_id`. Its custom debug implementation redacts the client secret. |
+| `write` | Validates mandatory fields, then replaces the platform-specific stored record. |
+| `read` | Returns a valid record, reports an absent store, or returns an error when an existing store cannot be trusted. It retries once after repairing recognized permission failures. |
+| `is_permission_denied` | Searches an `anyhow` error chain for an underlying operating-system permission-denied error. |
 
-| Responsibility | Implementation |
-|---|---|
-| Represent reusable registration data | `PersistedMachineInfo` holds `machine_id`, `client_secret`, and optional `user_id`. |
-| Validate persisted identity | `ensure_complete` rejects blank machine identifiers and client secrets on both write and read. |
-| Store one platform-native record | The record is JSON, stored in a Windows registry value, macOS plist key, or Linux file. |
-| Preserve confidentiality | Debug rendering redacts the client secret and each platform implementation applies restrictive access controls. |
-| Recover from denied reads | `read` detects permission-denied errors in the error chain, repairs store permissions, and retries once. |
-| Prevent unsafe fallback | Existing-but-empty, invalid, partial, locked, or unreadable storage returns an error instead of appearing as a new machine. |
+This module does not register an agent, mint credentials, or publish machine data. Those behaviors belong to the client registration and configuration services. Its responsibility is local, durable custody of the credential pair needed to request the reinstall path.
 
-The module does not generate a machine identifier, acquire credentials, enroll the client, or publish device state. Those concerns remain with the client registration, configuration, and authentication services. Its contract is local and synchronous: callers supply a complete record to `write` or receive an optional complete record from `read`.
+## Stored data and validity rules
 
-## Data Model and Invariants
+`machine_id` and `client_secret` are required and cannot be empty after trimming. `user_id` is optional; deserialization defaults it to absent so records created before that field was introduced remain readable. The record is JSON encoded, but its storage carrier is platform dependent.
 
-`PersistedMachineInfo` is cloneable and JSON serializable. Its three fields have different validity rules:
+| Platform | Location | Record carrier | Access protection |
+| --- | --- | --- | --- |
+| Windows | `HKLM\SOFTWARE\OpenFrame` | `MachineInfo` registry string value | A protected DACL grants full control only to Administrators and SYSTEM. |
+| macOS | `/Library/Preferences/com.openframe.client.plist` | `MachineInfo` plist key | The plist is changed to mode `0600` and verified not to expose group or other permissions. |
+| Linux | `/etc/openframe/machine.json` | One JSON file | Directory mode is `0700`; record file mode is `0600`. |
 
-| Field | Required | Persistence behavior | Security consideration |
-|---|---:|---|---|
-| `machine_id` | Yes | Must contain non-whitespace text. | Identifies the device registration to reuse. |
-| `client_secret` | Yes | Must contain non-whitespace text. | Never exposed by the manual `Debug` implementation. |
-| `user_id` | No | Omitted from JSON when absent and defaults to absent when reading older JSON. | Supports compatibility with records written before this field existed. |
+The client secret is credential material. It is redacted from debug output, protected by the platform-specific storage controls, and must not be copied into diagnostics or logs.
 
-The required-field invariant is applied before any write and after JSON deserialization. Therefore, the module cannot create a persisted record that it would subsequently reject as incomplete. It accepts older valid records lacking `user_id`, but does not accept blank required fields.
+## Architecture and dependencies
 
-## Architecture
+Platform Machine Info Persistence sits between agent registration and operating-system storage. Registration consults the record before choosing a fresh registration or reinstall request; a successful registration refreshes the record with the returned identity and secret.
+
+```mermaid
+flowchart LR
+    RegistrationProcessor["Registration Processor"] --> RegistrationService["Agent Registration Service"]
+    RegistrationService --> Persistence["Platform Machine Info Persistence"]
+    RegistrationService --> RegistrationClient["Registration Client"]
+    Persistence --> WindowsStore["Windows Registry"]
+    Persistence --> MacStore["macOS Preferences Plist"]
+    Persistence --> LinuxStore["Linux Machine JSON File"]
+    RegistrationClient --> ClientService["Client Service Registration API"]
+    RegistrationClient --> ReinstallService["Client Service Reinstall API"]
+```
+
+The verified registration integration has two important layers:
+
+1. The registration processor skips registration when ordinary agent configuration already holds a machine identifier. Otherwise it invokes the registration service and retries failed registration attempts.
+2. The registration service calls `read` through a bounded retry loop. A recovered record is supplied to the registration client, which selects the reinstall API and sends the stored machine identifier and client secret as request headers. If no record is available, the registration client selects the fresh registration API. After either successful response, the service attempts to persist the response identity for a future reinstall and saves registration data to normal agent configuration.
+
+The persistence record is therefore a reinstall continuity mechanism, not a general source of truth for every client startup.
+
+## Read and repair behavior
+
+The read contract distinguishes an absent store from an unsafe store:
+
+| Condition | `read` result | Registration implication |
+| --- | --- | --- |
+| Store location does not exist | `Ok(None)` | A fresh registration may proceed. |
+| Store exists and contains a valid, complete record | `Ok(Some(...))` | Registration can use the reinstall flow. |
+| Store exists but its record is missing, malformed, incomplete, locked, or otherwise unreadable | `Err(...)` | The condition is not treated as a clean absence by this module. |
+| An underlying permission-denied error is detected | Repair permissions, then retry once | The second read result determines the outcome. |
+
+The agent registration service adds resilience above this boundary: it retries persistence reads using configured delays, then logs the terminal error and falls back to fresh registration if the retries are exhausted. That fallback is a caller policy, not an assertion that the local store was absent or valid.
 
 ```mermaid
 flowchart TD
-    ClientRuntime["OpenFrame Client runtime"] --> RegistrationFlow["Registration or reinstall flow"]
-    RegistrationFlow --> PersistenceApi["Platform Machine Info Persistence"]
-    PersistenceApi --> RecordModel["PersistedMachineInfo"]
-    PersistenceApi --> PlatformStore["Platform-native secure store"]
-    PlatformStore --> WindowsStore["Windows registry value"]
-    PlatformStore --> MacStore["macOS preferences plist key"]
-    PlatformStore --> LinuxStore["Linux machine JSON file"]
-    PersistenceApi --> PermissionRecovery["Permission repair and single retry"]
-    PermissionRecovery --> PlatformStore
+    Start["Read persisted machine info"] --> ReadOnce["Read platform store"]
+    ReadOnce --> Missing{"Store missing?"}
+    Missing -->|"yes"| Fresh["Return no record"]
+    Missing -->|"no"| Permission{"Permission denied?"}
+    Permission -->|"yes"| Repair["Repair storage permissions"]
+    Repair --> Retry["Read platform store once more"]
+    Retry --> RetryResult{"Valid complete record?"}
+    RetryResult -->|"yes"| Reuse["Return persisted record"]
+    RetryResult -->|"no"| ReadError["Return read error"]
+    Permission -->|"no"| Valid{"Valid complete record?"}
+    Valid -->|"yes"| Reuse
+    Valid -->|"no"| ReadError
 ```
 
-The platform-specific implementations share the same public behavior but use operating-system-native locations and permission models:
+On macOS, the implementation probes direct file readability before invoking `defaults`. This preserves a concrete permission-denied error that can trigger the repair path, rather than relying on a generic subprocess failure.
 
-| Platform | Store location | Record slot | Protection and write behavior |
-|---|---|---|---|
-| Windows | `HKLM\SOFTWARE\OpenFrame` | `MachineInfo` string value | The key DACL is restricted to Administrators and SYSTEM, then the JSON value is written in one registry operation. |
-| macOS | `/Library/Preferences/com.openframe.client.plist` | `MachineInfo` plist key | `defaults write` records the JSON string; the file is then restricted to mode `0600` and verified. If securing it fails, the file is removed. |
-| Linux | `/etc/openframe/machine.json` | Entire JSON file | The directory is set to mode `0700`; a mode `0600` temporary file is written, synchronized, and renamed into place. |
+## Write behavior and durability
 
-## Public API
+Before any platform write, `write` rejects incomplete input so it cannot create a record that `read` would subsequently reject. It overwrites the existing record only after serialization succeeds.
 
-### `PersistedMachineInfo`
+Linux uses the strongest explicit durability sequence: create or secure the directory, write a `0600` temporary file, synchronize file data, rename the temporary file into place, then make a best-effort directory synchronization. This avoids presenting a partially written `machine.json` after a normal replacement interruption.
 
-The public record is the sole payload type for storage. Its manual debug implementation always displays `client_secret` as redacted, allowing diagnostic messages to safely include the record without revealing a live credential.
-
-### `write`
-
-`write` overwrites the prior persisted record. It first verifies both required strings, serializes the record to JSON, and delegates to the active platform implementation. Successful writes emit an informational log message without logging the data itself.
-
-A write failure is returned with contextual error text. On macOS, a failure to make the created plist private is also a failure of the overall operation; the module removes the plist rather than leaving its secret readable by group or other users.
-
-### `read`
-
-`read` distinguishes three meaningful outcomes:
-
-| Result | Meaning | Expected caller behavior |
-|---|---|---|
-| `Ok(Some(info))` | A complete, valid record was found. | Reuse its registration identity during reinstall. |
-| `Ok(None)` | The backing store is confirmed absent. | A fresh registration is safe. |
-| `Err(error)` | The store exists but is inaccessible, malformed, incomplete, locked, or otherwise unreadable. | Surface or handle the error; do not silently treat the endpoint as new. |
-
-On the first permission-denied error, `read` repairs permissions for the applicable store and repeats the read once. A failure after repair is returned with context; it does not loop indefinitely or downgrade to `None`.
-
-### `is_permission_denied`
-
-`is_permission_denied` scans the full `anyhow` error chain for an underlying `std::io::Error` whose kind is `PermissionDenied`. This permits the recovery branch to work even when filesystem or registry failures have been wrapped with contextual messages. macOS first opens the plist directly so an access denial is represented as an I/O permission error rather than an opaque failed `defaults` subprocess result.
-
-## Read Flow and Failure Semantics
-
-```mermaid
-flowchart TD
-    Start["Caller invokes read"] --> CheckStore["Check whether the platform store exists"]
-    CheckStore --> Missing{"Store missing?"}
-    Missing -->|"Yes"| Fresh["Return Ok None"]
-    Missing -->|"No"| Load["Read one JSON record"]
-    Load --> Denied{"Permission denied?"}
-    Denied -->|"Yes"| Repair["Repair platform permissions"]
-    Repair --> Retry["Retry read once"]
-    Retry --> Validate
-    Denied -->|"No"| Validate["Deserialize and validate required fields"]
-    Validate --> Valid{"Complete valid record?"}
-    Valid -->|"Yes"| Reuse["Return Ok Some record"]
-    Valid -->|"No"| Error["Return contextual error"]
-    Repair --> RepairFailed{"Repair succeeded?"}
-    RepairFailed -->|"No"| Error
-    RepairFailed -->|"Yes"| Retry
-```
-
-The absence check is intentionally strict. A present directory, registry key, or plist that lacks the expected record is considered evidence of a partial or corrupt write, not an empty installation state. Invalid JSON and records with empty required values are likewise errors. This protects registration continuity by avoiding accidental duplicate enrollment when a previous identity may still exist but cannot be safely recovered.
-
-## Write Flow and Durability
+Windows writes a single registry string after securing the OpenFrame registry key. macOS writes the complete value with `defaults`, then immediately restricts and verifies plist permissions. If macOS security tightening fails, the implementation attempts to delete the plist instead of knowingly leaving a readable client secret.
 
 ```mermaid
 sequenceDiagram
-    participant Caller
-    participant Persistence as "Machine Info Persistence"
-    participant Store as "Platform Store"
-    Caller->>Persistence: write complete record
-    Persistence->>Persistence: validate required fields
-    Persistence->>Persistence: serialize JSON
-    Persistence->>Store: apply secure storage write
-    Store-->>Persistence: write result
-    alt write succeeds
-        Persistence-->>Caller: success
-    else write fails
-        Persistence-->>Caller: contextual error
+    participant Registration as Agent Registration Service
+    participant Persistence as Platform Machine Info Persistence
+    participant Store as Platform Credential Store
+    participant Client as Registration Client
+    Registration->>Persistence: read()
+    Persistence->>Store: read record
+    Store-->>Persistence: record, absence, or error
+    Persistence-->>Registration: credentials or result
+    alt Saved credentials available
+        Registration->>Client: register with persisted credentials
+        Client-->>Registration: registration response
+    else No credentials available
+        Registration->>Client: register without persisted credentials
+        Client-->>Registration: registration response
     end
+    Registration->>Persistence: write response identity and secret
+    Persistence->>Store: validate, serialize, secure, replace record
+    Store-->>Persistence: write result
+    Persistence-->>Registration: success or error
 ```
 
-Platform handling adds important safeguards:
+A persistence failure after registration is logged by the registration service; registration data is still saved to the agent configuration service. The practical consequence is that the current installation can continue while a later uninstall and reinstall may not have the saved credentials needed for the reinstall route.
 
-- **Windows:** The registry key is secured before the JSON value is written. The DACL is protected from inheriting broader parent permissions and grants full control only to Administrators and SYSTEM.
-- **macOS:** The code writes a single plist key, then immediately applies and verifies owner-only permissions. It deletes the plist if this security step cannot be completed.
-- **Linux:** The write path creates the configuration directory if needed, applies restrictive directory permissions, writes and synchronizes a temporary file, renames it over the record, and makes a best-effort directory synchronization after rename.
+## Security and maintenance considerations
 
-## Permission Recovery by Platform
+- Preserve the complete-record validation whenever the schema changes. New optional fields should remain backward compatible through serde defaults where appropriate.
+- Do not derive or add a debug formatter that prints `client_secret`.
+- Keep storage operations privileged and avoid broadening Windows registry ACLs, macOS plist modes, or Linux directory and file modes.
+- Treat an existing but invalid record as an operational problem, not as harmless absence. This distinction prevents silent acceptance of partial writes or corrupted credentials.
+- Maintain the read-repair-retry sequence for recognizable permission failures. The repair functions are platform-specific because the Windows ACL, macOS mode bits, and Linux directory and file modes differ.
+- When changing Linux write logic, retain the temporary-file, synchronization, and rename pattern to preserve replacement safety.
 
-| Platform | Repair action before retry | Notes |
-|---|---|---|
-| Windows | Opens the OpenFrame registry key with full access and reapplies the restrictive DACL. | Repair requires access sufficient to modify the registry key security descriptor. |
-| macOS | Reapplies and verifies mode `0600` when the plist exists. | Direct readability probing enables detection of a permission-denied condition before calling `defaults`. |
-| Linux | Restores `/etc/openframe` to mode `0700` and `machine.json` to mode `0600` when they exist. | Permission repair is attempted only after a detected denied read. |
+## Operational outcomes
 
-Permission recovery is narrowly scoped to accessibility. It does not attempt to repair malformed JSON, restore missing records, or infer missing credentials.
-
-## Security and Maintenance Considerations
-
-1. Treat `client_secret` as a durable credential. Do not add logging, display formatting, telemetry, or error messages that expose its serialized value.
-2. Preserve the distinction between absent storage and invalid storage when changing platform back ends. Returning `None` for a corrupt or partial store would allow an unsafe fresh registration path.
-3. Keep validation compatible with old records: `user_id` is optional specifically so persisted JSON created before that field was added remains readable.
-4. Preserve atomicity semantics on new platforms. The Linux implementation demonstrates the desired sequence of temporary write, data synchronization, and replacement; registry and plist implementations each use one logical record write.
-5. When changing filesystem paths, registry locations, or plist domains, plan a migration that maintains access control and does not silently discard existing credentials.
-6. Test error chains, not only direct I/O failures, when modifying permission handling because the public detector intentionally supports contextual wrapping.
-
-## Operational Outcomes
-
-During a reinstall, a valid persisted record allows the registration layer to identify the endpoint and reuse its stored credentials. If no platform store exists, the caller can register a new identity. If the store is present but unhealthy, this module fails closed: intervention is required rather than risking an unintended replacement identity or exposing a client secret through weak permissions.
+A healthy reinstall begins with a readable, complete persisted record and reaches the reinstall registration API. A first installation, or a confirmed missing store, reaches the fresh registration API. Corruption and access failures remain visible through errors and caller logs, while platform permission failures receive one local repair attempt before they are surfaced to the caller.

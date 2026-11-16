@@ -1,8 +1,11 @@
-flowchart LR
-    Integration["External integration"] -->|"authenticated REST request"| Gateway["OpenFrame gateway"]
-    Gateway -->|"external API traffic"| ExternalApi["External Api application"]
-    ExternalApi -->|"dispatches request"| Controller["Knowledge Base Controller"]
-    Controller -->|"uses domain services"| KnowledgeDomain["Knowledge base domain"]
-    KnowledgeDomain -->|"reads and writes"| MongoRepository["Mongo knowledge base repository"]
-    KnowledgeDomain -->|"emits publish lifecycle"| PublishListener["Publish lifecycle listener"]
-    ExternalApi -->|"returns REST contract"| Integration
+sequenceDiagram
+    participant Client
+    participant API as External API
+    participant Domain as Knowledge Base Domain
+    participant Storage as File Storage
+    Client->>API: Declare attachment metadata
+    API->>Domain: Create upload URL
+    Domain->>Storage: Create signed upload URL
+    Storage->>API: Attachment and URL
+    API->>Client: Attachment metadata and upload URL
+    Client->>Storage: PUT file bytes

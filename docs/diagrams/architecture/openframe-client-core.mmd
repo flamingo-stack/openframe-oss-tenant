@@ -1,20 +1,19 @@
 flowchart TD
-    Service["OpenFrame Client Service"] --> Runtime["Openframe Client Core"]
-    Runtime --> Configuration["Configuration and Local State"]
-    Runtime --> Authentication["Registration and Authentication"]
-    Runtime --> Transport["HTTP and NATS Transport"]
-    Runtime --> Listeners["Command and Execution Listeners"]
-    Runtime --> Tooling["Tool and Package Management"]
-    Runtime --> Reporting["Telemetry and Result Reporting"]
-    Runtime --> Platform["Platform-Specific Services"]
+    Endpoint["Managed Endpoint"] --> Service["Service Management"]
+    Service --> Client["Openframe Client Core"]
 
-    Configuration --> Authentication
-    Authentication --> Transport
-    Transport --> Listeners
-    Listeners --> Tooling
-    Tooling --> Reporting
-    Platform --> Tooling
-    Platform --> Configuration
-    Reporting --> Transport
+    Client --> LocalState["Local Configuration and Secured State"]
+    Client --> Registration["Registration and Authentication"]
+    Client --> Transport["HTTP and NATS Transport"]
+    Client --> Listeners["Command and Execution Listeners"]
+    Client --> Tools["Tool Lifecycle Services"]
+    Client --> Reporting["Logs, Metrics, Heartbeats, and Results"]
 
-    Transport --> ControlPlane["OpenFrame Control Plane"]
+    Registration --> Gateway["OpenFrame Gateway"]
+    Transport --> Gateway
+    Gateway --> Platform["OpenFrame Platform Services"]
+
+    Listeners --> Execution["Execution Service"]
+    Listeners --> Tools
+    Execution --> Reporting
+    Tools --> Reporting

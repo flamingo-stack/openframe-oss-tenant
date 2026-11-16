@@ -1,13 +1,13 @@
 sequenceDiagram
-    participant Test as "Test Code"
-    participant Mapper as "Jackson Mapper"
+    participant Test as "Remote access test"
+    participant Api as "Remote access API"
+    participant Connection as "Request audit connection"
     participant Edge as "RemoteAccessRequestEdge"
-    participant Audit as "Audit Node"
-    participant Tech as "RemoteAccessTechnician"
-    Test->>Mapper: Deserialize remote-access response
-    Mapper->>Edge: Create edge with node and cursor
-    Mapper->>Audit: Populate audit record
-    Mapper->>Tech: Populate technician id and name
-    Test->>Edge: Read cursor and node
-    Test->>Audit: Inspect audit data
-    Audit->>Tech: Access embedded technician
+    participant Audit as "RemoteAccessRequestAudit"
+
+    Test->>Api: Query requests for a device
+    Api->>Connection: Return audit connection
+    Connection->>Edge: Provide edge and cursor
+    Edge->>Audit: Provide audit node
+    Audit->>Test: Expose status, policy, technician, and session
+    Test->>Test: Assert ordering, fields, and pagination

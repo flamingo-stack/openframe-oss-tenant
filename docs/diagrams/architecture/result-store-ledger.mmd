@@ -1,0 +1,8 @@
+flowchart LR
+    Handler["Command or update handler"] -->|"accept or settle delivery"| Ledger["Result Store Ledger"]
+    Ledger -->|"writes delivery state"| Database["Embedded result database"]
+    Ledger -->|"queues terminal result"| Outbox["Result Store outbox"]
+    Outbox -->|"loads pending payload"| Runner["Result Outbox Run Manager"]
+    Runner -->|"publishes result"| Publisher["Result publisher"]
+    Publisher -->|"delivery result message"| Bus["Message bus subject"]
+    Runner -->|"removes after success"| Outbox

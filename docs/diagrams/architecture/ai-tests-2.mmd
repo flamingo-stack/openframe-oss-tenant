@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Test as "Ai Test"
+    participant Session as "Actor Session"
+    participant Dialog as "Dialog Fixture"
+    participant Runner as "Assistant Runner"
+    participant Product as "OpenFrame APIs"
+    participant Verify as "SSH or Product API"
+
+    Test->>Session: Establish ADMIN or AGENT context
+    Test->>Dialog: Open assistant dialog
+    Test->>Runner: Submit prompt and approval policy
+    Runner->>Product: Execute assistant run
+    Product-->>Runner: Run result or provider failure
+    alt retryable provider failure
+        Runner->>Dialog: Archive failed dialog
+        Runner->>Dialog: Open fresh dialog after backoff
+    else completed run
+        Test->>Verify: Read independent ground truth
+        Verify-->>Test: Assert outcome and scope
+    end
+    Test->>Dialog: Archive dialog

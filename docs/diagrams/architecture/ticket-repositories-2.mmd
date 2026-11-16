@@ -1,8 +1,13 @@
 flowchart TD
-    Request["Filter and optional search"] --> BaseCriteria["Structured ticket criteria"]
-    BaseCriteria --> Restricted{"Owner scope present?"}
-    Restricted -->|"No"| DateRange["Apply creation time range"]
-    Restricted -->|"Yes"| OwnerCriteria["Match machine and allowed organization"]
+    Start["Build ticket query"] --> Filter{"Filter supplied?"}
+    Filter -->|"yes"| StandardFilters["Apply identifiers, activity, and flags"]
+    Filter -->|"no"| IdRestriction["Apply ticket identifier restriction"]
+    StandardFilters --> IdRestriction
+    IdRestriction --> OwnerScope{"Agent owner scope?"}
+    OwnerScope -->|"yes"| OwnerCriteria["Require matching machine and allowed organization"]
+    OwnerScope -->|"no"| DateRange["Apply creation date range"]
     OwnerCriteria --> DateRange
-    DateRange --> SearchCriteria["Apply literal text or number search"]
-    SearchCriteria --> Query["Tenant scoped MongoDB query"]
+    DateRange --> Search{"Search text present?"}
+    Search -->|"yes"| SearchCriteria["Add text alternatives and optional ticket number"]
+    Search -->|"no"| QueryReady["Return Mongo query"]
+    SearchCriteria --> QueryReady

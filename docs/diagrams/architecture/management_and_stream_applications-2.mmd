@@ -1,8 +1,0 @@
-flowchart TD
-    Boot["Management application starts"] --> Scan["Spring component scan"]
-    Scan --> BaseInitializer["Base NATS stream initializer"]
-    Scan --> EmptyProvider["No additional stream provider"]
-    EmptyProvider --> EmptyList["Empty stream configuration list"]
-    BaseInitializer --> Baseline["Create baseline JetStream streams"]
-    EmptyList --> Baseline
-    Baseline --> Ready["NATS streams ready"]

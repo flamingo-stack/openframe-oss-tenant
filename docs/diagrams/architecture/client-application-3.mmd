@@ -1,0 +1,13 @@
+flowchart TD
+    Begin["Start Client"] --> Deactivate["Start deactivation supervisor"]
+    Deactivate --> UpdateRecovery["Reconcile version and record boot state"]
+    UpdateRecovery --> Logging["Start NATS log streaming"]
+    Logging --> Register["Register endpoint"]
+    Register --> Authenticate["Authenticate agent"]
+    Authenticate --> Connect["Connect NATS and start watchdog"]
+    Connect --> Publish["Publish running version and installed tool versions"]
+    Publish --> Listeners["Start command and remote access listeners"]
+    Listeners --> Recover["Recover result store and start outbox"]
+    Recover --> Execute["Start execution listeners and managers"]
+    Execute --> Maintain["Run tools, self-healing, metrics, and health checks"]
+    Maintain --> Loop["Remain running"]

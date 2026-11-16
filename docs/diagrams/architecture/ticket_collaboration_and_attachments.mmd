@@ -1,0 +1,13 @@
+flowchart LR
+    TestRunner["JUnit Test Runner"] --> TestClass["TicketsTest"]
+    TestClass --> TicketApi["Ticket API Helper"]
+    TestClass --> AttachmentApi["Attachment API Helper"]
+    TestClass --> DeviceApi["Device API Helper"]
+    TestClass --> UserApi["User API Helper"]
+    TestClass --> TagApi["Tag API Helper"]
+    TicketApi --> TicketService["Ticket API Surface"]
+    AttachmentApi --> ObjectStorage["Temporary File Storage"]
+    TicketService --> TicketStore["Ticket Data and Attachments"]
+    DeviceApi --> TicketService
+    UserApi --> TicketService
+    TagApi --> TicketService

@@ -1,0 +1,12 @@
+flowchart TD
+    Caller["Client command or lifecycle caller"] --> Entry["Diagnostic entry point"]
+    Entry --> Orchestrator["Doctor Reporting"]
+    Orchestrator --> Checks["Doctor Health Checks"]
+    Orchestrator --> Platform["Directory Manager, Service, Machine ID"]
+    Checks --> Result["Check Result"]
+    Platform --> Result
+    Result --> Report["Doctor Report"]
+    Report --> Console["Terminal report"]
+    Report --> Summary["Failure and warning counts"]
+    Report --> Healing["Doctor Healing"]
+    Healing --> Runtime["WebView2 installer when requested"]

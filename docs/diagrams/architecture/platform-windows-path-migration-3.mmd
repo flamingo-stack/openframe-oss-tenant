@@ -1,21 +1,15 @@
-sequenceDiagram
-    participant Client as OpenFrame Client
-    participant Migration as Path Migration
-    participant Registry as Windows Registry
-    participant Log as Tracing
-    Client->>Migration: invoke run()
-    Migration->>Registry: open machine environment key
-    Registry-->>Migration: key handle
-    Migration->>Registry: read raw Path value
-    Registry-->>Migration: type and UTF-16 bytes
-    alt legacy type with variable marker
-        Migration->>Log: log repair start
-        Migration->>Registry: write same decoded text as REG_EXPAND_SZ
-        Registry-->>Migration: write completed
-        Migration->>Log: log repair success
-    else already correct or not eligible
-        Migration-->>Client: return without mutation
-    else registry or conversion failure
-        Migration->>Log: log warning
-        Migration-->>Client: return without propagating error
-    end
+flowchart TD
+    Start["Run Migration"] --> OpenKey["Open Machine Environment Key"]
+    OpenKey --> ReadPath["Read Raw Path Value"]
+    ReadPath --> TypeCheck{"Value Type Is REG_SZ?"}
+    TypeCheck -->|"no"| NoChangeType["Return Without Changes"]
+    TypeCheck -->|"yes"| Decode["Decode UTF-16LE Bytes"]
+    Decode --> VariableCheck{"Contains Percent Sign?"}
+    VariableCheck -->|"no"| NoChangeText["Return Without Changes"]
+    VariableCheck -->|"yes"| Encode["Encode Text as UTF-16LE"]
+    Encode --> Terminator["Append UTF-16 Terminator"]
+    Terminator --> Write["Write REG_EXPAND_SZ Value"]
+    Write --> Success["Log Successful Repair"]
+    OpenKey -->|"failure"| Warning["Log Warning and Continue"]
+    ReadPath -->|"failure"| Warning
+    Write -->|"failure"| Warning

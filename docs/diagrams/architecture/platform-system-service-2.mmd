@@ -1,15 +1,15 @@
 flowchart TD
-    Request["Start service request"] --> Platform{"Platform?"}
-    Platform -->|"macOS"| MacStart["Run launchctl load"]
-    Platform -->|"Linux"| LinuxStart["Run systemctl start"]
-    Platform -->|"Windows"| TimedStart["Issue bounded SCM start call"]
-    TimedStart --> StartResult{"Start result?"}
-    StartResult -->|"success"| PollRunning["Poll for RUNNING state"]
-    StartResult -->|"transient failure"| RetryDelay["Wait configured retry delay"]
-    RetryDelay --> TimedStart
-    StartResult -->|"permanent or SCM unresponsive"| StartError["Return error"]
-    PollRunning --> Running{"Running?"}
-    Running -->|"yes"| Started["Return success"]
-    Running -->|"no"| RetryDelay
-    MacStart --> Started
-    LinuxStart --> Started
+    Begin["Start requested"] --> Call["Run SCM start in timed permit pool"]
+    Call --> StartOk{"Start call succeeded?"}
+    StartOk -->|"yes"| Poll["Poll SCM status for RUNNING"]
+    StartOk -->|"no"| Classify["Classify SCM failure"]
+    Poll --> Running{"Service is RUNNING?"}
+    Running -->|"yes"| Success["Return success"]
+    Running -->|"no"| Retryable["Treat confirmation failure as transient"]
+    Classify --> Permanent{"Permanent or unresponsive?"}
+    Permanent -->|"yes"| Failed["Return error"]
+    Permanent -->|"no"| Retryable
+    Retryable --> Delay{"Retry delay remains?"}
+    Delay -->|"yes"| Wait["Wait configured backoff"]
+    Wait --> Call
+    Delay -->|"no"| Exhausted["Return attempts exhausted error"]

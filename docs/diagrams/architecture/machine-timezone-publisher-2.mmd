@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Manager as Machine Timezone Run Manager
+    participant Fetcher as Device Data Fetcher
+    participant Publisher as Machine Timezone Publisher
+    participant Config as Agent Configuration Service
+    participant Nats as NATS Message Publisher
+    participant Stream as NATS JetStream
+    participant Listener as Machine Timezone Listener
+
+    Manager->>Fetcher: Resolve system timezone
+    Fetcher-->>Manager: IANA timezone
+    Manager->>Publisher: Publish timezone
+    Publisher->>Config: Read machine identifier
+    Config-->>Publisher: Machine identifier
+    Publisher->>Publisher: Serialize timezone JSON
+    Publisher->>Nats: Publish acknowledged message
+    Nats->>Stream: Publish machine identifier timezone subject
+    Stream-->>Nats: Publish acknowledgement
+    Stream->>Listener: Deliver timezone message
+    Listener->>Listener: Update machine timezone
+    Listener-->>Stream: Acknowledge processed message

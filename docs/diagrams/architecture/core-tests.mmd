@@ -1,0 +1,33 @@
+flowchart TD
+    Runner["OpenFrame Test Runner"] --> CoreTests["Core Tests"]
+
+    CoreTests --> TenantAdmin["Tenant Administration"]
+    CoreTests --> DevicesLogs["Devices and Logs"]
+    CoreTests --> Rmm["Remote Management"]
+    CoreTests --> Collaboration["Collaboration and Support"]
+    CoreTests --> PlatformFeatures["Platform Features"]
+
+    TenantAdmin --> ApiAuth["API and Authentication Tests"]
+    TenantAdmin --> Organizations["Assignment and Organization Tests"]
+    TenantAdmin --> Registration["Owner Registration Tests"]
+
+    DevicesLogs --> DeviceTests["Device and Log Tests"]
+    DevicesLogs --> TagsPackages["Package and Tags Tests"]
+
+    Rmm --> Policies["Policy Tests"]
+    Rmm --> RemoteAccess["Remote Access Tests"]
+    Rmm --> Scripts["Script and Schedule Tests"]
+    Rmm --> Software["Integration Tools and Software Tests"]
+
+    Collaboration --> Tickets["Ticket and Time Tracking Tests"]
+    Collaboration --> KnowledgeBase["Knowledgebase and Onboarding Tests"]
+    Collaboration --> Dialogs["AI Settings and Dialog Tests"]
+
+    PlatformFeatures --> Notifications["Frontend and Notification Tests"]
+    PlatformFeatures --> Statistics["Software Action and Statistics Tests"]
+
+    ApiAuth --> Platform["Running OpenFrame Tenant"]
+    DeviceTests --> Platform
+    Rmm --> Platform
+    Collaboration --> Platform
+    PlatformFeatures --> Platform

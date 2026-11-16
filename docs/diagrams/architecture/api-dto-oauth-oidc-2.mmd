@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant App as "Calling application"
+    participant Auth as "Authorization server"
+    participant Api as "OpenFrame API service"
+
+    App->>Auth: Start authorization
+    Auth->>App: AuthorizationResponse with code and state
+    App->>Api: SocialAuthRequest or GoogleTokenRequest
+    Note over App,Api: Request carries code, code_verifier, and redirect_uri
+    Api->>App: TokenResponse with access token data

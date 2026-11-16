@@ -1,0 +1,7 @@
+flowchart TD
+    Change["Invitation endpoint response changes"] --> Compatible{"Existing fields still compatible?"}
+    Compatible -->|"yes"| Ignore["Ignore additive unused fields"]
+    Compatible -->|"no"| Update["Update Invitation Dto fields"]
+    Update --> Deserialize["Verify JSON deserialization"]
+    Deserialize --> Assertions["Update pagination assertions"]
+    Ignore --> Assertions

@@ -1,0 +1,10 @@
+flowchart TD
+    ActiveSchedule["Active schedule"] --> ArchiveCall["Archive request"]
+    ArchiveCall --> ArchivedSchedule["Archived schedule"]
+    ArchivedSchedule --> ArchivedFilter["Included by archived filter"]
+    ArchivedSchedule --> ActiveFilter["Excluded by active filter"]
+    ArchivedSchedule --> RepeatArchive["Repeat archive request"]
+    RepeatArchive --> ArchivedSchedule
+    ArchivedSchedule --> UnarchiveCall["Unarchive request"]
+    UnarchiveCall --> RestoredSchedule["Active schedule"]
+    RestoredSchedule --> PersistedRead["Direct read confirms active status"]

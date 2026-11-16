@@ -1,22 +1,18 @@
-flowchart TD
-    Api["GraphQL software and vulnerability queries"] --> SoftwareConnection["Software connection"]
-    Api --> DeviceConnection["Software on device connection"]
-    Api --> SoftwareVulnerabilityConnection["Software vulnerability connection"]
-    Api --> VulnerabilityConnection["Vulnerability connection"]
+flowchart LR
+    Api["Software Inventory API Response"] --> SoftwareConnection["Software Connection"]
+    SoftwareConnection --> SoftwareEdge["Software Edge"]
+    SoftwareEdge --> SoftwareNode["Software Node"]
+    SoftwareEdge --> CursorA["Cursor"]
 
-    SoftwareConnection --> SoftwareEdge["SoftwareEdge"]
-    SoftwareEdge --> Software["Software node"]
-    Software --> Summary["SoftwareVulnerabilitySummary"]
+    DeviceConnection["Software On Device Connection"] --> DeviceEdge["Software On Device Edge"]
+    DeviceEdge --> DeviceNode["Software On Device Node"]
+    DeviceEdge --> CursorB["Cursor"]
 
-    DeviceConnection --> SoftwareOnDeviceEdge["SoftwareOnDeviceEdge"]
-    SoftwareOnDeviceEdge --> DeviceInstall["SoftwareOnDevice node"]
+    VulnerabilityConnection["Vulnerability Connections"] --> AssociationEdge["Software Vulnerability Edge"]
+    VulnerabilityConnection --> VulnerabilityEdge["Vulnerability Edge"]
+    AssociationEdge --> AssociationNode["Software Vulnerability Node"]
+    VulnerabilityEdge --> VulnerabilityNode["Vulnerability Node"]
 
-    SoftwareVulnerabilityConnection --> SoftwareVulnerabilityEdge["SoftwareVulnerabilityEdge"]
-    SoftwareVulnerabilityEdge --> SoftwareVulnerability["SoftwareVulnerability node"]
-
-    VulnerabilityConnection --> VulnerabilityEdge["VulnerabilityEdge"]
-    VulnerabilityEdge --> Vulnerability["Vulnerability node"]
-    SoftwareEdge --> Cursor["Cursor"]
-    SoftwareOnDeviceEdge --> Cursor
-    SoftwareVulnerabilityEdge --> Cursor
-    VulnerabilityEdge --> Cursor
+    SoftwareNode --> Summary["Software Vulnerability Summary"]
+    Summary --> Severity["Highest Severity"]
+    Summary --> CveCount["CVE Count"]

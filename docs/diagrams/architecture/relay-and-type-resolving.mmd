@@ -1,0 +1,11 @@
+flowchart LR
+    Client["GraphQL Client"] --> Query["Node Query or Object Reference"]
+    Query --> Relay["Relay Node Resolution"]
+    Relay --> Config["ApiNodeLoaderConfiguration"]
+    Config --> Loader["Typed NodeLoader"]
+    Loader --> Services["Domain Services and Repository"]
+    Services --> Result["Optional Domain Object"]
+    Result --> Response["GraphQL Response"]
+
+    Resolver["AssignableTargetTypeResolver"] --> AbstractType["AssignableTarget"]
+    AbstractType --> ConcreteType["Concrete GraphQL Type"]

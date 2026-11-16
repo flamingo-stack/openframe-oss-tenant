@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as Test code
+    participant Mapper as JSON mapper
+    participant Edge as SoftwareActionRunEdge
+    participant Run as SoftwareActionRun
+    Test->>Mapper: Provide response item data
+    Mapper->>Edge: Create edge instance
+    Mapper->>Run: Populate node value
+    Mapper->>Edge: Set cursor value
+    Edge-->>Test: Expose node and cursor

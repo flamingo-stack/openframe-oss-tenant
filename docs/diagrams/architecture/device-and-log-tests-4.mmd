@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Read configured target hostname"] --> HostConfigured{"Hostname configured?"}
+    HostConfigured -->|"No"| Skip["Skip cleanup"]
+    HostConfigured -->|"Yes"| List["List devices in visible states"]
+    List --> Match["Keep rows with matching hostname"]
+    Match --> Stale["Select non-online rows"]
+    Stale --> Retire["Set each stale row to DELETED"]
+    Retire --> Reload["Reload matching rows"]
+    Reload --> Assert["Assert every remaining row is ONLINE"]

@@ -1,0 +1,48 @@
+classDiagram
+    class ExecutionService {
+        running: Arc AtomicUsize
+        +new() ExecutionService
+        +running_scripts() RunningScripts
+        +execute(request, machineId) RmmResult
+    }
+    class RunningScripts {
+        running: Arc AtomicUsize
+        +any() bool
+    }
+    class RunningGuard {
+        running: Arc AtomicUsize
+        +drop()
+    }
+    class ExecutionRequest {
+        executionId
+        code
+        shell
+        args
+        timeoutSecs
+        privilege
+        privilegePolicy
+        environmentVariables
+    }
+    class ScriptParams {
+        code
+        shell
+        args
+        timeoutSecs
+        privilege
+        environmentVariables
+    }
+    class RmmResult {
+        executionId
+        machineId
+        stdout
+        stderr
+        exitCode
+        executionTimeMs
+        timedOut
+        error
+    }
+    ExecutionService --> RunningScripts : creates
+    ExecutionService --> RunningGuard : tracks
+    ExecutionService --> ExecutionRequest : accepts
+    ExecutionService --> ScriptParams : builds
+    ExecutionService --> RmmResult : returns

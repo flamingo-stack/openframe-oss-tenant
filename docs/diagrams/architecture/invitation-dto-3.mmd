@@ -1,9 +1,12 @@
-stateDiagram-v2
-    [*] --> Pending: "Invitation created"
-    Pending --> Accepted: "Invitation accepted"
-    Pending --> Revoked: "Invitation revoked"
-    Pending --> ExpiredPending: "Expiry time passes"
-    ExpiredPending --> Revoked: "Resend revokes original"
-    ExpiredPending --> Pending: "Resend creates replacement"
-    Accepted --> [*]
-    Revoked --> [*]
+sequenceDiagram
+    participant Test as Test case
+    participant Client as Test API client
+    participant Api as Invitation endpoint
+    participant Mapper as Jackson mapper
+    participant Page as InvitationPageResponse
+    Test->>Client: Request invitation page
+    Client->>Api: GET /invitations
+    Api-->>Client: Invitation page JSON
+    Client->>Mapper: Deserialize response
+    Mapper->>Page: Populate items and pagination fields
+    Page-->>Test: Typed page result

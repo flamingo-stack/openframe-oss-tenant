@@ -1,10 +1,6 @@
-sequenceDiagram
-    participant Install as Installation Workflow
-    participant Model as Model Tool Installation Result
-    participant Channel as Transport or Storage
-    participant Receive as Result Consumer
-    Install->>Model: Construct with tool_agent_id
-    Model->>Channel: Serialize payload
-    Channel->>Receive: Deliver payload
-    Receive->>Model: Deserialize payload
-    Model-->>Receive: Expose tool_agent_id
+flowchart TD
+    InstallationMessage["Tool installation message"] -->|"supplies tool agent identifier"| InstallationService["Tool installation service"]
+    InstallationService -->|"coordinates installation"| DownloadClient["Tool API and download clients"]
+    InstallationService -->|"records installed state"| InstalledTools["Installed tools service"]
+    InstallationService -->|"associates result identity"| ResultModel["ToolInstallationResult"]
+    ResultModel -->|"Serde serialization"| WirePayload["JSON payload"]

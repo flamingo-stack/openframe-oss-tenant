@@ -1,0 +1,12 @@
+flowchart TD
+    Received["Kafka delivery dispatch"] --> Validate["Validate envelope and delivery reference"]
+    Validate --> Complete{"Complete?"}
+    Complete -->|"no"| RejectIncomplete["Record incomplete rejection and skip"]
+    Complete -->|"yes"| Duplicate{"Dispatch identifier already processed?"}
+    Duplicate -->|"yes"| SkipDuplicate["Record duplicate metric and skip"]
+    Duplicate -->|"no"| Resolve["Resolve delivery specification and typed payload"]
+    Resolve --> Malformed{"Payload convertible?"}
+    Malformed -->|"no"| RejectMalformed["Record malformed rejection and skip"]
+    Malformed -->|"yes"| Submit["Submit request to local delivery sink"]
+    Submit --> Persist["Save processed command record"]
+    Persist --> CompleteDispatch["Local dispatch complete"]

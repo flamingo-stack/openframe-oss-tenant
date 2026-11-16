@@ -1,0 +1,20 @@
+flowchart TD
+    Receive["Receive tool update message"] --> Lock["Acquire per-tool lock"]
+    Lock --> Lookup["Load installed tool record"]
+    Lookup --> Exists{"Record exists?"}
+    Exists -->|"No"| SkipOrphan["Log and skip orphaned update"]
+    Exists -->|"Yes"| Inspect["Inspect state and executable artifact"]
+    Inspect --> Repair{"Repair needed?"}
+    Repair -->|"Yes"| MarkInstalling["Mark record installing"]
+    Repair -->|"No"| Compare["Compare installed and requested version"]
+    MarkInstalling --> Compare
+    Compare --> Downgrade{"Stale downgrade?"}
+    Downgrade -->|"Yes"| AssetReview["Review asset updates only"]
+    Downgrade -->|"No"| AssetReview
+    AssetReview --> Work{"Tool or asset work needed?"}
+    Work -->|"No"| Publish["Publish installed versions"]
+    Work -->|"Yes"| Apply["Download and apply update"]
+    Apply --> Success{"Update succeeded?"}
+    Success -->|"Yes"| Finalize["Finalize repaired state and relaunch GUI app when applicable"]
+    Success -->|"No"| Failure["Return failure after updater rollback attempt"]
+    Finalize --> Publish

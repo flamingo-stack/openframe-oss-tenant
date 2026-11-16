@@ -1,14 +1,9 @@
-sequenceDiagram
-    participant Caller
-    participant Manager as DirectoryManager
-    participant Permissions as Permission policy
-    participant FS as Host filesystem
-    Caller->>Manager: perform_health_check()
-    Manager->>Manager: ensure_directories()
-    Manager->>FS: Create logs and application support paths
-    Manager->>Permissions: Apply normal directory policy
-    Manager->>FS: Create secured path
-    Manager->>Manager: Apply secured or development policy
-    Manager->>Manager: validate_permissions()
-    Manager->>FS: Check metadata and temporary-file writability
-    Manager-->>Caller: Success or DirectoryError
+flowchart LR
+    TargetOS["Target operating system"] --> Windows["Windows"]
+    TargetOS --> MacOS["macOS"]
+    TargetOS --> Linux["Linux"]
+    Windows --> WinPolicy["Use inherited system permissions"]
+    MacOS --> MacRegular["Regular paths: root admin and 0755"]
+    MacOS --> MacSecure["Secured path: root ownership"]
+    Linux --> LinuxRegular["Regular paths: root root and 0755"]
+    Linux --> LinuxSecure["Secured path: root root and 0700"]

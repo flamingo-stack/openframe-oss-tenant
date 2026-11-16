@@ -1,5 +1,10 @@
-flowchart TD
-    Connection["GraphQL Connection"] --> Edge["Edge"]
-    Edge -->|"node"| Record["Execution Record"]
-    Edge -->|"cursor"| Cursor["Pagination Cursor"]
-    Cursor --> NextPage["Next Page Request"]
+sequenceDiagram
+    participant Test as "Integration Test"
+    participant API as "GraphQL API"
+    participant Mapper as "Response Deserialization"
+
+    Test->>API: Query schedule or script execution history
+    API->>Test: Connection response with nodes and cursors
+    Test->>Mapper: Deserialize response payload
+    Mapper->>Test: ScheduleRunEdge or ScriptExecutionEdge
+    Test->>Test: Assert status, counts, timing, and output

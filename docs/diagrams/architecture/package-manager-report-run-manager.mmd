@@ -1,0 +1,9 @@
+flowchart LR
+    Client["OpenFrame Client Process"] --> Manager["Package Manager Report Run Manager"]
+    Trigger["Periodic Ticker or Wake Signal"] --> Manager
+    Manager --> Publisher["Package Manager Report Publisher"]
+    Publisher --> Config["Agent Configuration Service"]
+    Publisher --> State["Package Manager State Resolver"]
+    State --> Probes["Brew Choco and Winget Probes"]
+    Publisher --> Nats["NATS Message Publisher"]
+    Nats --> Platform["OpenFrame Platform Consumers"]

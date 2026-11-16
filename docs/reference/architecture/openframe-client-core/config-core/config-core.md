@@ -1,129 +1,143 @@
 # Config Core
 
-Config Core is the shared configuration boundary for the OpenFrame client agent. Its implementation is supplied by the `openframe_agent_lib` dependency from [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/config/mod.rs) and runs as part of this repository’s OpenFrame Client service.
+Config Core is the OpenFrame Client configuration module supplied by the `openframe_agent_lib` Rust library. In this deployment, the library is consumed by the OpenFrame Client runtime. The module provides two distinct concerns:
 
-It has two focused responsibilities:
+- a legacy, serializable logging configuration shape with a safe `Default` implementation; and
+- a shared timing and retry budget for safely stopping, replacing, and restarting managed tools and operating-system services.
 
-- Preserve a serializable, legacy logging configuration model with safe defaults.
-- Centralize timing, retry, and concurrency budgets used when the agent stops, replaces, and restarts managed tools or operating-system services.
+The implementation lives in the OpenFrame OSS Library at [clients/openframe-client/src/config/mod.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/config/mod.rs). It also exposes an `update_config` submodule; that submodule is declared here but is outside the supplied Config Core implementation.
 
-The source marks the logging structures as currently unused candidates for removal. They should therefore be treated as a compatibility-oriented model, not as evidence of the active logging initialization contract. The service lifecycle limits, however, are operational controls consumed by platform lifecycle and update paths, particularly the Windows service-control path.
+## Position in the system
 
-## Architecture and responsibilities
+Config Core belongs to the Rust OpenFrame Client agent rather than the Spring-based Config service. It is compiled into the client library and supplies process-control policy to platform-specific update and service-management paths. The configuration service in this repository deploys the `openframe-config` image, but that service is a separate component from this agent-local module.
 
 ```mermaid
 flowchart LR
-    ClientService["OpenFrame Client Service"] --> ConfigCore["Config Core"]
-    ConfigCore --> LegacyConfig["Legacy Logging Model"]
-    ConfigCore --> StopBudget["Service Stop Budget"]
-    LegacyConfig --> LoggingSubsystem["Logging Subsystem"]
-    StopBudget --> ToolLifecycle["Tool Lifecycle Operations"]
-    StopBudget --> WindowsService["Windows Service Control"]
-    StopBudget --> BinaryReplacement["Binary Replacement"]
+    ClientRuntime["OpenFrame Client runtime"]
+    ConfigCore["Config Core"]
+    UpdatePaths["Tool and service update paths"]
+    Platform["Platform process and service controls"]
+    LegacyConsumers["Legacy configuration consumers"]
+
+    ClientRuntime -->|"uses"| ConfigCore
+    ConfigCore -->|"timing and retry policy"| UpdatePaths
+    UpdatePaths -->|"invokes"| Platform
+    ConfigCore -->|"default logging shape"| LegacyConsumers
 ```
 
-### Components
+The library artifact is pinned by this repository as `openframe_agent_lib` version `v0.0.5`. Although the module is platform-neutral at its boundary, several constants specifically constrain Windows Service Control Manager operations. The source suppresses dead-code warnings because those constants are only referenced on Windows builds.
 
-| Component | Role | Status |
-|---|---|---|
-| Configuration | Top-level serializable container for logging settings. | Legacy and currently unused. |
-| Logging Configuration | Holds the log level, JSON output flag, rotation size, and retained-file count. | Legacy and currently unused. |
-| Service Stop Constants | Timing, retry, and concurrency limits for controlled process and service shutdown, replacement, and restart. | Operational. |
-| Update Configuration Module | A separately exposed configuration submodule. Its implementation is outside the supplied source and is not described here. | Exposed dependency. |
+## Public surface
 
-## Configuration model
+| Item | Kind | Responsibility |
+| --- | --- | --- |
+| `service_stop` | Public module | Defines bounded waits, polling intervals, retries, and concurrency limits for shutdown and restart operations. |
+| `Configuration` | Serializable struct | Legacy top-level configuration envelope containing logging settings. |
+| `LoggingConfig` | Serializable struct | Legacy logging policy: level, JSON mode, rotation size, and retained file count. |
+| `Configuration::default()` | Default implementation | Produces the built-in logging defaults described below. |
+| `update_config` | Public submodule declaration | Makes update configuration available through the configuration namespace; its implementation is not included in the supplied source. |
 
-`Configuration` contains one `Logging Configuration` value. Its default produces informational JSON logs, rotates at 10 MB, and retains five files.
+`Configuration` and `LoggingConfig` derive `Debug`, `Clone`, `Serialize`, and `Deserialize`. They are annotated as unused legacy structures in the source, so new runtime behavior should not be assumed to read them without confirming the caller path.
 
-| Setting | Default | Meaning |
-|---|---:|---|
-| Log level | `info` | Minimum severity represented by the legacy logging model. |
-| JSON enabled | `true` | Requests structured JSON log output. |
-| Rotation size | 10 MB | Size threshold recorded for log rotation. |
-| Maximum files | 5 | Number of rotated log files recorded for retention. |
+## Legacy logging configuration
 
-The types derive serialization and deserialization traits, so they can be represented in configuration storage or transport formats supported by the Rust serialization stack. No parsing, validation, persistence, or runtime application logic appears in the supplied module; consumers that still use this model own those responsibilities.
+`Configuration` has one field, `logging`, which contains `LoggingConfig`.
 
-## Service lifecycle budget
+| Field | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `logging.level` | `String` | `info` | Logging verbosity name. |
+| `logging.json` | `bool` | `true` | Enables JSON-formatted log output in the default value. |
+| `logging.rotation_size_mb` | `u64` | `10` | Per-file log rotation threshold in megabytes. |
+| `logging.max_files` | `u32` | `5` | Maximum number of retained log files. |
 
-The Service Stop Constants establish a bounded escalation policy. A lifecycle operation first gives a process or service an opportunity to stop cleanly, then force-terminates it when necessary, while putting deadlines around Windows Service Control Manager calls and file-system operations that could otherwise block.
+The default construction is deterministic and in-memory only: this module does not load files, read environment variables, initialize logging, or write persistent configuration. Serialization support allows an external caller to perform those activities if it still uses the legacy shape.
 
 ```mermaid
 flowchart TD
-    Request["Tool Update or Service Stop Request"] --> GracefulStop["Request Graceful Stop"]
-    GracefulStop --> WaitGrace["Wait up to 5 Seconds"]
-    WaitGrace --> Stopped{"Process Stopped?"}
-    Stopped -->|"Yes"| Replace["Replace or Update Artifact"]
-    Stopped -->|"No"| ForceKill["Force Kill with Bounded Retries"]
-    ForceKill --> WaitExit["Wait up to 3 Seconds per Attempt"]
-    WaitExit --> Replace
-    Replace --> Unlock["Wait for Exclusive Executable Access"]
-    Unlock --> Start["Start Tool or Service"]
-    Start --> Verify["Verify Running State"]
+    DefaultCall["Configuration default call"] --> ConfigObject["Configuration"]
+    ConfigObject --> LoggingObject["LoggingConfig"]
+    LoggingObject --> Level["level: info"]
+    LoggingObject --> Json["json: true"]
+    LoggingObject --> Rotation["rotation size: 10 MB"]
+    LoggingObject --> Retention["maximum files: 5"]
 ```
 
-### Process, binary, and tool limits
+## Service stop policy
 
-| Concern | Limit | Operational effect |
-|---|---:|---|
-| Process state polling | 500 ms | Bounds the frequency of process or service state checks. |
-| Graceful shutdown | 5 s | Time allowed before escalation to force termination. |
-| Force-kill wait | 3 s | Time allowed for an affected process to exit after a force kill. |
-| Force-kill retries | 3 | Maximum force-kill attempts per process. |
-| Binary synchronization | 30 s | Limits a blocking synchronization of a written binary; a slower disk is logged as a warning. |
-| Exclusive executable wait | 30 s | Time allowed for a new executable to become exclusively openable before starting its service. |
-| Exclusive-open polling | 250 ms | Probe interval while waiting for a writer or antivirus scanner to release the executable. |
-| Guarded tool restart | 600 s | Overall cap that guarantees release of the updating flag and tool lock. |
+The `service_stop` constants are a common safety envelope for operations that need to stop a process or operating-system service before replacing an executable or starting it again. They separate short polls from bounded blocking calls, and they include escalation limits so an unresponsive process or Service Control Manager cannot hold an operation indefinitely.
 
-### Windows Service Control Manager limits
+### Process and executable handling
 
-| Concern | Limit | Operational effect |
-|---|---:|---|
-| Stop-state polls | 20 | Limits service state-change polling. The source notes approximately 10 seconds normally, with a longer path when queries intermittently time out. |
-| Force-kill rounds | 6 | Provides margin beyond the platform’s automatic restart behavior for a stuck service. |
-| Stop call deadline | 10 s | Prevents a blocking stop call from hanging the task. |
-| Start call deadline | 30 s | Prevents a blocking start call from stalling behind a busy service. |
-| Service-control query deadline | 10 s | Bounds status, configuration, and delete queries. |
-| Consecutive query failures | 2 | Stops a polling loop and escalates after repeated query failures. |
-| In-flight calls | 4 | Limits threads that a wedged service-control manager can park. |
-| Start retry delays | 1, 2, 4, 8, and 15 s | Produces retry backoff before subsequent start attempts. |
+| Constant | Value | Purpose |
+| --- | ---: | --- |
+| `PROCESS_CHECK_INTERVAL_MS` | 500 ms | Process or service state polling interval. |
+| `GRACEFUL_SHUTDOWN_TIMEOUT_SECS` | 5 s | Grace period before escalating a process shutdown to force-kill. |
+| `FORCE_KILL_TIMEOUT_SECS` | 3 s | Wait after a force-kill request. |
+| `MAX_KILL_RETRIES` | 3 | Maximum force-kill attempts per process. |
+| `BINARY_SYNC_TIMEOUT_SECS` | 30 s | Bound for synchronizing a newly written binary; slower storage produces a warning. |
+| `EXEC_UNLOCK_WAIT_SECS` | 30 s | Maximum wait for exclusive access to a newly written executable. |
+| `EXEC_UNLOCK_POLL_INTERVAL_MS` | 250 ms | Interval for probing whether the executable is unlocked. |
+| `TOOL_RESTART_TIMEOUT_SECS` | 600 s | Overall upper bound for a guarded tool restart, ensuring the updating flag and tool lock are released. |
 
-## Interaction flow
+### Windows service controls
 
-The constants do not perform lifecycle work themselves. They provide shared policy to callers such as service management, tool update, binary writing, and restart orchestration. Those callers select the appropriate budget, execute platform-specific operations, and use the deadline or retry result to decide whether to continue, escalate, or report a failure.
+| Constant | Value | Purpose |
+| --- | ---: | --- |
+| `SERVICE_STOP_MAX_ATTEMPTS` | 20 | Maximum state-change polls while stopping a Windows service. |
+| `SERVICE_FORCE_KILL_MAX_ATTEMPTS` | 6 | Force-kill rounds allowed for a stuck Windows service. |
+| `SERVICE_STOP_CALL_TIMEOUT_SECS` | 10 s | Bound for a blocking Service Control Manager stop call. |
+| `SERVICE_START_RETRY_DELAYS_SECS` | 1, 2, 4, 8, 15 s | Backoff schedule between start attempts. |
+| `SCM_QUERY_TIMEOUT_SECS` | 10 s | Bound for blocking Service Control Manager queries, including status, configuration, and deletion. |
+| `SERVICE_START_CALL_TIMEOUT_SECS` | 30 s | Bound for a blocking Service Control Manager start call. |
+| `SCM_QUERY_MAX_CONSECUTIVE_FAILURES` | 2 | Query failures tolerated consecutively before a wait loop stops polling and escalates. |
+| `SCM_MAX_IN_FLIGHT` | 4 | Maximum concurrent blocking Service Control Manager calls. |
+
+The source commentary notes that the normal stop polling budget is approximately 10 seconds, but non-consecutive Service Control Manager query timeouts can extend it. The bounded calls, retry ceilings, and in-flight limit are therefore part of the failure-containment design, not merely tuning values.
+
+## Controlled update and restart flow
+
+The module does not execute this flow itself. Instead, platform-specific update and service-management code uses its constants as the operational limits.
 
 ```mermaid
-sequenceDiagram
-    participant Updater as Tool Updater
-    participant Budget as Config Core
-    participant Service as Platform Service Manager
-    participant Binary as Binary Writer
-    Updater->>Budget: Read lifecycle limits
-    Updater->>Service: Request graceful stop
-    Service-->>Updater: Stopped or timeout
-    alt Service did not stop
-        Updater->>Service: Force terminate within retry budget
-        Service-->>Updater: Exit outcome
-    end
-    Updater->>Binary: Write replacement binary
-    Binary->>Budget: Read synchronization and unlock limits
-    Binary-->>Updater: Binary ready or warning
-    Updater->>Service: Start with retry and call deadlines
-    Service-->>Updater: Running state
+flowchart TD
+    UpdateRequest["Update or restart request"] --> AcquireGuard["Acquire tool update guard"]
+    AcquireGuard --> StopAttempt["Request graceful stop"]
+    StopAttempt --> Stopped{"Process or service stopped?"}
+    Stopped -->|"yes"| ReplaceBinary["Replace and synchronize executable"]
+    Stopped -->|"no"| Escalate["Force-kill within retry budget"]
+    Escalate --> Recheck["Poll process or service state"]
+    Recheck --> Stopped
+    ReplaceBinary --> WaitUnlock["Wait for executable unlock"]
+    WaitUnlock --> StartService["Start process or service with retry backoff"]
+    StartService --> ReleaseGuard["Release tool lock and updating flag"]
 ```
 
-## Operational considerations
+The decision and escalation behavior shown here is constrained by the constants, while the exact process execution, service queries, binary replacement, and lock management are implemented elsewhere in the OpenFrame Client library.
 
-- **Bounded blocking:** Service-control operations and binary synchronization have explicit caps, reducing the chance that an unresponsive service manager, disk, or file lock stalls the agent indefinitely.
-- **Controlled escalation:** Graceful shutdown precedes force termination, and force termination itself is retry-bounded.
-- **Resource protection:** The in-flight service-control limit constrains threads consumed by blocking native calls.
-- **Cleanup guarantee:** The 600-second tool restart cap is specifically intended to ensure that both the update indicator and tool lock are released even when a restart path misbehaves.
-- **Platform scope:** Several constants are used only on Windows; the module intentionally permits platform-conditional dead code so one source set can serve multiple operating systems.
+## Dependency relationships
+
+Config Core is intentionally small. It depends only on Serde traits for the legacy structs. Its principal relationship is outward: client update and platform service code can import the constants to apply one consistent policy.
+
+```mermaid
+flowchart LR
+    Serde["Serde serialization traits"] --> Configuration["Configuration and LoggingConfig"]
+    ConfigCore["Config Core"] --> Configuration
+    ConfigCore --> StopPolicy["service_stop policy"]
+    StopPolicy --> Updater["Tool update implementation"]
+    StopPolicy --> ServiceManager["Operating-system service management"]
+    StopPolicy --> BinaryWriter["Executable replacement implementation"]
+```
+
+The OpenFrame Client module tree includes dedicated areas for tool updating, binary writing, system-service control, and service management. They are the natural consumers of this policy, but their documentation files were not supplied or generated in this run, so they are not linked here.
 
 ## Maintenance guidance
 
-When changing a lifecycle value, evaluate the entire escalation chain rather than one timeout in isolation. For example, increasing a service stop deadline also affects the maximum duration before binary replacement and restart can begin. Preserve the relationship between polling intervals, per-call deadlines, retry counts, and the overall restart cap so that callers remain bounded.
+- Treat every timeout, retry count, and permit limit as part of a coordinated failure budget. Changing one value can alter how long an update holds a lock or waits before escalation.
+- Preserve explicit bounds around blocking service-control operations. The comments identify potentially wedged Service Control Manager calls as a key failure mode.
+- Keep the executable-unlock wait distinct from binary synchronization: the first protects startup from file locks held by a writer or antivirus process, while the second bounds persistence of the new binary.
+- Do not add new consumers of the legacy `Configuration` structures without confirming that the intended runtime configuration path still uses them.
+- When extending serialization fields, supply compatible defaults or migration behavior in the consuming layer; this module only defines data structures and their default value.
 
-Do not extend the legacy logging model without confirming an active consumer. The supplied source labels it unused, so a new logging setting should be added to the active logging configuration path rather than relying on these structures by default.
+## Source and ownership
 
-For runtime wiring, deployment configuration, and the Config Server application, see the platform documentation; this module documents only the OpenFrame client library source supplied above.
+The Config Core code is provided by the OpenFrame OSS Library dependency, not implemented directly in this repository. The consuming repository publishes the OpenFrame Client service and packages the Rust client library as part of the tenant platform. For source-level changes to the module itself, use the linked library source file above; for deployment configuration, use the platform documentation for the relevant service.

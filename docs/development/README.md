@@ -1,106 +1,125 @@
-## Overview
+ic# Development
 
-This is the **Development** hub for OpenFrame OSS Tenant — the deployable, tenant-oriented distribution of the OpenFrame platform. It assembles nine Spring Boot services, a Rust endpoint agent, shared configuration, Helm charts, and Argo CD application definitions into one MSP operations platform.
+This section is the entry point for developers working on **OpenFrame OSS Tenant** — the deployable, self-hosted tenant distribution for [OpenFrame](https://openframe.ai) ([flamingo.run/openframe](https://www.flamingo.run/openframe)). This repository assembles Spring Boot services (Java), a Rust endpoint agent client, shared configuration, and Kubernetes/Helm manifests into the running MSP platform stack. Most domain logic is consumed from the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) at pinned version `7.0.11`; this repository owns the tenant-specific service entry points, runtime configuration, Helm charts, Argo CD application definitions, and the release delivery pipeline.
 
-The repository builds on top of **OpenFrame OSS Library** (`com.openframe.oss`, version `7.0.11`), which supplies most of the domain logic as pinned Maven artifacts (`openframe-api-service-core`, `openframe-client-core`, `openframe-authorization-service-core`, `openframe-gateway-service-core`, and more — see the ecosystem reference below for the full list). This repository owns the runnable applications, their configuration, container delivery, and Kubernetes/Argo CD deployment topology. No other repository in the organization is recorded as consuming artifacts published from here: this repo sits at the top of the dependency graph as the assembled, deployable product.
+Use this page to find the right development document instead of digging through the whole repository tree.
 
-Use this page as your map across every development-focused document in this repository: environment setup, local development workflows, architecture, security, and contribution guidelines.
+> If you have not yet installed the project or run it for the first time, start with [Introduction](../getting-started/introduction.md), [Prerequisites](../getting-started/prerequisites.md), [Quick Start](../getting-started/quick-start.md) and [First Steps](../getting-started/first-steps.md) before coming back here.
 
 [![Getting Started with OpenFrame - Organization Setup Basics](https://img.youtube.com/vi/-_56_qYvMWk/maxresdefault.jpg)](https://www.youtube.com/watch?v=-_56_qYvMWk)
 
-## What's in this repository
+## Overview
 
-| Area | Technology | Notes |
-|---|---|---|
-| `openframe/services/*` | Java 25, Spring Boot `4.1.1` (via `spring-boot-starter-parent`) | Nine Maven modules, each a runnable service. |
-| `clients/openframe-client` | Rust, edition 2021 | Thin binary (`openframe-client`) over the `openframe-agent-lib` crate pinned to tag `v0.0.5`. |
-| `configs/base/*` | YAML | Shared Spring configuration, datasource endpoints, and gateway routing rules. |
-| `manifests/*` | Helm charts, Argo CD app definitions | Platform, datasource, and tenant workload deployment topology. |
+OpenFrame OSS Tenant is a multi-module Maven project (Java 25, Spring Boot `4.1.1` via `spring-boot-starter-parent`, Spring Cloud `2025.1.3`) plus a standalone Rust client crate. The root `pom.xml` declares the parent POM and wires together nine service modules under `openframe/services`:
 
-The root [`pom.xml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/pom.xml) declares the Maven reactor with these modules:
+| Service module | Maven artifact | Role |
+| --- | --- | --- |
+| `openframe-config` | `com.openframe:openframe-config` | Spring Cloud Config Server for shared platform configuration |
+| `openframe-api` | `com.openframe:openframe-api` | Main OpenFrame API and GraphQL service |
+| `openframe-client` | `com.openframe:openframe-client` | Managed endpoint registration, delivery, telemetry, RMM coordination |
+| `openframe-stream` | `com.openframe:openframe-stream` | Kafka event processing, enrichment, log storage, software projection |
+| `openframe-management` | `com.openframe:openframe-management` | Platform initialization, reconciliation, catalog sync, scheduled jobs |
+| `openframe-gateway` | `com.openframe:openframe-gateway` | Reactive edge router, JWT boundary, API-key enforcement, tool proxy |
+| `openframe-external-api` | `com.openframe:openframe-external-api` | API-key-protected REST API for third-party integrations |
+| `openframe-authorization-server` | `com.openframe:openframe-authorization-server` | OAuth 2.0 / OpenID Connect authorization server |
+| `openframe-test` | `com.openframe:openframe-test` | Shared tenant integration and end-to-end test service artifact |
 
-- `openframe/services/openframe-config`
-- `openframe/services/openframe-api`
-- `openframe/services/openframe-client`
-- `openframe/services/openframe-stream`
-- `openframe/services/openframe-management`
-- `openframe/services/openframe-gateway`
-- `openframe/services/openframe-external-api`
-- `openframe/services/openframe-authorization-server`
-- `openframe/services/openframe-test`
-
-Each service module's `pom.xml` pulls in a corresponding `*-service-core` artifact from OpenFrame OSS Library — for example `openframe-api` depends on `com.openframe.oss:openframe-api-service-core`, `openframe-client` depends on `com.openframe.oss:openframe-client-core`, and `openframe-authorization-server` depends on `com.openframe.oss:openframe-authorization-service-core`. This split means most business logic lives upstream, while this repository wires services together, configures them, and ships them.
-
-The Rust agent's manifest, [`clients/openframe-client/Cargo.toml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/Cargo.toml), defines the `openframe-client` binary with its entry point at `clients/openframe-client/src/main.rs`, depending on the `openframe-agent-lib` git dependency and `anyhow`.
-
-## How development fits the wider system
+Each service module is a thin composition layer: it pulls in a corresponding `*-service-core` artifact from the OpenFrame OSS Library (for example `openframe-api` depends on `com.openframe.oss:openframe-api-service-core`, `openframe-authorization-server` depends on `com.openframe.oss:openframe-authorization-service-core`), adds `spring-cloud-starter-config` for centralized configuration, and in several cases `openframe-data-redis` for caching. The Rust agent in `clients/openframe-client` (crate `openframe_client`, Cargo package name `openframe-client`) is a thin binary over `openframe-agent-lib`, pulled directly from the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) git repository at tag `v0.0.5`.
 
 ```mermaid
 flowchart LR
-    Lib["OpenFrame OSS Library maven 7.0.11"] --> Tenant["OpenFrame OSS Tenant services and agent"]
-    Tenant --> Images["Container images published to ghcr.io"]
-    Tenant --> Chart["app-of-apps Helm chart"]
-    Images --> Deploy["Argo CD deployment to Kubernetes"]
-    Chart --> Deploy
+    Lib["OpenFrame OSS Library 7.0.11"] --> Tenant["OpenFrame OSS Tenant"]
+    Tenant --> ConfigSvc["openframe-config"]
+    Tenant --> ApiSvc["openframe-api"]
+    Tenant --> ClientSvc["openframe-client"]
+    Tenant --> StreamSvc["openframe-stream"]
+    Tenant --> MgmtSvc["openframe-management"]
+    Tenant --> GatewaySvc["openframe-gateway"]
+    Tenant --> ExtApiSvc["openframe-external-api"]
+    Tenant --> AuthzSvc["openframe-authorization-server"]
+    Tenant --> TestSvc["openframe-test"]
+    Tenant --> RustAgent["openframe_client (Rust agent)"]
 ```
 
-Per the organization's repository graph, this repository pins 23 artifacts from OpenFrame OSS Library (22 Maven artifacts plus the `openframe_agent_lib` Cargo crate at tag `v0.0.5`), and publishes 9 Maven artifacts plus the `openframe_client` Cargo crate of its own. No downstream consumer repository is recorded for these published artifacts — this repository is the terminal, deployable product in the graph, not a library other teams build on. For the full dependency and delivery-chain breakdown (container images, Helm chart OCI references, Argo CD application waves, and gateway routes), see the [Ecosystem reference](../reference/architecture/ecosystem.md).
+Per the repository graph, this repository has no recorded downstream consumers inside the organization (coverage is `full`, so this is confirmed, not just unindexed) — its outputs are delivered as container images and a Helm app-of-apps chart rather than consumed as a library by other repositories. Everything upstream flows from the single `openframe-oss-lib` dependency pinned at `7.0.11` (Maven) and `v0.0.5` (the `openframe-agent-lib` crate used by the Rust client).
 
-> **Note:** This organization does not use GitHub Issues or GitHub Discussions for coordination. Development questions and community support go through the [OpenMSP Slack community](https://www.openmsp.ai/).
+## What lives in this section
 
-## Development documentation index
+The development documentation is organized into four areas, each covering a distinct concern of contributing to and operating this repository:
 
-Use the table below to jump directly to the topic you need.
+- **Setup** — getting a working local environment and understanding configuration surfaces.
+- **Architecture** — how the services, modules, and deployment manifests fit together.
+- **Testing** — how the shared `openframe-test` module and service-level tests are structured.
+- **Contributing** — expectations and workflow guidelines for proposing changes.
+- **Security** — the security model, authentication boundaries, and practices to follow.
+
+## Development documentation
 
 | Document | What it covers |
-|---|---|
-| [Environment Setup](./setup/environment.md) | Preparing your local toolchain (JDK, Maven, Rust) and required configuration before running any service. |
-| [Local Development](./setup/local-development.md) | Running services and the Rust agent locally, iterating on code, and connecting to supporting datastores. |
-| [Architecture](./architecture/README.md) | How the gateway, authorization server, API, client, management, and stream services fit together, and how requests flow through the platform. |
-| [Security](./security/README.md) | Authentication, authorization, and secure-configuration practices that apply across the services in this repository. |
-| [Contributing Guidelines](./contributing/guidelines.md) | Conventions and expectations for proposing and merging changes. |
-
-If you're arriving fresh to OpenFrame rather than to this repository's internals, start instead with the [Introduction](../getting-started/introduction.md), [Prerequisites](../getting-started/prerequisites.md), [Quick Start](../getting-started/quick-start.md), and [First Steps](../getting-started/first-steps.md) guides, then return here once your environment is ready.
+| --- | --- |
+| [Local Development](./setup/local-development.md) | Running the Spring Boot service modules and the Rust client locally. |
+| [Environment Configuration](./setup/environment.md) | Shared configuration under `configs/base`, datasource wiring, and gateway routes. |
+| [Architecture](./architecture/README.md) | How the service modules, shared config, and Kubernetes manifests relate. |
+| [Testing](./testing/README.md) | The `openframe-test` module and how service-level tests are organized. |
+| [Contributing Guidelines](./contributing/guidelines.md) | How to propose and submit changes to this repository. |
+| [Security](./security/README.md) | Authentication, authorization server, and security boundaries. |
 
 ## Quick navigation guide
 
+Use this guide to jump to the right document based on what you are trying to do.
+
 ```mermaid
 flowchart TD
-    Start["New to this repo?"] --> Intro["Introduction and Prerequisites"]
-    Intro --> QuickStart["Quick Start and First Steps"]
-    QuickStart --> EnvSetup["Development: Environment Setup"]
-    EnvSetup --> LocalDev["Development: Local Development"]
-    LocalDev --> Arch["Development: Architecture"]
-    Arch --> Security["Development: Security"]
-    Security --> Contrib["Development: Contributing Guidelines"]
+    Start["I want to..."] --> RunLocally["Run services locally"]
+    Start --> Configure["Understand configuration"]
+    Start --> Understand["Understand the architecture"]
+    Start --> Test["Write or run tests"]
+    Start --> Contribute["Submit a change"]
+    Start --> Secure["Understand security boundaries"]
+
+    RunLocally --> LocalDev["./setup/local-development.md"]
+    Configure --> EnvDoc["./setup/environment.md"]
+    Understand --> ArchDoc["./architecture/README.md"]
+    Test --> TestDoc["./testing/README.md"]
+    Contribute --> ContribDoc["./contributing/guidelines.md"]
+    Secure --> SecDoc["./security/README.md"]
 ```
 
-- **Setting up a machine for the first time?** Begin with [Environment Setup](./setup/environment.md), which should be done before attempting to run any service.
-- **Ready to run something locally?** Go to [Local Development](./setup/local-development.md) for day-to-day workflows against the Java services and the Rust agent.
-- **Trying to understand how a request moves through the platform?** Read [Architecture](./architecture/README.md), and cross-reference the [Ecosystem reference](../reference/architecture/ecosystem.md) and [Architecture reference](../reference/architecture/README.md) for the full module and deployment picture.
-- **Reviewing auth, tokens, or secure configuration?** See [Security](./security/README.md).
-- **About to open a change?** Read [Contributing Guidelines](./contributing/guidelines.md) first.
+### By task
 
-## Deep-dive architecture references
+- **I'm new to the project.** Read [Introduction](../getting-started/introduction.md), check [Prerequisites](../getting-started/prerequisites.md), then follow [Quick Start](../getting-started/quick-start.md) and [First Steps](../getting-started/first-steps.md).
+- **I want to run a service module (API, gateway, client, stream, management, authorization server, config, external API) on my machine.** Go to [Local Development](./setup/local-development.md).
+- **I need to know where Kafka, NATS, MongoDB, Redis, Cassandra, or Pinot connection strings come from.** Go to [Environment Configuration](./setup/environment.md), which documents the `configs/base` shared application configuration.
+- **I need to understand how the gateway routes traffic, or how services depend on the OpenFrame OSS Library.** Go to [Architecture](./architecture/README.md).
+- **I'm adding or modifying tests.** Go to [Testing](./testing/README.md) for how the `openframe-test` artifact and per-service tests are structured.
+- **I'm preparing a change for review.** Go to [Contributing Guidelines](./contributing/guidelines.md).
+- **I need to understand authentication, authorization, or tenant security boundaries.** Go to [Security](./security/README.md).
 
-The modules that make up each service are documented individually under the reference architecture tree. Notable groupings include:
+### By module
 
-- Main application entry points: [Main Applications](../reference/architecture/main-applications/main-applications.md), split further into [API and Gateway Applications](../reference/architecture/main-applications/api_and_gateway_applications.md), [Identity, Configuration, and Client Applications](../reference/architecture/main-applications/identity_configuration_and_client_applications.md), and [Management and Stream Applications](../reference/architecture/main-applications/management_and_stream_applications.md).
-- Gateway behavior: [Gateway Core](../reference/architecture/gateway-core/gateway-core.md).
-- Identity and tenant-aware OAuth: [Authorization Service Core](../reference/architecture/authorization-service-core/authorization-service-core.md), [Security OAuth](../reference/architecture/security-oauth/security-oauth.md), and [Security Core OAuth](../reference/architecture/security-core-oauth/security-core-oauth.md).
-- The primary application API: [API Service Backend](../reference/architecture/api-service-backend/api-service-backend.md), with [Dataloaders](../reference/architecture/api-service-dataloaders/api-service-dataloaders.md), [Fetchers](../reference/architecture/api-service-fetchers/api-service-fetchers.md), and related DTO/filter/OAuth modules.
-- Endpoint-agent internals (Rust): [Openframe Client Core](../reference/architecture/openframe-client-core/openframe-client-core.md) and [Client Core Registration Agent](../reference/architecture/client-core-registration-agent/client-core-registration-agent.md).
-- Event processing: [Stream Service Core](../reference/architecture/stream-service-core/stream-service-core.md).
-- Background initialization and reconciliation: [Management Core](../reference/architecture/management-core/management-core.md).
-- Persistence: [Data Mongo Sync Repositories](../reference/architecture/data-mongo-sync-repositories/data-mongo-sync-repositories.md), [Data Mongo Common](../reference/architecture/data-mongo-common/data-mongo-common.md), [Data Mongo Reactive](../reference/architecture/data-mongo-reactive/data-mongo-reactive.md), and [Data Redis](../reference/architecture/data-redis/data-redis.md).
-- External integrations: [External API Service Core](../reference/architecture/external-api-service-core/external-api-service-core.md).
+If you are working inside a specific service module, these reference documents (generated from the OpenFrame OSS Library's own architecture) describe the core logic each tenant service composes:
 
-The full index of reference modules is available from the [Architecture reference overview](../reference/architecture/README.md).
+| Tenant service | Related architecture reference |
+| --- | --- |
+| `openframe-api` | [Openframe API Service Core](../reference/architecture/openframe-api-service-core/openframe-api-service-core.md) |
+| `openframe-authorization-server` | [Openframe Authorization Service Core](../reference/architecture/openframe-authorization-service-core/openframe-authorization-service-core.md) |
+| `openframe-client` (Java side) | [Openframe Client Core Java](../reference/architecture/openframe-client-core-java/openframe-client-core-java.md) |
+| `openframe-client` (Rust agent) | [Openframe Client Core](../reference/architecture/openframe-client-core/openframe-client-core.md) |
+| `openframe-config` | [Openframe Config Core](../reference/architecture/openframe-config-core/openframe-config-core.md) |
+| `openframe-external-api` | [Openframe External API Service Core](../reference/architecture/openframe-external-api-service-core/openframe-external-api-service-core.md) |
+| `openframe-gateway` | [Openframe Gateway Service Core](../reference/architecture/openframe-gateway-service-core/openframe-gateway-service-core.md) |
+| `openframe-management` | [Openframe Management Service Core](../reference/architecture/openframe-management-service-core/openframe-management-service-core.md) |
+| `openframe-stream` | [Openframe Stream Service Core](../reference/architecture/openframe-stream-service-core/openframe-stream-service-core.md) |
+| `openframe-test` | [Openframe Test Service Core](../reference/architecture/openframe-test-service-core/openframe-test-service-core.md) |
 
-## Related external tooling
+For the complete artifact, dependency, and delivery-chain picture (container images, Helm charts, Argo CD applications), see [Ecosystem](../reference/architecture/ecosystem.md) and the full [Architecture Reference](../reference/architecture/README.md).
 
-The [OpenFrame CLI](https://github.com/flamingo-stack/openframe-cli) is maintained in a separate repository and is not part of this codebase. Refer to its own [installation instructions](https://github.com/flamingo-stack/openframe-cli#installation) and [documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs) if your workflow involves it.
+> **Note:** The `openframe-client` CLI tooling referenced by the agent ecosystem (`openframe-cli`) is maintained in a separate, external repository: [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli). Its [installation guide](https://github.com/flamingo-stack/openframe-cli#installation) and [documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs) live there, not in this repository.
 
 ## Getting help
 
-This project does not track work in GitHub Issues or Discussions. For development questions, bug reports, or feature discussions, use the [OpenMSP Slack community](https://www.openmsp.ai/) ([join link](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)). Release history is available under [GitHub Releases](https://github.com/flamingo-stack/openframe-oss-tenant/releases).
+This project does not use GitHub Issues or GitHub Discussions. Questions, bug reports, and feature discussions happen in the [OpenMSP Slack community](https://www.openmsp.ai/) — join via the [Slack invite link](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA). For released versions of the tenant distribution, see [Releases](https://github.com/flamingo-stack/openframe-oss-tenant/releases).
+
+If you'd like a broader product overview before diving into development details, this walkthrough covers current platform functionality end to end:
+
+[![OpenFrame Product Walkthrough (Beta Access)](https://img.youtube.com/vi/awc-yAnkhIo/maxresdefault.jpg)](https://www.youtube.com/watch?v=awc-yAnkhIo)

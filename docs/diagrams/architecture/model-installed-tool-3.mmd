@@ -1,4 +1,4 @@
 stateDiagram-v2
     [*] --> Installing
-    Installing --> Installed
-    Installed --> [*]
+    Installing --> Installed: Installation completes
+    Installed --> Installing: Update or replacement begins

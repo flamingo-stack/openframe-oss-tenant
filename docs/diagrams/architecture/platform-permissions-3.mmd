@@ -1,19 +1,18 @@
 sequenceDiagram
     participant Caller
-    participant Utility as PermissionUtils
-    participant Platform as Host platform
-    Caller->>Utility: ensure_admin()
-    Utility->>Utility: Check flag and current privilege
-    alt Already privileged
-        Utility-->>Caller: Ok
-    else Privilege absent
-        Utility->>Platform: Request elevation
-        alt Prompt succeeds
-            Platform-->>Utility: Success
-            Utility->>Utility: Set session flag
-            Utility-->>Caller: Ok
-        else Prompt fails or is cancelled
-            Platform-->>Utility: Failure status
-            Utility-->>Caller: PermissionError
-        end
+    participant Utility
+    participant Platform
+    participant Command
+    Caller->>Utility: run_as_admin
+    Utility->>Utility: check flag and admin state
+    alt elevated
+        Utility->>Command: run_command
+        Command-->>Utility: exit status
+    else prompt needed
+        Utility->>Platform: ensure_admin
+        Platform-->>Utility: prompt outcome
+        Utility->>Utility: set granted flag
+        Utility->>Command: run_command
+        Command-->>Utility: exit status
     end
+    Utility-->>Caller: success or error

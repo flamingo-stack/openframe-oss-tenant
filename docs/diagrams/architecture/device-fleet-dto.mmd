@@ -1,8 +1,0 @@
-flowchart TD
-    FleetPayload["Fleet host payload"] --> HostDto["Fleet host DTO"]
-    HostDto --> Users["FleetUser list"]
-    HostDto --> Software["FleetSoftware list"]
-    Software --> Vulnerabilities["FleetVulnerability list"]
-    Software --> Flattened["Flattened vulnerability view"]
-    Vulnerabilities --> Flattened
-    Flattened --> TestCode["Test assertions"]

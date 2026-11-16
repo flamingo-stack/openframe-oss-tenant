@@ -1,140 +1,136 @@
 # Model Machine Heartbeat
 
-Model Machine Heartbeat is the minimal wire contract used by an OpenFrame client to announce that a registered machine is still reachable. The message deliberately contains no fields: the machine identity is encoded in the NATS subject and the receiving service assigns the event time when it handles the message. This keeps the heartbeat payload small and prevents the client clock from becoming the source of truth for presence.
+Model Machine Heartbeat defines the intentionally minimal wire payload used by the OpenFrame endpoint agent to signal that a machine is alive. The payload contains no fields: the machine identity is carried by the NATS subject and the receiving service assigns the event timestamp when it consumes the message. This keeps the message contract small and prevents the client clock from becoming the source of presence time.
 
-The model is implemented by the OpenFrame OSS Library's Rust client code and is assembled at runtime by this repository's OpenFrame Client deployment. The authoritative implementation is [`machine_heartbeat_message.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/machine_heartbeat_message.rs).
+The Rust model belongs to the `openframe_agent_lib` library from OpenFrame OSS Library. OpenFrame OSS Tenant runs that library through its client agent and provides the Java client service that consumes the corresponding NATS events.
 
-## Responsibilities and Boundaries
+## Scope and Contract
 
-The module owns only the serializable `MachineHeartbeatMessage` type and its `new()` constructor. It does **not** determine the machine identifier, schedule publications, establish a NATS connection, persist device state, or decide when a device is offline. Those responsibilities belong to the client and server-side services surrounding the contract.
+The module exposes one serializable and deserializable type:
 
-| Concern | Responsible component | Behavior |
-|---|---|---|
-| Wire payload | `MachineHeartbeatMessage` | Produces an empty JSON object. The type derives serialization and deserialization support and applies camel-case naming should fields be added later. |
-| Identity | `MachineHeartbeatPublisher` | Reads the persisted machine ID from agent configuration and places it in the subject. |
-| Periodic execution | `MachineHeartbeatRunManager` | Runs publication asynchronously at the configured heartbeat interval, with a timeout per attempt. |
-| Transport | `NatsMessagePublisher` | Publishes the serialized payload to NATS. |
-| Presence ingestion | `MachineHeartbeatListener` | Subscribes to matching NATS subjects, derives the machine ID, timestamps receipt, and invokes machine-status processing. |
-| Offline evaluation | `DeviceHeartbeatOfflineDetectionScheduler` | Optionally sweeps for stale devices in the management service. |
+| Component | Responsibility |
+| --- | --- |
+| `MachineHeartbeatMessage` | Represents the heartbeat payload. Serde uses camel-case naming should fields be added later, although the current object has no fields. |
+| `MachineHeartbeatMessage::new()` | Constructs the empty message. The `Default` implementation delegates to this constructor. |
 
-## Contract
-
-`MachineHeartbeatMessage` is a unit-like data carrier represented as an empty struct. Both `new()` and the `Default` implementation create the same value.
+The model serializes to an empty JSON object:
 
 ```json
 {}
 ```
 
-The publisher sends that payload on the following subject form:
+The current publisher first serializes the model to that JSON text and then passes the text to the generic NATS publisher, which serializes its input again. As a result, the bytes published by the current implementation are a JSON string whose content is `{}`:
 
-```text
-machine.<machine-id>.heartbeat
+```json
+"{}"
 ```
 
-The receiving client-core service subscribes to `machine.*.heartbeat`. The wildcard occupies exactly the machine identifier position. The model therefore has an important protocol constraint: producers and consumers must preserve this three-token subject layout. A payload alone cannot identify the machine.
+The receiving heartbeat listener relies on the subject for identity and does not deserialize the body, so this transport encoding does not affect current processing. It is nevertheless a compatibility detail to preserve or deliberately migrate in a coordinated producer and consumer change.
 
-### Why Receipt Time Is Authoritative
+The identity and timestamp are deliberately out of band:
 
-The client listener extracts the machine identifier from the received subject and creates an `Instant` when processing the message. It then calls the machine-status service with that identifier and server-side timestamp. This avoids treating a potentially skewed or stale client-provided timestamp as the observed liveness time.
+| Concern | Authoritative source |
+| --- | --- |
+| Machine identity | The NATS subject segment in `machine.{machineId}.heartbeat`. |
+| Presence event time | The receiving client service, at message handling time. |
+| Payload schema | `MachineHeartbeatMessage`, currently an empty object. |
 
-Because the payload is empty, adding machine metadata directly to the heartbeat would be a wire-contract change. Prefer the existing identity and server-side processing path unless a new value is explicitly required by both publisher and listener implementations.
+The model source is maintained in the OpenFrame OSS Library: [machine heartbeat message source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/machine_heartbeat_message.rs).
 
 ## Architecture
 
+The heartbeat model is a boundary contract between the endpoint agent and the client-side platform service. It does not schedule work, acquire a NATS connection, or decide whether a device is offline. Those responsibilities stay in adjacent services.
+
 ```mermaid
 flowchart LR
-    AgentConfig["Agent Configuration Service"] -->|"machine identifier"| Publisher["Machine Heartbeat Publisher"]
-    HeartbeatModel["Model Machine Heartbeat"] -->|"empty JSON payload"| Publisher
-    RunManager["Machine Heartbeat Run Manager"] -->|"periodically invokes"| Publisher
-    Publisher -->|"machine identifier subject"| Nats["NATS"]
-    Nats -->|"machine wildcard heartbeat"| Listener["Machine Heartbeat Listener"]
-    Listener -->|"machine identifier and receipt time"| StatusService["Machine Status Service"]
-    StatusService --> DeviceState["Device Presence State"]
-    OfflineScheduler["Offline Detection Scheduler"] -->|"checks stale state"| DeviceState
-    OnlineScheduler["Online Dispatch Scheduler"] -->|"processes newly online devices"| DeviceState
+    AgentConfig["Agent Configuration Service"] -->|"machine ID"| HeartbeatPublisher["Machine Heartbeat Publisher"]
+    HeartbeatModel["Machine Heartbeat Message"] -->|"serialized heartbeat"| HeartbeatPublisher
+    HeartbeatRunner["Machine Heartbeat Run Manager"] -->|"triggers"| HeartbeatPublisher
+    HeartbeatPublisher -->|"machine.{machineId}.heartbeat"| Nats["NATS"]
+    Nats -->|"machine.*.heartbeat"| HeartbeatListener["Machine Heartbeat Listener"]
+    HeartbeatListener -->|"machine ID and service timestamp"| StatusService["Machine Status Service"]
+    StatusService -->|"updates presence"| DeviceState["Device State"]
+    OfflineScheduler["Offline Detection Scheduler"] -->|"evaluates stale devices"| DeviceState
 ```
 
-The model sits at the boundary between the Rust agent and Java client-core services. It is intentionally transport-neutral at the type level: serialization produces the body, while the publisher supplies the NATS subject that makes the message meaningful.
+### Runtime Responsibilities
 
-## Publication Flow
+- **Endpoint agent:** `MachineHeartbeatRunManager` starts an asynchronous loop. On every interval tick it invokes `MachineHeartbeatPublisher::publish_heartbeat` under a timeout. Errors and timeouts are logged and do not terminate the loop.
+- **Publisher:** The publisher obtains the machine ID from `AgentConfigurationService`, constructs `MachineHeartbeatMessage`, serializes it, and publishes it to `machine.{machineId}.heartbeat` through `NatsMessagePublisher`.
+- **NATS transport:** `NatsMessagePublisher::publish` serializes its supplied value, publishes the bytes through the active client, and flushes the connection. In the heartbeat path the supplied value is already a JSON string, so the publisher serializes that string for transport.
+- **Client service:** `MachineHeartbeatListener` subscribes to `machine.*.heartbeat` after application readiness. It extracts the machine ID from the subject, captures `Instant.now()`, and calls `MachineStatusService.processHeartbeat`.
+- **Offline handling:** `DeviceHeartbeatOfflineDetectionScheduler` is enabled only when `openframe.device.heartbeat.offline-detection.enabled` is `true`. It runs a stale-device sweep using `openframe.device.heartbeat.offline-detection.interval`, whose configured default is 60,000 milliseconds.
 
-The OpenFrame client starts `MachineHeartbeatRunManager`, which creates a background Tokio task. On every interval tick, the task calls `MachineHeartbeatPublisher.publish_heartbeat()` under the configured heartbeat timeout.
+## Publish and Consume Flow
 
 ```mermaid
 sequenceDiagram
-    participant Manager as Machine Heartbeat Run Manager
-    participant Publisher as Machine Heartbeat Publisher
-    participant Config as Agent Configuration Service
-    participant Nats as NATS
-    participant Listener as Machine Heartbeat Listener
-    participant Status as Machine Status Service
-    Manager->>Publisher: publish heartbeat on interval tick
-    Publisher->>Config: get machine identifier
-    Config-->>Publisher: machine identifier
-    Publisher->>Publisher: create empty message and serialize
-    Publisher->>Nats: publish to machine identifier heartbeat subject
-    Nats->>Listener: deliver matching message
-    Listener->>Listener: extract identifier and create receipt timestamp
+    participant Runner as "Heartbeat Run Manager"
+    participant Publisher as "Heartbeat Publisher"
+    participant Config as "Agent Configuration Service"
+    participant Nats as "NATS"
+    participant Listener as "Heartbeat Listener"
+    participant Status as "Machine Status Service"
+    Runner->>Publisher: interval tick
+    Publisher->>Config: get machine ID
+    Config-->>Publisher: machine ID
+    Publisher->>Publisher: create empty heartbeat message
+    Publisher->>Nats: publish machine ID heartbeat subject
+    Nats-->>Listener: deliver matching message
+    Listener->>Listener: extract machine ID and capture server time
     Listener->>Status: process heartbeat
 ```
 
-### Attempt Outcomes
-
-The background loop remains active after individual publication failures.
+## Lifecycle and Failure Behavior
 
 ```mermaid
 flowchart TD
-    Tick["Heartbeat Interval Tick"] --> Attempt["Publish Heartbeat"]
-    Attempt --> Result{"Completed before timeout?"}
-    Result -->|"No"| Timeout["Log Timeout, Continue Loop"]
-    Result -->|"Yes"| PublishResult{"Publish successful?"}
-    PublishResult -->|"Yes"| NextTick["Wait for Next Tick"]
-    PublishResult -->|"No"| Failure["Log Publish Failure, Continue Loop"]
-    Timeout --> NextTick
-    Failure --> NextTick
+    Start["Run manager starts"] --> Tick["Wait for interval tick"]
+    Tick --> Publish["Publish heartbeat with timeout"]
+    Publish --> Result{"Publish succeeded?"}
+    Result -->|"yes"| Tick
+    Result -->|"publisher error"| LogError["Log publish failure"]
+    Result -->|"timeout"| LogTimeout["Log NATS timeout"]
+    LogError --> Tick
+    LogTimeout --> Tick
 ```
 
-A successful return means the publisher read the machine ID, serialized the empty message, and completed the NATS publish call. This module does not define application-level acknowledgment, retries, local queuing, or delivery persistence for heartbeats.
+The run manager continues after a failed or timed-out publish. This provides eventual recovery when NATS connectivity returns, but it does not introduce a local heartbeat queue or retry each individual message. A missing heartbeat is therefore interpreted by downstream status and offline-detection logic rather than being represented as a special client payload.
 
-## Server-Side Processing and Presence Effects
+On the consuming side, the listener catches failures per NATS message and logs the machine ID when available. During shutdown it drains its NATS dispatcher with a five-second timeout so that in-flight callbacks can complete cleanly.
 
-At application readiness, `MachineHeartbeatListener` creates a NATS dispatcher and registers its wildcard subscription. For every received message it:
+## Design Constraints
 
-1. Reads the NATS subject.
-2. Extracts the machine identifier with `NatsTopicMachineIdExtractor`.
-3. Captures the service-side event timestamp.
-4. Calls `MachineStatusService.processHeartbeat(machineId, eventTimestamp)`.
-5. Logs unexpected processing exceptions without terminating the listener callback.
+### Keep the Payload Empty
 
-During shutdown, the listener attempts to drain its dispatcher with a five-second limit. This gives in-flight work an opportunity to finish before the connection is released.
+`MachineHeartbeatMessage` is intentionally a marker type. Do not add `machineId` or a client-generated timestamp unless the server-side subject and time authority model is changed as a coordinated protocol revision. Duplicating the identifier in the body creates two possible sources of truth; trusting the endpoint clock for a presence event allows clock skew to affect device status.
 
-Presence changes can trigger later workflows, but they are separated from the heartbeat contract:
+### Treat the Subject as a Contract
 
-- `DeviceOnlineDispatchScheduler` runs a device-online processing sweep at a configurable fixed delay. Its default delay is 60 seconds and it uses a scheduler lock to coordinate execution.
-- `DeviceHeartbeatOfflineDetectionScheduler` runs only when `openframe.device.heartbeat.offline-detection.enabled` is `true`. Its default fixed delay is 60 seconds and it delegates stale-device evaluation to the offline-detection service.
+The producer emits `machine.{machineId}.heartbeat`, while the consumer subscribes to `machine.*.heartbeat`. Any change to segment order, separators, or wildcard-compatible structure must update both components and the machine ID extraction logic together.
 
-The exact online threshold, stale threshold, storage behavior, and any resulting dispatch actions are outside Model Machine Heartbeat and must be treated as server-side policy.
+### Preserve Serialization Compatibility
 
-## Operational Considerations
+The type derives `Serialize` and `Deserialize` and specifies `camelCase` field naming. This has no observable field-name effect today, but it establishes the convention for a future additive payload evolution. Consumers must remain able to accept the current empty object.
 
-- **Registration prerequisite:** the publisher obtains the identifier from agent configuration. If no machine ID is available, publication cannot construct a valid subject.
-- **NATS availability:** timeout is reported as a possible disconnected NATS condition. Publish errors and timeouts are logged; the run manager continues to later ticks.
-- **Clock semantics:** use server receipt time for liveness investigations. The model carries no client timestamp.
-- **Subject compatibility:** changing `machine.<machine-id>.heartbeat` affects identifier extraction and the `machine.*.heartbeat` subscription.
-- **Schema evolution:** the empty message is a stable baseline. Any field addition must consider Rust serialization, Java deserialization expectations, and mixed-version clients.
-- **Observability:** publisher logging includes the machine identifier after a successful publication, and the listener emits debug logs around processing. Avoid relying on payload content for diagnosis because it is intentionally empty.
+### Separate Presence from Offline Policy
 
-## Maintenance Checklist
+A heartbeat declares successful agent-to-broker publication only. It does not directly set an offline state, establish a service-level delivery acknowledgement, or encode an offline threshold. The status service records the observed event, and the optional management scheduler applies the stale-device policy later.
 
-When changing this contract or the heartbeat path:
+## Maintenance Guidance
 
-1. Keep `MachineHeartbeatMessage::new()` and `Default` behavior equivalent.
-2. Verify the JSON body remains compatible with all consumers.
-3. Verify publisher subject construction and server wildcard subscription together.
-4. Verify that the subject extractor still obtains the intended machine identifier.
-5. Exercise success, publish failure, and timeout paths without stopping the periodic loop.
-6. Validate presence effects separately from transport delivery, including online dispatch and optional offline detection.
+When changing this contract, validate the complete path:
 
-## Scope Summary
+1. Confirm Rust serialization still produces the payload intended for NATS.
+2. Confirm the emitted subject is compatible with `machine.*.heartbeat` and machine ID extraction.
+3. Confirm the Java listener can deserialize or safely ignore the evolved body if it begins to use payload fields.
+4. Test reconnection behavior, publish failures, and heartbeat timeout logging without stopping the scheduling loop.
+5. Verify that online updates and the offline-detection sweep produce the expected device-state transitions.
 
-Model Machine Heartbeat is a deliberately small protocol model, not a complete presence subsystem. Its empty JSON representation works only in combination with the subject-based identifier, periodic Rust publisher, NATS listener, machine-status processor, and separate online or offline policy jobs. Keeping those layers distinct makes the message contract stable while allowing presence policy to evolve independently.
+The interval and timeout constants used by the agent run manager are defined outside this model. Operational tuning should target the run manager configuration or implementation rather than expanding the model solely to carry scheduling metadata.
+
+## System Placement
+
+Model Machine Heartbeat is part of the endpoint-agent messaging path assembled from the `openframe_agent_lib` Cargo artifact, version `v0.0.5`, sourced from OpenFrame OSS Library. OpenFrame OSS Tenant also runs the Java `openframe-client` service that includes the NATS heartbeat listener and the `openframe-management` service that includes the optional offline-detection scheduler. The tenant configuration provides NATS at `nats.datasources.svc.cluster.local` for the client service.
+
+This module is therefore a small but central compatibility boundary: the agent supplies liveness evidence, NATS transports it, the platform records service-observed presence, and management policy later identifies stale devices.

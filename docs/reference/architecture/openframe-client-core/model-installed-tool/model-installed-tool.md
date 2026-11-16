@@ -1,185 +1,159 @@
 # Model Installed Tool
 
-Model Installed Tool defines the persisted and serializable description of an integrated tool managed by the OpenFrame endpoint client. It is implemented in the `openframe_agent_lib` Cargo dependency from the OpenFrame OSS Library and is assembled at runtime by this repository’s OpenFrame client. The model distinguishes how a tool is installed, records the assets that make up that installation, and exposes a small lifecycle state for installation progress.
+Model Installed Tool is the OpenFrame client agent's local data contract for an integrated tool that is being installed or is already present on a managed device. It records the tool identity, version, launch and uninstall arguments, installation strategy, installed assets, and installation state.
 
-The implementation is supplied by the [OpenFrame OSS Library source](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/installed_tool.rs). This repository consumes `openframe_agent_lib` version `v0.0.5`; the displayed source revision is the implementation analyzed here.
+The implementation is provided by the `openframe_agent_lib` Cargo dependency from [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/installed_tool.rs). This repository consumes that dependency at `v0.0.5` to run the OpenFrame client agent.
 
-## Responsibilities
+## Purpose and Scope
 
-The module provides four complementary model types:
+The module is deliberately a model rather than a lifecycle engine. It does not download artifacts, persist records, control operating-system processes, or manage services. Instead, it provides one serializable representation that the client agent's installation, update, run, restart, kill, uninstall, and persistence services can share.
 
-- **Installation** is a tagged union that captures the operating model of a tool: a standard executable, a graphical application, or an operating system service.
-- **Installed Asset** identifies an individual delivered asset, its version, and whether it is executable.
-- **Tool Record State** distinguishes a tool still being installed from one that is installed.
-- **Installed Tool** aggregates identity, version, launch arguments, optional removal arguments, installation metadata, assets, and lifecycle state.
+Its responsibilities are to:
 
-It is deliberately a model layer: it does not download artifacts, invoke processes, update files, or persist records itself. Higher-level client services use its data to coordinate those operations.
+- identify the managed tool and its installed version;
+- describe whether it is an ordinary executable, GUI application, or operating-system service;
+- retain required installation metadata and installed asset versions;
+- preserve argument vectors for launch, tool-agent identification, and optional uninstall actions; and
+- distinguish an in-progress installation from an installed record.
 
-## Position in the Client Architecture
+## Position in the Client Agent
+
+Tool command handling and update processing create or revise an Installed Tool record. Persistence services retain it locally. Runtime services later reload the record and select the appropriate platform behavior from its installation variant.
+
+```mermaid
+flowchart LR
+    Command["Tool command or update"]
+    Installer["Tool installation or update service"]
+    Record["Installed Tool record"]
+    Store["Installed tools service"]
+    Runtime["Run, restart, kill, or uninstall service"]
+    Command --> Installer
+    Installer -->|"creates or updates"| Record
+    Record -->|"saved and loaded"| Store
+    Store -->|"supplies record"| Runtime
+```
+
+This module is part of the boundary between control-plane work received by the agent and device-local lifecycle operations. It represents local truth; it does not itself establish whether a process is currently running.
+
+## Core Record
+
+`InstalledTool` is the aggregate record. Serde serialization and deserialization make it suitable for local persistence and subsequent recovery.
+
+| Field | Meaning |
+|---|---|
+| `tool_agent_id` | Identifier of the managed tool-agent instance. The module also defines `openframe-chat` as the chat tool-agent identifier. |
+| `tool_id` | Identifier for the integrated tool. |
+| `tool_type` | Tool category provided to the agent. |
+| `version` | Installed tool version. |
+| `run_command_args` | Ordered arguments used to launch the tool. |
+| `tool_agent_id_command_args` | Ordered arguments used to pass the tool-agent identity to the tool. |
+| `uninstallation_command_args` | Optional ordered arguments used during removal. It is omitted from serialized output when absent. |
+| `installation` | Installation strategy and its strategy-specific metadata. Defaults to a standard installation. |
+| `assets` | Installed artifacts associated with the tool. Defaults to an empty list. |
+| `state` | Installation lifecycle state. Defaults to `installed`. |
+
+Each `InstalledAsset` contains an asset `id`, `version`, and an `executable` indicator. The indicator defaults to `false`, so an omitted value does not incorrectly classify an asset as runnable.
+
+## Installation Strategy
+
+`Installation` is internally tagged with the serialized field `type`; variant names use snake case. The variants express which operating-system metadata is meaningful and which lifecycle path surrounding services should use.
 
 ```mermaid
 flowchart TD
-    Platform["OpenFrame platform"] -->|"tool installation or update instruction"| Client["OpenFrame endpoint client"]
-    Client --> Handler["Tool installation or update handler"]
-    Handler --> Model["Model Installed Tool"]
-    Model --> InstallService["Tool installation service"]
-    Model --> UpdateService["Tool agent update service"]
-    Model --> ToolStore["Installed tools service"]
-    InstallService --> Host["Managed endpoint"]
-    UpdateService --> Host
-    ToolStore --> Host
+    Installation["Installation"]
+    Standard["Standard installation"]
+    GuiApp["GUI application"]
+    Service["Service"]
+    StandardPath["Optional executable path"]
+    GuiPath["Required executable path"]
+    Bundle["Optional bundle identifier"]
+    ServiceName["Required service name"]
+    ServicePath["Optional executable path"]
+    Installation --> Standard
+    Installation --> GuiApp
+    Installation --> Service
+    Standard --> StandardPath
+    GuiApp --> GuiPath
+    GuiApp --> Bundle
+    Service --> ServiceName
+    Service --> ServicePath
 ```
 
-The model is the contract shared by tool orchestration code:
+- **Standard** is the default. Its executable path is optional.
+- **GUI application** requires an executable path and optionally carries a bundle identifier.
+- **Service** requires a service name and may carry an executable path.
 
-1. A received installation or update instruction is interpreted by the command handlers and tool services.
-2. The tool services construct or update an Installed Tool record, including its installation variant and assets.
-3. The Installed Tools Service stores the record and changes its state as work progresses.
-4. The run, restart, kill, uninstall, and platform updater services use the installation classification and executable location to select appropriate host behavior.
+A GUI application always has a reported executable path. Standard and service records can be valid without one, so callers must not infer the installation type merely from path presence.
 
-The neighboring modules listed in the module tree provide the behavioral layers around this data contract. In particular, tool installation handles initial placement, tool agent updates handle updates, and the installed-tools service owns record storage and state transitions.
+## Classification Helpers
 
-## Core Data Model
+The `Installation` methods keep common variant checks in one place:
 
-```mermaid
-classDiagram
-    class InstalledTool {
-        tool agent identifier
-        tool identifier
-        tool type
-        version
-        run command arguments
-        agent identifier command arguments
-        optional uninstallation command arguments
-        installation
-        assets
-        state
-    }
-    class Installation {
-        Standard
-        GuiApp
-        Service
-    }
-    class InstalledAsset {
-        identifier
-        version
-        executable
-    }
-    class ToolRecordState {
-        Installing
-        Installed
-    }
-    InstalledTool --> Installation : "one installation"
-    InstalledTool --> InstalledAsset : "zero or more assets"
-    InstalledTool --> ToolRecordState : "one state"
-```
+| Method | Behavior |
+|---|---|
+| `executable_path()` | Returns the configured executable path when the selected variant has one. |
+| `is_standard()` | Identifies a standard installation. |
+| `is_gui_app()` | Identifies a GUI application installation. |
+| `is_service()` | Identifies a service installation. |
 
-### Installed Tool Record
+For a single installation value, exactly one classification method is true. Runtime code should use this classification to select platform behavior instead of duplicating variant matching throughout the client.
 
-An Installed Tool is the top-level record. Its mandatory identity and execution metadata are:
+## Lifecycle State
 
-| Area | Stored information | Purpose |
-|---|---|---|
-| Identity | Tool agent identifier, tool identifier, and tool type | Associates the local installation with the platform’s integrated-tool and agent definitions. |
-| Versioning | Tool version and per-asset versions | Supports update decisions and installed-version reporting. |
-| Execution | Run command arguments and tool-agent identifier command arguments | Supplies process-launch inputs without embedding execution behavior in the model. |
-| Removal | Optional uninstallation command arguments | Preserves tool-specific cleanup instructions when supplied. |
-| Placement | Installation variant and asset list | Identifies the host integration model and delivered files. |
-| Lifecycle | Tool record state | Indicates whether the record represents an in-progress or completed installation. |
-
-The record uses Rust defaults for omitted collections and state. When deserializing data without an asset list, state, or installation value, it receives an empty asset list, `Installed`, and a standard installation without an executable location, respectively. This supports compatibility with records that predate those fields.
-
-### Installation Variants
-
-Installation is serialized as a tagged enum. Its discriminator is named `type`, and variant names use snake case on the wire. The supported variants are:
-
-| Variant | Required data | Optional data | Intended host behavior |
-|---|---|---|---|
-| Standard | None | Executable location | A conventional executable installation. The location may be unavailable. |
-| Graphical application | Executable location | Bundle identifier | A graphical application, with an explicit executable location and an optional platform bundle identity. |
-| Service | Service name | Executable location | A background operating system service, with an optional executable location. |
-
-The default is the standard variant with no executable location. This makes an omitted installation object equivalent to a conventional tool whose exact executable path is not yet known.
-
-### Installation Helpers
-
-Installation exposes three predicates and one accessor so consumers do not need to match every variant for common decisions:
-
-- **Executable path** returns the configured path for standard and service installations when present, and always returns the graphical application executable location.
-- **Standard check** identifies the standard executable variant.
-- **Graphical application check** identifies the graphical application variant.
-- **Service check** identifies the service variant.
-
-These helpers are important for downstream platform adapters. A graphical application can require user-session-aware launching, a service can require service-manager operations, and a standard executable can be launched directly according to its tool configuration.
-
-### Installed Assets
-
-Each Installed Asset has an identifier, version, and executable flag. The executable flag defaults to `false` when omitted during deserialization. Assets allow a single tool record to retain the inventory of files or artifacts associated with an installation rather than reducing a tool to one binary.
-
-### Lifecycle State
-
-Tool Record State is serialized in snake case and has two values:
+`ToolRecordState` intentionally models only the persisted installation phase. It has `installing` and `installed` values, with `installed` as the default.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Installing
-    Installing --> Installed
-    Installed --> [*]
+    Installing --> Installed: Installation completes
+    Installed --> Installing: Update or replacement begins
 ```
 
-`Installed` is the default. `Installing` gives the surrounding services a durable indicator that an installation operation has been reserved or is still in progress. The model itself does not enforce transitions; the Installed Tools Service and installation orchestration determine when state changes occur.
+Failures, rollbacks, deletion, and process health are not model states. The services coordinating those outcomes own their error handling and choose whether to retain, remove, or revise the corresponding record.
 
-## Installation and Update Data Flow
+## Typical Installation Flow
+
+The record makes an installation durable before later runtime operations need it. The following flow describes the responsibilities of the surrounding client-agent services without assigning I/O behavior to the model itself.
 
 ```mermaid
 sequenceDiagram
-    participant Control as OpenFrame platform
-    participant Handler as Client command handler
+    participant Handler as Tool installation handler
     participant Installer as Tool installation service
+    participant Record as Installed Tool record
     participant Store as Installed tools service
-    participant Host as Managed endpoint
-    Control->>Handler: Tool installation or update message
-    Handler->>Installer: Reserve installation work
-    Installer->>Store: Save record in installing state
-    Installer->>Host: Place assets and configure tool
-    Installer->>Store: Save installed record and metadata
-    Store-->>Control: Installed version available to report
+    participant Runner as Tool run manager
+    Handler->>Installer: Submit installation work
+    Installer->>Record: Create record with installing state
+    Installer->>Store: Save reserved record
+    Installer->>Record: Set installation metadata and assets
+    Installer->>Record: Set installed state
+    Installer->>Store: Save completed record
+    Runner->>Store: Load installed record
+    Runner->>Record: Inspect variant and launch arguments
 ```
 
-The exact command message and installation implementation are outside this module. Model Installed Tool supplies the stable record shape exchanged between those stages:
+The installed-tools service is the persistence boundary for these records. The tool updater uses the installation form to choose an updater or migration path, while run, restart, kill, and uninstall services use the same metadata to control the local tool.
 
-- The **installation type** drives selection of a standard, graphical-application, or service updater.
-- The **asset collection** provides artifact-level inventory and executable classification.
-- The **executable location** gives platform-specific launch, update, or stop code a direct target when one is available.
-- The **record state** enables callers to represent work that has begun but is not complete.
+## Serialization and Compatibility
 
-## Serialization Contract
+The module defines defaults and omission behavior that support incomplete persisted records:
 
-All four public data types derive serialization and deserialization support, allowing them to be written to local records or transmitted by client workflows. Important wire-format rules are:
+- An omitted `installation` becomes a standard installation with no executable path.
+- An omitted `assets` collection becomes empty.
+- An omitted `state` becomes `installed`.
+- An omitted asset `executable` flag becomes `false`.
+- Optional executable paths, GUI bundle identifiers, and uninstall arguments are omitted rather than serialized as null values.
 
-- The installation discriminator is `type`; its values are `standard`, `gui_app`, and `service`.
-- The tool record state values are `installing` and `installed`.
-- Optional executable locations, graphical application bundle identifiers, and uninstallation arguments are omitted when absent rather than emitted as null values.
-- Missing installation, asset list, asset executable flag, and state values receive their documented defaults.
+Because `Installation` is an internally tagged enum, the `type` value and variant-specific fields must remain consistent. In particular, service records require a service name and GUI application records require an executable path.
 
-Consumers should preserve these defaults and omission rules when adding fields or adapters. They form the compatibility boundary between persisted local state and newer versions of the client.
+## Maintenance Guidance
 
-## Operational Considerations
+- Treat `tool_agent_id`, `tool_id`, and `version` as control-plane identifiers; preserve them through updates unless the coordinating workflow explicitly changes them.
+- Preserve the order of all argument vectors. They are structured arguments, not a shell command string.
+- Do not interpret `installed` as proof that a path exists or that the tool is currently running.
+- Add an installation variant only with corresponding support in installation, updater, run, restart, kill, and uninstall behavior.
+- Changes to serialized field names, enum variants, or defaults are compatibility-sensitive because local persisted records and multiple agent services share this contract.
 
-- Treat the tool agent identifier as the linkage key used by tool record and connection-oriented services. It should remain stable across state changes.
-- Do not infer that every installation has an executable location: standard and service variants allow it to be absent.
-- Use the installation classification rather than platform-specific heuristics when choosing service control, graphical application launch, or standard executable update behavior.
-- Preserve the full asset list during updates so that executable classification and per-asset versions remain available to later operations.
-- Mark a record as installing before operations that can leave partial host state, then only mark it installed after orchestration has completed successfully.
+## Source
 
-## Extension Guidance
-
-When evolving Model Installed Tool:
-
-1. Prefer additive fields with deserialization defaults to keep existing local records readable.
-2. Add a new installation variant only when its lifecycle and platform behavior cannot be represented by standard, graphical application, or service semantics.
-3. Update every consumer that selects updater, launcher, restart, kill, or uninstall behavior for installation variants.
-4. Keep optional values omitted in serialized output where the existing model uses omission; changing this can alter persisted and message compatibility.
-5. Add tests for defaults, tagged-enum serialization, omitted optional values, and helper behavior for every installation variant.
-
-The module contains a dedicated test submodule alongside the implementation, making serialization compatibility and variant-specific behavior the primary regression surface.
+- [Installed Tool implementation](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/installed_tool.rs)

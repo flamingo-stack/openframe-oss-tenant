@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Kafka
+    participant Listener
+    participant Processor
+    participant Deserializer
+    participant Enrichment
+    participant Handler
+    Kafka->>Listener: CommonDebeziumMessage and message type header
+    Listener->>Processor: process message and type
+    Processor->>Deserializer: deserialize by message type
+    Deserializer-->>Processor: decoded event or skip marker
+    Processor->>Enrichment: resolve event context
+    Enrichment-->>Processor: enriched data
+    Processor->>Handler: dispatch each allowed destination
+    Handler-->>Processor: persist or publish result

@@ -1,0 +1,7 @@
+flowchart LR
+    Browser["Browser or API Client"] --> Gateway["OpenFrame Gateway"]
+    Gateway -->|"sanitizes and stamps header"| ApiService["OpenFrame API Service"]
+    ApiService --> Provider["Tenant Domain Provider"]
+    Provider --> Contract["RequestTenantDomainProvider"]
+    Contract --> DomainService["TenantDomainService"]
+    DomainService --> TenantRecord["Tenant Record Fallback"]

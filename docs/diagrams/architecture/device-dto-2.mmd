@@ -1,9 +1,41 @@
-flowchart TD
-    DeviceResponse[Device Response] --> InstalledAgent[Installed Agent]
-    DeviceResponse --> Tag[Tag]
-    DeviceResponse --> DeviceConnections[Device With Connections]
-    DeviceConnections --> ToolConnection[Tool Connection]
-    DeviceFilters[Device Filters] --> DeviceFilterOption[Device Filter Option]
-    DeviceFilters --> TagFilterOption[Tag Filter Option]
-    ConnectionStatus[Connection Status] --> DeviceConnections
-    DeviceType[Device Type] --> DeviceResponse
+classDiagram
+    class DeviceWithConnections {
+        List toolConnections
+    }
+    class ToolConnection {
+        String id
+        String machineId
+        String toolType
+        ConnectionStatus status
+        String connectedAt
+        String disconnectedAt
+    }
+    class ConnectionStatus {
+        CONNECTED
+        DISCONNECTED
+        ERROR
+    }
+    class InstalledAgent {
+        String id
+        String machineId
+        String agentType
+        String version
+    }
+    class Tag {
+        String id
+        String key
+        List values
+        String color
+    }
+    class DeviceFilterOption {
+        String value
+        String label
+        Integer count
+    }
+    class TagFilterOption {
+        String key
+        String value
+        Integer count
+    }
+    DeviceWithConnections "1" --> "many" ToolConnection
+    ToolConnection --> ConnectionStatus

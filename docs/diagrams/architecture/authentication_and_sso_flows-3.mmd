@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Invitation SSO Request"] --> Clear["Clear Prior Authentication State"]
+    Clear --> Cookie["Write Invitation Flow Cookie"]
+    Cookie --> Provider["Redirect to OIDC Provider"]
+    Provider --> Callback["Authentication Success Callback"]
+    Callback --> Match{"State Matches Invite Flow?"}
+    Match -->|"no"| Reject["Clear Flow Cookies and Return Error"]
+    Match -->|"yes"| NewMember{"New Member and Join Gate Enabled?"}
+    NewMember -->|"yes"| Stamp["Stamp Invitation ID in Session"]
+    Stamp --> Confirm["Redirect to Join Confirmation"]
+    Confirm --> Consent{"Terms Accepted?"}
+    Consent -->|"no"| Stop["Reject Completion"]
+    Consent -->|"yes"| Create["Create Invited User from Session Identity"]
+    NewMember -->|"no"| Create
+    Create --> Bind["Bind Platform Principal to SSO Session"]
+    Bind --> Continue["Clear Cookie and Continue to Tenant"]

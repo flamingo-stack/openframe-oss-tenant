@@ -1,6 +1,0 @@
-flowchart TB
-    ClientRuntime["OpenFrame Client runtime"] --> ServiceLayer["Agent service layer"]
-    ServiceLayer --> Encryption["Services Encryption"]
-    Encryption --> Crypto["Local AES 256 GCM encryption"]
-    Encryption --> EncodedValue["Base64 encrypted value"]
-    ServiceLayer --> OtherServices["Authentication, registration, messaging and logging services"]

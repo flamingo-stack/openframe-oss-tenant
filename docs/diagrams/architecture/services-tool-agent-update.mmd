@@ -1,9 +1,0 @@
-flowchart LR
-    ControlPlane["OpenFrame control plane"] -->|"ToolAgentUpdateMessage"| Client["OpenFrame Client"]
-    Client --> Listener["Command handling"]
-    Listener --> UpdateService["Services Tool Agent Update"]
-    UpdateService --> Registry["Installed tool registry"]
-    UpdateService --> Downloads["Configured asset download source"]
-    UpdateService --> Platform["Platform updater and service control"]
-    UpdateService --> Publisher["Installed-agent publisher"]
-    Publisher --> ControlPlane

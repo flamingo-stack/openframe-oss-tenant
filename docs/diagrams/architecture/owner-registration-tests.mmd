@@ -1,0 +1,18 @@
+flowchart TD
+    TestRunner["JUnit Test Runner"] --> Positive["Owner Registration Test"]
+    TestRunner --> Negative["Owner Registration Negative Test"]
+
+    Positive --> Generator["Registration Generator"]
+    Positive --> RegistrationApi["Registration API"]
+    Positive --> AuthFlow["Authentication Flow"]
+    Positive --> UserApi["User API"]
+    Positive --> OrganizationApi["Organization API"]
+    Positive --> PipelineContext["Pipeline Context"]
+
+    Negative --> ExistingUsers["User API"]
+    Negative --> RegistrationApi
+
+    RegistrationApi --> Platform["OpenFrame Registration Services"]
+    AuthFlow --> Platform
+    UserApi --> Platform
+    OrganizationApi --> Platform

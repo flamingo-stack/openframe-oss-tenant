@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Runner as "Test Runner"
+    participant Bundle as "Software Bundle Test"
+    participant API as "GraphQL API"
+    participant Device as "Windows Test Device"
+    participant History as "Software Action History Test"
+
+    Runner->>Bundle: Run bundle lifecycle tests
+    Bundle->>API: Create and validate draft
+    Bundle->>API: Submit immediate package installation
+    API->>Device: Dispatch package action
+    Device->>API: Report completed action
+    Runner->>History: Run post-install history tests
+    History->>API: Query completed installation
+    History->>API: Query action devices and facets
+    Bundle->>Device: Remove installed package through SSH

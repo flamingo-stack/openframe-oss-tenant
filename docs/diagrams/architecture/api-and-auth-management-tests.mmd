@@ -1,0 +1,21 @@
+flowchart LR
+    Runner["JUnit 5 Test Runner"] --> ApiKeys["API Key Tests"]
+    Runner --> Tokens["Auth Token Tests"]
+    Runner --> Reset["Password Reset Tests"]
+    Runner --> Users["User Ownership Tests"]
+
+    ApiKeys --> ApiKeyApi["API Key Test Client"]
+    Tokens --> AuthApi["Authentication Test Client"]
+    Tokens --> TenantApi["Tenant Discovery Test Client"]
+    Reset --> UserApi["User Test Client"]
+    Reset --> Redis["Reset Token Store"]
+    Users --> UserApi
+    Users --> InvitationApi["Invitation Test Client"]
+    Users --> AuthFlow["Authentication Flow"]
+
+    ApiKeyApi --> Platform["OpenFrame Tenant APIs"]
+    AuthApi --> Platform
+    TenantApi --> Platform
+    UserApi --> Platform
+    InvitationApi --> Platform
+    AuthFlow --> Platform

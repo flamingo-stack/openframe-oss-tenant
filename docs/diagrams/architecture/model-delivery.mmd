@@ -1,8 +1,9 @@
 flowchart LR
-    ServerCore["OpenFrame Client Core"] -->|"dispatches work"| Nats["NATS"]
-    Nats -->|"delivery message"| Agent["OpenFrame Client Agent"]
-    Agent -->|"creates DeliveryRef"| Model["Model Delivery"]
-    Model -->|"DeliveryResultMessage"| Store["Result Store and Ledger"]
-    Store -->|"queued result"| Outbox["Result Outbox Manager"]
-    Outbox -->|"machine result subject"| Nats
-    Nats -->|"delivery result"| ServerCore
+    Platform["Platform Delivery Services"] --> Broker["NATS Broker"]
+    Broker --> Listener["Endpoint Delivery Listener"]
+    Listener --> Handler["Operation Handler"]
+    Handler --> Model["Model Delivery"]
+    Model --> Store["Result Store and Ledger"]
+    Store --> Outbox["Result Outbox"]
+    Outbox --> Broker
+    Broker --> ResultListener["Platform Result Listener"]

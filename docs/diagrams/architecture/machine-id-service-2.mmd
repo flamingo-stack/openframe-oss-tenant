@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Caller invokes get or create"] --> Cached{"Cached value available?"}
+    Cached -->|"yes"| ReturnCached["Return cached identifier"]
+    Cached -->|"no"| ReadFile["Read and trim machine id file"]
+    ReadFile --> Valid{"Readable and non empty?"}
+    Valid -->|"yes"| CacheStored["Cache stored identifier"]
+    CacheStored --> ReturnStored["Return stored identifier"]
+    Valid -->|"no"| Generate["Generate version 4 UUID"]
+    Generate --> EnsureParent["Create parent directory if needed"]
+    EnsureParent --> WriteFile["Write machine id file"]
+    WriteFile --> WriteOk{"Write succeeded?"}
+    WriteOk -->|"yes"| CacheNew["Cache generated identifier"]
+    CacheNew --> ReturnNew["Return generated identifier"]
+    WriteOk -->|"no"| ReturnError["Return contextual error"]

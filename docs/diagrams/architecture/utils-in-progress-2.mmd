@@ -1,7 +1,15 @@
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> Active: "begin increments from zero"
-    Active --> Active: "another begin or one guard drops"
-    Active --> Idle: "last guard drops"
-    Idle --> Idle: "view checks inactive"
-    Active --> Active: "view checks active"
+sequenceDiagram
+    participant Worker as Worker
+    participant Progress as InProgress
+    participant Guard as InProgressGuard
+    participant Observer as InProgressView
+    Worker->>Progress: begin()
+    Progress->>Progress: fetch_add(1, SeqCst)
+    Progress-->>Worker: guard
+    Observer->>Progress: is_active()
+    Progress->>Progress: load(SeqCst)
+    Progress-->>Observer: true while count is positive
+    Worker->>Guard: scope ends or panic unwinds
+    Guard->>Progress: Drop fetch_sub(1, SeqCst)
+    Observer->>Progress: is_active()
+    Progress-->>Observer: false after final guard drops

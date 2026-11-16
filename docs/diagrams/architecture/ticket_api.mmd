@@ -1,8 +1,6 @@
 flowchart LR
-    Consumer["External API consumer"] --> Gateway["OpenFrame Gateway"]
-    Gateway --> ExternalApi["OpenFrame External Api application"]
-    ExternalApi --> TicketApi["Ticket Api controller"]
-    TicketApi --> ApiServices["Ticket services"]
-    ApiServices --> TicketData["Tenant ticket data"]
-    TicketData --> MongoDb["MongoDB"]
-    ApiServices --> Projections["Ticket related projections"]
+    Caller["API Key Owner"] --> Principal["Resolved Principal"]
+    Principal --> TicketService["Ticket Domain Services"]
+    TicketService --> Lifecycle["Lifecycle and Validation"]
+    Lifecycle --> Notifications["Assignment Notifications"]
+    TicketService --> Response["Mapped REST Response"]

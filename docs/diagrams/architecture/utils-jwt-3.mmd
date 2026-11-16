@@ -1,8 +1,13 @@
-flowchart LR
-    Claims["JwtTimes"] --> Iat{"iat present?"}
-    Iat -->|"No"| NoLifetime["Return None"]
-    Iat -->|"Yes"| Subtract{"exp minus iat succeeds?"}
-    Subtract -->|"No"| NoLifetime
-    Subtract -->|"Yes"| Positive{"Lifetime greater than zero?"}
-    Positive -->|"No"| NoLifetime
-    Positive -->|"Yes"| Ttl["Return lifetime in seconds"]
+flowchart TD
+    Token["Token string"] --> Split["Split on dot separators"]
+    Split --> Shape{"Exactly three sections?"}
+    Shape -->|"no"| Reject["Return no value"]
+    Shape -->|"yes"| Payload["Select payload section"]
+    Payload --> Trim["Remove trailing padding"]
+    Trim --> Decode["Decode URL-safe Base64"]
+    Decode --> Decoded{"Payload decoded?"}
+    Decoded -->|"no"| Reject
+    Decoded -->|"yes"| Json["Deserialize exp and optional iat"]
+    Json --> Claims{"Required exp present and valid?"}
+    Claims -->|"no"| Reject
+    Claims -->|"yes"| Times["Return JwtTimes"]

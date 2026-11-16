@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Unresolved
+    Unresolved --> Cached: Cache hit
+    Unresolved --> Persisted: Read succeeds with value
+    Persisted --> Cached: Store value in cache
+    Unresolved --> Generated: Read fails or value is empty
+    Generated --> Persisted: Write succeeds
+    Generated --> Error: Write fails
+    Cached --> [*]
+    Error --> [*]

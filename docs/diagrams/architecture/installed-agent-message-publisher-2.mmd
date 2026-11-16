@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Caller as Caller
+    participant Publisher as Installed Agent Message Publisher
+    participant Transport as NATS Message Publisher
+    participant Nats as NATS
+    participant Listener as Installed Agent Listener
+    Caller->>Publisher: publish(machine ID, agent type, version)
+    Publisher->>Publisher: Build machine-scoped subject
+    Publisher->>Publisher: Build Installed Agent Message
+    Publisher->>Transport: publish(subject, payload)
+    Transport->>Transport: Serialize payload as JSON
+    Transport->>Nats: Publish and flush
+    Nats-->>Transport: Publish completes
+    Transport-->>Publisher: Success or error
+    Publisher-->>Caller: Success or contextual error
+    Nats->>Listener: Deliver matching message
+    Listener->>Listener: Extract machine ID and deserialize payload
+    Listener->>Listener: Record installed agent
+    Listener->>Nats: Acknowledge on success

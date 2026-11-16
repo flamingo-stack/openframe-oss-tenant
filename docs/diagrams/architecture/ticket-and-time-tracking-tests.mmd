@@ -1,0 +1,11 @@
+flowchart LR
+    Runner["OpenFrame Test Runner"] --> TicketTests["TicketsTest"]
+    Runner --> TimeTests["TimeTrackingTest"]
+    TicketTests --> TicketApi["TicketApi and related test APIs"]
+    TicketTests --> AttachmentApi["AttachmentApi"]
+    TimeTests --> TimeApi["TimeTrackingApi"]
+    TicketApi --> Graphql["OpenFrame GraphQL API"]
+    AttachmentApi --> Storage["Temporary attachment storage"]
+    TimeApi --> Graphql
+    Graphql --> TicketData["Tickets and status definitions"]
+    Graphql --> TimeData["Time entries and timers"]

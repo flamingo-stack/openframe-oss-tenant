@@ -1,13 +1,8 @@
 flowchart LR
-    TestClient["Test client"] -->|"deserializes"| Connection["Assignment connection"]
-    Connection -->|"contains"| Edge["Item assignment edge"]
-    Edge -->|"wraps"| Assignment["Item assignment"]
-    Assignment -->|"references"| Target["Assignment target"]
-    Edge -->|"stores"| Cursor["Pagination cursor"]
-
-    subgraph library_module["OpenFrame Test Service Core"]
-        Connection
-        Edge
-        Assignment
-        Target
-    end
+    AssignmentQuery["Assignment query response"] --> Edge["ItemAssignmentEdge"]
+    Edge -->|"node"| Assignment["ItemAssignment"]
+    Edge -->|"cursor"| Cursor["Pagination cursor"]
+    Assignment --> Target["AssignmentTarget"]
+    Target --> TypeName["GraphQL typename"]
+    Target --> TargetFields["Target identity and display fields"]
+    TestCode["Integration test code"] --> Edge

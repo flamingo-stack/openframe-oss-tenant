@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Installer
+    participant InstallService as Installation Initial Config Service
+    participant ConfigService as Initial Configuration Service
+    participant Disk as Secured Directory
+    participant Auth as Initial Authentication Processor
+    Installer->>InstallService: Provide installation parameters
+    InstallService->>InstallService: Validate required bootstrap values
+    InstallService->>ConfigService: Save InitialConfiguration
+    ConfigService->>Disk: Atomically replace initial_config.json
+    Auth->>ConfigService: Read bootstrap configuration
+    ConfigService-->>Auth: Server and initial key values
+    Auth->>Auth: Authenticate and persist agent credentials
+    Auth->>ConfigService: Clear initial key
+    ConfigService->>Disk: Atomically persist cleared key

@@ -1,0 +1,15 @@
+flowchart LR
+    ClientAgent["OpenFrame Client Agent"]
+    ProcessingManager["Tool Connection Processing Manager"]
+    ConnectionService["Tool Connection Service"]
+    RegistryFile["Secured tool connections JSON"]
+    Publisher["Tool Connection Message Publisher"]
+    Nats["NATS messaging"]
+    Backend["OpenFrame client backend"]
+
+    ClientAgent --> ProcessingManager
+    ProcessingManager --> ConnectionService
+    ConnectionService --> RegistryFile
+    ProcessingManager --> Publisher
+    Publisher --> Nats
+    Nats --> Backend

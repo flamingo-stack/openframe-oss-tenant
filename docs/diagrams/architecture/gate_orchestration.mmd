@@ -1,0 +1,9 @@
+flowchart LR
+    Package["Package reference"] --> Resolve["Resolve identity"]
+    Resolve --> IdentityResult["Identity result"]
+    OS["Operating system"] --> Snapshot["Take process snapshot"]
+    Snapshot --> ProcessResult["Process result"]
+    IdentityResult --> Check["Check prerequisites"]
+    ProcessResult --> Check
+    Check --> Decision["Gate decision"]
+    Decision --> Runner["Package update runner"]

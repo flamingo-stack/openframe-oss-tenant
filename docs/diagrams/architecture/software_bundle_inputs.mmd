@@ -1,6 +1,0 @@
-flowchart TD
-    Mutation["Software bundle mutation"] --> Bind["Bind input DTO"]
-    Bind --> Required["Validate required fields"]
-    Required --> MachineIds["Validate target machine identifiers"]
-    MachineIds --> Packages["Validate package entries"]
-    Packages --> Service["Map to software service"]

@@ -1,12 +1,9 @@
-sequenceDiagram
-    participant Registry as Log Source Registry
-    participant Parser as Logging Parse
-    participant Streamer as NATS Streaming Manager
-    participant Nats as NATS
-    Registry->>Parser: read source entries up to batch limit
-    Parser-->>Registry: parsed LogEntry values and checkpoint
-    Registry->>Registry: deduplicate entries
-    Registry->>Streamer: batch of structured entries
-    Streamer->>Nats: publish serialized batch
-    Nats-->>Streamer: publish result
-    Streamer->>Registry: commit or roll back sources
+flowchart TD
+    Input["Parsed Log Entry"] --> Client{"Preserve as client log?"}
+    Client -->|"yes"| Keep["Append unchanged"]
+    Client -->|"no"| Seen{"Message seen before?"}
+    Seen -->|"no"| First["Store first entry index and append"]
+    Seen -->|"yes"| Count["Increment retained entry count"]
+    Keep --> Output["Ordered Deduplicated Entries"]
+    First --> Output
+    Count --> Output

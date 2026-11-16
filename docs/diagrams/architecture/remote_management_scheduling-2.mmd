@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Trigger as "Scheduler"
+    participant Local as "Device Local Schedule Service"
+    participant Data as "Schedule and machine data"
+    participant Dispatch as "Schedule Fire Dispatcher"
+    participant Router as "Delivery router"
+    participant Agent as "Client agent"
+    Trigger->>Local: Evaluate due schedules
+    Local->>Data: Load active device local schedules
+    Local->>Data: Resolve targets, machines, and sentinels
+    Local->>Local: Calculate occurrence in each device timezone
+    alt "Online within fire window"
+        Local->>Data: Record fired sentinel
+        Local->>Dispatch: Dispatch to one machine
+        Dispatch->>Data: Save execution header and queued rows
+        Dispatch->>Router: Route machine batch
+        Router->>Agent: Deliver scheduled scripts
+    else "Offline with reconnect retry"
+        Local->>Data: Record armed or fired state
+        Local->>Dispatch: Arm retry or dispatch held batch
+    else "Late or skipped"
+        Local->>Data: Record missed sentinel
+    end

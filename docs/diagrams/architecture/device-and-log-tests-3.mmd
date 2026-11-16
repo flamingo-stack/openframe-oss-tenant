@@ -1,0 +1,10 @@
+flowchart TD
+    Request["Device log query"] --> Scope{"Machine IDs supplied?"}
+    Scope -->|"No"| TenantWindow["Default 24-hour tenant window"]
+    Scope -->|"Yes"| DeviceWindow["Default 7-day device window"]
+    TenantWindow --> Validate["Validate range filters and cursor"]
+    DeviceWindow --> Validate
+    Validate --> Valid{"Arguments valid?"}
+    Valid -->|"No"| Error["Validation or device-not-found error"]
+    Valid -->|"Yes"| Query["Query logs newest first"]
+    Query --> Page["Return nodes, edges, and page info"]

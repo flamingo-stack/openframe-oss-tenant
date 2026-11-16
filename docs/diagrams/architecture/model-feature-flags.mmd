@@ -1,31 +1,9 @@
-classDiagram
-    class Feature {
-        DeliveryToolInstallation
-        DeliveryClientUninstall
-        DeliveryClientUpdate
-        PackageAutoUpdate
-        +name() string
-        +default_enabled() bool
-    }
-    class FeatureFlag {
-        +bool enabled
-        +string min_version
-        +effective(running_version, default) bool
-    }
-    class FeatureFlagsMessage {
-        +BTreeMap flags
-    }
-    class FeatureFlagsState {
-        +string machine_id
-        +int sequence
-        +BTreeMap flags
-        +DeliveryRef awaiting_restart
-    }
-    class FeatureFlags {
-        +resolve(flags, running_version) FeatureFlags
-        +is_enabled(feature) bool
-    }
-    FeatureFlagsMessage --> FeatureFlag : decoded from values
-    FeatureFlagsState --> FeatureFlag : persists values
-    FeatureFlags --> Feature : enabled set
-    FeatureFlags --> FeatureFlag : resolves
+flowchart LR
+    Management["Management initialization"] --> ControlPlane["Client control plane"]
+    ControlPlane --> Delivery["Feature flag delivery"]
+    Delivery --> Handler["Feature Flags Handler"]
+    Handler --> Service["Feature Flags Service"]
+    Service --> State["Feature Flags State file"]
+    Service --> Resolver["Feature Flags resolver"]
+    Resolver --> Runtime["Running client feature set"]
+    Runtime --> DeliveryPaths["Delivery and package paths"]

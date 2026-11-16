@@ -1,9 +1,9 @@
 flowchart TD
-    Tick["Heartbeat Interval Tick"] --> Attempt["Publish Heartbeat"]
-    Attempt --> Result{"Completed before timeout?"}
-    Result -->|"No"| Timeout["Log Timeout, Continue Loop"]
-    Result -->|"Yes"| PublishResult{"Publish successful?"}
-    PublishResult -->|"Yes"| NextTick["Wait for Next Tick"]
-    PublishResult -->|"No"| Failure["Log Publish Failure, Continue Loop"]
-    Timeout --> NextTick
-    Failure --> NextTick
+    Start["Run manager starts"] --> Tick["Wait for interval tick"]
+    Tick --> Publish["Publish heartbeat with timeout"]
+    Publish --> Result{"Publish succeeded?"}
+    Result -->|"yes"| Tick
+    Result -->|"publisher error"| LogError["Log publish failure"]
+    Result -->|"timeout"| LogTimeout["Log NATS timeout"]
+    LogError --> Tick
+    LogTimeout --> Tick

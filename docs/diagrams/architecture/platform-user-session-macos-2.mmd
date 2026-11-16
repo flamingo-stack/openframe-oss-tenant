@@ -1,10 +1,10 @@
-flowchart LR
-    Discovery["Console-user discovery"] --> Stat["stat reads console owner"]
-    Discovery --> Identity["id resolves numeric UID"]
-    Readiness["GUI readiness check"] --> PgrepDesktop["pgrep finds Dock and Finder"]
-    Liveness["Process liveness check"] --> PgrepPath["pgrep matches executable path"]
-    Launch["User-context launch"] --> Exists["Executable path check"]
-    Launch --> Preferred["launchctl asuser"]
-    Preferred --> Bundle["open application bundle"]
-    Preferred --> Direct["Direct executable launch"]
-    Preferred --> Fallback["sudo user fallback"]
+flowchart TD
+    Start["Discover Console User"] --> ReadOwner["Run stat for console owner"]
+    ReadOwner --> OwnerFound{"Owner available?"}
+    OwnerFound -->|"no"| NoUser["Return no console user"]
+    OwnerFound -->|"yes"| ValidateUser{"Regular login user?"}
+    ValidateUser -->|"no"| Warn["Log warning and return no user"]
+    ValidateUser -->|"yes"| ResolveUid["Run id to resolve UID"]
+    ResolveUid --> UidFound{"UID parsed?"}
+    UidFound -->|"no"| NoUser
+    UidFound -->|"yes"| ConsoleUser["Return ConsoleUser"]

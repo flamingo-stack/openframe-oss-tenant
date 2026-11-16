@@ -1,7 +1,0 @@
-flowchart LR
-    Detection["Manager detection"] --> State["Services Package Manager State"]
-    State --> Reporting["Package manager reporting"]
-    Reporting --> Server["Server-side machine package manager inventory"]
-    UpdateRequest["Package update request"] --> UpdateRun["Package update run manager"]
-    UpdateRun --> Gate["Update gate"]
-    Gate --> UpdateResult["Update status reporting"]

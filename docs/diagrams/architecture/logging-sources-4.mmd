@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Runtime as Client runtime
+    participant Registry as Log source registry
+    participant Source as File log source
+    participant Consumer as Batch consumer
+    Runtime->>Registry: read_all(limit)
+    Registry->>Source: read(quota)
+    Source-->>Registry: entries and pending offset
+    Registry-->>Runtime: deduplicated entries
+    Runtime->>Consumer: handle batch
+    alt delivery succeeds
+        Runtime->>Registry: commit_all()
+        Registry->>Source: commit()
+        Source->>Source: persist pending offset
+    else delivery fails
+        Runtime->>Registry: rollback_all()
+        Registry->>Source: rollback()
+        Source->>Source: restore pending to committed offset
+    end

@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Db as Fleet database
+    participant Cdc as Debezium
+    participant Handler as Device Software Handler
+    participant Cache as Fleet Host Software Cache
+    participant Api as Fleet MDM API
+    participant Store as Device Software Repository
+
+    Db->>Cdc: Commit creates multiple host software events
+    Cdc->>Handler: Event with shared source commit timestamp
+    Handler->>Cache: Request inventory by tenant, host, and commit time
+    Cache->>Api: Fetch all inventory pages on first request
+    Api-->>Cache: Software title list
+    Cache-->>Handler: Cached title list
+    Handler->>Store: Reconcile device software records
+    Cdc->>Handler: Later event from same commit
+    Handler->>Cache: Request same cache key
+    Cache-->>Handler: Reuse title list

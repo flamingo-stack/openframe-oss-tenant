@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Caller
+    participant Resolver as Tool Url Params Resolver
+    participant Config as Initial Configuration Service
+    Caller->>Resolver: new(configService)
+    Caller->>Resolver: process(urlTemplate)
+    Resolver->>Config: get_server_url()
+    Config-->>Resolver: server host or error
+    alt configuration read succeeds
+        Resolver-->>Caller: resolved URL string
+    else configuration read fails
+        Resolver-->>Caller: error
+    end

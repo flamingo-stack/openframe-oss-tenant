@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant RestartService as Tool Restart Service
+    participant KillService as Tool Kill Service
+    participant SystemService as Platform Service
+    participant ProcessCheck as Process Check
+    RestartService->>KillService: Stop service installation
+    KillService-->>RestartService: Stop completed
+    RestartService->>SystemService: Start service
+    alt Initial start succeeds
+        SystemService-->>RestartService: Service started
+    else Initial start fails
+        SystemService-->>RestartService: Start error
+        RestartService->>ProcessCheck: Is tool running?
+        alt Tool is already running
+            ProcessCheck-->>RestartService: Running
+        else Tool is not running
+            ProcessCheck-->>RestartService: Not running
+            RestartService->>SystemService: Retry start once
+            SystemService-->>RestartService: Start result
+        end
+    end

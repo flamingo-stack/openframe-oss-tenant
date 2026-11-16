@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> PrerequisitesCreated
+    PrerequisitesCreated --> ScheduleCreated
+    ScheduleCreated --> ScheduleRead
+    ScheduleRead --> ScheduleUpdated
+    ScheduleUpdated --> ScheduleArchived
+    ScheduleArchived --> ScheduleRestored
+    ScheduleRestored --> InvalidInputsChecked
+    InvalidInputsChecked --> ResourcesCleaned
+    PrerequisitesCreated --> SkippedAfterCreateFailure
+    SkippedAfterCreateFailure --> ResourcesCleaned

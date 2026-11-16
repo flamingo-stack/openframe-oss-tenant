@@ -1,8 +1,0 @@
-flowchart TD
-    Input["Tenant and schedule criteria"] --> Scope["Derive platform scope"]
-    Scope --> Empty{"Scope empty?"}
-    Empty -->|"Yes"| None["Return no machines or zero count"]
-    Empty -->|"No"| Filter["Build machine query filter"]
-    Filter --> Capability["Apply package manager capability when supplied"]
-    Capability --> Query["Query tenant machine repository"]
-    Query --> Result["Machine identifiers or count"]

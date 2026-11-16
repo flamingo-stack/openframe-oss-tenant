@@ -1,0 +1,7 @@
+flowchart LR
+    Tenant["QA Tenant"] --> Devices["Device Inventory"]
+    Tenant --> Logs["Pinot Log Store"]
+    Tenant --> Tools["Integrated Tool Registry"]
+    Devices --> DeviceTests["Device Tests"]
+    Logs --> LogTests["Log Tests"]
+    Tools --> ToolTests["Tool Tests"]

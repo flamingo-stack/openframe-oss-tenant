@@ -1,124 +1,116 @@
 # Cli Entrypoint
 
-The Cli Entrypoint is the process boundary for the OpenFrame client agent. It configures the console, parses command-line arguments, creates the Tokio runtime used by asynchronous commands, and dispatches each requested lifecycle action. The implementation is supplied by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library version `v0.0.5` and is run by this repository's OpenFrame client packaging.
+Cli Entrypoint is the command-line dispatch boundary for the OpenFrame Client executable. It configures the platform console, parses arguments with Clap, creates one Tokio runtime, and delegates the selected operation to the appropriate client workflow. The implementation is supplied by the `openframe_agent_lib` dependency from the OpenFrame OSS Library and is run by this repository's `clients/openframe-client` artifact.
+
+The module has two source components:
+
+- [`cli::run`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/cli.rs) is the executable command router.
+- [`banner::print`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/banner.rs) writes the colored OpenFrame ASCII banner to standard output.
 
 ## Responsibilities
 
-- Present the branded terminal banner through [`banner.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/banner.rs).
-- Configure the platform console before argument parsing.
-- Parse the `openframe-client` command and its subcommands with Clap.
-- Translate install and authentication options into `InstallConfigParams` without performing persistence itself.
-- Create one Tokio runtime and pass it to asynchronous command handlers.
-- Route operator-facing commands to installation, authentication, diagnostics, or removal workflows, and route service-manager commands to internal handlers.
+Cli Entrypoint owns command selection rather than the operational implementations. It defines the public installation, authentication, removal, and diagnostic commands; keeps service-manager operations hidden; and hands control to dedicated modules. This separation lets the same executable support interactive administration and managed service startup.
 
-## Architecture
+The `run` function performs the following steps:
+
+1. Configures console behavior through the platform layer.
+2. Parses the optional subcommand and its arguments.
+3. Creates a Tokio runtime used by asynchronous command workflows.
+4. Dispatches exactly one command path.
+5. Preserves legacy behavior by starting the agent when no subcommand is supplied.
 
 ```mermaid
 flowchart TD
-    Invocation["openframe-client invocation"] --> Console["Configure platform console"]
-    Console --> Parser["Clap command parser"]
-    Parser --> Runtime["Tokio runtime"]
-    Runtime --> Dispatcher["Cli Entrypoint dispatcher"]
-    Dispatcher --> Install["Install workflow"]
-    Dispatcher --> Auth["Authentication workflow"]
-    Dispatcher --> Doctor["Diagnostic workflow"]
-    Dispatcher --> Uninstall["Uninstall workflow"]
-    Dispatcher --> Agent["Agent execution workflow"]
-    Dispatcher --> Service["Service control workflow"]
+    Process["OpenFrame Client process"] --> Console["Configure platform console"]
+    Console --> Parse["Parse Cli arguments"]
+    Parse --> Runtime["Create Tokio runtime"]
+    Runtime --> Select{"Command supplied?"}
+    Select -->|"no"| Legacy["Run legacy agent path"]
+    Select -->|"yes"| Dispatch["Dispatch selected workflow"]
+    Dispatch --> Install["Install or authenticate"]
+    Dispatch --> Health["Run doctor health check"]
+    Dispatch --> Service["Manage service or agent execution"]
 ```
-
-The dispatcher is deliberately thin: it selects a workflow and supplies the shared runtime. Installation, service execution, configuration persistence, diagnostics, and remediation remain the responsibility of the corresponding client modules.
 
 ## Command Surface
 
-| Command | Visibility | Dispatch target | Behavior |
-|---|---|---|---|
-| `install` | Public | Installation handler | Installs the OpenFrame client as a system service. It accepts initial connection and registration settings. |
-| `auth` | Public | Authentication handler | Completes tenant authentication after a parameterless installation, using the same configuration arguments as `install`. |
-| `doctor` | Public | Health-check handler | Runs the installed-agent environment check and reports results. |
-| `uninstall` | Public | Uninstall handler | Removes the OpenFrame client service. |
-| `run` | Hidden | Direct agent handler | Starts the client directly rather than through a system service. |
-| `run-as-service` | Hidden | Service agent handler | Starts the process in the mode expected by the operating system service manager. |
-| `check-permissions` | Hidden | Permission handler | Checks whether the process has required permissions. |
-| `restart-service` | Hidden | Restart handler | Stops and starts the service; this is used by the client when feature flags require a restart. |
-| no command | Compatibility path | Legacy agent handler | Preserves legacy invocation behavior. |
+| Command | Visibility | Entrypoint behavior |
+| --- | --- | --- |
+| `install` | Public | Converts installation flags into `InstallConfigParams` and invokes the installation workflow. |
+| `auth` | Public | Uses the same installation argument shape to authenticate a client installed without initial parameters. |
+| `uninstall` | Public | Invokes the asynchronous uninstallation workflow. |
+| `doctor` | Public | Runs diagnostics against the installed agent configuration. |
+| `run` | Hidden | Starts the agent directly rather than through the system service manager. |
+| `run-as-service` | Hidden | Starts the service-specific agent path. |
+| `check-permissions` | Hidden | Executes the permission-check workflow. |
+| `restart-service` | Hidden | Runs the service restart path, intended for detached use while applying feature flags. |
+| no command | Compatibility path | Runs the legacy direct-agent behavior. |
 
-Hidden commands are operational integration points, not a primary public interface. Service definitions and agent-controlled restarts invoke them where needed.
+The hidden commands remain parseable because system-service management and internal restart flows invoke the same binary. They are intentionally omitted from normal command help.
 
 ## Installation and Authentication Inputs
 
-`InstallArgs` is converted into `InstallConfigParams`. The available options are:
+Both `install` and `auth` accept the internal `InstallArgs` structure, which maps directly to `InstallConfigParams`. The supported flags are:
 
-| Option | Purpose |
-|---|---|
-| `--serverUrl` | Tenant server URL. |
-| `--initialKey` | Initial registration key. |
-| `--logKey` | Log-stream key; the agent can fetch it after registration when it is absent. |
-| `--localMode` | Enables local mode. Defaults to `false`. |
-| `--orgId` | Organization identifier. |
-| `--userId` | User identifier. |
-| `--tag` | Repeatable device tag. |
-| `--remote-access-mode` | Requested remote-access mode to apply after registration. |
+| Flag | Purpose |
+| --- | --- |
+| `--serverUrl` | Supplies the server URL. |
+| `--initialKey` | Supplies the initial registration key. |
+| `--logKey` | Supplies the log-stream key; the code notes that it is fetched after registration when absent. |
+| `--localMode` | Enables local mode; it defaults to `false`. |
+| `--orgId` | Supplies the organization identifier. |
+| `--userId` | Supplies the user identifier. |
+| `--tag` | Adds a tag; the option may be repeated because it is collected as a list. |
+| `--remote-access-mode` | Sets the remote-access mode to apply after registration. |
 
-A parameterless `install` does not persist initial configuration. The installed service waits in an unauthenticated state until `auth` writes valid configuration, preventing a startup crash loop.
+The entrypoint passes values through without implementing registration, credential exchange, persistence, or remote-access policy. Those concerns belong to the invoked installation and authentication workflows.
 
-```mermaid
-sequenceDiagram
-    participant Operator
-    participant Cli as "Cli Entrypoint"
-    participant Installer as "Installation Workflow"
-    participant Service as "System Service"
-    participant Auth as "Authentication Workflow"
+## Diagnostics and Automatic Remediation
 
-    Operator->>Cli: install
-    Cli->>Installer: Run with install parameters
-    Installer->>Service: Register service
-    Note over Service: Parameterless installation can wait for configuration
-    Operator->>Cli: auth with tenant parameters
-    Cli->>Auth: Run with install parameters
-    Auth->>Service: Persist configuration becomes available
-    Service->>Service: Continue client startup
-```
+The CLI module includes helpers used by diagnostic command paths:
 
-## Diagnostic and Healing Path
-
-The `doctor` command delegates to the health-check workflow. That workflow first checks administrative privileges, then conditionally checks the WebView2 runtime, loads the installed configuration, and performs network checks only when a usable server host is available. A missing initial configuration is reported as an informational awaiting-authentication state rather than a failure.
-
-The Cli Entrypoint also contains support routines used by command handlers for logging initialization and doctor remediation output. When pending remediations exist, it invokes asynchronous healing through the Tokio runtime and prints each outcome. Currently, the remediation label handled here is WebView2 Runtime installation.
+- `init_logging` initializes the general logging configuration and exits the process with status 1 if setup fails.
+- `init_file_logging` performs file-only logging setup with the same fail-fast behavior.
+- `heal_if_needed` inspects diagnostic `CheckResult` values, skips remediation when none are pending, and otherwise blocks on asynchronous healing through the Tokio runtime.
+- `print_heal_outcomes` renders each remediation outcome. The currently represented remediation is WebView2 Runtime installation, reported as fixed or failed.
 
 ```mermaid
 flowchart LR
-    DoctorCommand["doctor command"] --> Privileges["Check administrator privileges"]
-    Privileges --> Config["Read installed configuration"]
-    Config --> Decision{{"Configuration available?"}}
-    Decision -->|"No"| Awaiting["Report awaiting authentication"]
-    Decision -->|"Yes"| Network["Run network checks"]
-    Network --> Report["Print diagnostic report"]
-    Report --> Pending{{"Remediation pending?"}}
-    Pending -->|"Yes"| Heal["Attempt automatic healing"]
-    Pending -->|"No"| Complete["Complete"]
-    Heal --> Complete
+    Doctor["Doctor command"] --> Checks["Diagnostic check results"]
+    Checks --> Pending{"Pending remediation?"}
+    Pending -->|"no"| Complete["Return diagnostic result"]
+    Pending -->|"yes"| Heal["Run asynchronous healing"]
+    Heal --> Report["Print healing outcomes"]
+    Report --> Complete
 ```
 
-## Core Components
+## Runtime Boundaries and Failure Behavior
 
-### `print`
+Cli Entrypoint creates a single runtime before command dispatch and passes a reference to workflows that need asynchronous work. The service-only path is called without that runtime reference, matching its separate service execution boundary. Parsing errors and runtime construction errors are propagated through `anyhow::Result`. Logging initialization failures are handled differently: they are printed to standard error and terminate the process immediately with exit status 1.
 
-[`banner::print`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/banner.rs) writes the OpenFrame ASCII banner to standard output. ANSI escape sequences set the color and reset terminal formatting after output. It has no configuration, lifecycle, or network side effects.
+`banner::print` is deliberately independent of the command router. It emits escape sequences for OpenFrame branding and resets terminal formatting before returning; it does not parse arguments, initialize logging, or alter command execution.
 
-### `run`
+## Placement in the Client
 
-[`cli::run`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/cli.rs) is the command dispatcher. Its sequence is:
+Cli Entrypoint is the front door to the Rust client library. It delegates to command-specific modules named `agent`, `auth`, `healthcheck`, `install`, `permissions`, `restart`, and `uninstall`, and it relies on the doctor, logging, platform, installation-configuration, and remote-access model layers. The module does not itself connect to tenant services or execute agent workloads.
 
-1. Configure console behavior for the current platform.
-2. Parse the optional subcommand and its arguments.
-3. Create a Tokio runtime.
-4. Dispatch to the matching handler, or invoke the legacy agent path if no subcommand was supplied.
-5. Return only after dispatch has completed; logging initialization failures in its helper routines terminate the process with a nonzero exit.
+```mermaid
+flowchart TD
+    Cli["Cli Entrypoint"] --> Agent["Agent workflow"]
+    Cli --> Install["Install workflow"]
+    Cli --> Auth["Authentication workflow"]
+    Cli --> Doctor["Doctor workflow"]
+    Cli --> Uninstall["Uninstall workflow"]
+    Cli --> Permissions["Permission workflow"]
+    Cli --> Restart["Restart workflow"]
+    Cli --> Platform["Platform console configuration"]
+    Cli --> Logging["Logging initialization"]
+```
 
-## Operational Boundaries
+## Maintenance Notes
 
-- The entrypoint does not authenticate, register, install, uninstall, or run the agent itself. It delegates those actions.
-- Installation and authentication intentionally share the same parameter shape so that a device can be installed first and connected to a tenant later.
-- System-service mode is separated from direct agent mode so platform service managers can use their required launch semantics.
-- The module depends on the OpenFrame OSS Library source; its code links therefore point to the pinned library revision rather than this repository.
+- Add a new operational command by extending the Clap `Commands` enum and adding a corresponding dispatch arm in `run`.
+- Keep `InstallArgs::to_params` synchronized with `InstallConfigParams` whenever installation or authentication inputs change.
+- Preserve the no-subcommand legacy path unless compatibility with existing invocation patterns is intentionally retired.
+- Treat hidden service commands as an internal interface: changes may affect service-manager integration, detached restart flows, and updater behavior.
+- Keep the banner output isolated from routing logic so terminal presentation cannot affect lifecycle behavior.

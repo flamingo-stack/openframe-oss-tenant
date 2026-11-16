@@ -1,8 +1,10 @@
 flowchart LR
-    Scope["Users, Organizations, and Time Range"] --> Completed["Completed Time Entries Only"]
-    Completed --> Duration["Sum Duration Seconds"]
-    Completed --> EntryCount["Count Entries"]
-    Completed --> DayKey["Derive Calendar Day"]
-    DayKey --> ActiveDays["Count Distinct Days"]
-    Completed --> TicketGroup["Group by Ticket Identifier"]
-    TicketGroup --> TicketTotals["Duration Totals per Ticket"]
+    Scope["Tenant and optional reporting scope"] --> Completed["Match completed entries"]
+    Completed --> Duration["Group and sum duration seconds"]
+    Completed --> Count["Count entries"]
+    Completed --> Days["Project day key and count distinct days"]
+    Completed --> Tickets["Group by ticket identifier"]
+    Duration --> Metrics["Reporting totals"]
+    Count --> Metrics
+    Days --> Metrics
+    Tickets --> TicketMetrics["Ticket duration map"]

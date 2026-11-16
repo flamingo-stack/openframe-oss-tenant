@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Runner as Shared Update Runner
+    participant Updater as Platform Tool Updater Gui
+    participant App as Existing Application
+    participant Disk as Applications Directory
+    participant User as Console User Session
+    Runner->>Updater: prepare(installed tool)
+    Updater->>App: Stop installed tool
+    Updater->>Disk: Move existing bundle to hidden backup
+    Runner->>Updater: apply(installed tool, download configuration)
+    Updater->>Disk: Download and extract replacement bundle
+    Updater-->>Runner: New GuiApp installation
+    Runner->>Updater: finalize(updated tool, context)
+    Updater->>Disk: Remove backup bundle
+    Updater->>User: Launch updated executable as user
+    Updater-->>Runner: Completion

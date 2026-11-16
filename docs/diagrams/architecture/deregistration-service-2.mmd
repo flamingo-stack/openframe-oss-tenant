@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Uninstall requested"] --> Privileges{"Administrator privileges?"}
+    Privileges -->|"no"| Reject["Return uninstall error"]
+    Privileges -->|"yes"| Reinstall{"Reinstall in progress?"}
+    Reinstall -->|"yes"| Skip["Skip platform deregistration"]
+    Reinstall -->|"no"| Build["Create Deregistration Service"]
+    Build --> StopService["Stop and remove agent service"]
+    Skip --> StopService
+    StopService --> FirstReport["Run best-effort deregistration"]
+    FirstReport --> Cleanup["Uninstall tools and remove local state"]
+    Cleanup --> FinalReport["Retry only when unreported"]
+    FinalReport --> Complete["Finish local uninstall"]

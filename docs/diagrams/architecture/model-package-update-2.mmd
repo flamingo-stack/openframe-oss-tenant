@@ -1,20 +1,15 @@
-sequenceDiagram
-    participant Backend
-    participant Listener as Package Update Handler
-    participant Store as Order Store
-    participant Runner as Update Run Manager
-    participant Gate as Update Gate
-    participant Manager as Package Manager
-    participant Status as Status Reporter
-
-    Backend->>Listener: Deliver package update message
-    Listener->>Store: Submit request and update intent
-    Store-->>Status: Report rejection or supersession when applicable
-    Runner->>Store: Load pending order
-    Runner->>Gate: Check package and application state
-    alt Update blocked
-        Gate-->>Status: Publish waiting state
-    else Update clear
-        Runner->>Manager: Apply package update
-        Manager-->>Status: Publish done or failed state
-    end
+flowchart TD
+    Receive["Receive delivery envelope"] --> Decode["Deserialize package update message"]
+    Decode --> Validate["Resolve package and update source"]
+    Validate --> ModeCheck{"Force mode?"}
+    ModeCheck -->|"no"| Wait["Wait for application to stop"]
+    ModeCheck -->|"yes"| UserCheck{"User origin?"}
+    UserCheck -->|"yes"| Countdown["Apply permitted countdown"]
+    UserCheck -->|"no"| Policy["Apply non-user update policy"]
+    Countdown --> Close["Close application when required"]
+    Policy --> Close
+    Wait --> Install["Install package update"]
+    Close --> Install
+    Install --> Relaunch["Relaunch application when required"]
+    Relaunch --> Report["Publish update status"]
+    Install --> Report

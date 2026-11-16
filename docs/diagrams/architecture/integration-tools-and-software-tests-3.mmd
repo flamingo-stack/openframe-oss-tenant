@@ -1,0 +1,8 @@
+flowchart TD
+    ToolTests["Integrated Tools Test"] --> ToolQueries["Tool Queries and Facets"]
+    BundleTests["Software Bundle Test"] --> BundleLifecycle["Draft and Submission Lifecycle"]
+    BundleLifecycle --> InstallAction["Completed Package Installation"]
+    InstallAction --> HistoryTests["Software Action History Test"]
+    HistoryTests --> ActionQueries["Action and Device Queries"]
+    InventoryTests["Software Inventory Test"] --> FleetQueries["Fleet Software and CVE Queries"]
+    FleetQueries --> DeviceQueries["Device Scoped Software and CVE Queries"]

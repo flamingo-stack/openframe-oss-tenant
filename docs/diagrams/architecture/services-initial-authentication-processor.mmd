@@ -1,8 +1,0 @@
-flowchart LR
-    ClientRuntime["OpenFrame client startup"] --> Processor["Services Initial Authentication Processor"]
-    Processor --> ConfigService["Agent configuration service"]
-    Processor --> AuthService["Agent authentication service"]
-    AuthService --> AuthClient["Authentication client"]
-    AuthClient --> TokenEndpoint["Client token endpoint"]
-    AuthService --> TokenStore["Persisted token configuration"]
-    ConfigService --> TokenStore

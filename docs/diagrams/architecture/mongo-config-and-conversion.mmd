@@ -1,0 +1,19 @@
+flowchart TD
+    App["OpenFrame service application"] --> Infra["Mongo Infra Config"]
+    Infra --> ConversionConfig["Mongo Custom Conversions Config"]
+    ConversionConfig --> DateConverters["UTC LocalDate converters"]
+    ConversionConfig --> Contributors["Conversion contributors"]
+    Infra --> Converter["Mapping Mongo Converter"]
+    Converter --> Mongo["MongoDB"]
+
+    App --> RepositoryMode{"Tenant isolation enabled?"}
+    RepositoryMode -->|"no"| StandardRepos["Mongo Sync Config"]
+    RepositoryMode -->|"yes"| TenantRepos["Tenant Aware Sync Config"]
+    TenantRepos --> TenantTemplate["Tenant Aware Mongo Template"]
+    TenantTemplate --> TenantProvider["Tenant ID provider"]
+    StandardRepos --> Mongo
+    TenantTemplate --> Mongo
+
+    App --> IndexLifecycle["Mongo Index Config"]
+    IndexLifecycle --> Mongo
+    App --> Retry["Retry Configuration"]

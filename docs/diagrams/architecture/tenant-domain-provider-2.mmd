@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client as Client
+    participant Gateway as OpenFrame Gateway
+    participant Api as OpenFrame API
+    participant Provider as Tenant Domain Provider
+    participant Service as TenantDomainService
+    Client->>Gateway: HTTP request with Host
+    Gateway->>Gateway: Remove inbound tenant header
+    Gateway->>Gateway: Resolve Host against tenant domain
+    Gateway->>Api: Forward request with X-Tenant-Domain
+    Api->>Provider: currentTenantDomain()
+    Provider->>Provider: Read current servlet request
+    Provider-->>Service: Optional domain value

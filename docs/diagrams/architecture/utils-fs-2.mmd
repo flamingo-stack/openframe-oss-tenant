@@ -1,9 +1,16 @@
 flowchart TD
-    Caller["Agent service"] -->|"supplies path and type"| Reader["Read and quarantine operation"]
-    Caller -->|"supplies path and bytes"| Writer["Atomic write operation"]
-    Reader --> Parser["Parse and quarantine operation"]
-    Parser --> Json["JSON deserializer"]
-    Writer --> TempFile["Temporary file facility"]
-    Writer --> FileSystem["Operating system filesystem"]
-    Parser --> FileSystem
-    FileSystem --> Log["Warning log on corruption"]
+    Start["Caller supplies destination and content"] --> Parent["Resolve parent directory"]
+    Parent --> Ensure["Create parent directory if needed"]
+    Ensure --> Temp["Create same-directory temporary file"]
+    Temp --> Write["Write all content bytes"]
+    Write --> Permissions["Apply Unix read permissions"]
+    Permissions --> Sync["Synchronize temporary file"]
+    Sync --> Persist["Persist temporary file over destination"]
+    Persist --> Success{"Persist succeeded?"}
+    Success -->|"yes"| Complete["Return success"]
+    Success -->|"no on Windows lock"| Retry["Retry rename with delays"]
+    Success -->|"no otherwise"| Failure["Return contextual error"]
+    Retry --> RetryResult{"Rename succeeded?"}
+    RetryResult -->|"yes"| Complete
+    RetryResult -->|"no"| Diagnose["Log lock-holder diagnostics and remove temporary file"]
+    Diagnose --> Failure

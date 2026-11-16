@@ -1,13 +1,14 @@
 sequenceDiagram
-    participant Caller as "Calling service"
-    participant Repo as "Notification repository"
-    participant State as "Notification read states"
-    participant Docs as "Notifications"
+    participant Caller
+    participant Repository as "Custom Notification Repository"
+    participant Mongo as "Tenant-Aware Mongo Template"
 
-    Caller->>Repo: Find recipient page
-    Repo->>State: Apply tenant and recipient criteria
-    Repo->>State: Apply filters and cursor
-    State-->>Repo: Notification identifiers and read statuses
-    Repo->>Docs: Load matching notification identifiers
-    Docs-->>Repo: Notification documents
-    Repo-->>Caller: Ordered notification and status pairs
+    Caller->>Repository: Request recipient page and filters
+    Repository->>Repository: Build tenant and recipient criteria
+    Repository->>Repository: Apply status, metadata, entity, search, and cursor filters
+    Repository->>Mongo: Query read states in effective direction
+    Mongo->>Repository: Ordered notification IDs and statuses
+    Repository->>Mongo: Load notification documents by IDs
+    Mongo->>Repository: Notification documents
+    Repository->>Repository: Restore read-state order and attach status
+    Repository->>Caller: Notification page

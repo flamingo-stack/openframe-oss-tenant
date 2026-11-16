@@ -1,140 +1,136 @@
 # Platform Windows Path Migration
 
-Platform Windows Path Migration is a Windows-specific, one-time compatibility repair in the OpenFrame client agent. It restores the machine-level `Path` registry value from the literal-string registry type to the expandable-string registry type when an earlier agent version changed the type while the value still contains environment-variable references such as `%SystemRoot%`.
+Platform Windows Path Migration is a small, Windows-specific repair routine in the OpenFrame client agent. It corrects a historical registry-type error in the machine `Path` value: earlier agent versions could write that value as `REG_SZ` rather than `REG_EXPAND_SZ`. When a path contains environment-variable references such as `%SystemRoot%`, the string type prevents Windows from expanding them, which can leave system commands unavailable through the process path.
 
-The implementation belongs to the OpenFrame Agent Library Cargo artifact supplied by the OpenFrame OSS Library, version `v0.0.5`, and is run by this repository's OpenFrame client distribution. Its only public component is [`run`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/windows_path_migration.rs#L15-L68).
+The module is implemented by [`run`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/windows_path_migration.rs) in the `openframe_agent_lib` library, version `v0.0.5`, consumed by this repository's OpenFrame client deployment. It is intentionally idempotent: it only changes a `Path` value that is both an ordinary registry string and contains a percent sign.
 
-## Purpose and Scope
+## Responsibilities and Boundaries
 
-Windows expands environment references in a `REG_EXPAND_SZ` registry value, but not in a `REG_SZ` value. If `Path` contains `%SystemRoot%` or comparable references and is stored as `REG_SZ`, commands normally located through those expanded entries can become unavailable. The migration corrects the **registry value type** without intentionally editing the logical path entries.
+Platform Windows Path Migration has one narrowly scoped responsibility:
 
-The repair targets only this registry location:
+- Open the machine environment registry key with read and write access.
+- Read the raw `Path` registry value so its registry type and UTF-16 bytes are available.
+- Preserve the existing path text while changing only its value type from `REG_SZ` to `REG_EXPAND_SZ` when migration is warranted.
+- Log success or a non-fatal warning; it does not propagate migration failures to its caller.
 
-```text
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\Path
-```
+It does not add, remove, reorder, or otherwise normalize individual path entries. It does not expand variables itself, restart Windows, or update process-level environment blocks. Windows performs variable expansion when consuming an `REG_EXPAND_SZ` value.
 
-It does not manage a user-level `Path`, create missing registry keys, expand variables itself, alter service configuration, or restart processes. Windows components that already inherited an old environment may require their own normal environment-refresh or restart behavior after the registry correction.
+## Context in the Client Agent
 
-## Architecture
+The module belongs to the Rust OpenFrame client library supplied by OpenFrame OSS Library. It operates on local Windows state and has no network, message-bus, service-management, or API dependency. Its error-handling boundary ensures that an inaccessible registry key or failed write is reported through `tracing` without independently stopping the agent.
 
 ```mermaid
 flowchart LR
-    AgentStartup["OpenFrame client execution context"] --> Migration["Platform Windows Path Migration"]
-    Migration --> RegistryApi["Windows registry API"]
-    RegistryApi --> MachinePath["Machine Path registry value"]
-    Migration --> TraceLog["Tracing information and warnings"]
-    MachinePath --> WindowsResolver["Windows environment expansion"]
-    WindowsResolver --> SystemTools["System tool resolution"]
+    ClientHost["OpenFrame Client Agent"] --> Migration["Platform Windows Path Migration"]
+    Migration --> RegistryApi["Windows Registry API"]
+    RegistryApi --> MachinePath["Machine Path Registry Value"]
+    Migration --> Tracing["Tracing Logs"]
+    Tracing --> Operator["Agent Diagnostics"]
 ```
 
-The migration is deliberately narrow: it performs local registry inspection and, only when the legacy condition is present, one local registry write. It has no network dependency and produces no agent protocol message.
+The migration module is one platform utility among adjacent client capabilities such as directory management, permissions, service control, binary replacement, and Windows cleanup. Its direct concern is limited to the registry value at `HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment`, named `Path`.
 
-## Component Responsibilities
+## Dependency Model
 
-| Component | Responsibility |
-|---|---|
-| `run()` | Encapsulates inspection, eligibility checks, conversion, and non-fatal error handling. |
-| `RegKey` and raw registry value access | Opens the machine environment key with read and write rights, then preserves explicit control over the registry value type. |
-| UTF-16 conversion | Decodes the Windows registry byte representation as little-endian UTF-16, removes the terminating null character, and re-encodes the string for the replacement value. |
-| Tracing | Emits informational messages when a repair starts and succeeds, or a warning when inspection or repair fails. |
+The implementation relies on three local dependencies:
 
-## Repair Decision Flow
+| Dependency | Role in Platform Windows Path Migration |
+| --- | --- |
+| `winreg` | Opens the local-machine registry key, reads the untyped value representation, and writes the corrected value. |
+| `anyhow` | Carries registry and conversion failures through the internal closure. |
+| `tracing` | Emits informational events for a repair and warnings when a check or repair fails. |
 
 ```mermaid
 flowchart TD
-    Start["Run migration"] --> OpenKey["Open machine environment registry key with read and write access"]
-    OpenKey --> ReadPath["Read raw Path value"]
-    ReadPath --> TypeCheck{"Value type is REG_SZ?"}
-    TypeCheck -->|"No"| NoChange["Exit without changes"]
-    TypeCheck -->|"Yes"| Decode["Decode little-endian UTF-16 value"]
-    Decode --> VariableCheck{"Path contains percent sign?"}
-    VariableCheck -->|"No"| NoChange
-    VariableCheck -->|"Yes"| Encode["Encode string as null-terminated UTF-16"]
-    Encode --> Write["Write Path as REG_EXPAND_SZ"]
-    Write --> Success["Log successful repair"]
-    OpenKey --> Error["Log warning and return"]
-    ReadPath --> Error
-    Decode --> Error
-    Write --> Error
+    Run["run()"] --> Registry["winreg Registry Access"]
+    Run --> Errors["anyhow Result Boundary"]
+    Run --> Logs["tracing Events"]
+    Registry --> RawValue["Raw Path Value"]
+    RawValue --> Decision["Type and Content Decision"]
+    Decision --> Write["Corrected Registry Value"]
+    Errors --> Logs
 ```
 
-A percent sign is used as the eligibility signal because it indicates that the value may include a Windows environment-variable reference. This is intentionally conservative: a `REG_SZ` value without a percent sign is not rewritten, and a value already stored as `REG_EXPAND_SZ` is left untouched regardless of its text.
+## Migration Decision
 
-## Data Flow and Mutation Semantics
+The routine reads the raw value rather than using a convenience string getter. This is necessary because the type is the condition being repaired. It returns without writing in either of these cases:
+
+1. The value type is already anything other than `REG_SZ`, including the desired `REG_EXPAND_SZ`.
+2. The decoded `Path` text does not contain `%`, so there is no evidence that variable expansion is required.
+
+Only the combination of `REG_SZ` and a percent sign triggers a conversion. This limits the change to the historical failure case while making repeated calls safe.
+
+```mermaid
+flowchart TD
+    Start["Run Migration"] --> OpenKey["Open Machine Environment Key"]
+    OpenKey --> ReadPath["Read Raw Path Value"]
+    ReadPath --> TypeCheck{"Value Type Is REG_SZ?"}
+    TypeCheck -->|"no"| NoChangeType["Return Without Changes"]
+    TypeCheck -->|"yes"| Decode["Decode UTF-16LE Bytes"]
+    Decode --> VariableCheck{"Contains Percent Sign?"}
+    VariableCheck -->|"no"| NoChangeText["Return Without Changes"]
+    VariableCheck -->|"yes"| Encode["Encode Text as UTF-16LE"]
+    Encode --> Terminator["Append UTF-16 Terminator"]
+    Terminator --> Write["Write REG_EXPAND_SZ Value"]
+    Write --> Success["Log Successful Repair"]
+    OpenKey -->|"failure"| Warning["Log Warning and Continue"]
+    ReadPath -->|"failure"| Warning
+    Write -->|"failure"| Warning
+```
+
+## Data Handling and Preservation
+
+The raw registry byte array is interpreted as little-endian UTF-16 code units and decoded lossily. A trailing null character is removed from the decoded string. For the write, the resulting text is re-encoded as UTF-16 little-endian and receives a two-byte null terminator, the expected representation for a Windows string registry value.
+
+The operation preserves the logical text that it decoded. The intended mutation is therefore restricted to registry metadata and value encoding:
+
+| Before | After |
+| --- | --- |
+| Registry type: `REG_SZ` | Registry type: `REG_EXPAND_SZ` |
+| Text: existing `Path` content containing `%...%` | Text: same decoded `Path` content |
+| Byte representation: existing raw string data | Byte representation: UTF-16 little-endian with a null terminator |
+
+## Runtime Interaction
+
+The following sequence describes the successful repair path. No request is sent to an OpenFrame server, and no external state is updated.
 
 ```mermaid
 sequenceDiagram
-    participant Client as OpenFrame Client
-    participant Migration as Path Migration
+    participant Agent as OpenFrame Client Agent
+    participant Migration as Platform Windows Path Migration
     participant Registry as Windows Registry
-    participant Log as Tracing
-    Client->>Migration: invoke run()
-    Migration->>Registry: open machine environment key
-    Registry-->>Migration: key handle
-    Migration->>Registry: read raw Path value
-    Registry-->>Migration: type and UTF-16 bytes
-    alt legacy type with variable marker
-        Migration->>Log: log repair start
-        Migration->>Registry: write same decoded text as REG_EXPAND_SZ
-        Registry-->>Migration: write completed
-        Migration->>Log: log repair success
-    else already correct or not eligible
-        Migration-->>Client: return without mutation
-    else registry or conversion failure
-        Migration->>Log: log warning
-        Migration-->>Client: return without propagating error
-    end
+    participant Logs as Tracing
+    Agent->>Migration: run()
+    Migration->>Registry: Open environment key with read and write access
+    Registry-->>Migration: Key handle
+    Migration->>Registry: Read raw Path value
+    Registry-->>Migration: REG_SZ and UTF-16 bytes
+    Migration->>Migration: Decode and verify variable marker
+    Migration->>Logs: Log repair start
+    Migration->>Registry: Write Path as REG_EXPAND_SZ
+    Registry-->>Migration: Write complete
+    Migration->>Logs: Log repair success
+    Migration-->>Agent: Return
 ```
 
-The module reads the raw bytes rather than using a convenience string setter so it can explicitly write `REG_EXPAND_SZ`. The output is a null-terminated UTF-16 byte sequence, which is the registry representation expected for this string type. The intended preserved data is the decoded path text; the only intended mutation is the registry type.
+## Failure Semantics and Operational Notes
 
-## Operational Behavior
+All work is performed inside an internal result-producing closure. A failure to open the key, read the value, or write the replacement is caught at the module boundary and produces a warning containing the error. The public `run` function returns no result, so callers cannot distinguish a no-op from a failed repair through its return value; operators must use the agent's tracing output for that distinction.
 
-### Preconditions
+This behavior deliberately makes the migration best-effort. It reduces the risk that a legacy `Path` inconsistency prevents unrelated agent startup work. Conversely, a warning means the machine may retain the incorrect type and may need an administrator to inspect registry permissions, policy restrictions, or the current `Path` value.
 
-- The process must execute on Windows and be able to access the machine environment registry key.
-- A repair requires permission to open that key with both read and write rights. The module does not elevate privileges or request credentials.
-- The `Path` value must be readable as a raw registry value. Missing keys, missing values, denied access, and write failures are treated as non-fatal failures.
+## Maintenance Considerations
 
-### Outcomes
-
-| Condition | Result |
-|---|---|
-| `Path` is not `REG_SZ` | No action. This includes the expected `REG_EXPAND_SZ` state. |
-| `Path` is `REG_SZ` but has no percent sign | No action. |
-| `Path` is `REG_SZ` and includes a percent sign | The text is decoded and written back as `REG_EXPAND_SZ`. |
-| Any registry or conversion operation fails | A warning is logged; `run()` returns normally. |
-
-### Idempotency and Failure Handling
-
-The operation is safe to invoke repeatedly. Following a successful conversion, the next invocation sees a type other than `REG_SZ` and exits before writing. The function contains its work inside an internal fallible operation and deliberately catches every error at the boundary. This prevents an environment repair failure from terminating the caller, while preserving the error context in a tracing warning.
-
-## Observability
-
-A successful repair emits two informational messages: one immediately before writing and one after completion. A failed inspection or repair emits a warning with the underlying error. There is no return status, persisted migration marker, metric, or remote status message exposed by this component; logs are therefore the direct diagnostic signal.
-
-When investigating a Windows host, confirm both the registry type and whether the `Path` string contains expandable references. The expected healthy state for a machine path containing `%...%` entries is `REG_EXPAND_SZ`.
-
-## Integration Boundaries
-
-Platform Windows Path Migration is part of the OpenFrame client platform layer. It complements, but does not replace, adjacent client responsibilities:
-
-- directory and permission management selects and validates agent storage locations;
-- service management installs, starts, stops, and verifies the operating-system service;
-- PowerShell resolution locates Windows command tooling; and
-- update and cleanup components replace agent binaries and remove temporary artifacts.
-
-This migration does not call those components directly. The indexed organization code graph records no direct callers or tests for `run` at the indexed snapshot, so maintainers should verify the client startup integration in the consuming build before relying on a particular invocation point.
-
-## Maintenance Guidance
-
-- Preserve raw registry type handling. Replacing the raw write with a generic string setter can reintroduce the `REG_SZ` regression.
-- Keep the conversion Windows-only and limited to the machine `Path` value named above.
-- Do not turn warning-only failures into process failures without considering agent startup resilience.
-- Test at least four cases: an already expandable value, a literal value with no percent sign, a legacy expandable-text value stored as `REG_SZ`, and an access-denied or unavailable registry key.
-- Test that the replacement retains a terminating UTF-16 null and that a second run performs no additional write.
+- Keep the operation type-aware. Replacing the raw registry read with a string-only read would hide the condition that determines whether a repair is needed.
+- Do not rewrite a `Path` value solely because it is `REG_SZ`; the module requires a percent sign as evidence of an unexpanded variable reference.
+- Preserve UTF-16 little-endian encoding and the terminating null when writing registry data.
+- Retain non-fatal error handling unless agent startup is explicitly changed to treat this migration as mandatory.
+- Test the three primary outcomes: an already-expanded value, a plain `REG_SZ` value without percent signs, and a variable-bearing `REG_SZ` value that is rewritten as `REG_EXPAND_SZ`.
 
 ## Source and Ownership
 
-The implementation is maintained in the OpenFrame OSS Library rather than directly in this repository. Consult the verified source for current behavior: [`windows_path_migration.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/windows_path_migration.rs). This repository consumes the library through the OpenFrame client artifact and distributes the resulting client as part of the tenant platform.
+The executable logic is maintained in OpenFrame OSS Library rather than in this repository. The OpenFrame OSS Tenant repository packages and deploys the client ecosystem that consumes the library.
+
+- Source: [`windows_path_migration.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/windows_path_migration.rs)
+- Consumed library artifact: `openframe_agent_lib` version `v0.0.5`
+- Scope: local Windows machine environment configuration

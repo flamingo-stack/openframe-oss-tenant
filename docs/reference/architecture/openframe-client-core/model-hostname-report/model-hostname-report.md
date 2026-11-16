@@ -1,104 +1,149 @@
 # Model Hostname Report
 
-Model Hostname Report defines the wire payload used by the OpenFrame endpoint client to report a device hostname. It is intentionally small: `HostnameReportMessage` contains only a serialized `hostname` string. Device identity is carried by the NATS subject rather than duplicated in the message body.
+Model Hostname Report is the endpoint-client message contract for reporting a managed device's hostname to OpenFrame. It contains one serializable value, `hostname`, and intentionally leaves collection, routing, delivery, and persistence to neighboring components.
 
-The model is implemented by the `openframe_agent_lib` Cargo artifact supplied by [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/hostname_report_message.rs). This repository runs that library as part of its endpoint-client deployment and supplies the server-side consumer through the OpenFrame Client service.
+The contract is supplied at runtime by the `openframe_agent_lib` dependency from [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/hostname_report_message.rs). This repository assembles and runs that library as part of the endpoint client.
 
-## Purpose and Contract
+## Contract
 
-`HostnameReportMessage` is a Rust structure derived with `Serialize`:
+`HostnameReportMessage` derives Rust `Debug` and Serde `Serialize` and exposes one public required field:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `hostname` | `String` | The hostname reported by the endpoint. |
 
 ```rust
+#[derive(Debug, Serialize)]
 pub struct HostnameReportMessage {
     pub hostname: String,
 }
 ```
 
-Its JSON representation has one required property:
+Its serialized payload has no machine identifier, timestamp, status, or optional fields.
 
 ```json
 {
-  "hostname": "workstation-01"
+  "hostname": "workstation-42"
 }
 ```
 
-The model does not validate, normalize, persist, or identify a device. Those responsibilities remain with the publisher, the transport subject, and the receiving service. This separation keeps the message contract stable and lets a hostname change be processed independently of other device facts.
+The minimal shape is intentional: the server derives the target machine identity from the NATS subject rather than the body.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    Kernel["Operating system hostname"] --> Fetcher["Device data fetcher"]
-    Fetcher --> Publisher["Hostname report publisher"]
-    Config["Agent configuration machine ID"] --> Publisher
-    Model["Hostname report message"] --> Publisher
-    Publisher --> Transport["NATS machine hostname subject"]
-    Transport --> Listener["Machine hostname listener"]
-    Listener --> Service["Machine hostname service"]
-    Service --> Device["Stored machine record"]
+    Device["Managed Device"]
+    Fetcher["Device Data Fetcher"]
+    Publisher["Hostname Report Publisher"]
+    Model["Model Hostname Report"]
+    Nats["NATS JetStream"]
+    Listener["Machine Hostname Listener"]
+    Service["Machine Hostname Service"]
+    Record["Device Record"]
+
+    Device -->|"local hostname"| Fetcher
+    Fetcher -->|"validated hostname"| Publisher
+    Publisher -->|"creates"| Model
+    Model -->|"serialized payload"| Nats
+    Nats -->|"hostname event"| Listener
+    Listener -->|"machine ID and hostname"| Service
+    Service -->|"updates"| Record
 ```
 
-The endpoint-client side is provided by OpenFrame OSS Library. Its `HostnameReportPublisher` composes a device-data fetcher, agent configuration service, and NATS publisher. The OpenFrame Client service consumes hostname messages through `MachineHostnameListener`.
-
-## Component Responsibilities
+### Responsibilities
 
 | Component | Responsibility |
-|---|---|
-| `HostnameReportMessage` | Serializes the hostname payload as JSON. |
-| `DeviceDataFetcher` | Reads the operating-system hostname. It first attempts the kernel hostname and, on macOS, falls back to `LocalHostName` and then `ComputerName`. Invalid, empty, or unavailable values are not returned. |
-| `HostnameReportPublisher` | Coordinates hostname collection, machine configuration, model construction, and best-effort publication. Publish errors are logged rather than propagated from its public `publish` operation. |
-| `AgentConfigurationService` | Provides the configured machine identifier used for device-scoped routing. |
-| `NatsMessagePublisher` | Serializes a payload, obtains a connected NATS client, publishes it, and flushes the client before reporting success. |
-| `MachineHostnameListener` | Receives `machine.*.hostname` messages, extracts the machine identifier from the subject, deserializes the JSON body, validates that the hostname is nonblank, and delegates the update. |
-| `MachineHostnameService` | Applies the hostname update to the machine record. |
+| --- | --- |
+| Model Hostname Report | Defines the serializable payload shape. |
+| Device Data Fetcher | Obtains and validates a local hostname. |
+| Hostname Report Publisher | Creates and sends the report using NATS and client configuration. |
+| Machine Hostname Listener | Receives the event, extracts the machine identifier, deserializes the payload, and controls acknowledgement. |
+| Machine Hostname Service | Persists the hostname update for the identified machine. |
 
-## Data Flow
+## Endpoint Collection and Publication
+
+Device Data Fetcher first queries the kernel hostname, trims it, and accepts it only if it passes its hostname validity check. On macOS, it can fall back to `LocalHostName`, with a `.local` suffix, and then `ComputerName`. If no valid hostname can be resolved, it logs a warning.
+
+Hostname Report Publisher owns a NATS message publisher, agent configuration service, and device data fetcher. Its public `publish` method logs a warning when its internal publishing work fails instead of returning the error to its caller. Invoking the method therefore does not itself establish that the platform has persisted an update.
+
+## Transport and Server Processing
+
+The Java Machine Hostname Listener consumes the `MACHINE_HOSTNAME` JetStream stream. It uses the subject pattern `machine.*.hostname`, durable consumer `machine-hostname-processor-v1`, delivery group `machine-hostname`, and delivery subject `machine.hostname.delivery`.
+
+The wildcard segment is extracted as the machine identifier. Consequently, routing and identity remain separate from the Model Hostname Report payload.
 
 ```mermaid
 sequenceDiagram
-    participant OS as Operating system
-    participant Fetcher as Device data fetcher
-    participant Publisher as Hostname report publisher
-    participant NATS as NATS
-    participant Listener as Machine hostname listener
-    participant Service as Machine hostname service
+    participant Agent as Endpoint Agent
+    participant Fetcher as Device Data Fetcher
+    participant Publisher as Hostname Report Publisher
+    participant Nats as NATS JetStream
+    participant Listener as Machine Hostname Listener
+    participant Service as Machine Hostname Service
 
-    Publisher->>Fetcher: Request hostname
-    Fetcher->>OS: Read hostname with platform fallbacks
-    OS-->>Fetcher: Valid hostname or no value
-    Fetcher-->>Publisher: Hostname value
-    Publisher->>NATS: Publish JSON on machine scoped hostname subject
-    NATS->>Listener: Deliver message
-    Listener->>Listener: Extract machine ID and validate hostname
-    Listener->>Service: Update hostname
-    Service-->>Listener: Update complete
-    Listener->>NATS: Acknowledge message
+    Agent->>Fetcher: Request hostname
+    Fetcher-->>Publisher: Valid hostname or no value
+    alt hostname available
+        Publisher->>Publisher: Serialize Model Hostname Report
+        Publisher->>Nats: Publish hostname event
+        Nats->>Listener: Deliver event
+        Listener->>Listener: Extract machine ID and parse JSON
+        alt hostname is nonblank
+            Listener->>Service: Update device hostname
+            Service-->>Listener: Update complete
+            Listener->>Nats: Acknowledge event
+        else hostname is blank
+            Listener->>Nats: Acknowledge without update
+        end
+    else hostname unavailable
+        Publisher->>Publisher: Log unresolved hostname
+    end
 ```
 
-The receiver relies on two pieces of transport data: the machine ID from the subject and the hostname from the JSON payload. This prevents a payload from selecting the machine record it modifies.
+## Delivery Semantics
 
-## Processing Outcomes
+The listener treats received messages as follows:
+
+1. It extracts the machine identifier from the NATS subject and deserializes the JSON payload.
+2. If the hostname is blank, it logs the condition, acknowledges the event, and makes no update.
+3. For a nonblank hostname, it calls Machine Hostname Service and acknowledges only after that operation succeeds.
+4. If subject extraction, deserialization, or the update throws an exception, it leaves the event unacknowledged for potential JetStream redelivery.
 
 ```mermaid
 flowchart TD
-    Receive["Receive hostname message"] --> Decode["Extract machine ID and deserialize JSON"]
-    Decode --> Valid{{"Hostname is nonblank?"}}
-    Valid -->|"No"| EmptyAck["Log warning and acknowledge without update"]
-    Valid -->|"Yes"| Update["Update hostname for machine"]
-    Update --> Ack["Acknowledge message"]
-    Decode -->|"Failure"| Retry["Log error and leave message unacknowledged"]
-    Update -->|"Failure"| Retry
+    Receive["Receive hostname event"] --> Parse["Extract machine ID and parse payload"]
+    Parse --> Parsed{"Parsed successfully?"}
+    Parsed -->|"no"| Retry["Leave unacknowledged for redelivery"]
+    Parsed -->|"yes"| Nonblank{"Hostname is nonblank?"}
+    Nonblank -->|"no"| Ignore["Acknowledge without update"]
+    Nonblank -->|"yes"| Update["Update machine hostname"]
+    Update --> Saved{"Update succeeded?"}
+    Saved -->|"yes"| Ack["Acknowledge event"]
+    Saved -->|"no"| Retry
 ```
 
-A blank hostname is treated as a successfully consumed no-op, so it is acknowledged to avoid redelivery. Deserialization, subject extraction, and update failures leave the message unacknowledged, allowing the messaging layer to redeliver it.
+## Integration and Compatibility
 
-## Operational Considerations
+- Preserve the `hostname` JSON property and its string representation. A rename or type change breaks the existing consumer contract.
+- Do not add machine identity to this model without coordinating a transport-contract revision: the current consumer derives identity from the subject.
+- The model does not reject blank strings. Endpoint collection attempts to avoid invalid values, while the listener explicitly treats blank received values as a no-op.
+- Retried processing can apply the same hostname again, so persistence should remain safe for repeated updates.
+- Keep concerns separated: the model represents data; the fetcher collects it; the publisher transports it; and the server listener and service process it.
 
-- Hostname discovery can fail without terminating the endpoint client. The device-data fetcher logs the reason and returns no value when it cannot produce a valid hostname.
-- The publisher is best-effort at its public boundary: failures in model serialization, NATS connection access, publication, or flushing are logged as hostname-report failures.
-- Delivery acknowledgement occurs only after a nonblank hostname update succeeds. Monitor listener errors and NATS redeliveries when hostname changes do not appear in device records.
-- Compatibility depends on preserving the JSON property name `hostname` and the subject convention accepted by the server listener. Adding device identity to this model would create conflicting sources of identity and should be avoided unless the consumer contract changes in tandem.
+## Maintenance Checklist
 
-## Maintenance Guidance
+1. Retain Serde `Serialize` support required by the endpoint publisher.
+2. Verify payload compatibility with the Java consumer whenever the structure changes.
+3. Test valid hostname publication, unavailable hostname resolution, blank payload handling, malformed JSON, persistence failure, acknowledgement, and redelivery.
+4. Review the publisher, NATS subject convention, and listener together when changing routing or machine identity behavior.
 
-When changing this contract, update the endpoint publisher and server listener together. Preserve serialization compatibility for already deployed clients, keep hostname validation at the receiving boundary, and verify that failures remain unacknowledged only when redelivery is appropriate. The model itself should remain a transport-only type; collection policies belong in the device-data fetcher and persistence behavior belongs in the server-side hostname service.
+## System Context
+
+Model Hostname Report is a focused endpoint-to-platform telemetry contract in OpenFrame Client Core. It is related to heartbeat and timezone reporting but only maintains the human-readable device hostname. The wider client runtime supplies configuration, authentication, NATS connectivity, and service lifecycle behavior. The Java listener runs in the OpenFrame Client service and provides the durable server-side path from the hostname stream to the device record.
+
+## Source
+
+- [Hostname Report Message source in OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/hostname_report_message.rs)
+
+For support or discussion, use the [OpenMSP Slack community](https://www.openmsp.ai/).

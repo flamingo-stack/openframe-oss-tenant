@@ -1,8 +1,0 @@
-flowchart LR
-    Application["OpenFrame API application"] --> Scan["Component scan"]
-    Scan --> Security["Gateway authentication configuration"]
-    Scan --> Mvc["MVC principal resolver"]
-    Scan --> Dgs["DGS scalars and resolver"]
-    Scan --> Beans["Password encoder and REST client"]
-    Scan --> Init["OAuth client initializer"]
-    Init --> Repository["OAuth client repository"]

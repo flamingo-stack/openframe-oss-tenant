@@ -1,0 +1,11 @@
+flowchart TD
+    Boot["ManagementApplication"] --> Scan["Spring component scan"]
+    Scan --> ManagementCore["Management service core library"]
+    Scan --> DataLayer["OpenFrame data components"]
+    Scan --> CoreLayer["OpenFrame core components"]
+    Scan --> Exclusion["Cassandra health indicator excluded"]
+    ManagementCore --> Initializers["Startup initializers"]
+    ManagementCore --> Schedulers["Scheduled maintenance"]
+    ManagementCore --> Controllers["Administration controllers"]
+    ManagementCore --> Catalog["Package catalog synchronization"]
+    Initializers --> Nats["NATS and JetStream configuration"]

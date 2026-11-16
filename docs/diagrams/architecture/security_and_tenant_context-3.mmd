@@ -1,0 +1,10 @@
+flowchart TD
+    Grant["Authorization Grant"] --> Generator["Delegating Token Generator"]
+    Generator --> JwtGenerator["JWT Generator"]
+    Generator --> AccessGenerator["Access Token Generator"]
+    Generator --> RefreshGenerator["Refresh Token Generator"]
+    JwtGenerator --> Claims["Tenant and User Claims"]
+    Claims --> TenantKey["Tenant Active RSA Key"]
+    TenantKey --> Token["Signed Access Token"]
+    AccessGenerator --> Token
+    RefreshGenerator --> RefreshToken["Refresh Token"]

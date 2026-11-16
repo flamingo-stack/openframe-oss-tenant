@@ -1,7 +1,6 @@
 flowchart LR
-    ApiContract["External API OpenAPI contract"] --> ExternalApi["External API device endpoints"]
-    ExternalApi --> JsonPayload["JSON tag payload"]
-    JsonPayload --> DeviceTagResponse["DeviceTagResponse"]
-    JsonPayload --> TagFilterItem["TagFilterItem"]
-    DeviceTagResponse --> TestService["Test service assertions"]
-    TagFilterItem --> TestService
+    ExternalApi["External API device endpoints"] -->|"JSON responses"| Jackson["Jackson deserialization"]
+    Jackson --> DeviceTag["DeviceTagResponse"]
+    Jackson --> TagFilter["TagFilterItem"]
+    DeviceTag --> Tests["External device tests"]
+    TagFilter --> Tests

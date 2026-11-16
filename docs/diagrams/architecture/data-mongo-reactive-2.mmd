@@ -1,8 +1,0 @@
-sequenceDiagram
-    participant Caller as "Reactive caller"
-    participant Repo as "Reactive repository"
-    participant Mongo as "MongoDB"
-    Caller->>Repo: Supply user and tenant identifiers
-    Repo->>Mongo: Execute derived Mongo query
-    Mongo->>Repo: Return matching document or empty result
-    Repo->>Caller: Return Mono result

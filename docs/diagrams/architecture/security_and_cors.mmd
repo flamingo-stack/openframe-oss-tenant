@@ -1,0 +1,7 @@
+flowchart TD
+    Token["Bearer token"] --> Issuer{"Issuer accepted?"}
+    Issuer -->|"no"| Reject["Return 401"]
+    Issuer -->|"yes"| Decoder["Decode and validate JWT"]
+    Decoder --> Roles["Map roles and scopes"]
+    Roles --> Route["Apply route authorization"]
+    Reject --> WsMetric["Record WebSocket rejection when applicable"]

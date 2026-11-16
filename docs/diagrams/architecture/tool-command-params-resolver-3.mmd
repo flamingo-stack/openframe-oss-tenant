@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Lifecycle as Tool Lifecycle Service
+    participant Resolver as Tool Command Params Resolver
+    participant Initial as Initial Configuration Service
+    participant Agent as Agent Configuration Service
+    participant Directories as Directory Manager
+    participant Runtime as Tool Runtime
+    Lifecycle->>Resolver: process(tool-agent-id, command-arguments)
+    alt Server placeholder present
+        Resolver->>Initial: get server URL
+        Initial-->>Resolver: configured host
+    end
+    alt Machine placeholder present
+        Resolver->>Agent: get machine ID
+        Agent-->>Resolver: machine identifier
+    end
+    Resolver->>Directories: get secured directory
+    Directories-->>Resolver: token directory
+    loop Every asset placeholder
+        Resolver->>Directories: get asset path
+        Directories-->>Resolver: executable asset path
+    end
+    Resolver-->>Lifecycle: resolved command arguments
+    Lifecycle->>Runtime: launch with resolved arguments

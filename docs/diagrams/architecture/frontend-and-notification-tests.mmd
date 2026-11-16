@@ -1,0 +1,13 @@
+flowchart LR
+    Runner["Test Runner"] --> FrontendTest["Frontend Support Test"]
+    Runner --> NotificationTest["Notifications Test"]
+    FrontendTest --> FeatureApi["Feature Flag API"]
+    FrontendTest --> EventApi["Tenant Event API"]
+    NotificationTest --> NotificationApi["Notification API"]
+    NotificationTest --> TicketApi["Ticket API"]
+    FeatureApi --> Platform["Deployed OpenFrame Services"]
+    EventApi --> Platform
+    NotificationApi --> Platform
+    TicketApi --> Platform
+    Platform --> EventStream["Event Processing"]
+    Platform --> NotificationStore["Notification State"]

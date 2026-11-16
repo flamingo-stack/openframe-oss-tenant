@@ -1,9 +1,7 @@
 flowchart LR
-    Caller["OpenFrame client caller"] -->|"DMG bytes, target directory, optional source path"| Extractor["Platform Dmg Extractor"]
-    Extractor -->|"write temporary image"| TempFile["Temporary DMG file"]
-    Extractor -->|"attach read only"| Hdiutil["macOS hdiutil"]
+    DownloadService["Download and installation workflow"] -->|"DMG bytes and extraction settings"| Extractor["Platform Dmg Extractor"]
+    Extractor -->|"write temporary image"| TempStorage["System temporary directory"]
+    Extractor -->|"read-only attach and detach"| Hdiutil["macOS hdiutil"]
     Hdiutil -->|"mounted volume"| MountPoint["Temporary mount point"]
-    Extractor -->|"copy recursively"| CopyTool["macOS cp"]
-    MountPoint -->|"selected source"| CopyTool
-    CopyTool -->|"copied files"| Target["Caller target directory"]
-    Extractor -->|"detach"| Hdiutil
+    Extractor -->|"recursive copy"| CopyTool["macOS cp"]
+    CopyTool -->|"installed files"| TargetDirectory["Caller-selected target directory"]

@@ -1,0 +1,9 @@
+flowchart TD
+    Handler["PackageUpdateHandler"] -->|"implements"| Contract["CommandHandler contract"]
+    Handler -->|"submits"| Store["OrderStore"]
+    Handler -->|"reports"| Reporter["StatusReporter"]
+    Handler -->|"checks"| Support["Package manager support"]
+    Handler -->|"reads"| Command["PackageUpdateMessage"]
+    Handler -->|"requires"| Delivery["Delivery reference sequence"]
+    Store -->|"wakes"| Runner["PackageUpdateRunManager"]
+    Runner -->|"publishes lifecycle"| Reporter

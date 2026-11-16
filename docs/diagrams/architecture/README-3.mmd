@@ -1,18 +1,21 @@
-sequenceDiagram
-    participant Agent as "Endpoint agent"
-    participant Gateway as "OpenFrame Gateway"
-    participant Client as "Client Service"
-    participant Nats as "NATS JetStream"
-    participant Api as "OpenFrame API"
+flowchart TD
+    Argo["Argo CD App of Apps"] --> Platform["Platform Applications"]
+    Argo --> Datasources["Datasource Applications"]
+    Argo --> Tenant["Tenant Application"]
 
-    Agent->>Gateway: Register or authenticate
-    Gateway->>Client: Route client request
-    Client-->>Agent: Return machine credentials and tokens
+    Platform --> NamespacePlatform["Platform Namespace"]
+    Platform --> Ingress["Ingress NGINX"]
+    Platform --> Config["OpenFrame Config"]
+    Platform --> Tools["Development Tools"]
 
-    Agent->>Nats: Publish heartbeat, inventory, and results
-    Nats->>Client: Deliver agent events
-    Client->>Api: Persist and expose device state
+    Datasources --> Cassandra["Cassandra"]
+    Datasources --> Kafka["Kafka"]
+    Datasources --> Mongo["MongoDB"]
+    Datasources --> Nats["NATS"]
+    Datasources --> Pinot["Pinot"]
+    Datasources --> Redis["Redis Cluster"]
 
-    Api->>Nats: Publish command or tool delivery
-    Nats->>Agent: Deliver machine scoped work
-    Agent->>Nats: Publish acknowledgement and result
+    Tenant --> Services["OpenFrame Service Images"]
+    Tenant --> Fleet["Fleet MDM"]
+    Tenant --> Mesh["MeshCentral"]
+    Tenant --> Frontend["OpenFrame Frontend"]

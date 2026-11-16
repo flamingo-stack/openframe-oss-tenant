@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Active
+    Active --> Archived: Archive
+    Archived --> Active: Unarchive
+    Active --> Deleted: Cleanup
+    Archived --> Deleted: Cleanup

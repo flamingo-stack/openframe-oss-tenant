@@ -1,11 +1,12 @@
 sequenceDiagram
-    participant TestService as "OpenFrame Test Service"
-    participant ExternalApi as "External API"
-    participant Mapper as "Jackson Mapper"
-    participant Dtos as "External Tool Dto Models"
-    TestService->>ExternalApi: Request external-tool data
-    ExternalApi->>TestService: Return JSON response
-    TestService->>Mapper: Deserialize response body
-    Mapper->>Dtos: Populate known fields
-    Note over Mapper,Dtos: Unknown properties are ignored
-    Dtos->>TestService: Typed response object
+    participant Test as "Test client"
+    participant API as "External API"
+    participant Mapper as "Jackson mapper"
+    participant DTO as "External Tool Dto"
+
+    Test->>API: Request tool configuration
+    API->>Test: Return JSON response
+    Test->>Mapper: Deserialize response body
+    Mapper->>DTO: Populate recognized fields
+    DTO-->>Test: Response object for assertions
+    Note over Mapper,DTO: Unknown JSON fields are ignored

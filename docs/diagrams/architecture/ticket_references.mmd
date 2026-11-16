@@ -1,0 +1,8 @@
+flowchart TD
+    Owner["Ticket Owner"] --> Type{"Owner type present?"}
+    Type -->|"machine"| MachineId["machineId"]
+    Type -->|"user"| UserId["userId"]
+    Owner --> Machine["Ticket Machine"]
+    Owner --> User["Ticket User"]
+    Ticket["Ticket Response"] --> Attachment["Ticket Attachment"]
+    Ticket --> Image["Ticket Image"]

@@ -1,0 +1,15 @@
+flowchart TD
+    PackageRef["Package reference"] --> ManagerSelect["ManagerId.of"]
+    ManagerSelect --> ManagerId["Manager identity"]
+    ManagerId --> PresenceProbe["ManagerId.presence"]
+    PresenceProbe --> BrewProbe["Brew path probe"]
+    PresenceProbe --> ChocoProbe["Chocolatey probe"]
+    PresenceProbe --> WingetProbe["WinGet PowerShell probe"]
+    BrewProbe --> Presence["Present, Absent, or Unknown"]
+    ChocoProbe --> Presence
+    WingetProbe --> Presence
+    Dependency["Dependency: WinGet client module"] --> DependencyManager["Dependency.manager"]
+    Dependency --> DependencyProbe["Dependency.presence"]
+    DependencyManager --> ManagerId
+    DependencyProbe --> Presence
+    Presence --> UpdateWorkflow["Package update and reporting workflows"]

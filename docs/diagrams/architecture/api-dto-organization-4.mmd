@@ -1,0 +1,5 @@
+flowchart TD
+    Input["Organization Sort Input"] -->|"selects"| Field["OrganizationSortField"]
+    Field -->|"constrains"| Mapping["Organization Query Mapping"]
+    Mapping -->|"constructs"| RepositoryQuery["Organization Repository Query"]
+    RepositoryQuery -->|"returns"| Results["Organization Results"]

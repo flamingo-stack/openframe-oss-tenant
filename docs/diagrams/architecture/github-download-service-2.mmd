@@ -1,0 +1,11 @@
+flowchart TD
+    Begin["Begin download"] --> SetDeadline["Set retry deadline and initial delay"]
+    SetDeadline --> Attempt["Send HTTP GET within deadline"]
+    Attempt --> RequestOk{"Request succeeded?"}
+    RequestOk -->|"yes"| ReturnBytes["Return response bytes"]
+    RequestOk -->|"no"| Retryable{"Retryable failure?"}
+    Retryable -->|"no"| FailNow["Return error"]
+    Retryable -->|"yes"| TimeLeft{"Delay fits before deadline?"}
+    TimeLeft -->|"no"| FailBudget["Return error with attempt count"]
+    TimeLeft -->|"yes"| Wait["Wait, then double delay up to cap"]
+    Wait --> Attempt

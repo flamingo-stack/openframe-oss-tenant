@@ -1,0 +1,9 @@
+flowchart TD
+    Results["Collected result records"] --> Sort["Stable sort by severity"]
+    Sort --> Failed["Failures first"]
+    Sort --> Skipped["Skips second"]
+    Sort --> Passed["Passes last"]
+    Failed --> Summary["Build summary with environment, tag, and totals"]
+    Skipped --> Summary
+    Passed --> Summary
+    Summary --> Send["Send one threaded report"]

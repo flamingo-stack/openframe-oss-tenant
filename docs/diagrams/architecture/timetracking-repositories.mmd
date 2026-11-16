@@ -1,8 +1,9 @@
-flowchart TD
-    Caller["Time Tracking Service or Data Fetcher"] --> Contract["Custom Time Entry Repository"]
-    Contract --> Implementation["Custom Time Entry Repository Implementation"]
-    Implementation --> TenantSupport["Tenant Aware Repository Support"]
-    TenantSupport --> TenantTemplate["Tenant Aware Mongo Template"]
-    TenantTemplate --> Mongo["MongoDB Time Entry Collection"]
-    Implementation --> Results["Time Entries, Counts, and Statistics"]
-    Results --> Caller
+flowchart LR
+    ApiLayer["API service time-entry queries"] --> Repository["CustomTimeEntryRepository"]
+    Repository --> Implementation["CustomTimeEntryRepositoryImpl"]
+    Implementation --> TenantSupport["Tenant-aware repository support"]
+    TenantSupport --> MongoTemplate["TenantAwareMongoTemplate"]
+    MongoTemplate --> MongoDatabase[("MongoDB time entries")]
+    Implementation --> ListResults["Filtered cursor-paginated entries"]
+    Implementation --> Statistics["Completed-entry statistics"]
+    Implementation --> TicketTotals["Per-ticket duration totals"]

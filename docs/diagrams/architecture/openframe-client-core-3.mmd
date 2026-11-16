@@ -1,20 +1,15 @@
 flowchart LR
-    Commands["Command Delivery"] --> CommandListener["Listener Command"]
-    Commands --> ExecutionListener["Listener Execution"]
-    CommandListener --> Handlers["Command Handlers"]
-    ExecutionListener --> ExecutionService["Services Execution"]
+    Platform["OpenFrame Control Plane"] --> Nats["NATS"]
+    Nats --> CommandListener["Command Listener"]
+    Nats --> ExecutionListener["Execution Listener"]
+    Nats --> RemoteListener["Remote Access Message Listener"]
 
-    Handlers --> ToolInstallation["Services Tool Installation"]
-    Handlers --> ToolUpdate["Services Tool Agent Update"]
-    Handlers --> ClientUpdate["Services Client Update"]
-    Handlers --> FeatureFlags["Services Feature Flags"]
+    CommandListener --> CommandHandlers["Command Handlers"]
+    ExecutionListener --> ExecutionService["Execution Service"]
+    RemoteListener --> ToolManager["Tool Run Manager"]
 
-    ExecutionService --> Executor["Executor Core"]
-    ToolInstallation --> ToolRun["Services Tool Run Manager"]
-    ToolUpdate --> ToolRun
-    ClientUpdate --> UpdateHandler["Services Update Handler"]
-
-    CommandListener --> ResultStore["Services Result Store"]
-    ExecutionListener --> ResultStore
-    ResultStore --> Outbox["Services Result Outbox Run Manager"]
-    Outbox --> NatsPublisher["Services Nats Message Publisher"]
+    CommandHandlers --> ResultStore["Result Store"]
+    ExecutionService --> ResultStore
+    ResultStore --> Outbox["Result Outbox"]
+    Outbox --> Nats
+    Nats --> Platform

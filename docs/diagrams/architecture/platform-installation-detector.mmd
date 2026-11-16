@@ -1,9 +1,11 @@
 flowchart LR
-    ToolConfig["Download Configuration"] --> Detector["Platform Installation Detector"]
-    ToolId["Tool Identifier"] --> Detector
-    Directories["Directory Manager"] --> Detector
-    Detector -->|"macOS service"| LaunchDaemon["LaunchDaemon plist probe"]
-    Detector -->|"Windows service"| SystemService["System Service probe"]
-    LaunchDaemon --> Detector
-    SystemService --> Detector
-    Detector --> Result["Optional Installation record"]
+    ToolWorkflow["Tool workflow"] --> Detector["Platform Installation Detector"]
+    DownloadConfig["DownloadConfiguration"] --> Detector
+    DirectoryManager["DirectoryManager"] --> Detector
+    Detector --> InstallType{"Service installation type?"}
+    InstallType -->|"no"| NoResult["None"]
+    InstallType -->|"yes"| ServiceName{"Service name present?"}
+    ServiceName -->|"no"| NoResult
+    ServiceName -->|"yes"| PlatformCheck["Platform-specific registration check"]
+    PlatformCheck -->|"detected"| ServiceResult["Installation Service metadata"]
+    PlatformCheck -->|"not detected"| NoResult

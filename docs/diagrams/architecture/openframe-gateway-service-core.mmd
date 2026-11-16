@@ -1,0 +1,11 @@
+flowchart LR
+    Browser["Browser or native client"] --> Gateway["Openframe Gateway"]
+    Agent["OpenFrame agent"] --> Gateway
+    ExternalClient["External API client"] --> Gateway
+    Gateway --> Auth["Authorization server"]
+    Gateway --> Api["Openframe API"]
+    Gateway --> ClientService["Openframe client service"]
+    Gateway --> ExternalApi["External API service"]
+    Gateway --> Frontend["Frontend"]
+    Gateway --> Mesh["MeshCentral upstream"]
+    Gateway --> Fleet["Fleet MDM upstream"]

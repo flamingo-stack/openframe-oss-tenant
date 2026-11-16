@@ -1,11 +1,18 @@
 flowchart TD
-    Enum["RemoteAccessMode enum"] --> Encode["wire_name()"]
-    Enum --> Decode["from_wire_name()"]
-    Encode --> InstallConfig["Installation initial configuration service"]
-    InstallConfig --> Stored["InitialConfiguration.remote_access_mode"]
-    Stored --> Decode
-    Decode --> ModeService["RemoteAccessModeService"]
-    ModeService --> ApiClient["RemoteAccessClient"]
-    ApiClient --> TokenConfig["Agent configuration service"]
-    ApiClient --> Api["Device mode endpoint"]
-    ModeService --> Deactivation["Deactivation service"]
+    subgraph DeviceClient["OpenFrame Client on the managed device"]
+        InstallConfig["Initial configuration"]
+        ModeModel["Model Remote Access Mode"]
+        ModeService["Remote Access Mode Service"]
+        ApiClient["Remote Access Client"]
+        TokenConfig["Agent Configuration Service"]
+        NatsListener["Remote Access Message Listener"]
+    end
+    Backend["OpenFrame backend"]
+    Nats["NATS"]
+
+    InstallConfig -->|"stored mode name"| ModeService
+    ModeService -->|"parse"| ModeModel
+    ModeService -->|"apply recognized mode"| ApiClient
+    TokenConfig -->|"access token"| ApiClient
+    ApiClient -->|"authenticated device mode request"| Backend
+    Nats -->|"machine remote access messages"| NatsListener

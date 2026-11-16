@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Service as Execution Service
+    participant Executor as Script Executor
+    participant Platform as Platform executor
+    participant OS as Operating system
+    Service->>Executor: Script parameters
+    Executor->>Platform: Select compiled platform path
+    Platform->>Platform: Create temporary script file
+    Platform->>Platform: Build process and apply context
+    Platform->>OS: Start interpreter process
+    OS-->>Platform: Output, exit code, timeout state
+    Platform-->>Executor: Execution result
+    Executor-->>Service: Execution result
+    Service->>Service: Build RMM result

@@ -1,0 +1,10 @@
+flowchart LR
+    UpdateRunner["Shared update runner"] --> Factory["Updater factory"]
+    Factory -->|"GuiApp on macOS"| GuiUpdater["Platform Tool Updater Gui"]
+    Factory -->|"GuiApp on other platforms"| StandardUpdater["Standard updater"]
+    GuiUpdater --> KillService["Tool kill service"]
+    GuiUpdater --> DirectoryManager["Directory manager"]
+    GuiUpdater --> DownloadService["GitHub download service"]
+    GuiUpdater --> Parameters["Command parameters resolver"]
+    GuiUpdater --> UserSession["macOS user session launcher"]
+    DownloadService --> Applications["Applications directory"]

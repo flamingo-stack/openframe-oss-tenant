@@ -1,185 +1,205 @@
 # Model Tool Installation Message
 
-Model Tool Installation Message defines the Rust wire model that tells an OpenFrame Client agent which integrated tool to install or reinstall and how to obtain its files. It is supplied at runtime by the `openframe_agent_lib` crate from OpenFrame OSS Library, version `v0.0.5`, which this repository consumes. The model is serialized and deserialized as JSON with camel-case property names.
+Model Tool Installation Message defines the wire model used by the OpenFrame client to describe an integrated-tool installation. It carries the tool identity, requested version, commands, download alternatives, optional auxiliary assets, and service metadata as a single camel-case JSON payload.
 
-The implementation is maintained in [the OpenFrame OSS Library source](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/tool_installation_message.rs). This module is a contract and selection layer: it does not download, write, launch, or uninstall a tool itself.
+The implementation is supplied by the OpenFrame OSS Library's `openframe_agent_lib` Cargo artifact, which this repository consumes. The authoritative source is [tool installation message source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/tool_installation_message.rs).
 
-## Purpose and Scope
+## Responsibilities
 
-A tool installation instruction combines:
+The module is intentionally a model layer. It does not download, install, execute, or report on a tool. Instead, it provides these guarantees to the client components that do that work:
 
-- **Identity and lifecycle intent**: the tool-agent identifier, tool identifier, tool type, requested version, and reinstall flag.
-- **Install behavior**: optional installation and uninstallation argument vectors, required run arguments, an optional identifier argument vector, and an optional service name.
-- **Download selection**: tool-level download configurations and optional asset-specific download configurations.
-- **Asset metadata**: an asset identifier, source, optional path and version, executable marker, and operating-system-specific local filenames.
-- **Version resolution**: accessors that replace a supplied version when a local tool-version override exists.
+- A stable, camel-case serializable contract for a requested tool installation.
+- A primary tool record with its command arguments and optional service name.
+- Per-platform download configurations for the tool and, when needed, individual assets.
+- A source discriminator that distinguishes Tool API assets from GitHub assets.
+- OS-specific local filename selection through a case-insensitive platform check.
+- A version-resolution boundary: a configured override takes precedence over the message's declared tool or asset version.
 
-The message deliberately carries argument values as arrays of strings. Consumers can preserve the sender's argument boundaries instead of reconstructing a shell command from one string.
+## Architecture and Boundaries
 
-## Contract Types
-
-### Tool Installation Message
-
-`ToolInstallationMessage` is the top-level JSON payload. Its fields are summarized below.
-
-| Field | Required | Purpose |
-|---|---:|---|
-| `toolAgentId` | Yes | Identifies the managed tool-agent installation target. |
-| `toolId` | Yes | Identifies the tool definition. |
-| `toolType` | Yes | Describes the tool type for the receiving client. |
-| `version` | Yes | Requested tool version before any local override is applied. |
-| `reinstall` | Yes | States whether the installation should be treated as a reinstall request. |
-| `downloadConfigurations` | No, defaults to an empty list | Tool-level candidate download configurations. |
-| `installationCommandArgs` | No | Arguments for installation when the recipient supports them. Omitted from serialized JSON when absent. |
-| `uninstallationCommandArgs` | No | Arguments for uninstallation when present. Omitted when absent. |
-| `runCommandArgs` | Yes | Arguments used to run the tool. |
-| `toolAgentIdCommandArgs` | No | Additional identifier-related arguments. Omitted when absent. |
-| `assets` | No | Supplementary asset definitions. Omitted when absent. |
-| `serviceName` | No | Service name for a service-oriented tool. Omitted when absent. |
-
-`effective_version()` returns an override registered for `toolId`; if no override is present, it returns `version`. The method borrows a string slice and does not mutate the message, so the original requested value remains available in the model.
-
-### Asset
-
-`Asset` describes an individual file or artifact associated with the tool instruction.
-
-| Field | Required | Purpose |
-|---|---:|---|
-| `id` | Yes | Asset identifier and key used for asset-level version overrides. |
-| `localFilenameConfiguration` | Yes | Candidate local filenames, each scoped to an operating system. |
-| `source` | Yes | Declares whether the asset comes from the Tool API or GitHub. |
-| `path` | No | Optional source-relative or asset path. |
-| `executable` | No, defaults to `false` | Marks the asset as executable. |
-| `downloadConfigurations` | No | Asset-specific download configurations. |
-| `version` | No | Asset version before any local override. |
-
-`original_version()` returns the asset's supplied version or an empty string when the payload does not include one. `effective_version()` first looks up an override using the asset `id`; it falls back to that original version when no override exists.
-
-### Local Filename Configuration
-
-`LocalFilenameConfig` associates a `filename` with an `os` value. Its `matches_current_os()` helper recognizes only the Rust compile-time targets `windows`, `macos`, and `linux`. Matching ignores ASCII letter case. For another compilation target, the helper returns `false` rather than choosing a filename heuristically.
-
-### Asset Source
-
-`AssetSource` is a closed enum with the following wire values:
-
-| Rust variant | JSON value | Meaning |
-|---|---|---|
-| `ToolApi` | `TOOL_API` | The artifact is sourced through the Tool API. |
-| `Github` | `GITHUB` | The artifact is sourced through GitHub. |
-
-These uppercase values are explicit enum mappings, not the camel-case convention used by the containing structures.
-
-## Component Relationships
-
-The model imports two neighboring client-model concerns: `DownloadConfiguration`, which represents each download option, and the tool-version override lookup. The surrounding OpenFrame Client includes command handling and a tool installation service, while platform-specific facilities perform the actual installation work.
+The message is received and processed in the Rust OpenFrame client provided by the OpenFrame OSS Library. The broader client contains command listener handlers, tool installation services, download services, installed-tool persistence, and tool run management. Model Tool Installation Message is the shared input contract that keeps those responsibilities separate.
 
 ```mermaid
 flowchart LR
-    ControlPlane["Control plane"] -->|"installation instruction"| Message["Tool Installation Message"]
-    Message -->|"contains"| Downloads["Download configurations"]
-    Message -->|"contains"| Assets["Asset definitions"]
-    Message -->|"resolves versions through"| Overrides["Tool version overrides"]
-    Assets -->|"selects filename with"| Filename["Local filename configuration"]
-    Message -->|"consumed by"| Handler["Tool installation handler"]
-    Handler -->|"delegates to"| Service["Tool installation service"]
-    Service -->|"uses"| Platform["Platform installation facilities"]
+    ControlPlane["Control plane"] -->|"installation request"| Message["Model Tool Installation Message"]
+    Message --> Handler["Tool installation handler"]
+    Handler --> Installer["Tool installation service"]
+    Installer --> Downloads["Download service"]
+    Installer --> Storage["Installed tools service"]
+    Installer --> Runtime["Tool run manager"]
+    Message --> VersionOverrides["Tool version overrides"]
+    Message --> DownloadModel["Download configuration"]
 ```
 
-The message model remains independent of network and filesystem APIs. That boundary lets it be deserialized and examined before a handler chooses a download configuration, requests an asset, or invokes platform-specific installation logic.
+The diagram describes the client architecture represented by the module tree. The message module itself directly imports only the Download Configuration model and Tool Version Overrides lookup; the remaining components are higher-level client collaborators that consume the installation request during an installation workflow.
 
-## Selection and Versioning Flow
+## Contract Structure
 
-The receiving client applies selection at two distinct levels: versions and local filenames. Version overrides are keyed independently: the top-level tool uses `toolId`, whereas each asset uses its own `id`. Therefore, an overridden tool version does not automatically imply that an asset version is overridden, and vice versa.
+### Tool Installation Message
+
+`ToolInstallationMessage` is the top-level payload. Serde applies `camelCase` naming to its serialized fields.
+
+| Field | Required | Meaning |
+|---|---:|---|
+| `tool_agent_id` | Yes | Identifier for the integrated-tool agent instance to install. |
+| `tool_id` | Yes | Identifier of the tool definition. |
+| `tool_type` | Yes | Tool category supplied by the control plane. |
+| `version` | Yes | Requested tool version before local overrides are applied. |
+| `reinstall` | Yes | Whether the request asks the client to reinstall the tool. |
+| `download_configurations` | No, defaults empty | Ordered or otherwise supplied download configuration set for the primary tool. |
+| `installation_command_args` | No | Arguments for installation. Omitted from serialized output when absent. |
+| `uninstallation_command_args` | No | Arguments for uninstallation. Omitted from serialized output when absent. |
+| `run_command_args` | Yes | Arguments for running the installed tool. |
+| `tool_agent_id_command_args` | No | Arguments associated with the tool-agent identifier. Omitted when absent. |
+| `assets` | No | Optional collection of supplementary assets. Omitted when absent. |
+| `service_name` | No | Optional service identifier for service-oriented tools. Omitted when absent. |
+
+A missing `downloadConfigurations` property deserializes as an empty collection. This differs from the optional fields: absent optional command-argument collections and assets become `None` and are not emitted on serialization.
+
+### Asset
+
+`Asset` represents an auxiliary artifact associated with the requested tool. It also serializes field names as camel case.
+
+| Field | Required | Meaning |
+|---|---:|---|
+| `id` | Yes | Asset identity, also used for asset-level version overrides. |
+| `local_filename_configuration` | Yes | Per-OS filename mapping for the asset. |
+| `source` | Yes | Asset source: `TOOL_API` or `GITHUB` on the wire. |
+| `path` | No | Optional source-relative or logical asset path. |
+| `executable` | No, defaults false | Marks whether the asset should be considered executable. |
+| `download_configurations` | No | Asset-specific download configuration set. |
+| `version` | No | Asset version before applying an override. |
+
+The `path` field is an optional value but does not use a serialization-skip annotation in this module. In contrast, asset download configurations and version are omitted from output when absent.
+
+### Local Filename Configuration
+
+`LocalFilenameConfig` maps a local filename to an operating system label:
+
+| Field | Meaning |
+|---|---|
+| `filename` | Name to use for the locally materialized asset on the matching platform. |
+| `os` | Platform selector compared with the current compiled target. |
+
+`matches_current_os()` recognizes only Windows, macOS, and Linux builds. It performs an ASCII case-insensitive comparison against `windows`, `macos`, or `linux`. An unrecognized compilation target returns `false`; therefore no mapping matches by default on an unsupported target.
+
+### Asset Source
+
+`AssetSource` is an enum with explicit wire values:
+
+| Rust variant | Serialized value | Meaning |
+|---|---|---|
+| `ToolApi` | `TOOL_API` | Obtain the asset through the Tool API path. |
+| `Github` | `GITHUB` | Obtain the asset through the GitHub path. |
+
+Explicit serialization names are significant for compatibility. Do not rename variants or substitute Rust-style names in payloads without coordinating both control-plane and client releases.
+
+## Component Relationships
 
 ```mermaid
 flowchart TD
-    Receive["Receive installation message"] --> ToolVersion["Resolve tool version by tool identifier"]
-    ToolVersion --> AssetCheck{"Assets present?"}
-    AssetCheck -->|"No"| ToolDownloads["Use tool-level download configurations"]
-    AssetCheck -->|"Yes"| AssetLoop["Evaluate each asset"]
-    AssetLoop --> AssetVersion["Resolve asset version by asset identifier"]
-    AssetVersion --> Filename["Find filename matching current operating system"]
-    Filename --> Match{"Filename matches?"}
-    Match -->|"Yes"| AssetDownloads["Use asset download configurations when supplied"]
-    Match -->|"No"| NoFilename["No supported local filename selected"]
-    ToolDownloads --> Execute["Pass instruction to installation flow"]
-    AssetDownloads --> Execute
+    InstallationMessage["Tool installation message"] --> ToolFields["Tool identity, version, commands, service metadata"]
+    InstallationMessage --> ToolDownloads["Primary download configurations"]
+    InstallationMessage --> Assets["Optional assets"]
+    ToolFields --> ToolVersion["Effective tool version"]
+    ToolVersion --> Overrides["Tool version overrides lookup"]
+    Assets --> AssetFields["Asset identity, source, path, executable flag"]
+    Assets --> FilenameMappings["Local filename configurations"]
+    Assets --> AssetDownloads["Optional asset download configurations"]
+    AssetFields --> AssetVersion["Effective asset version"]
+    AssetVersion --> Overrides
+    FilenameMappings --> OsMatch["Current OS match"]
 ```
 
-The module itself provides the version accessors and operating-system predicate shown above. The diagram's download and execution stages belong to the consuming client workflow; this model does not prescribe a fallback policy when an asset lacks a matching filename or a usable download configuration.
+## Version Resolution
 
-## Serialization Rules and Compatibility
+Both the tool and each asset have an original version and an effective version. Effective-version methods consult the central Tool Version Overrides lookup first:
 
-The structs derive Serde `Serialize` and `Deserialize`, so the same types form both input and output contract representations. The following details are important when evolving the contract:
+1. For the primary tool, `effective_version()` looks up an override using `tool_id`.
+2. If no override exists, it returns the message's `version`.
+3. For an asset, `original_version()` returns the supplied `version`, or an empty string when the field is absent.
+4. Asset `effective_version()` looks up an override using the asset `id`.
+5. If absent, it returns the asset's original version.
 
-1. **Camel-case struct fields.** Rust field names such as `tool_agent_id` are emitted and read as `toolAgentId`.
-2. **Default only where declared.** An absent `downloadConfigurations` field on the top-level message becomes an empty list. An absent `executable` field on an asset becomes `false`. Other non-optional fields remain required during deserialization.
-3. **Optional values are omitted.** Optional command argument lists, assets, service name, asset download configurations, and asset version are not serialized when `None`.
-4. **Enum strings are fixed.** Producers must send `TOOL_API` or `GITHUB` for `source`.
-5. **Version values are not normalized here.** The model returns the configured override or the received value; comparison, validation, and acquisition decisions are outside this module.
-
-## Example Payload Shape
-
-The following illustrative shape shows the JSON naming and optionality. Values are placeholders and do not imply a particular deployment configuration.
-
-```json
-{
-  "toolAgentId": "agent-identifier",
-  "toolId": "tool-identifier",
-  "toolType": "service",
-  "version": "1.2.3",
-  "reinstall": false,
-  "downloadConfigurations": [],
-  "runCommandArgs": ["--run"],
-  "assets": [
-    {
-      "id": "asset-identifier",
-      "localFilenameConfiguration": [
-        {
-          "filename": "tool-binary",
-          "os": "linux"
-        }
-      ],
-      "source": "TOOL_API",
-      "executable": true,
-      "version": "1.2.3"
-    }
-  ]
-}
+```mermaid
+flowchart TD
+    Start["Resolve requested version"] --> Kind{"Asset request?"}
+    Kind -->|"no"| ToolLookup["Look up override by tool ID"]
+    ToolLookup --> ToolFound{"Override found?"}
+    ToolFound -->|"yes"| ToolOverride["Use override version"]
+    ToolFound -->|"no"| ToolOriginal["Use message version"]
+    Kind -->|"yes"| AssetLookup["Look up override by asset ID"]
+    AssetLookup --> AssetFound{"Override found?"}
+    AssetFound -->|"yes"| AssetOverride["Use override version"]
+    AssetFound -->|"no"| AssetOriginal["Use asset version or empty string"]
 ```
 
-## Installation Interaction
+This design allows local or centrally configured compatibility overrides without mutating the received message. Callers that need to reproduce the sender's exact declared asset version should use `original_version()` rather than the effective version.
 
-The broader client-side interaction separates receipt, interpretation, and execution. A command listener and its tool installation handler receive the instruction. The handler can use the message's resolved versions and asset metadata while coordinating with the tool installation service. The service owns installation orchestration; this model supplies the typed inputs.
+## Installation Request Data Flow
+
+The message model supports a request lifecycle without embedding the lifecycle logic itself.
 
 ```mermaid
 sequenceDiagram
     participant Control as Control Plane
     participant Listener as Command Listener
-    participant Handler as Tool Installation Handler
-    participant Message as Tool Installation Message
-    participant Service as Tool Installation Service
-    participant Platform as Platform Facilities
-    Control->>Listener: Deliver installation instruction
-    Listener->>Handler: Route installation request
-    Handler->>Message: Deserialize and inspect payload
-    Message-->>Handler: Effective versions and matching filenames
-    Handler->>Service: Request reserved installation
-    Service->>Platform: Perform platform-specific work
-    Platform-->>Service: Installation outcome
-    Service-->>Handler: Installation outcome
+    participant Message as Installation Message
+    participant Install as Installation Service
+    participant Download as Download Service
+    participant State as Installed Tools Service
+    Control->>Listener: Send tool installation request
+    Listener->>Message: Deserialize camel-case payload
+    Listener->>Message: Resolve effective versions and OS mappings
+    Listener->>Install: Submit validated installation intent
+    Install->>Download: Retrieve tool and selected assets
+    Install->>State: Persist installation state
 ```
 
-## Maintainer Guidance
+The source file does not perform validation, network access, filesystem changes, or persistence. Those actions belong to the consuming client services. This is why values such as `tool_type`, paths, and command arguments should be treated as data supplied to a later processing layer rather than semantics enforced by this module.
 
-- Keep wire-name changes backward compatible. Renaming a serialized field or changing an enum value changes the contract delivered to installed agents.
-- Preserve the distinction between a tool identifier and an asset identifier when modifying version override behavior.
-- Add a new operating system branch to `matches_current_os()` only when the client has a defined filename and installation strategy for that target.
-- Do not infer an executable filename from an unmatched operating-system configuration. The current implementation intentionally reports no match for unsupported targets.
-- Treat command-argument vectors as structured values. Converting them to a single shell string in a downstream consumer can change quoting and argument-boundary behavior.
-- When adding optional fields, apply explicit serialization behavior deliberately so that absence and empty values retain their intended wire semantics.
+## Serialization Example
 
-## Source Ownership
+The following illustrative payload shows the on-wire naming and source values. It demonstrates the model shape only; values must be selected by the control plane for the target tool.
 
-The runtime implementation belongs to OpenFrame OSS Library and is assembled into this repository's client runtime through the `openframe_agent_lib` dependency. Changes to the model source should be made in the library repository and then consumed through the pinned library version in OpenFrame OSS Tenant.
+```json
+{
+  "toolAgentId": "agent-123",
+  "toolId": "remote-tool",
+  "toolType": "remoteAccess",
+  "version": "1.2.3",
+  "reinstall": false,
+  "downloadConfigurations": [],
+  "installationCommandArgs": ["install", "silent"],
+  "runCommandArgs": ["start"],
+  "assets": [
+    {
+      "id": "helper-binary",
+      "localFilenameConfiguration": [
+        {
+          "filename": "helper.exe",
+          "os": "windows"
+        }
+      ],
+      "source": "TOOL_API",
+      "path": "helpers/helper.exe",
+      "executable": true,
+      "version": "1.2.3"
+    }
+  ],
+  "serviceName": "remote-tool-service"
+}
+```
+
+## Maintenance Guidance
+
+- Preserve field names and explicit enum wire values because this structure crosses the control-plane and endpoint-client boundary.
+- Retain `serde(default)` on the primary download configuration collection and executable flag when evolving backward-compatible payload handling.
+- Apply a version override only through the existing lookup boundary so tool-level and asset-level behavior remains consistent.
+- Add platform support by extending the compile-target branch in `matches_current_os()` and by defining the expected wire label. Unsupported targets currently match no filename mapping.
+- Treat absent asset versions deliberately: fallback resolution yields an empty string, not a missing optional value.
+- Keep installation execution policies in the client service layer; this module should remain a serializable, cloneable contract model.
+
+## Source and Runtime Context
+
+The Rust source is maintained in the OpenFrame OSS Library and is assembled into this repository's OpenFrame client runtime through the `openframe_agent_lib` dependency. In this repository, the surrounding deployment publishes the OpenFrame client as the `openframe-client` container image. The model therefore participates in endpoint agent behavior even though its source code resides in the shared library.

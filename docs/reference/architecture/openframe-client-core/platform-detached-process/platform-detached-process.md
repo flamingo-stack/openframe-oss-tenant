@@ -1,114 +1,147 @@
 # Platform Detached Process
 
-Platform Detached Process is the OpenFrame client platform utility that starts a second invocation of the installed client binary without keeping it attached to the running client service. It exists for work that must continue after the operating-system service manager stops `com.openframe.client`, such as an operation that deliberately transitions the client out of its current service lifetime.
+Platform Detached Process is a small, platform-specific process-launching boundary in the OpenFrame Client agent. It starts the installed client executable with a supplied subcommand in a form that can survive shutdown of the client service that launched it. The implementation is provided by the OpenFrame OSS Library `openframe_agent_lib` artifact and is consumed by this repository's OpenFrame Client deployment.
 
-This implementation is supplied at runtime by the `openframe_agent_lib` Cargo dependency from [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/detached_process.rs). OpenFrame OSS Tenant consumes that library as version `v0.0.5`; the utility is part of the OpenFrame client assembled by this repository.
+Its public entry point is [`spawn_detached`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/detached_process.rs). The module is intentionally narrow: it does not validate a subcommand, wait for the child, manage updates, or remove files. Those responsibilities remain with its callers and adjacent platform services.
 
-## Responsibilities and Contract
+## Purpose and Scope
 
-The module exposes one function, `spawn_detached(install_path, subcommand)`, which:
+A normal child process can be terminated when the operating-system service manager stops the parent OpenFrame Client service. Platform Detached Process avoids that coupling for client subcommands that must continue after the service exits, notably the self-uninstall flow.
 
-- launches the executable at `install_path` with one `subcommand` argument;
-- returns the spawned `Child` process handle when process creation succeeds;
-- creates a process that is independent of the client service lifecycle on supported platforms; and
-- fails explicitly on platforms other than macOS and Windows.
+The API accepts:
 
-The module does not choose an executable, validate the requested subcommand, wait for the child to finish, collect child output, or implement update and uninstall logic. Callers own those decisions. In particular, a successful return establishes that the operating system accepted the spawn request, not that the detached subcommand later completed successfully.
+- `install_path`: the executable to launch.
+- `subcommand`: one argument passed to that executable.
 
-## Position in the Client Architecture
+It returns a `Child` process handle on success, allowing the caller to obtain the operating-system process identifier or otherwise manage the launched process. It returns an error if creation fails or if the build target is unsupported.
 
-The OpenFrame client is installed and supervised as a system service. Ordinarily, a child launched by that service can be terminated when its parent service is stopped. Platform Detached Process creates a separate process lifetime before the original client is stopped, allowing the child to run independently.
+```rust
+pub fn spawn_detached(install_path: &Path, subcommand: &str) -> Result<Child>
+```
+
+## System Placement
+
+The function belongs to the Rust OpenFrame Client library rather than to one of the server-side Java services. The tenant repository packages and deploys the broader OpenFrame platform, while the agent library runs on managed endpoints. The dependency is pinned as `openframe_agent_lib` version `v0.0.5` in the repository's ecosystem metadata.
 
 ```mermaid
 flowchart LR
-    ServiceManager["Operating system service manager"] --> ClientService["OpenFrame client service"]
-    ClientService --> Caller["Lifecycle operation"]
-    Caller --> DetachedProcess["Platform Detached Process"]
-    DetachedProcess --> ClientBinary["Installed client binary"]
-    ServiceManager -->|"stops service"| ClientService
-    ClientBinary --> DetachedWork["Detached subcommand work"]
+    TenantRepo["OpenFrame OSS Tenant"] -->|"consumes openframe_agent_lib"| ClientLibrary["OpenFrame Client Library"]
+    ClientLibrary -->|"contains"| DetachedProcess["Platform Detached Process"]
+    ClientService["OpenFrame Client Service"] -->|"requests detached launch"| DetachedProcess
+    DetachedProcess -->|"starts"| ClientExecutable["Installed Client Executable"]
+    ClientExecutable -->|"runs"| Subcommand["Client Subcommand"]
+    ServiceManager["Service Manager"] -->|"stops"| ClientService
+    ServiceManager -. "does not own detached child" .-> Subcommand
 ```
 
-The library-level dependency boundary is intentional: OpenFrame OSS Tenant provides the client application and deployment assembly, while the upstream OpenFrame OSS Library owns this Rust platform behavior. The function operates only on a filesystem path and a subcommand string, so it is not coupled to NATS, HTTP, or the tenant's server-side services.
+The library-level implementation has a direct wrapper in the uninstallation code: `spawn_detached_uninstall` invokes `spawn_detached` with the uninstall subcommand and records the spawned process identifier. The broader service uninstallation path first performs its platform-specific preparation, including the deregistration setup where applicable, then delegates to macOS or Windows uninstall logic. The detached helper supplies the process-lifetime guarantee needed when that logic stops the service.
 
-## Platform-Specific Detachment
-
-```mermaid
-flowchart TD
-    Request["Spawn request"] --> SelectPlatform{"Supported platform?"}
-    SelectPlatform -->|"macOS"| MacLaunch["Create child in a new session"]
-    SelectPlatform -->|"Windows"| WindowsLaunch["Create detached child with no window"]
-    SelectPlatform -->|"Other"| Unsupported["Return unsupported platform error"]
-    MacLaunch --> Child["Return child handle"]
-    WindowsLaunch --> Child
-```
+## Platform Behavior
 
 ### macOS
 
-On macOS, the implementation builds a command for the installed client binary and configures all three standard streams to null devices. During child setup, it calls `setsid()` through `pre_exec`. The new session prevents signals associated with `launchd` stopping `com.openframe.client` from terminating the detached child mid-operation. No extra `launchd` job or plist is created.
+On macOS, Platform Detached Process creates a child with the requested executable and subcommand, redirects standard input, output, and error to null devices, and calls `setsid()` in the child just before execution. Creating a new session separates the child from the launchd-managed service session so stopping `com.openframe.client` does not signal the child away mid-run.
 
-The setup code is necessarily unsafe because it runs in the child between process creation and execution. Its safety rationale is narrow: `setsid()` is async-signal-safe, and an operating-system error from that call is returned to the spawn operation.
+The `pre_exec` callback is explicitly marked unsafe because it runs after the process fork and before execution. Its implementation performs only the async-signal-safe `setsid()` operation and propagates an operating-system error if that call fails.
 
 ### Windows
 
-On Windows, the child inherits the service account context, described by the implementation as LocalSystem. The command applies the `CREATE_NO_WINDOW` and `DETACHED_PROCESS` creation flags. Together, these avoid a visible console window and detach the child from the Service Control Manager-managed service process so the work can survive service shutdown.
+On Windows, the child inherits the LocalSystem context described by the implementation and is created with both `CREATE_NO_WINDOW` and `DETACHED_PROCESS` flags. These flags suppress a visible console window and detach the child from the service process so that the Service Control Manager stopping the parent does not terminate the follow-up process.
 
-### Other Platforms
+### Other Targets
 
-The public function compiles on other targets but immediately returns an error stating that detached client subcommands are unsupported. This avoids silently launching a child with lifecycle semantics that the module cannot guarantee.
+For targets other than macOS and Windows, the function always returns an error stating that detached client subcommands are unsupported. It deliberately does not attempt a generic Unix or Linux fallback. Callers that might run on such a target must handle the error rather than assume a child was created.
 
-## Spawn Sequence
+| Target | Isolation mechanism | Standard streams | Result |
+|---|---|---|---|
+| macOS | New session via `setsid()` before execution | All redirected to null | Returns spawned child or launch error |
+| Windows | `CREATE_NO_WINDOW` and `DETACHED_PROCESS` creation flags | Not changed by this helper | Returns spawned child or launch error |
+| Other | None | Not applicable | Returns unsupported-platform error |
+
+## Component Relationships
+
+Platform Detached Process depends only on the Rust standard process and path types plus `anyhow` error handling. Compile-time target gates select exactly one supported implementation or the unsupported-target error path.
+
+```mermaid
+flowchart TD
+    Caller["Platform Caller"] -->|"install path and subcommand"| PublicApi["spawn_detached"]
+    PublicApi --> TargetCheck{"Supported target?"}
+    TargetCheck -->|"macOS"| MacLauncher["macOS Launcher"]
+    TargetCheck -->|"Windows"| WindowsLauncher["Windows Launcher"]
+    TargetCheck -->|"other"| Unsupported["Unsupported Platform Error"]
+    MacLauncher --> Session["Create New Session"]
+    Session --> MacChild["Detached Child"]
+    WindowsLauncher --> Flags["Apply Detached Creation Flags"]
+    Flags --> WindowsChild["Detached Child"]
+    MacChild --> ChildHandle["Child Handle"]
+    WindowsChild --> ChildHandle
+```
+
+The module's principal integration is the uninstaller wrapper. It is a one-way handoff: the caller chooses the lifecycle operation, launches it detached, logs its identifier, and returns without waiting for that operation to complete.
 
 ```mermaid
 sequenceDiagram
-    participant Caller
-    participant Module as Platform Detached Process
-    participant OS as Operating System
-    participant Child as Client Subcommand
-    Caller->>Module: spawn_detached(install path, subcommand)
+    participant Service as OpenFrame Client Service
+    participant Uninstall as Uninstall Flow
+    participant Detached as Platform Detached Process
+    participant Child as Detached Client Process
+    participant Manager as Service Manager
+    Service->>Uninstall: Start self-uninstall
+    Uninstall->>Detached: Launch installed executable with uninstall subcommand
     alt macOS
-        Module->>OS: spawn with null streams and new session
-        OS-->>Module: child process handle
+        Detached->>Child: Spawn with new session and null streams
     else Windows
-        Module->>OS: spawn with detached and no window flags
-        OS-->>Module: child process handle
-    else unsupported platform
-        Module-->>Caller: unsupported platform error
+        Detached->>Child: Spawn with detached and no-window flags
+    else unsupported target
+        Detached-->>Uninstall: Return unsupported-platform error
     end
-    Module-->>Caller: child handle or spawn error
-    OS->>Child: run requested subcommand independently
+    Detached-->>Uninstall: Return child handle
+    Uninstall-->>Service: Log child process identifier and continue
+    Manager->>Service: Stop client service
+    Child->>Child: Continue independently
 ```
 
-The error from either supported platform includes the requested subcommand as context. This helps operators distinguish a process-creation failure from an error reported later by the detached operation itself. Because standard output and standard error are discarded on macOS, diagnosis of post-spawn behavior must rely on the detached program's own logging or persisted state rather than a captured child stream.
+## Execution Flow
 
-## Inputs, Outputs, and Failure Boundaries
+1. A platform workflow resolves the path of the installed client executable and selects a subcommand.
+2. The caller invokes `spawn_detached`.
+3. Compile-time target selection dispatches to the macOS or Windows launcher, or returns an unsupported-platform error.
+4. The platform launcher starts the same executable with precisely one subcommand argument and applies its isolation mechanism.
+5. On success, the caller receives a `Child` handle. The helper does not wait for completion, inspect the child's exit status, or retry failures.
+6. The caller may log the process identifier and allow the service manager to stop the original service while the detached client process continues.
 
-| Element | Meaning | Operational implication |
-|---|---|---|
-| `install_path` | Path to the installed OpenFrame client executable. | It must identify an executable the service context can start. |
-| `subcommand` | Single argument passed to that executable. | The receiving client invocation defines its semantics. |
-| `Child` | Handle for a successfully spawned operating-system process. | The caller may observe the process if it retains the handle, but detachment is intended to avoid dependency on the original service lifetime. |
-| Spawn error | Failure to create the child or configure detachment. | The caller must treat the lifecycle operation as not launched and apply its own recovery policy. |
-| Unsupported platform error | A target without macOS or Windows support. | Do not assume Linux or another target has equivalent detached behavior. |
+## Error Handling and Operational Characteristics
 
-## Lifecycle Considerations
+### Errors
 
-Use this utility only where breaking the parent-service relationship is required. Detached processes have fewer direct supervision guarantees than ordinary service children:
+The module adds contextual error text when a supported-platform launch fails, identifying the requested detached subcommand. Underlying operating-system launch errors remain part of the error chain. The macOS path also returns the operating-system error from `setsid()` when session creation fails.
 
-- The caller should ensure the subcommand is safe to run as a separate client invocation before spawning it.
-- Required state must be persisted before the service is stopped, because the detached child should not depend on in-memory state from the original process.
-- The operation should provide independent logs or durable status because the spawning call reports only launch success or failure.
-- Repeated launches should be prevented or made idempotent by the owning lifecycle workflow; this module does not deduplicate requests.
-- On macOS, null standard streams mean the child cannot communicate outcome through inherited console output.
+On an unsupported target, the parameters are intentionally consumed without use and a descriptive error is returned. This prevents compilation warnings while preserving the same public function signature across targets.
 
-## Maintenance Notes
+### Process Lifecycle Boundaries
 
-When changing Platform Detached Process, preserve the platform-specific lifetime guarantee rather than treating it as a general command wrapper. Changes should verify:
+- **Caller-owned inputs:** The caller is responsible for supplying a valid executable path and safe, expected subcommand.
+- **Detached process:** The helper creates the process but performs no supervision after creation.
+- **Service manager interaction:** Isolation is designed specifically to avoid parent-service shutdown terminating the child; it does not make the subcommand immune to every operating-system policy or administrator action.
+- **Completion handling:** There is no join, exit-status collection, timeout, or retry in this module. A workflow requiring those behaviors must implement them above this boundary.
 
-1. macOS children remain in a separate session before service shutdown can signal them.
-2. Windows children retain the intended service-account context and detached creation behavior.
-3. unsupported targets continue to fail clearly instead of receiving an unverified approximation.
-4. spawn errors retain subcommand context without exposing sensitive argument data.
-5. any new detached subcommand has its own completion reporting and recovery behavior.
+### Security Considerations
 
-The code-graph snapshot lists no direct callers or tests for `spawn_detached`; maintainers should therefore inspect the client lifecycle paths and exercise supported operating systems when modifying its contract.
+The helper executes the binary at `install_path` and forwards `subcommand` as an argument. Its safety therefore depends on trusted caller-controlled paths and subcommands. It does not perform authorization checks, path canonicalization, signature verification, or argument allowlisting. In the current usage model, those checks belong to the installation, update, and uninstallation workflows that decide whether a detached launch is appropriate.
+
+The macOS implementation discards all standard streams to ensure the detached process has no dependency on the service's console or pipes. This improves detachment but means diagnostics must be obtained from the launched operation's own logging rather than inherited terminal output.
+
+## Maintenance Guidance
+
+When changing Platform Detached Process:
+
+- Preserve the identical public signature across target builds so callers retain a consistent integration point.
+- Keep the unsupported-target branch explicit unless a tested platform-specific lifecycle implementation is added.
+- Treat changes to macOS `pre_exec` code as safety-critical. Only async-signal-safe work should occur between fork and execution.
+- Keep Windows creation flags aligned with the requirement that a child outlive Service Control Manager shutdown of the service.
+- Do not add waiting or cleanup semantics here without confirming that callers no longer rely on immediate return before service shutdown.
+- Test success and failure paths on both supported operating systems, including a service-stop scenario rather than only launching from an interactive shell.
+
+## Source and Verification Notes
+
+The implementation is maintained in the OpenFrame OSS Library source file [`detached_process.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/detached_process.rs). The organization-wide code graph currently records no direct consumers of `spawn_detached` beyond the available indexed relationships; the adjacent uninstaller wrapper shown in the library source is the documented integration path for detached self-uninstall execution.

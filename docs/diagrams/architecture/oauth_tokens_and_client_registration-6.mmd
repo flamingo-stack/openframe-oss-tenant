@@ -1,0 +1,9 @@
+flowchart TD
+    Scheduler["Scheduled Apple Token Sweep"] --> Tokens["Load Stored Apple User Tokens"]
+    Tokens --> UserLookup["Find Authorization User"]
+    UserLookup --> Deleted{"Missing or deleted user?"}
+    Deleted -->|"No"| Keep["Keep Token"]
+    Deleted -->|"Yes"| Revoke["Revoke and Forget Through Apple Token Service"]
+    Revoke --> Revoked{"Revocation succeeded?"}
+    Revoked -->|"Yes"| Removed["Token Removed"]
+    Revoked -->|"No"| Retry["Keep Token for Next Sweep"]

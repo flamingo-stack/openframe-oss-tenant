@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Executor as Unix Script Executor
+    participant FileSystem as File System
+    participant Child as Child Process
+    Executor->>Executor: Resolve execution identity
+    Executor->>Executor: Normalize CRLF to LF
+    Executor->>FileSystem: Write generated .sh file beside agent executable
+    Executor->>FileSystem: Set permissions to 0700
+    Executor->>FileSystem: Chown file when running as user
+    Executor->>Child: Start script directly with arguments and environment
+    Child-->>Executor: Return output, exit status, or timeout outcome
+    Executor->>FileSystem: Remove file through TempFileGuard

@@ -1,8 +1,12 @@
 sequenceDiagram
-    participant Test as "Test Service"
-    participant Api as "Knowledge-base API"
-    Test->>Api: Request knowledge-base data
-    Api-->>Test: JSON author and image fields
-    Test->>Test: Deserialize into KnowledgeBase Author
-    Test->>Test: Ignore unmapped JSON properties
-    Test->>Test: Use Tag Entity Type for tag assertions
+    participant Test as "Test Case"
+    participant Mapper as "Jackson Mapper"
+    participant Author as "KnowledgeBaseAuthor"
+    participant Image as "KnowledgeBaseImage"
+
+    Test->>Mapper: Read knowledge-base response JSON
+    Mapper->>Author: Populate author fields
+    Mapper->>Image: Populate imageUrl and hash
+    Image-->>Author: Assign nested image
+    Note over Mapper,Author: Unknown author and image fields are ignored
+    Author-->>Test: Provide test-side author model

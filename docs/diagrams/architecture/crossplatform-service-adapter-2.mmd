@@ -1,0 +1,12 @@
+flowchart TD
+    Input["ServiceConfig"] --> Label["Build com.openframe service label"]
+    Label --> Manager["Detect native service manager"]
+    Manager --> WorkDir["Resolve configured or application-support directory"]
+    WorkDir --> PlatformConfig["Apply target-specific configuration"]
+    PlatformConfig --> LogDirs["Create configured log directories"]
+    LogDirs --> Install["Install native service definition"]
+    Install --> RecoveryCheck{"Windows recovery configured?"}
+    RecoveryCheck -->|"yes"| Recovery["Apply SCM failure actions"]
+    RecoveryCheck -->|"no"| Start["Start service"]
+    Recovery --> Start
+    Start --> Process["Launch executable with run-as-service"]

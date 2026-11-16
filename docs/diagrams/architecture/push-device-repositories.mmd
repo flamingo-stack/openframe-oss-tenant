@@ -1,7 +1,9 @@
 flowchart LR
     Caller["Application service"] --> Repository["Push Device Repository"]
-    Repository --> CustomContract["Custom Push Device Repository"]
+    Repository --> DerivedQueries["Tenant-scoped derived queries"]
+    Repository --> CustomContract["Custom registration contract"]
     CustomContract --> Implementation["Custom Push Device Repository Implementation"]
-    Implementation --> Template["Tenant Aware Mongo Template"]
-    Template --> Mongo["MongoDB Push Device Collection"]
-    Repository --> Mongo
+    Implementation --> Template["Tenant-aware Mongo template"]
+    Template --> Collection[("Push device collection")]
+    Collection --> TokenIndex["Unique tenant and token index"]
+    Collection --> UserIndex["Tenant and user index"]

@@ -1,9 +1,0 @@
-flowchart LR
-    ConfigFile["initial_config.json"] -->|"get server URL and initial key"| InitialAuth["Initial Authentication Processor"]
-    ConfigFile -->|"get organization, user, and tags"| Registration["Registration Processor"]
-    ConfigFile -->|"get log key"| LogService["Log Key Service"]
-    ConfigFile -->|"get pending remote access mode"| ModeService["Remote Access Mode Service"]
-    ModeService -->|"apply or discard mode"| ModeClear["Clear Remote Access Mode"]
-    LogService -->|"persist acquired key"| LogSave["Save Log Key"]
-    LogSave --> ConfigFile
-    ModeClear --> ConfigFile

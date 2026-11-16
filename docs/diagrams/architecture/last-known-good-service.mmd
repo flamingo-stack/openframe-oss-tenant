@@ -1,0 +1,11 @@
+flowchart TD
+    ClientRuntime["OpenFrame Client Runtime"] --> UpdateLifecycle["Update Lifecycle"]
+    UpdateLifecycle --> LastKnownGood["Last Known Good Service"]
+    LastKnownGood --> DirectoryManager["Directory Manager"]
+    DirectoryManager --> SecuredDirectory["Secured Directory"]
+    DirectoryManager --> LogsDirectory["Logs Directory"]
+    LastKnownGood --> RunningBinary["Current Executable"]
+    LastKnownGood --> ReserveBinary["Reserve Binary with .lkg Suffix"]
+    LastKnownGood --> VersionAnchor["last_known_good.json"]
+    LastKnownGood --> BootMarker["boot.marker"]
+    LastKnownGood --> UpdateTranscripts["Updater Transcript Logs"]

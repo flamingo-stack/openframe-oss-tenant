@@ -1,0 +1,10 @@
+flowchart LR
+    RegistrationFlow["Registration or email policy flow"] --> CorePolicy["Core email policy interfaces"]
+    CorePolicy --> AddressSource["Stored blocked email address source"]
+    CorePolicy --> DomainSource["Stored blocked email domain source"]
+    AddressSource --> AddressRepository["Blocked email address repository"]
+    DomainSource --> DomainRepository["Blocked email domain repository"]
+    AddressRepository --> MongoDB[("MongoDB")]
+    DomainRepository --> MongoDB
+    AddressSource -.->|"DataAccessException allows"| RegistrationFlow
+    DomainSource -.->|"DataAccessException allows"| RegistrationFlow

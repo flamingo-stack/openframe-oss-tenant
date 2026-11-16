@@ -1,0 +1,15 @@
+flowchart TD
+    ClientRuntime["OpenFrame Client Runtime"] -->|"calls init or init_file_only"| LoggingSetup["Logging Setup"]
+    LoggingSetup -->|"checks and resolves paths"| DirectoryManager["Directory Manager"]
+    DirectoryManager -->|"returns log directory"| LogFile["openframe.log"]
+    LoggingSetup -->|"installs once"| TracingSubscriber["Global Tracing Subscriber"]
+    TracingSubscriber -->|"filters events"| EnvFilter["Environment Filter"]
+    TracingSubscriber -->|"records telemetry"| MetricsLayer["Metrics Layer"]
+    MetricsLayer -->|"stores metrics"| MetricsStore["Global Metrics Store"]
+    TracingSubscriber -->|"default format"| TextLayers["Compact File and Console Layers"]
+    TracingSubscriber -->|"JSON format"| JsonLayer["JSON File and Console Layer"]
+    TextLayers --> LogFile
+    JsonLayer --> LogFile
+    LoggingSetup -->|"optional construction"| LogShipper["Log Shipper"]
+    LoggingSetup -->|"fallback writes"| ManualWriter["Manual Log Writer"]
+    ManualWriter --> LogFile

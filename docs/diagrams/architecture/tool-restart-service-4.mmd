@@ -1,0 +1,6 @@
+flowchart LR
+    RestartService["Tool Restart Service"] --> Stop["Stop existing tool"]
+    Stop --> RunManager["Tool Run Manager"]
+    RunManager --> RunningCheck{"Already tracked as running?"}
+    RunningCheck -->|"yes"| Skip["Skip duplicate launch"]
+    RunningCheck -->|"no"| StartRunner["Run tool under supervision"]

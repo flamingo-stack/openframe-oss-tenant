@@ -1,0 +1,7 @@
+sequenceDiagram
+    participant Client as OpenFrame Client
+    participant Metrics as Metrics Integration
+    participant Trace as Tracing
+    Client->>Metrics: init()
+    Metrics->>Trace: info initialization event
+    Metrics-->>Client: Ok(())

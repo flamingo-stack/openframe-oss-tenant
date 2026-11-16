@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Open remote feature"] --> Attempt["Start MeshCentral session"]
+    Attempt --> Ready{"Session ready?"}
+    Ready -->|"yes"| Feature["Use desktop, shell, or file manager"]
+    Ready -->|"no, first attempt"| Recover["Return to device details"]
+    Recover --> Attempt
+    Ready -->|"no, second attempt"| Fail["Report session failure"]

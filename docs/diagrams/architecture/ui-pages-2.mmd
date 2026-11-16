@@ -1,13 +1,11 @@
 sequenceDiagram
-    participant Case as "Test Case"
-    participant Devices as "Devices Page"
-    participant DeviceView as "Device View"
-    participant Remote as "Remote Access"
-    participant Mesh as "MeshCentral"
-    Case->>Devices: "Search"
-    Devices->>Devices: "Select online row"
-    Devices->>DeviceView: "Open device"
-    Case->>DeviceView: "Choose remote feature"
-    DeviceView->>Mesh: "Establish session"
-    Mesh->>Remote: "Render session"
-    Remote->>Remote: "Wait for UI"
+    participant Test as Test Case
+    participant AuthMethod as Auth Method Page
+    participant SsoLogin as SSO Login Page
+    participant Browser as Browser
+    Test->>AuthMethod: Click OpenFrame SSO
+    AuthMethod->>Browser: Wait for /sas/login
+    AuthMethod-->>Test: Return SSO Login Page
+    Test->>SsoLogin: Enter credentials and submit
+    SsoLogin->>Browser: Wait until URL leaves /sas/login
+    SsoLogin-->>Test: Return dashboard page object

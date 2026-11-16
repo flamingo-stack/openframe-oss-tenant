@@ -1,16 +1,15 @@
 flowchart TD
-    Begin["Test Issues Request"] --> Pace["Reserve Rate Limit Slot"]
-    Pace --> Send["Send Request Through Filter Chain"]
-    Send --> ResponseCheck{"Response Available?"}
-    ResponseCheck -->|"No"| ReturnNull["Return Null Unchanged"]
-    ResponseCheck -->|"Yes"| RateCheck{"Status Is 429?"}
-    RateCheck -->|"Yes"| WaitRate["Wait Retry After Plus Grace"]
-    WaitRate --> RetryRate["Reset Pace and Resend"]
-    RetryRate --> RateCheck
-    RateCheck -->|"No"| GatewayCheck{"Status Is 502 or 504?"}
-    GatewayCheck -->|"No"| ReturnResponse["Return Response"]
-    GatewayCheck -->|"Yes"| MethodCheck{"Method Is Idempotent?"}
-    MethodCheck -->|"No"| ReturnResponse
-    MethodCheck -->|"Yes"| WaitGateway["Wait Three Seconds"]
-    WaitGateway --> RetryGateway["Resend Up To Two Times"]
-    RetryGateway --> ReturnResponse
+    Start["Test sends request"] --> RatePace["Reserve paced rate limit slot"]
+    RatePace --> Send["Send through Rest Assured context"]
+    Send --> Response{"Response received?"}
+    Response -->|"no"| NoResponse["Return null without masking transport failure"]
+    Response -->|"yes"| RateDecision{"HTTP 429?"}
+    RateDecision -->|"yes"| RateWait["Read Retry After and wait with grace"]
+    RateWait --> RateRetry["Reset pacing schedule and resend"]
+    RateRetry --> RateDecision
+    RateDecision -->|"no"| GatewayDecision{"HTTP 502 or 504?"}
+    GatewayDecision -->|"yes"| MethodDecision{"Idempotent method?"}
+    MethodDecision -->|"yes"| GatewayWait["Wait three seconds and retry"]
+    GatewayWait --> GatewayDecision
+    MethodDecision -->|"no"| Return["Return original response"]
+    GatewayDecision -->|"no"| Return

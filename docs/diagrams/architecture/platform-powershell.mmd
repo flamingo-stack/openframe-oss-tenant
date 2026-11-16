@@ -1,9 +1,10 @@
 flowchart LR
-    Caller["Windows client capability"] --> Resolver["Platform Powershell"]
-    Resolver --> Environment["WINDIR or SystemRoot"]
-    Resolver --> Candidate["System32 PowerShell candidate"]
-    Candidate --> Exists{"File exists?"}
-    Exists -->|"Yes"| Absolute["Absolute PowerShell path"]
-    Exists -->|"No"| Fallback["Bare powershell.exe name"]
-    Absolute --> Caller
-    Fallback --> Caller
+    Agent["OpenFrame Client agent"] --> Executor["Windows script executor"]
+    Executor --> Interpreter["Interpreter selection"]
+    Interpreter --> Platform["Platform Powershell"]
+    Platform --> Environment["Windows environment"]
+    Environment --> Windir["WINDIR"]
+    Environment --> SystemRoot["SystemRoot"]
+    Platform --> Filesystem["System32 file check"]
+    Filesystem --> PowerShell["Windows PowerShell executable"]
+    Interpreter --> Launcher["Process or elevated user launcher"]

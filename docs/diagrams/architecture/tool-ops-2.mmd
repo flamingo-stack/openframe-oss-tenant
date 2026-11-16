@@ -1,0 +1,13 @@
+flowchart TD
+    CommandListener["Client command listener"] --> ToolUpdate["Tool update service"]
+    CommandListener --> ToolInstall["Tool installation service"]
+    ToolUpdate --> ToolOps["Tool Ops"]
+    ToolInstall --> ToolOps
+    ToolRestart["Tool restart service"] --> ToolOps
+    ToolRun["Tool run manager"] --> ToolOps
+    ToolKill["Tool kill service"] --> ToolOps
+    ToolUpdate --> Platform["Platform updater and process controls"]
+    ToolInstall --> Platform
+    ToolRestart --> Platform
+    ToolRun --> Platform
+    Platform --> ManagedTool["Managed tool process or asset"]

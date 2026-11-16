@@ -1,0 +1,10 @@
+flowchart LR
+    StagedBinary["Staged executable"] --> Check["Validate size and paths"]
+    Check --> Service["Stop Windows service"]
+    Service --> Previous["Move target to previous copy"]
+    Previous --> Replace["Copy staged executable"]
+    Replace --> Start["Start service"]
+    Start --> Marker["Check boot marker version"]
+    Marker -->|"match"| Verified["Set verifying"]
+    Marker -->|"failure"| Recovery["Restore reserve or previous copy"]
+    Recovery --> Rollback["Set rolled back and restart service"]

@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "Test Case"
+    participant API as "GraphQL API"
+    participant Agent as "Device Agent"
+    Test->>API: Create script or schedule
+    Test->>API: Dispatch script or configure targets
+    API->>Agent: Deliver execution request
+    Agent->>API: Report execution status and output
+    Test->>API: Query executions, runs, and facets
+    Test->>API: Delete created schedules and scripts

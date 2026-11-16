@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Service as "Openframe API service"
+    participant Spring as "Spring Boot"
+    participant RedisModule as "Openframe Data Redis"
+    participant Redis as "Redis or Valkey cluster"
+    Service->>Spring: Start application context
+    Spring->>RedisModule: Evaluate Redis enablement
+    RedisModule->>Spring: Register templates and cache manager when enabled
+    RedisModule->>Spring: Customize Lettuce options
+    Spring->>Redis: Establish Lettuce connection without maintenance notifications
+    Service->>Spring: Invoke cached operation
+    Spring->>RedisModule: Build tenant-aware cache prefix
+    RedisModule->>Redis: Read or write serialized cache entry
+    Redis-->>Service: Return cached or computed value

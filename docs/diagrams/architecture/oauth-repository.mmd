@@ -1,0 +1,6 @@
+flowchart TD
+    Consumer["Authentication or OAuth service"] -->|"uses repository"| Repository["Oauth Repository"]
+    Repository -->|"extends"| SpringData["Spring Data MongoRepository"]
+    Repository -->|"stores and queries"| Token["OAuthToken document"]
+    SpringData -->|"reads and writes"| Mongo["MongoDB oauth_tokens collection"]
+    Token -->|"carries"| Tenant["Tenant identifier"]

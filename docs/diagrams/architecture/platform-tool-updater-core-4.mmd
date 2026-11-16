@@ -1,0 +1,13 @@
+flowchart TD
+    Requested["Requested installation type"] --> Compare{"Current type matches target?"}
+    Compare -->|"Yes"| NoMigration["No migration strategy"]
+    Compare -->|"No"| Factory["Create tool migrator"]
+    Factory --> Supported{"Path supported?"}
+    Supported -->|"No"| Error["Return unsupported-path error"]
+    Supported -->|"Yes"| Prepare["Prepare migration"]
+    Prepare --> Migrate["Migrate installation"]
+    Migrate --> Success{"Migration succeeds?"}
+    Success -->|"Yes"| Finalize["Finalize with new installation"]
+    Finalize --> Complete["Return new installation"]
+    Success -->|"No"| Rollback["Attempt migration rollback"]
+    Rollback --> Failure["Return migration error"]

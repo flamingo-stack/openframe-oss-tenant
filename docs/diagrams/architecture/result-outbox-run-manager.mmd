@@ -1,0 +1,9 @@
+flowchart LR
+    Producer["Result-producing client component"] -->|"enqueue subject and bytes"| Store["Result Store"]
+    Store -->|"pending keys and payload"| Manager["Result Outbox Run Manager"]
+    Wake["Tokio Notify"] -->|"wake flush loop"| Manager
+    Timer["Periodic flush interval"] -->|"wake flush loop"| Manager
+    Manager -->|"max payload"| Publisher["Result Publisher"]
+    Manager -->|"raw or acknowledged publish"| Publisher
+    Publisher -->|"NATS or JetStream"| Broker["NATS broker"]
+    Manager -->|"remove after success"| Store

@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Live: Create ticket
+    Live --> Resolved: Transition to resolved status
+    Resolved --> Archived: Transition to archived status
+    Live --> TechRequired: Take over and assign caller
+    TechRequired --> Resolved: Allowed lifecycle path
+    TechRequired --> Archived: Rejected transition
+    Live --> Archived: Rejected transition

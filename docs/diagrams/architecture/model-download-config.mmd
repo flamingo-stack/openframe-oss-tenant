@@ -1,0 +1,7 @@
+flowchart LR
+    ControlPlane["Tool installation message"] -->|"contains"| Configs["Download configurations"]
+    Configs -->|"selects by OS"| Selector["Model Download Config"]
+    Selector -->|"resolved configuration"| Downloader["GitHub download service"]
+    Downloader -->|"artifact or extracted files"| Installer["Tool installation service"]
+    Selector -->|"installation metadata"| Installer
+    Installer -->|"records"| Installed["Installed tool installation"]

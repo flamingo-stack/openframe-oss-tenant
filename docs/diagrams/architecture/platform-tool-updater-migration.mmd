@@ -1,9 +1,11 @@
 flowchart TD
-    Caller["Tool update orchestration"] -->|"calls run_migration"| MigrationModule["Platform Tool Updater Migration"]
-    InstalledTool["Installed tool and current installation"] --> MigrationModule
-    DownloadConfig["Download configuration and target type"] --> MigrationModule
-    Dependencies["Updater dependencies"] --> MigrationModule
-    MigrationModule -->|"selects"| MigratorContract["Tool Migrator contract"]
-    MigratorContract -->|"macOS and Windows only"| StandardGuiMigrator["Standard to GUI App migrator"]
-    StandardGuiMigrator -->|"returns"| NewInstallation["New installation metadata"]
-    MigrationModule -->|"returns result to"| Caller
+    ToolUpdateCore["Tool Updater Core"] -->|"requests migration"| MigrationFactory["Migration Factory"]
+    InstalledTool["Installed Tool"] -->|"current installation"| MigrationFactory
+    TargetType["Target Installation Type"] -->|"requested type"| MigrationFactory
+    MigrationFactory -->|"selects supported path"| StandardToGui["Standard to GUI Application Migrator"]
+    MigrationFactory -->|"rejects unsupported path"| Unsupported["Migration Error"]
+    StandardToGui -->|"stops old tool"| ToolKill["Tool Kill Service"]
+    StandardToGui -->|"downloads and installs"| DownloadService["Download Service"]
+    StandardToGui -->|"resolves arguments"| CommandResolver["Command Parameters Resolver"]
+    StandardToGui -->|"launches in user session"| GuiSession["GUI User Session"]
+    StandardToGui -->|"returns"| NewInstallation["GUI Application Installation"]

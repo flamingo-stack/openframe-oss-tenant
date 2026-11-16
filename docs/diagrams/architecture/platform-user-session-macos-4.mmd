@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Caller as Tool Lifecycle Caller
+    participant Session as Platform User Session Macos
+    participant Macos as macOS Utilities
+    participant Desktop as User Desktop Session
+    Caller->>Session: get_console_user()
+    Session->>Macos: stat console owner
+    Session->>Macos: id username UID
+    Macos-->>Session: ConsoleUser
+    Caller->>Session: is_gui_session_ready(uid)
+    Session->>Macos: pgrep Dock and Finder
+    Macos-->>Session: readiness result
+    Caller->>Session: is_process_running(executable path)
+    Session->>Macos: pgrep executable path
+    Macos-->>Session: running result
+    Caller->>Session: launch_as_user(executable arguments user)
+    Session->>Macos: launchctl asuser
+    Macos->>Desktop: launch application or executable
+    Desktop-->>Session: child process created
+    Session-->>Caller: launch result

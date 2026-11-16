@@ -1,0 +1,10 @@
+flowchart LR
+    UserDocument["User Document"] --> Aggregate["User Aggregate Spec"]
+    Aggregate --> Event["User Event"]
+    Event --> Projection["User On Tickets Projection"]
+    Projection --> TicketRepository["Ticket Projection Repository"]
+    TicketRepository --> TicketDocuments["Ticket Documents"]
+    TicketDocuments --> TicketView["Ticket User View"]
+    TicketView --> Reconciliation["Reconciliation"]
+    UserDocument --> UserRepository["User Repository"]
+    UserRepository --> Reconciliation

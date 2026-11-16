@@ -1,17 +1,12 @@
-sequenceDiagram
-    participant C1 as Caller One
-    participant P as Timed Permit Pool
-    participant S as Semaphore
-    participant W as Blocking Worker
-    C1->>P: call with timeout and closure
-    P->>S: acquire owned permit
-    S-->>P: permit
-    P->>W: spawn closure with permit
-    P-->>C1: Timed Out after execution window
-    Note over W: Closure keeps running with permit
-    W-->>S: Closure exits and permit drops
-    participant C2 as Caller Two
-    C2->>P: call with timeout and closure
-    P->>S: acquire owned permit
-    S-->>P: permit becomes available
-    P->>W: spawn closure with permit
+flowchart TD
+    Start["Caller invokes pooled call"] --> Acquire["Wait for an owned permit"]
+    Acquire --> AcquireDecision{{"Permit acquired before timeout?"}}
+    AcquireDecision -->|"no"| Busy["Return Busy and do not start closure"]
+    AcquireDecision -->|"yes"| Spawn["Spawn blocking closure with permit"]
+    Spawn --> Await["Wait for task result"]
+    Await --> CompleteDecision{{"Task completed before timeout?"}}
+    CompleteDecision -->|"yes"| ReturnValue["Return value or TaskFailed"]
+    CompleteDecision -->|"no"| ReturnTimeout["Return TimedOut to caller"]
+    ReturnTimeout --> Continue["Closure continues with permit"]
+    Continue --> Release["Closure returns and releases permit"]
+    ReturnValue --> Release

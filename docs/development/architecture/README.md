@@ -1,211 +1,205 @@
-
 # Architecture Overview
 
-[OpenFrame OSS Tenant](https://github.com/flamingo-stack/openframe-oss-tenant) is the deployable, tenant-oriented distribution of the OpenFrame MSP platform. It is a **service** repository (Java, Rust, Bash) that assembles runnable Spring Boot applications, a Rust endpoint agent, shared configuration, Helm charts, and Argo CD application definitions into one operational unit.
+OpenFrame OSS Tenant is the deployable, self-hosted tenant distribution for [OpenFrame](https://openframe.ai). It assembles Spring Boot services, Kubernetes manifests, shared runtime configuration, and endpoint-agent integrations into a single AI-driven MSP platform stack. Most domain logic is consumed from the **OpenFrame OSS Library** (`com.openframe.oss:*`, pinned at version `7.0.11`); this repository owns the tenant-specific service entry points, runtime configuration, Helm charts, Argo CD application definitions, and the release delivery pipeline.
 
-Most domain logic — authorization flows, API resolvers, client-registration behavior, stream processing, data repositories — is implemented upstream in [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) and pinned at version `7.0.11` (the Rust agent core, `openframe_agent_lib`, is pinned at `v0.0.5`). This repository owns the runnable applications, their container images, the Kubernetes/Argo CD deployment topology, and tenant-facing configuration. Per the organization's repository graph (`get_repo_ecosystem`, coverage: full), no other managed repository consumes artifacts published from this one — it sits at the end of the dependency chain, assembling the library rather than being assembled by others.
-
-For a narrative walkthrough of modules and request flows, see the [Architecture Reference](../../reference/architecture/README.md) and its [ecosystem facts](../../reference/architecture/ecosystem.md).
+> This repository publishes nine Maven artifacts and one Cargo crate. No other repository in the organization is recorded as a consumer of these artifacts — this is a leaf service in the dependency graph, not a shared library.
 
 ## High-Level Architecture
 
 ```mermaid
 flowchart LR
-    User["Browser, technician, integration, or endpoint agent"] --> Gateway["OpenFrame Gateway"]
+    User["Browser, API Client, or Managed Endpoint"] --> Gateway["OpenFrame Gateway"]
 
     Gateway --> Auth["Authorization Server"]
     Gateway --> Api["OpenFrame API"]
     Gateway --> ExternalApi["External API"]
-    Gateway --> Client["Client Service"]
-    Gateway --> Frontend["Frontend"]
-
-    Config["Config Server"] -.-> Api
-    Config -.-> Auth
-    Config -.-> Client
-    Config -.-> Gateway
-    Config -.-> Management
-    Config -.-> Stream
-
-    Client --> Nats["NATS JetStream"]
-    Management --> Nats
-    Api --> Nats
-
-    Client --> Kafka["Kafka"]
-    Stream["Stream Service"] --> Kafka
-    Stream --> Cassandra["Cassandra"]
-    Stream --> Pinot["Pinot"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> Frontend["OpenFrame Frontend"]
 
     Api --> Mongo["MongoDB"]
-    Auth --> Mongo
-    Client --> Mongo
-    Management["Management Service"] --> Mongo
-
     Api --> Redis["Redis Cluster"]
-    Auth --> Redis
-    Client --> Redis
+    Api --> Cassandra["Cassandra"]
+    Api --> Pinot["Pinot"]
+
+    ClientService --> Nats["NATS"]
+    ClientService --> Kafka["Kafka"]
+    ClientService --> Mongo
+
+    Management["Management Service"] --> Nats
+    Management --> Mongo
     Management --> Redis
 
-    Client --> Fleet["Fleet MDM"]
-    Gateway --> Mesh["MeshCentral"]
+    Stream["Stream Service"] --> Kafka
+    Stream --> Cassandra
+    Stream --> Pinot
+    Stream --> Mongo
+
+    Config["Config Service"] --> Api
+    Config --> ClientService
+    Config --> Gateway
+    Config --> Stream
+
+    TenantTools["Fleet MDM and MeshCentral"] --> Mongo
 ```
 
-The Maven reactor at [`pom.xml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/pom.xml) declares nine modules under [`openframe/services`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services): `openframe-config`, `openframe-api`, `openframe-client`, `openframe-stream`, `openframe-management`, `openframe-gateway`, `openframe-external-api`, `openframe-authorization-server`, and `openframe-test`. Each is a thin Spring Boot application (Spring Boot `4.1.1`, Java `25`, Spring Cloud `2025.1.3`) that pulls in one or more `com.openframe.oss:*` library artifacts and a small amount of local application wiring (component-scan packages, bootstrap class).
+Every service in this diagram is a thin Spring Boot composition layer: the entry-point classes (for example `ApiApplication`, `GatewayApplication`, `ClientApplication`) are only a few lines of Spring Boot bootstrap. The actual behavior — REST and GraphQL handling, OAuth flows, NATS/Kafka listeners, package catalogs, RMM dispatch — is implemented in the OpenFrame OSS Library and pulled in as a `*-service-core` Maven dependency per service. This repository's job is composition, configuration, and deployment, not domain logic.
 
-The endpoint agent is separate from the Maven reactor: [`clients/openframe-client/Cargo.toml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/Cargo.toml) defines the `openframe-client` Rust binary, published as the `openframe_client` crate. Its entry point, [`clients/openframe-client/src/main.rs`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/src/main.rs), is a thin wrapper that calls `openframe::run()` from the `openframe-agent-lib` crate (`openframe_agent_lib` `v0.0.5`, pulled from the OSS Library repository). Nearly all agent behavior — registration, command execution, logging, tool updates — lives in that upstream crate.
+### Ecosystem position
+
+```mermaid
+flowchart LR
+  Library["OpenFrame OSS Library (flamingo-stack/openframe-oss-lib)"]
+  Tenant["OpenFrame OSS Tenant (this repository)"]
+  Tenant -->|"maven and cargo, pinned 7.0.11 / v0.0.5"| Library
+```
+
+The repository graph (`get_repo_ecosystem`) confirms this is a one-directional dependency: OpenFrame OSS Tenant pulls `com.openframe.oss:*` Maven artifacts and the `openframe_agent_lib` Cargo crate from OpenFrame OSS Library at pinned versions, and no other repository is recorded as consuming anything this repository publishes. Coverage is `full`, meaning this absence of downstream consumers is confirmed organization-wide, not merely unobserved.
 
 ## Core Components
 
-| Component | Module path | Library dependency | Responsibility |
-|---|---|---|---|
-| **OpenFrame Gateway** | [`openframe/services/openframe-gateway`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-gateway) | `openframe-gateway-service-core` | Reactive edge: JWT validation, API-key boundary, service routing, integrated-tool proxying. Routes are defined in [`configs/base/openframe-gateway.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/openframe-gateway.yml). |
-| **Authorization Server** | [`openframe/services/openframe-authorization-server`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-authorization-server) | `openframe-authorization-service-core` | Tenant-aware OAuth 2.1 / OIDC, password login, invitations, SSO, password reset, token issuance. Entry point: `OpenFrameAuthorizationServerApplication`. |
-| **OpenFrame API** | [`openframe/services/openframe-api`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-api) | `openframe-api-lib`, `openframe-api-service-core`, `openframe-data-redis` | Primary GraphQL/REST application API for devices, organizations, tickets, knowledge base, automation, and remote-management workflows. Entry point: `ApiApplication`. |
-| **External API** | [`openframe/services/openframe-external-api`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-external-api) | `openframe-external-api-service-core` | API-key-authenticated REST endpoints for customers, devices, tickets, tools, logs, and knowledge-base content. Entry point: `ExternalApiApplication`. |
-| **Client Service** | [`openframe/services/openframe-client`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-client) | `openframe-client-core`, `openframe-data-redis` | Endpoint-agent registration, authentication, device events, command delivery, RMM results, schedules, package-update state. Entry point: `ClientApplication`. |
-| **Management Service** | [`openframe/services/openframe-management`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-management) | `openframe-management-service-core` | Initializes client/tool-agent configuration, NATS streams, integrated tools, package catalogs, background reconciliation. |
-| **Stream Service** | [`openframe/services/openframe-stream`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-stream) | `openframe-stream-service-core` | Processes Kafka and CDC events into operational logs, RMM history, software inventory, and analytics projections. Entry point: `StreamApplication`. |
-| **Config Server** | [`openframe/services/openframe-config`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-config) | `openframe-config-core` | Spring Cloud Config Server: centralized runtime configuration and shared Logback XML delivery. Entry point: `ConfigServerApplication`. |
-| **OpenFrame Test** | [`openframe/services/openframe-test`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-test) | `openframe-test-service-core` | Shared test-support application artifact for the platform's service suite. |
-| **Endpoint Agent** | [`clients/openframe-client`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/clients/openframe-client) | `openframe_agent_lib` (cargo) | Rust binary that registers devices, maintains credentials, executes commands, manages integrated tools, ships logs, and recovers state. Published as the `openframe_client` crate. |
+| Component | Maven artifact | Upstream library dependency | Runtime role |
+| --- | --- | --- | --- |
+| OpenFrame Gateway | `com.openframe:openframe-gateway` | `openframe-gateway-service-core` | Reactive edge router: JWT boundary, API-key enforcement, CORS, WebSocket and tool proxying. Routes `/sas/**`, `/api/**`, `/api-docs/**`, `/clients/**`, and remaining traffic to the frontend. |
+| OpenFrame Authorization Server | `com.openframe:openframe-authorization-server` | `openframe-authorization-service-core` | Multi-tenant OAuth 2.0 / OpenID Connect server: password login, tenant discovery, invitation acceptance, SSO (Google, Microsoft, Apple), signed JWT issuance. |
+| OpenFrame API | `com.openframe:openframe-api` | `openframe-api-service-core`, `openframe-api-lib` | Main REST and GraphQL service: devices, organizations, tickets, RMM commands, software catalog, knowledge base, notifications. |
+| OpenFrame External API | `com.openframe:openframe-external-api` | `openframe-external-api-service-core` | API-key-protected REST surface for third-party integrations: customers, devices, tickets, logs, integrated tools. |
+| OpenFrame Client | `com.openframe:openframe-client` | `openframe-client-core` | Managed-endpoint registration, authentication, telemetry ingestion (NATS), delivery dispatch, RMM scheduling and execution tracking. |
+| OpenFrame Management | `com.openframe:openframe-management` | `openframe-management-service-core` | Startup reconciliation, NATS stream provisioning, Fleet setup, package catalog synchronization, scheduled maintenance jobs. |
+| OpenFrame Stream | `com.openframe:openframe-stream` | `openframe-stream-service-core` | Kafka event consumption: normalization, enrichment, log routing/storage, execution-history updates, Fleet software projection. |
+| OpenFrame Config | `com.openframe:openframe-config` | `openframe-config-core` | Spring Cloud Config Server; serves shared `configs/base` and profile configuration plus reusable Logback XML over HTTP. |
+| OpenFrame Test | `com.openframe:openframe-test` | `openframe-test-service-core` | Shared integration, UI, API, and end-to-end test infrastructure artifact for the tenant. |
+| OpenFrame Client (agent) | `openframe_client` (Cargo) | `openframe_agent_lib` (git-pinned `v0.0.5`) | Rust endpoint-agent binary: enrollment, NATS messaging, script execution, tool lifecycle, logging, durable result delivery. |
 
-Each service's `pom.xml` (for example [`openframe/services/openframe-api/pom.xml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/openframe/services/openframe-api/pom.xml) and [`openframe/services/openframe-gateway`'s equivalent](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services/openframe-gateway)) pulls its corresponding `*-service-core` artifact plus `spring-cloud-starter-config` so the service fetches configuration from the Config Server at startup.
+Supporting data and messaging infrastructure, deployed from `manifests/datasources`, backs these services: **MongoDB** (primary document store), **Redis Cluster** (caching and ShedLock distributed locks), **Cassandra** and **Pinot** (log storage and analytical projections), **Kafka** and **Zookeeper** (event streaming and Debezium CDC), and **NATS** (device/agent messaging). **Fleet MDM** and **MeshCentral**, deployed from `manifests/tenant`, are the integrated RMM and remote-access tools this platform orchestrates.
 
-### Gateway routing table
-
-The gateway, defined in [`configs/base/openframe-gateway.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/openframe-gateway.yml), is the single HTTP entry point into the tenant services:
-
-| Path prefix | Destination service |
-|---|---|
-| `/sas/**` | `openframe-authorization-server` |
-| `/api/**` | `openframe-api` |
-| `/api-docs/**` | `openframe-external-api` |
-| `/clients/**` | `openframe-client` |
-| `/**` | Frontend workload |
-
-## Data Flow: Endpoint Management
-
-The sequence below follows an endpoint agent from registration through ongoing command delivery, as implemented across the Client Service, NATS, and the OpenFrame API.
+## Data Flow: Control Plane and Endpoint Interaction
 
 ```mermaid
 sequenceDiagram
-    participant Agent as "Endpoint agent"
+    participant Endpoint as "Managed Endpoint"
     participant Gateway as "OpenFrame Gateway"
     participant Client as "Client Service"
-    participant Nats as "NATS JetStream"
-    participant Api as "OpenFrame API"
+    participant Nats as "NATS"
+    participant Kafka as "Kafka"
+    participant Stream as "Stream Service"
+    participant Data as "Platform Data Stores"
 
-    Agent->>Gateway: Register or authenticate
-    Gateway->>Client: Route client request
-    Client-->>Agent: Return machine credentials and tokens
-
-    Agent->>Nats: Publish heartbeat, inventory, and results
-    Nats->>Client: Deliver agent events
-    Client->>Api: Persist and expose device state
-
-    Api->>Nats: Publish command or tool delivery
-    Nats->>Agent: Deliver machine scoped work
-    Agent->>Nats: Publish acknowledgement and result
+    Endpoint->>Gateway: Register or authenticate
+    Gateway->>Client: Forward client request
+    Client->>Data: Persist machine and credential state
+    Client->>Nats: Deliver commands and tool work
+    Nats->>Endpoint: Receive command or update
+    Endpoint->>Nats: Publish telemetry and execution results
+    Client->>Kafka: Publish delivery and event records
+    Kafka->>Stream: Consume platform events
+    Stream->>Data: Store logs, execution history, and projections
 ```
 
-Key behaviors backing this flow, documented in the referenced library modules:
+A more detailed view of agent registration, as implemented by `openframe-client-core` (the library module running inside the OpenFrame Client service):
 
-- **Registration** generates a UUID machine ID and a `SecureRandom`-derived agent secret, resolves the target organization (falling back to the tenant default), and optionally assigns device tags — see [Client Core Registration Agent](../../reference/architecture/client-core-registration-agent/client-core-registration-agent.md).
-- **Event ingestion** runs through durable and best-effort NATS listeners (connection, heartbeat, hostname, timezone, installed-agent, tool-connection) inside the Client Service — see [Client Core Server Controllers](../../reference/architecture/client-core-server-controllers/client-core-server-controllers.md).
-- **Command and software dispatch** is persisted first (one `RUNNING` execution row per target machine) and then published to NATS, so execution state exists before the agent ever receives the message — see [Api Service Backend](../../reference/architecture/api-service-backend/api-service-backend.md).
-- **Delivery recovery** uses a watchdog/retry mechanism (`DeliveryRepublisherRegistry`) that can re-publish retained schedule or software messages after a disruption.
+```mermaid
+sequenceDiagram
+    participant Agent as "Device Agent"
+    participant Controller as "Agent Controller"
+    participant Registration as "Registration Service"
+    participant Flags as "Feature Flags Service"
+    participant Router as "Delivery Router"
 
-## Data Flow: Event and Analytics Pipeline
+    Agent->>Controller: POST /api/agents/register with initial key
+    Controller->>Registration: Register device and credentials
+    Registration-->>Controller: Registration response
+    Controller-->>Agent: Machine identity and client secret
+    Registration->>Flags: Seed current feature flags (best effort)
+    Flags->>Router: Dispatch machine feature flag delivery
+    Router-->>Agent: Feature flag delivery
+```
+
+Registration is deliberately decoupled from feature-flag delivery: a flag-dispatch failure is logged but never turns a successful registration into a failed one. The resulting access and refresh tokens are issued from `/oauth/token`, signed as JWTs carrying `machine_id`, `grant_type`, and role claims.
+
+## Deployment Architecture
+
+The tenant is delivered as Argo CD applications structured in three layers — platform, datasources, and tenant — synchronized through an app-of-apps chart.
 
 ```mermaid
 flowchart TD
-    Agent["Endpoint agent"] --> Client["Client Service"]
-    Client --> Kafka["Kafka"]
-    Debezium["Debezium Connect (CDC)"] --> Kafka
-    Kafka --> Stream["Stream Service"]
-    Stream --> Cassandra["Cassandra event log store"]
-    Stream --> Pinot["Pinot analytics projections"]
-    Cassandra --> Api["OpenFrame API log queries"]
-    Pinot --> Api
+    Argo["Argo CD App of Apps"] --> Platform["Platform Applications"]
+    Argo --> Datasources["Datasource Applications"]
+    Argo --> Tenant["Tenant Application"]
+
+    Platform --> NamespacePlatform["Platform Namespace"]
+    Platform --> Ingress["Ingress NGINX"]
+    Platform --> Config["OpenFrame Config"]
+    Platform --> Tools["Development Tools"]
+
+    Datasources --> Cassandra["Cassandra"]
+    Datasources --> Kafka["Kafka"]
+    Datasources --> Mongo["MongoDB"]
+    Datasources --> Nats["NATS"]
+    Datasources --> Pinot["Pinot"]
+    Datasources --> Redis["Redis Cluster"]
+
+    Tenant --> Services["OpenFrame Service Images"]
+    Tenant --> Fleet["Fleet MDM"]
+    Tenant --> Mesh["MeshCentral"]
+    Tenant --> Frontend["OpenFrame Frontend"]
 ```
 
-The Stream Service consumes Kafka topics (including Debezium change-data-capture events) and normalizes them into Cassandra-backed operational logs and Pinot analytics projections. The OpenFrame API's log-retrieval services (`BothStoresLogDetailsService`) select between Cassandra and Loki depending on a configured migration boundary, documented in [Api Service Backend](../../reference/architecture/api-service-backend/api-service-backend.md).
+Namespace-creation applications run at a lower Argo CD sync wave (`-1`) than the services that depend on them (wave `0`), as defined in `manifests/apps/values.yaml`. Service container images are published by `.github/workflows/release.yml` to `ghcr.io/flamingo-stack/openframe-oss-tenant/<service>`, and the tenant Helm chart (`manifests/tenant`) references those images plus the externally published `ghcr.io/flamingo-stack/fleetmdm/fleet` and `ghcr.io/flamingo-stack/meshcentral/meshcentral` images, along with the separately-maintained `ghcr.io/flamingo-stack/openframe-oss-frontend/openframe-oss-frontend` image.
 
-## Deployment Topology
+Gateway routing, defined in `configs/base/openframe-gateway.yml`, maps:
 
-```mermaid
-flowchart TD
-    Apps["Argo CD app of apps"] --> PlatformNs["Platform namespace"]
-    Apps --> DataNs["Datasource namespace"]
-
-    PlatformNs --> Ingress["Ingress NGINX"]
-    PlatformNs --> ConfigApp["OpenFrame Config"]
-    PlatformNs --> Tools["Developer tools"]
-
-    DataNs --> Mongo2["MongoDB"]
-    DataNs --> Redis2["Redis Cluster"]
-    DataNs --> Kafka2["Kafka"]
-    DataNs --> Nats2["NATS"]
-    DataNs --> Cassandra2["Cassandra"]
-    DataNs --> Pinot2["Pinot"]
-    DataNs --> Debezium2["Debezium Connect"]
-
-    Tenant["Tenant chart"] --> Services["OpenFrame service workloads"]
-    Tenant --> Fleet2["Fleet MDM"]
-    Tenant --> Mesh2["MeshCentral"]
-
-    Services --> Mongo2
-    Services --> Redis2
-    Services --> Kafka2
-    Services --> Nats2
-```
-
-Argo CD applications are declared in [`manifests/apps/values.yaml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/manifests/apps/values.yaml), which sequences platform namespace setup (wave `-1`), platform workloads (wave `0`: ingress-nginx, dev-tools, openframe-config), the datasource namespace (wave `-1`), and datasource workloads (wave `0`: Cassandra, Debezium Connect, Kafka, MongoDB, MongoDB (MeshCentral), MySQL (Fleet MDM), NATS, Pinot, Redis Cluster, Zookeeper). The [`manifests/tenant`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/manifests/tenant) chart then deploys the OpenFrame service workloads alongside Fleet MDM (`oci://ghcr.io/flamingo-stack/fleetmdm/helm-charts/fleet`) and MeshCentral (`oci://ghcr.io/flamingo-stack/meshcentral/helm-charts/meshcentral`).
-
-Shared datasource endpoints used by every service are configured once in [`configs/base/application.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/application.yml) (MongoDB, Redis Cluster, Cassandra, Pinot controller/broker). Service-specific Kafka and NATS bootstrap addresses are set per service in files such as [`configs/base/openframe-api.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/openframe-api.yml), [`configs/base/openframe-client.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/openframe-client.yml), [`configs/base/openframe-external-api.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/openframe-external-api.yml), [`configs/base/openframe-management.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/openframe-management.yml), and [`configs/base/openframe-stream.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/openframe-stream.yml).
-
-[`.github/workflows/release.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/.github/workflows/release.yml) builds and publishes one container image per service to `ghcr.io/flamingo-stack/openframe-oss-tenant/<service>` (for example `openframe-api`, `openframe-authorization-server`, `openframe-external-api`, `openframe-client`, `openframe-config`, `openframe-gateway`, `openframe-management`, `openframe-stream`) and publishes the `app-of-apps` OCI Helm chart from [`manifests/app-of-apps`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/manifests/app-of-apps).
+| Path | Destination |
+| --- | --- |
+| `/sas/**` | `openframe-authorization-server` |
+| `/api-docs/**` | `openframe-external-api` (Swagger docs) |
+| `/api/**` | `openframe-api` |
+| `/clients/**` | `openframe-client` |
+| `/**` (remaining) | `openframe-frontend` |
 
 ## Key Design Decisions
 
-### 1. Thin runnable services over a shared library
+### 1. Tenant repository as thin composition layer over a shared library
 
-Every Maven module under `openframe/services` is intentionally small: an `@SpringBootApplication` class, a `@ComponentScan` declaration, and a `pom.xml` pulling in one `com.openframe.oss:*-service-core` artifact. All domain logic — GraphQL resolvers, authorization grants, data repositories, RMM dispatch — lives in [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib), pinned uniformly at `7.0.11` via the `openframe.libs.version` property in the root [`pom.xml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/pom.xml). This keeps a single version boundary: upgrading the platform means bumping one Maven property, and this repository's job is assembly, image delivery, and deployment topology — not feature implementation.
+Every service module under `openframe/services/` (for example `openframe/services/openframe-api/pom.xml`) declares exactly one `*-service-core` or `*-core` dependency from `com.openframe.oss`, plus Spring Boot/Spring Cloud starters. The actual application class (such as `ApiApplication`, `GatewayApplication`, or `OpenFrameAuthorizationServerApplication`) contains only Spring Boot bootstrap code. This keeps business logic, security rules, and persistence behavior centralized in **OpenFrame OSS Library**, version-pinned at `7.0.11` across every service so the whole tenant upgrades the shared domain layer atomically.
 
-### 2. Gateway as the single trust and routing boundary
+### 2. Centralized version pinning through the parent POM
 
-All inbound traffic reaches backend services through `openframe-gateway`; services other than the gateway are not expected to be reached directly in production. The gateway resolves the tenant domain from the request `Host` and stamps `X-Tenant-Domain` on forwarded requests — see [Api Service Tenant](../../reference/architecture/api-service-tenant/api-service-tenant.md) — removing any client-supplied value first so tenant identity cannot be spoofed by a caller. Downstream services (API, Authorization Server, Client, External API) trust that header rather than re-deriving tenant context themselves.
+The root `pom.xml` defines `<openframe.libs.version>7.0.11</openframe.libs.version>` once and every service module inherits it. This, combined with a long list of CVE-driven version overrides (Jackson, Tomcat, BouncyCastle, Thrift, lz4-java, Freemarker, Plexus Utils) in `dependencyManagement`, shows the project treats supply-chain security patching as a first-class, centrally-managed concern rather than something each service manages independently.
 
-### 3. NATS JetStream for agent-facing messaging, Kafka for the analytics pipeline
+### 3. Tenant-scoped signing keys and JWT claims
 
-Two different message buses serve different purposes. NATS JetStream carries low-latency, per-machine traffic: registration, heartbeats, command dispatch, and execution results between the Client Service and endpoint agents. Kafka (with Debezium Connect for CDC) carries the higher-volume event stream destined for the Stream Service, Cassandra, and Pinot. This separation keeps agent command-and-control latency independent of analytics ingestion volume.
+The Authorization Server resolves JWT signing keys per active tenant rather than using a single shared key. A JWKS request with no resolved tenant context is treated as a hard error, not a fallback to a default key. Access tokens are stamped with `tenant_id`, `userId`, and effective roles, making tenant isolation part of the token contract rather than an API-layer afterthought. See `docs/reference/architecture/openframe-authorization-service-core/security_and_tenant_context.md`.
 
-### 4. Durable persistence before dispatch
+### 4. Gateway-stamped tenant domain propagation
 
-Command and software-action dispatch services persist a `RUNNING` execution row (or a delivery/schedule record) **before** publishing the corresponding NATS message. This ordering, documented in [Api Service Backend](../../reference/architecture/api-service-backend/api-service-backend.md) and [Client Core Registration Agent](../../reference/architecture/client-core-registration-agent/client-core-registration-agent.md), ensures that a crash between persistence and publish is recoverable (the row exists and can be retried or marked failed), rather than leaving no record of attempted work.
+The gateway injects a trusted tenant-domain header that downstream services (such as the API service's `TenantDomainProvider`) read rather than re-deriving tenant context from request input. This keeps tenant resolution authoritative and prevents a client from spoofing tenant identity by manipulating a request body or query parameter.
 
-### 5. Distributed-lock-coordinated scheduling
+### 5. Separate reactive and synchronous MongoDB access layers
 
-Because the Client Service runs multiple replicas, recurring work (device-local schedules, reconnect dispatch, package auto-update triggers, watchdogs) uses Redis-backed ShedLock so a given scheduled job executes on at most one replica per lock window, avoiding duplicate dispatch. See [Client Core Server Controllers](../../reference/architecture/client-core-server-controllers/client-core-server-controllers.md).
+The platform depends on both `openframe-data-mongo-sync` and `openframe-data-mongo-reactive` as distinct upstream artifacts, built on the shared `openframe-data-mongo-common` document/enum layer. Synchronous services (API, Client) and reactive flows (Gateway, Authorization Server) each get the access pattern appropriate to their Spring stack, while sharing one canonical `Device` document model and workflow enum vocabulary — avoiding duplicated or diverging domain types across sync and reactive code paths.
 
-### 6. Config Server as the single source of runtime and logging configuration
+### 6. Durable execution state before message dispatch
 
-`openframe-config` is a Spring Cloud Config Server backed by a Git repository. Its `ConfigGitCacheRepair` component runs before the embedded web server accepts traffic, removing stale Git locks and resetting a dirty local checkout (or deleting the cache entirely on unrecoverable failure) so configuration retrieval stays available even after an interrupted Git operation. It additionally serves shared Logback XML through a `/logging/{filename}` endpoint restricted to a strict `[a-z0-9-]+\.xml` filename pattern. See [Config Core](../../reference/architecture/config-core/config-core.md).
+The RMM and package-update subsystems (`openframe-client-core`, consumed by the Client service) persist execution-tracking rows — a running `PackageUpdateDeviceState`, a queued `ScriptExecution`, a `ProcessedCommand` dedup record — **before** publishing a NATS or Kafka message to the device. This "persist then publish" ordering means a crash between persistence and delivery leaves recoverable state rather than an orphaned in-flight command, and duplicate or redelivered messages can be detected and skipped.
 
-### 7. Conditional/extensible processors instead of hard-coded integrations
+### 7. Distributed, ShedLock-coordinated scheduling
 
-Several lifecycle touch-points — agent registration-secret processing, invitation processing, SSO config processing, user processing, domain-existence validation — are implemented as `@ConditionalOnMissingBean` default no-op (or permissive) components. A deployment can supply its own bean to add custom behavior (for example, connecting invitation events to an external workflow) without forking the library. See [Api Service Processors](../../reference/architecture/api-service-processors/api-service-processors.md).
+Scheduled jobs in the Client service (device-online dispatch, script-schedule runner, execution watchdog) use Redis-backed `ShedLock` with tenant- and environment-scoped lock keys, so multiple replicas of the same service never duplicate a sweep. Lock durations are bounded (minimum and maximum) so a crashed replica cannot indefinitely block the next scheduled run — correctness also depends on the underlying services' idempotent state transitions, not locking alone.
 
-### 8. Fail-open external dependencies for registration paths
+### 8. Fail-open policy for non-critical external checks
 
-The disposable-email-domain check (`KickboxDisposableDomainChecker`) treats any lookup failure, timeout, or malformed response as "not disposable" rather than blocking registration. Local domain policy (blocklist/allowlist) is evaluated first and does not depend on the external service at all. This design, in [Core Email Validation](../../reference/architecture/core-email-validation/core-email-validation.md), ensures a third-party outage cannot take down tenant registration.
+The disposable-email-domain checker (`openframe-core`) is explicitly designed to fail open: a timeout or malformed response from the external lookup service returns "not disposable" rather than blocking registration. This reflects a deliberate choice to prioritize platform availability over a secondary anti-abuse signal.
 
-## Where to Go Next
+### 9. Best-effort post-registration enrichment
 
-- [Architecture Reference](../../reference/architecture/README.md) — full repository structure, module documentation index, and further end-to-end diagrams.
-- [Ecosystem Facts](../../reference/architecture/ecosystem.md) — generated dependency and delivery-chain data for this repository.
-- [Development overview](../README.md), [environment setup](../setup/environment.md), and [local development](../setup/local-development.md) for running the stack.
-- [Security](../security/README.md), [testing](../testing/README.md), and [contributing guidelines](../contributing/guidelines.md) for day-to-day development practices.
+Feature-flag seeding after agent registration, ticket-history writes after a status transition, and Apple-token revocation sweeps all follow the same pattern: the primary operation (registration, ticket transition, token issuance) must succeed independently, and secondary enrichment is logged-and-swallowed on failure rather than rolling back or failing the primary action.
 
-The [OpenFrame CLI](https://github.com/flamingo-stack/openframe-cli) is maintained as a separate, external repository and is not part of this codebase; see its [installation guide](https://github.com/flamingo-stack/openframe-cli#installation) and [documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs).
+### 10. Database-per-datastore specialization
 
-[![OpenFrame Product Walkthrough (Beta Access)](https://img.youtube.com/vi/awc-yAnkhIo/maxresdefault.jpg)](https://www.youtube.com/watch?v=awc-yAnkhIo)
+Rather than a single general-purpose database, the platform routes different data shapes to purpose-built stores: MongoDB for tenant documents and workflow state, Cassandra and Pinot for high-volume log and analytical data (with a configurable cutover timestamp between them via `openframe.tool-events.store` and `openframe.tool-events.loki-since`), Redis for caching and distributed locks, and Kafka/NATS for event and command transport respectively.
+
+## Related Documentation
+
+For a full breakdown of each OpenFrame OSS Library module consumed by this tenant — including the Authorization Server's SSO flows, the Client Core's registration and telemetry pipeline, the API Service Core's GraphQL data fetchers, and the Stream Service Core's enrichment pipeline — see the reference architecture documentation, which documents each upstream module in detail.
+
+[![Getting Started with OpenFrame - Organization Setup Basics](https://img.youtube.com/vi/-_56_qYvMWk/maxresdefault.jpg)](https://www.youtube.com/watch?v=-_56_qYvMWk)

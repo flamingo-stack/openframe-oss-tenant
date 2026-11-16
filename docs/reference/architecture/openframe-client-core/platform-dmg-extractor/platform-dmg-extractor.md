@@ -1,136 +1,149 @@
 # Platform Dmg Extractor
 
-Platform Dmg Extractor is the macOS-specific archive-extraction adapter used by the OpenFrame client runtime. It receives an in-memory DMG payload, mounts that payload read-only with the native `hdiutil` utility, copies either the mounted contents or a selected item into a caller-provided destination, and then attempts to detach the image and remove its temporary DMG file.
+Platform Dmg Extractor provides the OpenFrame client agent's macOS-specific path for expanding a downloaded disk image into a target directory. It accepts an in-memory DMG, writes a uniquely named temporary image, mounts that image read-only with `hdiutil`, copies either the complete mounted volume or a configured item within it, and then attempts to detach the volume and delete the temporary image.
 
-The implementation is supplied by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library, version `v0.0.5`. Its source is [dmg_extractor.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/dmg_extractor.rs). The tenant repository runs this library as part of its OpenFrame client distribution; it does not provide a network endpoint or persistent configuration for this module.
+The implementation is supplied by the **OpenFrame OSS Library** through the `openframe_agent_lib` Cargo artifact, version `v0.0.5`, which this repository consumes. Its source is [dmg_extractor.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/dmg_extractor.rs). It is intended to be used by higher-level download and tool-installation workflows rather than as a standalone service.
 
-## Responsibilities and boundaries
+## Responsibilities
 
-Platform Dmg Extractor has a deliberately narrow responsibility:
+- Construct a lightweight, clonable `DmgExtractor` using `new`; `Default` delegates to the same constructor.
+- On macOS, safely stage a DMG from `Bytes` in the system temporary directory.
+- Attach the staged image without browsing and in read-only mode.
+- Select either the mounted root or the configured `source_path` inside the mounted volume.
+- Replace a pre-existing destination item that has the selected source's filename, including a symbolic link.
+- Copy the selected source recursively into the target directory with the platform `cp -R` command.
+- Attempt cleanup after the copy path completes, retaining the original copy result if cleanup also fails.
+- Refuse extraction on non-macOS targets with an explicit error rather than trying to interpret a DMG.
 
-- Materialize received DMG bytes as a uniquely named temporary file.
-- Mount the image read-only and without browsing visibility.
-- Select the entire mounted volume or the `source_path` item within it.
-- Replace a pre-existing destination item with the same basename, then recursively copy the selected item with `cp -R`.
-- Attempt unmounting and temporary-file removal after a copy attempt.
-- Return detailed errors when the platform utility or copy operation fails.
+## Architecture and Boundaries
 
-It does **not** download assets, validate an image signature or checksum, create the destination directory, install the copied application, or manage an application lifecycle. Those decisions belong to the caller and to higher-level OpenFrame client services.
-
-## Architecture
+`DmgExtractor` is a platform adapter inside the Rust OpenFrame client. It owns only image staging, mounting, copy, and best-effort cleanup. Artifact acquisition, compatibility selection, installation bookkeeping, and post-copy execution remain outside this module.
 
 ```mermaid
 flowchart LR
-    Caller["OpenFrame client caller"] -->|"DMG bytes, target directory, optional source path"| Extractor["Platform Dmg Extractor"]
-    Extractor -->|"write temporary image"| TempFile["Temporary DMG file"]
-    Extractor -->|"attach read only"| Hdiutil["macOS hdiutil"]
+    DownloadService["Download and installation workflow"] -->|"DMG bytes and extraction settings"| Extractor["Platform Dmg Extractor"]
+    Extractor -->|"write temporary image"| TempStorage["System temporary directory"]
+    Extractor -->|"read-only attach and detach"| Hdiutil["macOS hdiutil"]
     Hdiutil -->|"mounted volume"| MountPoint["Temporary mount point"]
-    Extractor -->|"copy recursively"| CopyTool["macOS cp"]
-    MountPoint -->|"selected source"| CopyTool
-    CopyTool -->|"copied files"| Target["Caller target directory"]
-    Extractor -->|"detach"| Hdiutil
+    Extractor -->|"recursive copy"| CopyTool["macOS cp"]
+    CopyTool -->|"installed files"| TargetDirectory["Caller-selected target directory"]
 ```
 
-The public API is intentionally small. `DmgExtractor::new` constructs a stateless extractor, while `extract_all` performs the full asynchronous extraction operation. On macOS, mounting, unmounting, file writes, and process launches are asynchronous. On every other target OS, `extract_all` immediately returns an unsupported-platform error identifying the requested target directory.
+### Public Surface
 
-## API behavior
+| Component | Role |
+|---|---|
+| `DmgExtractor::new` | Creates the stateless extractor value. |
+| `DmgExtractor::extract_all` | Asynchronously stages, mounts, selects, replaces, copies, verifies, and cleans up an image on macOS. On other operating systems it returns an unsupported-operation error. |
+| `Default` | Convenience construction equivalent to `DmgExtractor::new`. |
 
-| Component | Behavior |
-| --- | --- |
-| `DmgExtractor::new` | Returns a stateless extractor instance. `Default` delegates to this constructor. |
-| `DmgExtractor::extract_all` on macOS | Writes the supplied `Bytes` payload to a UUID-named temporary DMG, mounts it, selects content, removes a colliding destination entry, copies recursively, and performs best-effort cleanup. |
-| `DmgExtractor::extract_all` on non-macOS | Returns an error stating that DMG extraction is supported only on macOS. |
-| `mount` | Private helper that creates the mount directory and runs `hdiutil attach -nobrowse -readonly -mountpoint`. |
-| `copy_recursive` | Private helper that invokes `cp -R` from the selected source to the target directory. |
-| `unmount` | Private helper that invokes `hdiutil detach -quiet` and removes the empty mount directory when detachment succeeds. |
+The mounting, unmounting, and recursive-copy helpers are internal implementation details and are compiled only for macOS.
 
-## Extraction flow
-
-```mermaid
-flowchart TD
-    Start["Extraction request"] --> Write["Write bytes to UUID temporary DMG"]
-    Write --> Mount["Create mount point and attach DMG"]
-    Mount --> Select{"Source path provided?"}
-    Select -->|"Yes"| Item["Select requested item below mount point"]
-    Select -->|"No"| Volume["Select entire mount point"]
-    Item --> Replace["Remove destination item with matching basename"]
-    Volume --> Replace
-    Replace --> Copy["Run recursive copy into target directory"]
-    Copy --> Detach["Attempt quiet DMG detach"]
-    Detach --> Remove["Attempt temporary DMG removal"]
-    Remove --> Result{"Copy succeeded?"}
-    Result -->|"Yes"| Success["Return success"]
-    Result -->|"No"| Failure["Return copy error"]
-```
-
-The copy result is the operation result. Cleanup failures are logged as warnings rather than replacing a successful copy result or obscuring a copy error. When copying succeeds, the module logs whether the expected copied item exists in the target directory.
-
-## Content selection and destination semantics
-
-The optional `source_path` determines the input to the recursive copy:
-
-- With no source path, the mounted volume itself is copied into the target directory.
-- With a source path, the extractor selects that path under the temporary mount point and copies it into the target directory.
-
-Before copying, the extractor derives the selected source basename. If an entry with that basename already exists directly beneath the target directory, it removes that entry first. A symbolic link is removed as a file; any other existing entry is removed recursively as a directory. The subsequent `cp -R` command therefore controls the final filesystem layout and metadata behavior.
-
-The caller must provide a usable target directory. The extractor does not create it and does not verify that the requested source path exists before invoking `cp`.
-
-## Component interaction
+## Extraction Flow
 
 ```mermaid
 sequenceDiagram
     participant Caller
     participant Extractor as "Platform Dmg Extractor"
-    participant FileSystem as "Temporary filesystem"
-    participant Hdiutil as "hdiutil"
-    participant CopyTool as "cp"
+    participant Filesystem as "Temporary filesystem"
+    participant Hdiutil as "macOS hdiutil"
+    participant Copy as "macOS cp"
     Caller->>Extractor: extract_all(bytes, target, source path)
-    Extractor->>FileSystem: write temporary DMG
-    Extractor->>Hdiutil: attach read only at mount point
-    Hdiutil-->>Extractor: mount result
-    Extractor->>FileSystem: remove colliding target item
-    Extractor->>CopyTool: copy selected source recursively
-    CopyTool-->>Extractor: copy result
-    Extractor->>Hdiutil: detach mount point
-    Extractor->>FileSystem: remove temporary DMG
-    Extractor-->>Caller: copy success or copy error
+    Extractor->>Filesystem: Write uniquely named temporary DMG
+    Extractor->>Hdiutil: Attach read-only image at temporary mount point
+    Hdiutil-->>Extractor: Mounted volume
+    Extractor->>Extractor: Select mounted root or configured source
+    Extractor->>Filesystem: Remove existing destination item when applicable
+    Extractor->>Copy: Copy selected source recursively to target
+    Copy-->>Extractor: Copy result
+    Extractor->>Hdiutil: Detach mount point
+    Extractor->>Filesystem: Remove temporary DMG
+    Extractor-->>Caller: Original copy result
 ```
 
-## Error handling and cleanup
+The following decision flow summarizes platform selection and source selection:
 
-Failures are annotated with contextual paths or command stages. Typical failure boundaries are:
+```mermaid
+flowchart TD
+    Start["Extraction request"] --> MacCheck{{"macOS target?"}}
+    MacCheck -->|"no"| Unsupported["Return unsupported extraction error"]
+    MacCheck -->|"yes"| Stage["Write uniquely named temporary DMG"]
+    Stage --> Mount["Attach image read-only at temporary mount point"]
+    Mount --> SourceCheck{{"Source path supplied?"}}
+    SourceCheck -->|"yes"| SelectedPath["Select path inside mounted volume"]
+    SourceCheck -->|"no"| SelectedRoot["Select mounted volume root"]
+    SelectedPath --> Replace["Remove conflicting destination item"]
+    SelectedRoot --> Replace
+    Replace --> Copy["Copy recursively to target directory"]
+    Copy --> Cleanup["Attempt detach and remove temporary DMG"]
+    Cleanup --> Result["Return copy result"]
+```
 
-| Stage | Returned failure condition |
-| --- | --- |
-| Temporary write | The DMG payload cannot be written to the generated temporary path. |
-| Mount-point preparation | The mount-point directory cannot be created. |
-| Mount | `hdiutil attach` cannot run or exits unsuccessfully. |
-| Copy | `cp -R` cannot run or exits unsuccessfully. |
-| Non-macOS invocation | The request is rejected before filesystem work begins. |
+## Detailed Behavior
 
-After the copy step is entered, detachment and temporary-DMG deletion are attempted even if copying fails. Their failures are warning-only, preserving the primary copy outcome. In contrast, an attach failure returns immediately, so the normal post-copy cleanup path is not reached. Operational monitoring should therefore use the emitted DMG logs to identify mount failures that can leave temporary artifacts behind.
+### Temporary Resources
 
-## Operational and security considerations
+Each macOS extraction uses a randomly generated UUID to derive both the staged DMG filename and mount-point directory in the system temporary directory. This avoids collisions between concurrent extraction requests. The module writes all supplied bytes before invoking the operating system mount utility.
 
-- The image is mounted with `-readonly`, limiting mount-time writes to the image itself, and `-nobrowse`, preventing Finder-style browsing exposure.
-- The temporary filename and mount-point suffix are UUID-based, reducing collision risk across concurrent extractions.
-- Extraction executes operating-system commands, so macOS hosts must provide both `hdiutil` and `cp` and grant the client permission to access the temporary area and destination.
-- DMG bytes are treated as trusted by this module. Integrity checks, provenance checks, and authorization need to happen before calling Platform Dmg Extractor.
-- Treat `source_path` as trusted input. The implementation joins it to the mount point but does not explicitly validate containment or reject absolute and traversal-style paths. Callers should constrain it to an expected relative item inside the mounted image.
-- Replacing an existing destination basename is destructive. The caller should choose an isolated target directory and coordinate concurrent installs or updates.
+The mount command is equivalent to the following conceptual operation:
 
-## Logging and diagnostics
+```bash
+hdiutil attach -nobrowse -readonly -mountpoint TEMPORARY_MOUNT_POINT TEMPORARY_DMG_PATH
+```
 
-The module emits structured tracing events prefixed with `[DMG]`. The logs identify the target directory, selected source, payload size, generated temporary paths, native command output for attachment, copy outcome, cleanup warnings, and final copied-item existence verification. These messages are the primary diagnostics because the extractor does not produce a separate report object or metrics payload.
+Read-only mounting limits the extractor's interaction with the disk image. `-nobrowse` prevents the volume from being surfaced through Finder browsing behavior.
 
-## Maintenance checklist
+### Source and Destination Semantics
 
-When changing Platform Dmg Extractor, verify the following on a macOS test host:
+When `source_path` is present, Platform Dmg Extractor resolves it relative to the temporary mount point. When it is absent, it selects the mount point itself and copies the full mounted content.
 
-1. A valid DMG can be mounted and copied with and without a source path.
-2. A conflicting symbolic link and a conflicting directory at the destination are handled as intended.
-3. A copy failure still triggers detach and temporary-file cleanup attempts.
-4. An invalid image produces an actionable attach error with command output.
-5. A non-macOS build continues to reject extraction without attempting to execute macOS utilities.
-6. Path validation is added at the caller boundary before accepting untrusted source-path values.
+Before copying a selected item with a filename, the module examines the corresponding item in the target directory:
+
+1. An existing symbolic link is removed as a file.
+2. Any other existing item is removed recursively as a directory.
+3. The selected source is copied with `cp -R` into the target directory.
+
+This makes the operation replacement-oriented for the selected item's destination name. Callers must therefore ensure that the target directory and any configured source path are appropriate for the artifact being installed.
+
+### Result and Cleanup Semantics
+
+The copy outcome is the operation's authoritative result. After the copy attempt, the extractor independently tries to detach the mounted image and delete the staged DMG. Failures during either cleanup action are logged as warnings and do not replace a successful or failed copy result.
+
+If staging or mounting fails, execution stops at that failure through error propagation. In particular, cleanup after the copy is not reached when the mount operation itself fails. Logs include the target, optional source path, image size, temporary paths, command results, and copy verification details to help diagnose these cases.
+
+## Error Handling and Observability
+
+Platform Dmg Extractor adds contextual errors around the major operations:
+
+| Stage | Failure reported to caller |
+|---|---|
+| Staging | Failure to write the temporary DMG, including its path. |
+| Mounting | Failure to create the mount point, execute `hdiutil`, or attach the image successfully. |
+| Copying | Failure to run `cp -R` or a nonzero copy exit status. |
+| Unsupported platform | A message that DMG extraction is supported only on macOS, including the requested target directory. |
+
+The module logs progress with `info` and cleanup or copy failures with `warn`. On a successful copy it also logs whether the expected copied item exists when the selected source has a filename. This check is informational; it does not add a separate failure condition.
+
+## Operational Considerations
+
+- **Platform requirement:** DMG extraction must execute in a macOS build and runtime environment. Other target operating systems return an error by design.
+- **System tools:** The host must provide `hdiutil` and `cp`, and the process must have permission to write to the temporary directory and selected target directory.
+- **Target lifecycle:** Existing destination content matching the selected source name can be deleted before copying. Use an installation-specific directory rather than a shared location.
+- **Cleanup diagnostics:** A failed detach or temporary-file removal is logged but does not alter the returned copy status. Investigate recurring warnings because they can leave mounted volumes or temporary images behind.
+- **Artifact trust:** This module operates on bytes passed to it; it does not validate download origin, checksums, signatures, or the existence of a configured source path. Those concerns belong to the artifact acquisition and installation layers.
+
+## Relationship to the OpenFrame Client
+
+Within the client agent, Platform Dmg Extractor is one of several operating-system adapters used during software delivery. Download configuration determines which artifacts apply to the current operating system, while download and installation services acquire the artifact and coordinate its installation. This module performs the narrow macOS disk-image expansion step and returns control to that workflow for subsequent installation, tracking, and process-management actions.
+
+```mermaid
+flowchart LR
+    ArtifactConfig["Artifact configuration"] --> Selection["Operating system selection"]
+    Selection --> Download["Artifact download"]
+    Download --> Extractor["Platform Dmg Extractor"]
+    Extractor --> Files["Extracted application or tool files"]
+    Files --> Install["Installation and update workflow"]
+    Install --> Tracking["Installed tool tracking and lifecycle management"]
+```
+
+No standalone configuration keys, network endpoints, persistent records, or background workers are defined by Platform Dmg Extractor itself.

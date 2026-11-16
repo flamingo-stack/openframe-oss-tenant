@@ -1,0 +1,8 @@
+flowchart TD
+    Runner["Test Runner and Test Cases"] --> Requests["Rest Assured Requests"]
+    Requests --> Helpers["Test Helpers"]
+    Helpers --> Gateway["Gateway Route"]
+    Gateway --> ExternalApi["External API"]
+    Gateway --> PlatformApi["Platform API"]
+    ExternalApi --> Assertions["Test Assertions"]
+    PlatformApi --> Assertions

@@ -1,0 +1,9 @@
+flowchart LR
+    User["Client user prompt"] --> Fae["Fae client assistant"]
+    Token["AGENT token machine identity"] --> Context["Dialog memory context"]
+    Context --> Tools["Client tool providers"]
+    Fae --> Tools
+    Tools --> OwnMachine["Own enrolled machine"]
+    ForeignMachine["Foreign enrolled machine"] -. "not reachable by client tools" .-> Tools
+    Fae --> Reply["Assistant reply"]
+    ForeignMachine -. "identifiers must not appear" .-> Reply

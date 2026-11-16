@@ -1,0 +1,6 @@
+flowchart TD
+    Runtime["Runtime software action data"] --> Api["API software action data fetcher"]
+    Api --> Response["Software action response"]
+    Response --> TestSupport["OpenFrame test-service core"]
+    TestSupport --> Edge["SoftwareActionRunEdge"]
+    Edge --> Assertions["Pagination-aware test assertions"]

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Agent
+    participant Processor
+    participant Dispatcher
+    participant Tracker
+    Agent->>Processor: WAITING, application running
+    Processor->>Processor: Set deadline from event time
+    Processor->>Dispatcher: Schedule deadline force
+    alt Terminal status before deadline
+        Agent->>Processor: DONE or FAILED
+        Processor->>Tracker: Cancel deadline force
+    else Terminal status after deadline
+        Agent->>Processor: DONE or FAILED
+        Processor->>Tracker: Cancel original wait delivery
+    end

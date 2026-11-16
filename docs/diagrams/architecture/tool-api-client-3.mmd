@@ -1,8 +1,0 @@
-flowchart TD
-    Message["Tool installation message"] --> Assets["Selected asset metadata"]
-    Assets --> SourceCheck{"Source is Tool API?"}
-    SourceCheck -->|"yes"| Fetch["Tool Api Client fetches bytes"]
-    SourceCheck -->|"no"| GitHub["GitHub download service"]
-    Fetch --> Install["Installation workflow persists and installs"]
-    GitHub --> Install
-    Install --> State["Installed tool state and runtime management"]

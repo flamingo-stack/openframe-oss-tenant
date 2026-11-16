@@ -1,0 +1,10 @@
+flowchart TD
+    TicketViews["Ticket User Views"] --> Filter["Keep tickets with a user reference"]
+    Filter --> EmptyCheck{"Any tickets remain?"}
+    EmptyCheck -->|"no"| AllMatch["All records match"]
+    EmptyCheck -->|"yes"| IdSets["Collect tenant and user identifiers"]
+    IdSets --> Users["Fetch matching users"]
+    Users --> Names["Build tenant scoped name map"]
+    Names --> Compare["Compare assignee then resolver copy"]
+    Compare --> Match["No mismatch"]
+    Compare --> Mismatch["Report mismatch"]

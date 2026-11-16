@@ -1,145 +1,128 @@
 # Model Initial Config
 
-Model Initial Config defines the persisted bootstrap record used by the OpenFrame endpoint client before the endpoint has completed its normal authentication and registration lifecycle. The module consists of the Rust `InitialConfiguration` data model from the OpenFrame OSS Library's `openframe_agent_lib` artifact, consumed by this repository's OpenFrame client runtime.
+Model Initial Config defines the persisted bootstrap state for an OpenFrame endpoint client. Its sole type, `InitialConfiguration`, carries the information supplied during installation that lets the agent locate its server, authenticate for the first time, associate itself with an organization, and apply initial device settings.
 
-Its purpose is deliberately narrow: retain installation-time connection, identity, logging, and enrollment inputs long enough for the endpoint agent to establish durable credentials and synchronize pending configuration with the backend. The initial enrollment key is not intended to be permanent state; it is cleared after the agent has a usable replacement credential.
-
-**Source:** [initial_configuration.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/initial_configuration.rs)
+The type is implemented by the Rust `openframe_agent_lib` dependency from [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/initial_configuration.rs). This tenant repository consumes that library at version `v0.0.5`; it does not define a second local model.
 
 ## Responsibilities
 
-- Carry the endpoint's initial server target and enrollment key.
-- Preserve optional organization, user, tag, local certificate, and remote-access bootstrap settings.
-- Serialize and deserialize installation state as JSON using Serde.
-- Provide safe defaults for fields introduced after earlier configuration files may already exist.
-- Support a transition from one-time installation credentials to ongoing authentication, registration, and log-streaming state.
+- Provide one serializable record for installation-time client bootstrap inputs.
+- Preserve mandatory endpoint and enrollment values: `server_host`, `initial_key`, and the organization identifier.
+- Hold optional metadata and deferred settings without breaking older persisted configurations.
+- Support a controlled handoff from one-time enrollment material to the log-stream key.
+- Persist a pending remote-access mode until the backend has acknowledged it.
 
-The model does not perform I/O, validate arguments, authenticate, or call backend APIs itself. Those responsibilities belong to services in the same client library that create, persist, read, and evolve this record.
+The model is a data contract, not an orchestration layer. Validation, persistence, authentication, and acknowledgement behavior are handled by the surrounding client services.
 
-## Data Contract
+## Structure
 
-`InitialConfiguration` derives `Clone`, `Debug`, `Serialize`, `Deserialize`, and `Default`. A default instance contains Rust defaults: empty strings, `false` for `local_mode`, an empty tag list, and no pending remote-access mode.
+`InitialConfiguration` derives `Clone`, `Debug`, `Serialize`, `Deserialize`, and `Default`. `serde` therefore provides JSON serialization and compatibility defaults for selected fields when they are absent from an existing configuration file.
 
-| Field | Type | Required at installation | Meaning and lifecycle |
-|---|---|---:|---|
-| `server_host` | `String` | Yes | Server URL supplied at installation. Despite the field name, the installation service accepts a server URL and stores it here. |
-| `initial_key` | `String` | Yes | One-time enrollment credential used during initial authentication. It is cleared once a log key is held. |
-| `log_key` | `String` | No | Log-streaming key supplied at installation or obtained later. Missing JSON values deserialize as an empty string. |
-| `local_mode` | `bool` | No | Enables local-mode behavior and local certificate discovery during installation. |
-| `org_id` | `String` | Yes | Organization identifier used to associate the endpoint with its organization. Missing JSON values deserialize as an empty string. |
-| `user_id` | `String` | No | Optional user identifier saved with the bootstrap configuration. Missing JSON values deserialize as an empty string. |
-| `local_ca_cert_path` | `String` | No | Path to the local CA certificate discovered through `mkcert` when local mode is enabled. Missing JSON values deserialize as an empty string. |
-| `tags` | `Vec<DeviceTag>` | No | Installation tags, each represented by a key and one or more values. Missing JSON values deserialize as an empty list. |
-| `remote_access_mode` | `Option<String>` | No | Install-time remote-access mode awaiting backend acknowledgement. It is omitted from JSON when absent and cleared after acknowledgement. |
+| Field | Type | Persistence behavior | Purpose |
+|---|---|---|---|
+| `server_host` | `String` | Required by installation setup | Server URL or host used by the agent during bootstrap. |
+| `initial_key` | `String` | Required by installation setup | One-time enrollment credential used for initial authentication. |
+| `log_key` | `String` | Defaults to an empty string when deserializing | Log-stream key supplied during installation or obtained later. |
+| `local_mode` | `bool` | Default Rust value is `false` | Indicates local-mode installation behavior. |
+| `org_id` | `String` | Defaults to an empty string when deserializing | Organization association established at installation. |
+| `user_id` | `String` | Defaults to an empty string when deserializing | Optional user association. |
+| `local_ca_cert_path` | `String` | Defaults to an empty string when deserializing | Path to the local certificate authority certificate for local mode. |
+| `tags` | `Vec<DeviceTag>` | Defaults to an empty collection when deserializing | Initial device tags, grouped as tag keys with one or more values. |
+| `remote_access_mode` | `Option<String>` | Defaults to `None` and is omitted from serialized output when absent | Install-time remote-access mode awaiting backend acknowledgement. |
 
-A `DeviceTag` contains a `key` and a list of `values`. The installation service parses CLI tag values into this structured form before it creates the model.
+## Architecture and Dependencies
 
-## Architecture and Ownership
-
-The library separates the passive model from the stateful services around it. Installation constructs the record, the configuration service writes and updates it, and the startup processors consume it while establishing durable endpoint identity.
+The model sits at the boundary between installation arguments, durable local state, and startup services. It depends directly only on `serde` and the adjacent `DeviceTag` model. The OpenFrame client library supplies the services that construct, persist, read, and progressively consume this record.
 
 ```mermaid
 flowchart LR
-    InstallArgs["Installation parameters"] --> InstallService["Installation initial config service"]
-    InstallService --> InitialModel["Initial configuration model"]
-    InitialModel --> ConfigService["Initial configuration service"]
+    InstallArgs["Installation arguments"] --> Builder["Installation Initial Config Service"]
+    DeviceTags["Device Tag parser"] --> Builder
+    Builder --> ConfigModel["Initial Configuration"]
+    ConfigModel --> ConfigService["Initial Configuration Service"]
     ConfigService --> ConfigFile["Persisted JSON configuration"]
-    ConfigFile --> AuthProcessor["Initial authentication processor"]
-    ConfigFile --> RegistrationProcessor["Registration processor"]
-    AuthProcessor --> AgentCredentials["Agent credentials"]
-    RegistrationProcessor --> MachineIdentity["Machine identity"]
-    ConfigService --> LogStreaming["Log key lifecycle"]
-    ConfigService --> RemoteAccess["Remote access acknowledgement"]
+    ConfigFile --> AuthFlow["Initial Authentication Processor"]
+    ConfigFile --> RemoteAccess["Remote Access Mode Service"]
+    AuthFlow --> AgentConfig["Agent Configuration Service"]
 ```
 
-### Participating Components
+### Related client components
 
-| Component | Role in the Model Initial Config lifecycle |
+| Component | Relationship to Model Initial Config |
 |---|---|
-| `InstallationInitialConfigService` | Validates required installation arguments, constructs `InitialConfiguration`, parses tags, optionally discovers the local CA certificate, and saves the result. |
-| `InitialConfigurationService` | Owns the configuration-file path, reads and persists the model, and serializes read-modify-write mutations with a mutex. Writes use the library's atomic file-write helper. |
-| `InitialAuthenticationProcessor` | Skips work if an access token already exists; otherwise retries initial authentication until it succeeds. |
-| `RegistrationProcessor` | Skips work if a machine ID already exists; otherwise retries registration until it succeeds. |
-| `DeviceTag` | Models a tag key with its associated values for bootstrap tag assignment. |
+| Installation Initial Config Service | Validates install parameters, builds the record, parses tags, resolves a local CA path when local mode is enabled, and saves the result. |
+| Initial Configuration Service | Reads the persisted record, exposes field-specific accessors, and serializes updates using a write lock. |
+| Initial Authentication Processor | Starts initial authentication only when no existing access token is present. |
+| Agent Configuration Service | Stores registration and token data after authentication, allowing later startup to bypass initial authentication. |
+| Remote Access Mode Service | Is the downstream service expected to consume the pending remote-access mode and clear it after acknowledgement. |
 
 ## Installation and Persistence Flow
 
-The installation service requires nonblank server URL, initial key, and organization ID. It accepts optional log key, user ID, tags, local mode, and remote-access mode. A parameterless invocation is recognized only when all optional string inputs are blank or missing, local mode is disabled, no tags exist, and no remote-access mode is supplied.
+During installation, the builder requires nonblank server URL, initial key, and organization ID. It copies optional log key and user ID values when present, converts raw tag arguments to `DeviceTag` values, and maps a requested remote-access mode to its wire name.
 
-When `local_mode` is enabled, installation runs `mkcert -CAROOT`, requires a successful command result and a nonempty root directory, and verifies that `rootCA.pem` exists below that directory. The resulting path is stored in `local_ca_cert_path`. When local mode is disabled, this discovery is skipped.
+When local mode is enabled, installation runs `mkcert -CAROOT`, requires a `rootCA.pem` file in the reported directory, and stores the resulting certificate path in `local_ca_cert_path`. Local-mode certificate discovery is deliberately skipped when local mode is disabled.
 
 ```mermaid
 flowchart TD
     Start["Start installation"] --> Validate["Validate server URL, initial key, and organization ID"]
-    Validate --> Valid{"Required values present?"}
-    Valid -->|"No"| Failure["Return installation error"]
-    Valid -->|"Yes"| Build["Build initial configuration"]
-    Build --> LocalMode{"Local mode enabled?"}
-    LocalMode -->|"Yes"| Mkcert["Run mkcert and verify rootCA.pem"]
-    Mkcert --> Save["Serialize JSON and atomically save configuration"]
-    LocalMode -->|"No"| Save
-    Save --> Complete["Bootstrap configuration available"]
+    Validate --> LocalMode{"Local mode enabled?"}
+    LocalMode -->|"yes"| ResolveCa["Run mkcert and locate root CA certificate"]
+    ResolveCa --> Build["Build Initial Configuration"]
+    LocalMode -->|"no"| Build
+    Build --> ParseTags["Parse valid key and value tag pairs"]
+    ParseTags --> Save["Serialize and atomically save JSON"]
+    Save --> Ready["Bootstrap configuration available"]
 ```
 
-The persisted JSON is produced with pretty serialization. Because newly optional fields use Serde defaults, configuration files written before fields such as `log_key`, organization and user IDs, local certificate path, tags, or remote-access mode were added can still deserialize without those keys. Conversely, an absent `remote_access_mode` is not emitted during serialization, keeping ordinary configuration files free of a null-valued pending setting.
+The persistence service writes pretty JSON through the library's atomic-write utility. Updates that modify the initial key, log key, or remote-access mode use a shared mutex around their read-modify-write sequence so concurrent updates do not overwrite unrelated fields.
 
-## Credential and Enrollment Lifecycle
+## Authentication Credential Lifecycle
 
-The bootstrap record supports a staged handoff rather than treating installation inputs as the endpoint's final identity.
-
-1. At installation, the initial key and server details are persisted with the other supplied context.
-2. At startup, initial authentication checks whether an access token already exists. If not, it retries authentication every 60 seconds until successful.
-3. Registration checks whether a machine ID already exists. If not, it retries registration every 60 seconds until successful.
-4. A log key can be supplied from the beginning or written later through `save_log_key`.
-5. After a log key is held, `clear_initial_key` replaces the stored enrollment key with an empty string.
-6. A pending remote-access mode remains in the model until backend acknowledgement, then `clear_remote_access_mode` removes it.
+The initial key exists to bootstrap the client; it should not remain the long-term credential. Once a log key is held, the initial key can be cleared. Separately, successful initial authentication stores access-token material through the agent configuration path. On subsequent starts, the initial-authentication processor detects an existing access token and skips its authentication loop.
 
 ```mermaid
 sequenceDiagram
     participant Installer
-    participant InstallService
-    participant ConfigService
-    participant AuthProcessor
-    participant RegistrationProcessor
-    participant Backend
-    Installer->>InstallService: Provide install parameters
-    InstallService->>ConfigService: Save initial configuration
-    AuthProcessor->>ConfigService: Read bootstrap credentials
-    AuthProcessor->>Backend: Authenticate with initial key
-    Backend-->>AuthProcessor: Access token
-    RegistrationProcessor->>ConfigService: Read configuration state
-    RegistrationProcessor->>Backend: Register endpoint
-    Backend-->>RegistrationProcessor: Machine identity
-    ConfigService->>ConfigService: Save log key and clear initial key
-    ConfigService->>ConfigService: Clear acknowledged remote access mode
+    participant Setup as Installation Config Service
+    participant Store as Initial Config Service
+    participant Auth as Initial Authentication Processor
+    participant AgentConfig as Agent Configuration Service
+    Installer->>Setup: provide bootstrap inputs
+    Setup->>Store: save Initial Configuration
+    Auth->>AgentConfig: read access token
+    alt no access token
+        Auth->>Auth: attempt initial authentication
+        Auth->>AgentConfig: store registration and tokens
+    else access token exists
+        Auth->>Auth: skip initial authentication
+    end
+    Store->>Store: save log key and clear initial key when applicable
 ```
 
-## Concurrency and State Integrity
+If initial authentication fails, the processor retries after 60 seconds. This retry behavior is owned by the processor, rather than by Model Initial Config.
 
-Whole-record persistence is handled by `InitialConfigurationService::save`, which serializes the model then invokes an atomic file write. Mutations that read, alter, and save selected fields acquire the service's process-local mutex first. This prevents concurrent updates in the client process from overwriting one another's field changes.
+## Remote-Access Acknowledgement Flow
 
-The guarded mutations visible in the service are:
+`remote_access_mode` is intentionally distinct from permanent client configuration. It represents an installation request that remains durable only until the backend acknowledges it. Its `Option` type makes the distinction explicit: no field is serialized when there is no pending request, and the configuration service clears the value by setting it to `None` after acknowledgement.
 
-- `clear_initial_key`, which is idempotent when the key is already empty.
-- `save_log_key`, which replaces the current log key.
-- `clear_remote_access_mode`, which removes the pending mode by setting it to absent.
+```mermaid
+flowchart LR
+    InstallMode["Install-time remote-access mode"] --> Config["Initial Configuration remote access mode"]
+    Config --> Service["Remote Access Mode Service"]
+    Service --> Backend["Backend acknowledgement"]
+    Backend --> Clear["Clear pending mode"]
+    Clear --> Persisted["Configuration saved without remote access mode"]
+```
 
-The model's `Clone` implementation allows a configuration snapshot to be passed without transferring ownership, but callers should use the configuration service for persisted changes rather than modifying a detached copy.
+## Compatibility and Maintenance Notes
 
-## Operational Considerations
+- The fields marked with `serde(default)` are tolerant of older persisted files that do not contain them. New fields should follow this pattern when safe defaults exist.
+- `remote_access_mode` has both a deserialization default and `skip_serializing_if`; preserve both semantics so absent values remain absent on disk.
+- Do not log or display `initial_key` or `log_key`. They are bootstrap and log-stream credentials.
+- Preserve the distinction between an empty string and an absent optional remote-access mode: the latter is represented by `None` and omitted from output.
+- Changes to persisted field names, types, or defaults are compatibility-sensitive because installed clients may retain prior JSON files across upgrades.
+- Keep validation outside the model. The model accepts its fields as data; installation services establish which values are required for a new install.
 
-### Sensitive values
+## Source of Truth
 
-`initial_key` and `log_key` are credential material. The model derives `Debug`, so callers and log statements should avoid formatting entire configuration instances. Persisted configuration storage should be protected according to the client platform's secured-directory and permission controls.
-
-### Retry behavior
-
-Initial authentication and registration retry indefinitely at 60-second intervals after a failure. This makes bootstrap resilient to temporary service or network availability problems, but an incorrect initial key, server URL, or organization ID will continue failing until configuration is corrected or the installation is replaced.
-
-### Compatibility rules
-
-When adding a new nonessential field, use an appropriate Serde default so existing endpoint configuration files remain readable. When adding a one-time or acknowledgement-driven field, model absence explicitly with `Option` and use conditional serialization when omitting the field is meaningful.
-
-## Boundaries
-
-Model Initial Config belongs to the endpoint-agent client library, supplied by the OpenFrame OSS Library. It is assembled at runtime by this repository's OpenFrame client service; it is not a server API payload and does not directly create backend records. Server-side registration, token issuance, and client management are separate concerns handled by the OpenFrame client backend and authorization services.
+The authoritative definition is [Initial Configuration in OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/initial_configuration.rs). Consult the client library source when changing serialization, persistence, installation, authentication, or remote-access acknowledgement behavior.

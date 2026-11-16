@@ -1,8 +1,0 @@
-flowchart LR
-    UpdateService["Client update service"] -->|"selects bytes and target"| Writer["Platform Binary Writer"]
-    Writer -->|"creates writes flushes syncs"| Target["Target executable"]
-    Writer -->|"recovery attempt"| FileAcl["File ACL helper"]
-    Writer -->|"sets mode 0755"| UnixFs["Unix permissions"]
-    Writer -->|"stages then renames"| MacFs["macOS filesystem"]
-    Writer -->|"probes exclusive open"| WindowsFs["Windows filesystem"]
-    WindowsFs -->|"holder diagnostics"| RestartManager["Windows Restart Manager"]

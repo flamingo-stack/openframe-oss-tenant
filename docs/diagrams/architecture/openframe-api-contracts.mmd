@@ -1,0 +1,7 @@
+flowchart LR
+    ApiTransport["API controllers and GraphQL fetchers"] --> Contracts["Openframe Api Contracts"]
+    Contracts --> Security["Authenticated tenant context"]
+    Contracts --> Data["Tenant scoped repositories and read models"]
+    Contracts --> Messaging["NATS software dispatch"]
+    Contracts --> Storage["MongoDB, Cassandra, and Loki"]
+    Agents["Managed devices"] <-->|"commands and results"| Messaging

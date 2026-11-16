@@ -1,6 +1,0 @@
-flowchart LR
-    Management["Management package catalog sync"] -->|"upsert catalog entries"| Repository["Package Catalog Repository"]
-    Api["API package search"] -->|"search by manager and name"| Repository
-    Repository -->|"bulk writes and aggregation"| Mongo["MongoDB package catalog"]
-    Service["Tenant aware service"] -->|"requests tenant identifier"| TenantProvider["Default Tenant ID Provider"]
-    TenantProvider -->|"default value oss"| Configuration["TENANT_ID configuration"]

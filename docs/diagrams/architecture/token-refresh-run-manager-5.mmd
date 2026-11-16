@@ -1,0 +1,11 @@
+flowchart TD
+    Due["Refresh deadline reached"] --> Attempt["Run reauthenticate with timeout"]
+    Attempt --> Success{"Authentication succeeded?"}
+    Success -->|"yes"| Schedule["Calculate next deadline"]
+    Schedule --> Wait["Wait on boot clock"]
+    Wait --> Due
+    Success -->|"no"| Suspended{"Client suspended?"}
+    Suspended -->|"no"| Retry["Wait 60 seconds"]
+    Retry --> Attempt
+    Suspended -->|"yes"| Immediate["Set immediate schedule"]
+    Immediate --> ProbeLoop["Use suspension probe loop"]

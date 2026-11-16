@@ -1,0 +1,11 @@
+flowchart TD
+    SeedTag["Seed idempotent ticket tag"] --> CreateTicket["Create scoped ticket"]
+    CreateTicket --> SearchTicket["Search and retrieve ticket"]
+    CreateTicket --> ReorderTicket["Reorder within a status column"]
+    CreateTicket --> ResolveTicket["Resolve run-owned ticket"]
+    ResolveTicket --> ArchiveTicket["Archive resolved ticket"]
+    CreateTicket --> TakeOver["Take over ticket"]
+    TakeOver --> StatusAdmin["Administer custom statuses"]
+    CreateTicket --> BulkPrepare["Prepare assigned and unassigned resolved tickets"]
+    BulkPrepare --> BulkArchive["Archive filtered resolved tickets"]
+    BulkArchive --> Cleanup["Archive remaining run-owned tickets and remove custom statuses"]

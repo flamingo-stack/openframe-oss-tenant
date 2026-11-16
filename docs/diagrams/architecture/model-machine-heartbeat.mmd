@@ -1,10 +1,9 @@
 flowchart LR
-    AgentConfig["Agent Configuration Service"] -->|"machine identifier"| Publisher["Machine Heartbeat Publisher"]
-    HeartbeatModel["Model Machine Heartbeat"] -->|"empty JSON payload"| Publisher
-    RunManager["Machine Heartbeat Run Manager"] -->|"periodically invokes"| Publisher
-    Publisher -->|"machine identifier subject"| Nats["NATS"]
-    Nats -->|"machine wildcard heartbeat"| Listener["Machine Heartbeat Listener"]
-    Listener -->|"machine identifier and receipt time"| StatusService["Machine Status Service"]
-    StatusService --> DeviceState["Device Presence State"]
-    OfflineScheduler["Offline Detection Scheduler"] -->|"checks stale state"| DeviceState
-    OnlineScheduler["Online Dispatch Scheduler"] -->|"processes newly online devices"| DeviceState
+    AgentConfig["Agent Configuration Service"] -->|"machine ID"| HeartbeatPublisher["Machine Heartbeat Publisher"]
+    HeartbeatModel["Machine Heartbeat Message"] -->|"serialized heartbeat"| HeartbeatPublisher
+    HeartbeatRunner["Machine Heartbeat Run Manager"] -->|"triggers"| HeartbeatPublisher
+    HeartbeatPublisher -->|"machine.{machineId}.heartbeat"| Nats["NATS"]
+    Nats -->|"machine.*.heartbeat"| HeartbeatListener["Machine Heartbeat Listener"]
+    HeartbeatListener -->|"machine ID and service timestamp"| StatusService["Machine Status Service"]
+    StatusService -->|"updates presence"| DeviceState["Device State"]
+    OfflineScheduler["Offline Detection Scheduler"] -->|"evaluates stale devices"| DeviceState

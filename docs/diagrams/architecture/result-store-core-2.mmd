@@ -1,0 +1,8 @@
+flowchart TD
+    ResultStore["ResultStore"] --> Database["Optional Redb database"]
+    ResultStore --> JournalRecord["JournalRecord"]
+    ResultStore --> ResultPublisher["ResultPublisher trait"]
+    JournalRecord --> JournalFields["Subject, execution, machine, script, schedule, started, timestamp"]
+    ResultPublisher --> RawPublish["publish raw"]
+    ResultPublisher --> AckedPublish["publish acknowledged"]
+    ResultPublisher --> MaxPayload["maximum payload query"]

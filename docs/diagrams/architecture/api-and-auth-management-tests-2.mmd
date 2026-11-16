@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Start Ordered Test Class"] --> Setup["Create or Locate Test State"]
+    Setup --> TestCase["Execute Current Assertion"]
+    TestCase --> Next{"More Ordered Cases?"}
+    Next -->|"Yes"| TestCase
+    Next -->|"No"| Cleanup["Run AfterAll Safeguards"]
+    Cleanup --> Finish["Leave Tenant in Usable State"]

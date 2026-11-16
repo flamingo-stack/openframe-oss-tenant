@@ -1,9 +1,0 @@
-flowchart LR
-    Caller["Client workflow"] -->|"machine ID, agent type, version"| Publisher["Services Installed Agent Message Publisher"]
-    Publisher -->|"build subject"| Subject["machine.{machine ID}.installed-agent"]
-    Publisher -->|"create message"| Message["Installed Agent Message"]
-    Publisher -->|"publish message"| NatsPublisher["NATS Message Publisher"]
-    NatsPublisher -->|"serialize, publish, flush"| Nats["NATS"]
-    Nats -->|"installed agent event"| Listener["Installed Agent Listener"]
-    Listener -->|"upsert agent state"| Service["Installed Agent Service"]
-    Service -->|"store connected agent"| Storage["Installed Agent Repository"]

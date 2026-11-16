@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Test as "Trigger Policy Test"
+    participant DeviceApi as "Device API"
+    participant MonitoringApi as "Monitoring API"
+    participant Fleet
+    participant Host as "Managed Host"
+
+    Test->>MonitoringApi: Read policy and verify seeded query
+    Test->>DeviceApi: Read host policy timestamp
+    Test->>MonitoringApi: Request host refetch
+    MonitoringApi->>Fleet: Forward refetch
+    Fleet->>Host: Request policy evaluation
+    Host->>Fleet: Report updated policy state
+    Test->>DeviceApi: Poll for newer host timestamp
+    Test->>MonitoringApi: Trigger cleanup and aggregation
+    MonitoringApi->>Fleet: Request aggregation schedule
+    Test->>MonitoringApi: Poll policy detail
+    Fleet-->>MonitoringApi: Return refreshed counts and timestamp
+    MonitoringApi-->>Test: Return aggregated policy

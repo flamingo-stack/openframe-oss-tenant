@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Runtime as OpenFrame Client Runtime
+    participant Service as Machine Id Service
+    participant Cache as Memory Cache
+    participant Disk as Shared Machine Id File
+    Runtime->>Service: get_or_create()
+    Service->>Cache: inspect cached identifier
+    alt cache contains identifier
+        Cache-->>Service: identifier
+        Service-->>Runtime: identifier
+    else cache is empty
+        Service->>Disk: read file
+        alt stored non empty identifier
+            Disk-->>Service: identifier
+            Service->>Cache: store identifier
+            Service-->>Runtime: identifier
+        else file unavailable or empty
+            Disk-->>Service: read failure
+            Service->>Service: generate UUID
+            Service->>Disk: create parent and write identifier
+            Service->>Cache: store identifier
+            Service-->>Runtime: identifier
+        end
+    end

@@ -1,0 +1,7 @@
+flowchart LR
+    CveObservations["Connected CVE observations"] --> ByTitle["Group by software title"]
+    ByTitle --> TitleRows["Affected title summaries"]
+    ByTitle --> MachineSets["Distinct machines per title"]
+    TitleRows --> CveRollup["CVE rollup"]
+    MachineSets --> UniqueDevices["Union distinct machines"]
+    UniqueDevices --> CveRollup

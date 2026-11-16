@@ -1,0 +1,7 @@
+flowchart TD
+    Create["Create Echo Script"] --> Dispatch["Dispatch Script or Command"]
+    Dispatch --> Agent["Online Windows Device"]
+    Agent --> Report["Report Execution Result"]
+    Report --> Poll["Poll Script Execution History"]
+    Poll --> Verify["Verify Result Contract"]
+    Verify --> Cleanup["Delete Echo Script"]

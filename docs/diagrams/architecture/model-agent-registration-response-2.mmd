@@ -1,13 +1,14 @@
-flowchart TD
-    AgentRuntime["Endpoint agent runtime"] --> RegistrationService["Agent registration service"]
-    RegistrationService --> RequestModel["Agent registration request"]
-    RegistrationService --> RegistrationClient["Registration client"]
-    RegistrationClient --> FreshDecision{"Saved machine information?"}
-    FreshDecision -->|"No"| RegisterEndpoint["Register endpoint"]
-    FreshDecision -->|"Yes"| ReinstallEndpoint["Reinstall endpoint"]
-    RegisterEndpoint --> ServerProcessor["Client service registration processor"]
-    ReinstallEndpoint --> ServerProcessor
-    ServerProcessor --> ResponseModel["Model Agent Registration Response"]
-    ResponseModel --> RegistrationService
-    RegistrationService --> MachineInfo["Persisted machine information"]
-    RegistrationService --> Configuration["Agent configuration"]
+sequenceDiagram
+    participant Agent as Endpoint agent
+    participant Service as Registration service
+    participant Client as Registration client
+    participant Api as Registration API
+    participant Storage as Local secure storage
+    Agent->>Service: Start registration
+    Service->>Client: Register with initial key and device request
+    Client->>Api: POST register or reinstall
+    Api-->>Client: Agent registration response JSON
+    Client-->>Service: Parsed response
+    Service->>Storage: Persist machine ID and client secret
+    Service->>Storage: Save machine ID, client ID, and client secret
+    Service-->>Agent: Registration complete

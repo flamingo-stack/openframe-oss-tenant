@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Client starts or tool is installed"] --> Load["Load installed tools"]
+    Load --> TypeCheck{"Tool type present?"}
+    TypeCheck -->|"No"| Skip["Skip connection publication"]
+    TypeCheck -->|"Yes"| LockCheck{"Processing already running?"}
+    LockCheck -->|"Yes"| Wake["Wake active loop or skip"]
+    LockCheck -->|"No"| Resolve["Resolve tool parameters"]
+    Resolve --> Build["Build Model Tool Connection Message"]
+    Build --> Publish["Publish through NATS"]
+    Publish --> Persist["Update local connection state"]
+    Persist --> Finish["Connection processing completes"]

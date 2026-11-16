@@ -1,0 +1,19 @@
+flowchart LR
+    Browser["Browser or Mobile Client"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> AuthServer["Authorization Server"]
+    AuthServer --> Discovery["Discovery and Registration Controllers"]
+    AuthServer --> SsoStart["SSO Start Controllers"]
+    SsoStart --> FlowCookies["Signed Flow Cookies"]
+    SsoStart --> Provider["OIDC Provider"]
+    Provider --> SuccessHandler["SSO Flow Success Handler"]
+    SuccessHandler --> InviteHandler["Invite SSO Handler"]
+    SuccessHandler --> LoginHandler["Login SSO Handler"]
+    SuccessHandler --> PlainLogin["Tenant Scoped Login"]
+    InviteHandler --> JoinGate["SSO Join Consent Gate"]
+    LoginHandler --> JoinGate
+    InviteHandler --> Session["Authorization Server Session"]
+    LoginHandler --> Session
+    JoinGate --> Session
+    PlainLogin --> Session
+    AuthServer --> IdentityStore["Users Tenants and SSO Identity Links"]
+    Session --> Continue["OAuth Continue Redirect"]

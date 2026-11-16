@@ -1,0 +1,9 @@
+flowchart TD
+    Input["Agent Type and Version"] --> Build["Build Rust Model"]
+    Build --> Serialize["Serialize as camelCase JSON"]
+    Serialize --> Deliver["Deliver through NATS"]
+    Deliver --> Decode["Deserialize in Java Listener"]
+    Decode --> Persist["Record Installed Agent"]
+    Decode --> Failure{"Decode or processing fails?"}
+    Failure -->|"yes"| Retry["Leave Message Unacknowledged"]
+    Failure -->|"no"| Ack["Acknowledge Message"]

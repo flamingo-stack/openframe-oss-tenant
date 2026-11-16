@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Listener as Command listener
+    participant Update as Client update service
+    participant State as Update State Service
+    participant Updater as Platform updater
+    participant Boot as Update handler service
+    Listener->>Update: update request
+    Update->>Update: validate and reserve update work
+    Update->>State: save target version and launch phase
+    Update->>Updater: launch external updater
+    Updater-->>Boot: client starts after replacement
+    Boot->>State: load checkpoint
+    alt running version matches target
+        Boot->>State: clear after success handling
+    else updater launched or verifying
+        Boot->>State: retain state for a later boot
+    else terminal failure
+        Boot->>State: clear after failure cleanup
+    end

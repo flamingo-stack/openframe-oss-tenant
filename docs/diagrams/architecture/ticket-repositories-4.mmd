@@ -1,14 +1,12 @@
 sequenceDiagram
-    participant Service as "Ticket service"
+    participant Caller as "Ticket caller"
     participant Repository as "Ticket repository"
     participant Mongo as "MongoDB"
     participant Outbox as "Outbox publisher"
-    Service->>Repository: Update title
-    Repository->>Mongo: Find and modify ticket
-    alt Publishing available
-        Repository->>Outbox: Publish changed aggregate
-        Outbox->>Mongo: Commit ticket change and outbox event
-    else Publishing unavailable
-        Repository->>Mongo: Commit ticket change
-    end
-    Repository-->>Service: Updated ticket state
+
+    Caller->>Repository: Update ticket title
+    Repository->>Outbox: Publish changed ticket when configured
+    Outbox->>Mongo: Find and modify title
+    Mongo-->>Outbox: Updated ticket
+    Outbox-->>Repository: Persist change and publication
+    Repository-->>Caller: Complete update

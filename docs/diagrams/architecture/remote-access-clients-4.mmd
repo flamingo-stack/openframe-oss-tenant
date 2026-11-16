@@ -1,0 +1,8 @@
+flowchart TD
+    Read["Read pending install-time mode"] --> Present{"Mode present?"}
+    Present -->|"no"| Idle["Do not start mode task"]
+    Present -->|"yes"| Parse["Parse wire mode"]
+    Parse --> Valid{"Mode valid?"}
+    Valid -->|"no"| Clear["Clear unknown persisted mode"]
+    Valid -->|"yes"| Apply["Start asynchronous apply task"]
+    Apply --> Outcome["Use response classification and retry policy"]

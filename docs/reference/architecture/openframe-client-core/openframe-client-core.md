@@ -1,139 +1,114 @@
 # Openframe Client Core
 
-Openframe Client Core is the endpoint-agent runtime used by OpenFrame to enroll and authenticate managed devices, connect them to the tenant control plane, receive commands, execute work, manage integrated tools, publish device state, and recover safely from interruptions.
+Openframe Client Core is the endpoint-agent runtime used by OpenFrame to enroll managed devices, maintain authenticated connectivity, receive control-plane work, manage integrated tools, execute scripts, and report device state back to the platform.
 
-The module is supplied by the `openframe_agent_lib` Cargo dependency and is assembled by the OpenFrame Client workload. Its source layout is rooted at:
-
-`openframe-oss-lib/clients/openframe-client/src`
+The module is supplied by the OpenFrame OSS Library through the `openframe_agent_lib` Cargo dependency and is assembled into the OpenFrame Client runtime. Its source tree is rooted at `openframe-oss-lib/clients/openframe-client/src`.
 
 ## Purpose
 
-Openframe Client Core provides the local agent capabilities required to manage an endpoint:
+Openframe Client Core provides the device-side control plane for managed endpoints. It:
 
-- Persist installation, registration, authentication, and update state.
-- Register devices and maintain access and refresh tokens.
-- Connect to platform services through HTTP and NATS over WebSocket.
-- Receive commands, execution requests, feature flags, tool updates, package updates, and remote-access signals.
-- Execute scripts on Windows and Unix hosts.
-- Install, update, run, restart, and uninstall managed tools.
-- Publish heartbeats, hostnames, time zones, logs, installed-agent versions, and command results.
-- Coordinate safe restart, update, deactivation, and durable result recovery.
+- Persists installation, registration, and authentication state.
+- Registers devices and refreshes access tokens.
+- Connects to NATS through the tenant gateway.
+- Receives commands, scripts, tool updates, and remote-access events.
+- Executes scripts with platform-specific privilege handling.
+- Installs, updates, starts, stops, and removes integrated tools.
+- Streams logs, publishes health data, and retains undelivered execution results.
+- Coordinates safe service, client-binary, and tool update lifecycles.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    Service["OpenFrame Client Service"] --> Runtime["Openframe Client Core"]
-    Runtime --> Configuration["Configuration and Local State"]
-    Runtime --> Authentication["Registration and Authentication"]
-    Runtime --> Transport["HTTP and NATS Transport"]
-    Runtime --> Listeners["Command and Execution Listeners"]
-    Runtime --> Tooling["Tool and Package Management"]
-    Runtime --> Reporting["Telemetry and Result Reporting"]
-    Runtime --> Platform["Platform-Specific Services"]
+    Endpoint["Managed Endpoint"] --> Service["Service Management"]
+    Service --> Client["Openframe Client Core"]
 
-    Configuration --> Authentication
-    Authentication --> Transport
-    Transport --> Listeners
-    Listeners --> Tooling
-    Tooling --> Reporting
-    Platform --> Tooling
-    Platform --> Configuration
-    Reporting --> Transport
+    Client --> LocalState["Local Configuration and Secured State"]
+    Client --> Registration["Registration and Authentication"]
+    Client --> Transport["HTTP and NATS Transport"]
+    Client --> Listeners["Command and Execution Listeners"]
+    Client --> Tools["Tool Lifecycle Services"]
+    Client --> Reporting["Logs, Metrics, Heartbeats, and Results"]
 
-    Transport --> ControlPlane["OpenFrame Control Plane"]
+    Registration --> Gateway["OpenFrame Gateway"]
+    Transport --> Gateway
+    Gateway --> Platform["OpenFrame Platform Services"]
+
+    Listeners --> Execution["Execution Service"]
+    Listeners --> Tools
+    Execution --> Reporting
+    Tools --> Reporting
 ```
 
-### Agent Startup Flow
+### Startup and runtime flow
 
 ```mermaid
 sequenceDiagram
-    participant Service as "Client Service"
-    participant Core as "Openframe Client Core"
-    participant Config as "Local Configuration"
-    participant Auth as "Registration and Authentication"
-    participant Nats as "NATS Transport"
-    participant Workers as "Listeners and Managers"
+    participant Service as Service Management
+    participant Client as Client Application
+    participant Registration as Registration Processor
+    participant Auth as Authentication Processor
+    participant Nats as NATS Connection Manager
+    participant Listeners as Runtime Listeners
 
-    Service->>Core: Start agent runtime
-    Core->>Config: Prepare directories and load state
-    Core->>Auth: Register and authenticate agent
-    Auth-->>Core: Credentials and access token
-    Core->>Nats: Connect NATS over WebSocket
-    Nats-->>Core: Active messaging client
-    Core->>Workers: Start listeners and background managers
-    Workers-->>Nats: Publish results, telemetry, and reports
+    Service->>Client: Start endpoint agent
+    Client->>Registration: Register device when needed
+    Registration-->>Client: Registration complete
+    Client->>Auth: Authenticate agent
+    Auth-->>Client: Tokens persisted
+    Client->>Nats: Connect through gateway
+    Nats-->>Client: Active NATS client
+    Client->>Listeners: Start command and execution listeners
+    Listeners-->>Client: Receive endpoint work
 ```
 
-## Core Areas
+## Core component areas
 
-| Area | Responsibilities |
-|---|---|
-| Client runtime | Composes dependencies and starts the agent lifecycle. |
-| CLI and service lifecycle | Installs, starts, diagnoses, restarts, and removes the endpoint agent. |
-| Authentication | Registers the machine, obtains tokens, refreshes credentials, and handles tenant deactivation. |
-| Messaging | Maintains NATS connectivity, receives machine-scoped messages, and publishes acknowledgements and results. |
-| Execution | Runs commands and scripts with platform-appropriate privilege and timeout handling. |
-| Tool management | Installs, updates, supervises, restarts, connects, and removes integrated tools. |
-| Package management | Detects package-manager capability, queues update requests, protects running applications, and reports outcomes. |
-| Logging and telemetry | Collects local logs, streams batches, publishes device status, and records metrics. |
-| Platform integration | Handles directories, permissions, services, executable replacement, update scripts, and user-session behavior. |
-| Recovery | Persists execution results, tracks delivery state, handles interrupted updates, and restores safe client operation. |
+| Area | Responsibilities | Core documentation |
+| --- | --- | --- |
+| Application lifecycle | Composes services, starts the endpoint runtime, and coordinates startup ordering. | Client Application |
+| CLI and service lifecycle | Installs, authenticates, runs, restarts, diagnoses, and uninstalls the endpoint agent. | Cli Entrypoint, Service Management, Crossplatform Service Adapter |
+| Registration and authentication | Registers devices, persists credentials, exchanges tokens, and refreshes authentication. | Registration Clients, Agent Registration Service, Agent Auth Service, Token Refresh Run Manager |
+| Local configuration | Persists bootstrap configuration, agent credentials, tool records, update state, and local identity. | Installation Initial Config, Initial Configuration Service, Agent Configuration Service, Machine Id Service |
+| NATS transport | Maintains authenticated NATS connectivity, reconnects after failures, and publishes outbound messages. | Nats Connection Manager, Nats Message Publisher |
+| Command processing | Handles client updates, feature flags, tool installation, tool updates, uninstall commands, and package updates. | Command Listener Core, Command Listener Handlers, Command Listener Package Update |
+| Script execution | Receives remote execution messages and runs scripts through Windows or Unix executors. | Execution Listener, Execution Service, Script Executor, Unix Script Executor, Windows Script Executor |
+| Tool lifecycle | Installs, updates, runs, restarts, stops, connects, and uninstalls integrated endpoint tools. | Tool Installation Service, Tool Agent Update Service, Tool Run Manager, Tool Ops, Tool Restart Service, Tool Uninstall Service |
+| Observability | Collects logs and metrics, streams logs, reports hostname, heartbeat, timezone, and installed-agent state. | Logging Setup, Logging Nats Streaming, Machine Heartbeat Publisher, Machine Timezone Publisher, Hostname Report Publisher |
+| Durable delivery | Preserves execution and delivery outcomes across transient transport failures and restarts. | Result Store Core, Result Store Ledger, Result Outbox Run Manager |
+| Platform operations | Manages directories, permissions, processes, services, executable replacement, updates, and uninstallation. | Platform Directories, Platform System Service, Platform Binary Version And Writer, Platform Uninstaller |
+| Diagnostics and recovery | Checks local prerequisites, performs supported healing, and coordinates deactivation behavior. | Doctor Health Checks, Doctor Healing, Doctor Reporting, Deactivation Service |
 
-## Component Relationships
+## Control-plane message flow
 
 ```mermaid
 flowchart LR
-    Commands["Command Delivery"] --> CommandListener["Listener Command"]
-    Commands --> ExecutionListener["Listener Execution"]
-    CommandListener --> Handlers["Command Handlers"]
-    ExecutionListener --> ExecutionService["Services Execution"]
+    Platform["OpenFrame Control Plane"] --> Nats["NATS"]
+    Nats --> CommandListener["Command Listener"]
+    Nats --> ExecutionListener["Execution Listener"]
+    Nats --> RemoteListener["Remote Access Message Listener"]
 
-    Handlers --> ToolInstallation["Services Tool Installation"]
-    Handlers --> ToolUpdate["Services Tool Agent Update"]
-    Handlers --> ClientUpdate["Services Client Update"]
-    Handlers --> FeatureFlags["Services Feature Flags"]
+    CommandListener --> CommandHandlers["Command Handlers"]
+    ExecutionListener --> ExecutionService["Execution Service"]
+    RemoteListener --> ToolManager["Tool Run Manager"]
 
-    ExecutionService --> Executor["Executor Core"]
-    ToolInstallation --> ToolRun["Services Tool Run Manager"]
-    ToolUpdate --> ToolRun
-    ClientUpdate --> UpdateHandler["Services Update Handler"]
-
-    CommandListener --> ResultStore["Services Result Store"]
-    ExecutionListener --> ResultStore
-    ResultStore --> Outbox["Services Result Outbox Run Manager"]
-    Outbox --> NatsPublisher["Services Nats Message Publisher"]
+    CommandHandlers --> ResultStore["Result Store"]
+    ExecutionService --> ResultStore
+    ResultStore --> Outbox["Result Outbox"]
+    Outbox --> Nats
+    Nats --> Platform
 ```
 
-## Core Components Documentation
+## Design boundaries
 
-The following component documentation describes the primary Openframe Client Core boundaries:
+Openframe Client Core separates concerns across focused modules:
 
-- **Client Main Api** — Agent composition root, construction, startup ordering, listeners, managers, and platform integration.
-- **Cli Entrypoint** — Command parsing and dispatch for installation, authentication, diagnostics, execution, and service control.
-- **Service Core** — Native service installation, parameterless startup behavior, restart handling, and uninstall lifecycle.
-- **Auth Client** — Client-credentials and refresh-token requests against the client token endpoint.
-- **Registration Client** — Fresh registration, reinstall, and deregistration HTTP operations.
-- **Listener Command** — Generic NATS command consumption, delivery tracking, restart-aware outcomes, and recovery.
-- **Listener Execution** — Machine-scoped script execution intake, acknowledgement, durable results, and reconnection.
-- **Services Nats Connection Manager** — Authenticated NATS-over-WebSocket connection lifecycle, reconnect events, and watchdog replacement.
-- **Services Execution** — Privilege resolution, timeout handling, execution tracking, and normalized RMM results.
-- **Executor Core** — Shared execution contract with Unix and Windows script implementations.
-- **Services Tool Installation** — Reserved tool installation, assets, service verification, startup, and reporting.
-- **Services Tool Agent Update** — Tool repair, version reconciliation, asset replacement, and installed-version publication.
-- **Services Tool Run Manager** — Process supervision for standard and GUI tools, plus coordination during client updates and deactivation.
-- **Services Client Update** — Client binary update reservation, staging, state persistence, and updater handoff.
-- **Services Update Handler** — Post-restart update verification, rollback handling, cleanup, and delivery settlement.
-- **Services Result Store** — Durable execution journal and outbox for results that must survive restarts or NATS outages.
-- **Logging Core** — Process logging initialization, metrics integration, local files, and optional log shipping.
-- **Doctor Main** — Pre-install, authentication, and health-check orchestration with optional remediation.
-- **Platform Directories** — Managed endpoint filesystem paths, permission validation, secured storage, and tool paths.
+- **Transport adapters** perform HTTP or NATS communication without owning lifecycle policy.
+- **Services** coordinate endpoint state, persistence, retries, and platform operations.
+- **Listeners** convert inbound NATS messages into typed command or execution workflows.
+- **Models** define serialized contracts for registrations, commands, updates, results, and telemetry.
+- **Platform modules** isolate Windows, macOS, and Unix filesystem, service, process, and privilege behavior.
+- **Durable stores** preserve execution and delivery results until the agent can report them successfully.
 
-## Operational Boundaries
-
-Openframe Client Core is an outbound endpoint agent. It does not expose an inbound application API. Instead, it:
-
-- Uses HTTP for registration, authentication, asset retrieval, and device configuration updates.
-- Uses NATS over WebSocket for command delivery, execution work, device reports, results, and status messages.
-- Persists critical local state for credentials, tool inventory, updates, command results, and delivery recovery.
-- Relies on platform-specific adapters for service management, process control, file replacement, and interactive user sessions.
+This separation allows the endpoint agent to continue operating through network disruption, controlled restart, update, and local process-management scenarios while preserving its registration and result-delivery state.

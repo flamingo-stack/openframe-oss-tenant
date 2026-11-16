@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant App as Client Application
+    participant Endpoint as OAuth Token Endpoint
+    participant Provider as Concrete Grant Provider
+    participant Base as Token Minting Base
+    participant Generator as OAuth2 Token Generator
+    participant Store as OAuth2 Authorization Service
+    App->>Endpoint: Custom grant request
+    Endpoint->>Provider: Request authentication token
+    Provider->>Provider: Validate credential and resolve user
+    Provider->>Base: Mint tokens with client and user
+    Base->>Generator: Generate access token
+    Generator-->>Base: Access token
+    Base->>Generator: Generate refresh token when permitted
+    Generator-->>Base: Refresh token or no token
+    Base->>Store: Save authorization
+    Base-->>Endpoint: Access token response with optional refresh token
+    Endpoint-->>App: Token response

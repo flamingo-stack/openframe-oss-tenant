@@ -1,7 +1,7 @@
 flowchart LR
-    Caller["Spring Data Item Assignment Repository"] --> Contract["Custom Item Assignment Repository"]
+    Application["Application Service or GraphQL Layer"] --> Contract["Custom Item Assignment Repository"]
     Contract --> Implementation["Custom Item Assignment Repository Implementation"]
-    Implementation --> Support["Tenant Aware Repository Support"]
-    Support --> Template["Tenant Aware Mongo Template"]
-    Template --> Collection[("item_assignments collection")]
-    Collection --> Records["Item Assignment records"]
+    Implementation --> Template["Tenant Aware Mongo Template"]
+    Template --> MongoDB[("MongoDB item assignments")]
+    Implementation --> Aggregation["Tenant Scoped Aggregation"]
+    Aggregation --> MongoDB

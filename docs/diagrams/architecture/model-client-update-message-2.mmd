@@ -1,12 +1,20 @@
-flowchart TD
-    Message["Model Client Update Message"] --> Handler["Client update handler"]
-    Handler --> Reserve["Reserve update guard"]
-    Handler --> Apply["Apply update"]
-    Apply --> Select["Select matching download configuration"]
-    Apply --> Info["Client info service"]
-    Apply --> Download["Download service"]
-    Apply --> UpdateState["Update state service"]
-    Apply --> Good["Last known good service"]
-    Apply --> Tools["Tool run manager and tool operations"]
-    Apply --> Recovery["Update handler service"]
-    Download --> Writer["Binary writer and updater launcher"]
+sequenceDiagram
+    participant Control as Control Plane
+    participant Listener as Command Listener
+    participant Model as Model Client Update Message
+    participant Service as Client Update Service
+    participant Tools as Tool Runtime
+    participant State as Update State Service
+    participant Updater as Platform Updater
+    participant Startup as Startup Handler
+
+    Control->>Listener: Deliver update command
+    Listener->>Model: Deserialize camel-case payload
+    Listener->>Service: Reserve update work
+    Service->>Tools: Mark update pending and check active work
+    Service->>Service: Validate and parse requested version
+    Service->>State: Prepare target version state
+    Service->>Updater: Download selected asset and launch update
+    Updater->>Startup: Restart client
+    Startup->>State: Load pending update state
+    Startup->>Startup: Compare running and target versions

@@ -1,0 +1,7 @@
+flowchart LR
+    ArtifactConfig["Artifact configuration"] --> Selection["Operating system selection"]
+    Selection --> Download["Artifact download"]
+    Download --> Extractor["Platform Dmg Extractor"]
+    Extractor --> Files["Extracted application or tool files"]
+    Files --> Install["Installation and update workflow"]
+    Install --> Tracking["Installed tool tracking and lifecycle management"]

@@ -1,0 +1,18 @@
+flowchart TD
+    Status["Receive gateway HTTP status"] --> Enabled{"Feature enabled?"}
+    Enabled -->|"no"| Ignore["Return without changing state"]
+    Enabled -->|"yes"| Gone{"Status is 410 Gone?"}
+    Gone -->|"yes"| RecordGone["Record first deletion time and increment count"]
+    Gone -->|"no"| Success{"Status is successful?"}
+    Success -->|"no"| Neutral["Leave state unchanged"]
+    Success -->|"yes"| Recover["Clear count, marker, and probe backoff"]
+    RecordGone --> Threshold{"Five consecutive confirmations?"}
+    Threshold -->|"no"| Deadline["Evaluate uninstall only if already suspended"]
+    Threshold -->|"yes"| Suspend["Set suspended flag and queue tool stop"]
+    Suspend --> Deadline
+    Deadline --> Due{"Deletion and restart grace complete?"}
+    Due -->|"no"| Wait["Await later controlled probe"]
+    Due -->|"yes"| Request["Queue idempotent self-uninstall"]
+    Recover --> WasSuspended{"Tools were suspended?"}
+    WasSuspended -->|"yes"| Restart["Clear suspension flag and queue tool restart"]
+    WasSuspended -->|"no"| Finish["Recovery complete"]

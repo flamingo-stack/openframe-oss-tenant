@@ -1,0 +1,8 @@
+flowchart LR
+    ExecutionService["Execution Service"] -->|"RmmResult"| ResultStore["Result Store Core"]
+    ResultStore -->|"journal records"| Journal["Journal table"]
+    ResultStore -->|"subject and bytes"| OutboxMeta["Outbox metadata table"]
+    ResultStore -->|"payload bytes"| OutboxPayload["Outbox payload table"]
+    OutboxRunner["Result Outbox Run Manager"] -->|"pending keys and payload"| ResultStore
+    OutboxRunner -->|"publish through ResultPublisher"| Nats["NATS subjects"]
+    ResultStore -->|"delivery ledger"| DeliveryLedger["Delivery ledger tables"]

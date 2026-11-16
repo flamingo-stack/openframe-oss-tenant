@@ -1,0 +1,9 @@
+flowchart LR
+    Integration["External Integration"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> Auth["API Key Authentication"]
+    Auth --> Service["External API Service"]
+    Service --> Controllers["REST Controllers"]
+    Controllers --> Domain["Shared Domain Services"]
+    Domain --> Data["Tenant Data Stores"]
+    Controllers --> ToolProxy["Integrated Tool Proxy"]
+    ToolProxy --> Tools["Integrated Tools"]

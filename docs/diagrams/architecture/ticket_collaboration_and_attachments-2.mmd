@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Test as Tickets Test
+    participant TicketApi as Ticket API Helper
+    participant AttachmentApi as Attachment API Helper
+    participant Storage as Temporary File Storage
+    participant TicketService as Ticket API Surface
+    Test->>TicketApi: Create upload URL with file metadata
+    TicketApi->>TicketService: Create temporary attachment
+    TicketService-->>TicketApi: Temporary ID and upload URL
+    TicketApi-->>Test: Temporary attachment
+    Test->>AttachmentApi: Upload local file to upload URL
+    AttachmentApi->>Storage: Upload file bytes
+    Test->>TicketApi: Update ticket with temporary ID
+    TicketApi->>TicketService: Link temporary file to ticket
+    TicketService-->>TicketApi: Ticket with attachment
+    TicketApi-->>Test: Attachment metadata
+    Test->>TicketApi: Request attachment download URL
+    TicketApi->>TicketService: Create download URL
+    TicketService-->>TicketApi: Download URL
+    TicketApi-->>Test: Download URL
+    Test->>AttachmentApi: Download attachment
+    AttachmentApi->>Storage: Read file bytes
+    Storage-->>AttachmentApi: File bytes
+    AttachmentApi-->>Test: File bytes
+    Test->>TicketApi: Delete ticket attachment
+    TicketApi->>TicketService: Remove attachment

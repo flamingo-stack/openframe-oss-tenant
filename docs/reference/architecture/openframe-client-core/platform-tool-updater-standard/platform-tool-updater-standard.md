@@ -1,157 +1,203 @@
 # Platform Tool Updater Standard
 
-Platform Tool Updater Standard updates a normal, executable-based integrated tool on an endpoint running the OpenFrame client. It is the `Standard` implementation of the tool-update strategy supplied by the `openframe_agent_lib` Rust library. The implementation deliberately separates stopping the running process, preserving a rollback copy, replacing the executable, and removing the backup after a successful update.
+Platform Tool Updater Standard is the OpenFrame client agent's update strategy for a tool installed as a regular executable rather than as a managed operating-system service or a macOS GUI application. It implements the common update contract supplied by OpenFrame OSS Library, stops the running tool, protects the current executable with a backup, writes the replacement binary, and restores the backup if the write phase fails.
 
-The source implementation is maintained in the OpenFrame OSS Library: [standard.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/tool_updater/standard.rs). This repository consumes that library as the Cargo artifact `openframe_agent_lib` version `v0.0.5`; the endpoint client assembled by this repository runs the updater.
+The implementation is supplied by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library at version `v0.0.5`. The tenant repository runs it through the OpenFrame client; the implementation source is [standard.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/tool_updater/standard.rs).
 
-## Purpose and Scope
+## Responsibilities
 
-An installed tool has an `Installation` classification. This module handles the `Standard` variant, whose executable location is either explicitly configured or resolved by the directory manager. If no executable path is configured, the directory manager resolves the default agent file name: `agent.exe` on Windows and `agent` on other supported platforms.
+`StandardToolUpdater` owns the executable replacement lifecycle for an `Installation::Standard` record:
 
-The module implements the common `ToolUpdater` lifecycle:
+- Resolves the installed executable from the tool agent identifier and its optional configured executable path.
+- Stops matching tool processes before modifying the executable.
+- Removes a stale aside binary, records surviving processes for diagnostics, and creates a backup of the current executable.
+- Downloads and writes the selected update artifact to the resolved executable path.
+- Deletes the backup after a successful update.
+- Restores the backup when the apply phase fails.
+- Signals, through update context, that the tool needs restarting. The run manager performs that restart after the update workflow.
 
-1. **Prepare** stops the tool, clears a leftover aside binary, records surviving update artifacts for diagnostics, and backs up the current executable.
-2. **Apply** downloads the selected platform artifact and writes it to the resolved executable location.
-3. **Finalize** removes the rollback backup and records that the run manager should restart the tool.
-4. **Rollback** restores the backup if applying the replacement fails.
+It does not choose which version to apply, persist tool records, or publish installed versions. Those activities belong to the surrounding tool update service and common updater orchestration.
 
-It does not manage service registration or application bundles. The shared updater factory selects dedicated implementations for service installations and macOS GUI applications. On non-macOS platforms, GUI application updates currently fall back to this standard binary-replacement behavior.
+## Placement in the Client Update Architecture
 
-## Architecture
-
-```mermaid
-flowchart TD
-    UpdateService["Tool Agent Update Service"] -->|"builds dependencies"| UpdateRunner["Shared update runner"]
-    UpdateRunner -->|"selects Standard installation"| Factory["Updater factory"]
-    Factory -->|"creates"| StandardUpdater["Standard Tool Updater"]
-    StandardUpdater -->|"stops process"| KillService["Tool Kill Service"]
-    StandardUpdater -->|"resolves executable"| DirectoryManager["Directory Manager"]
-    StandardUpdater -->|"downloads and writes"| DownloadService["GitHub Download Service"]
-    StandardUpdater -->|"creates and restores backup"| FileSystem["Endpoint file system"]
-    StandardUpdater -->|"restart requested"| RunManager["Tool Run Manager"]
-```
-
-`StandardToolUpdater` owns a `ToolUpdaterDeps` value. Its relevant collaborators are:
-
-| Dependency | Responsibility in the update |
-| --- | --- |
-| Tool Kill Service | Terminates the target tool before the executable is backed up or replaced. |
-| Directory Manager | Computes the installed executable path from the tool identifier and optional configured path. |
-| GitHub Download Service | Is used by the shared binary-download-and-write operation to retrieve the chosen artifact. |
-| Tool Command Parameters Resolver | Is available through the shared dependency bundle for updater implementations, although the Standard implementation does not call it directly. |
-| Tool Run Manager | Restarts normal tools after a successful standard update according to the shared update context. |
-
-The updater returns an `UpdateContext` containing the optional backup path and `needs_restart`. For a standard update, preparation always sets `needs_restart` to `true` after it has successfully stopped the tool and attempted backup creation.
-
-## Component Responsibilities
-
-### Standard Tool Updater
-
-`StandardToolUpdater` is a small strategy object constructed with `new(deps)`. It implements the asynchronous `ToolUpdater` contract and logs each lifecycle stage with the tool agent identifier.
-
-| Lifecycle method | Behavior | Result |
-| --- | --- | --- |
-| `prepare` | Stops the target tool, resolves its executable path, clears an aside binary, logs any surviving update files, and backs up the current executable. | An update context with the backup path and a restart requirement. |
-| `apply` | Resolves the executable path again and invokes the shared download-and-write operation using the selected download configuration. | `None`, because a standard update retains the existing installation classification. |
-| `finalize` | Cleans up the backup. It does not launch the process itself; it records in logs that the run manager will perform automatic restart. | Successful completion after backup cleanup is attempted. |
-| `rollback` | Resolves the destination executable path and restores the backup supplied by the update context. | The restoration result. |
-
-### Shared Tool Update Contract
-
-The shared update runner invokes `prepare`, then `apply`, then `finalize`. If `apply` returns an error, it invokes `rollback` and returns the original apply failure. A rollback failure is logged but does not replace the primary update error.
-
-The `apply` result can optionally return a replacement `Installation` for updater types that change installation style. This implementation returns no replacement, so finalization continues with the original installed-tool record.
-
-## Update Flow
-
-```mermaid
-sequenceDiagram
-    participant UpdateService as Tool Agent Update Service
-    participant Runner as Shared Update Runner
-    participant Updater as Standard Tool Updater
-    participant Kill as Tool Kill Service
-    participant Files as Endpoint File System
-    participant Download as Download Service
-    participant RunManager as Tool Run Manager
-    UpdateService->>Runner: Request tool update
-    Runner->>Updater: prepare(installed tool)
-    Updater->>Kill: Stop tool by tool identifier
-    Kill-->>Updater: Tool stopped
-    Updater->>Files: Clear aside file and create backup
-    Files-->>Updater: Backup path
-    Updater-->>Runner: Update context, restart required
-    Runner->>Updater: apply(installed tool, download configuration)
-    Updater->>Download: Download selected operating system artifact
-    Download->>Files: Write replacement executable
-    Files-->>Updater: Replacement written
-    Updater-->>Runner: No installation change
-    Runner->>Updater: finalize(installed tool, update context)
-    Updater->>Files: Remove backup
-    Updater-->>Runner: Finalized
-    Runner->>RunManager: Resume normal tool lifecycle
-```
-
-The update request contains a `DownloadConfiguration` selected for the endpoint operating system. That configuration identifies the source link, input file name, target file name, installation type, and optional bundle or service metadata. Standard updates consume the download and target details but preserve the installed tool's `Standard` classification.
-
-## Failure and Recovery Behavior
-
-```mermaid
-flowchart TD
-    Start["Start standard update"] --> Stop["Stop running tool"]
-    Stop --> Backup["Create executable backup"]
-    Backup --> Apply["Download and write replacement"]
-    Apply -->|"write succeeds"| Finalize["Remove backup"]
-    Finalize --> Restart["Run manager restarts tool"]
-    Apply -->|"write fails"| Rollback["Restore backup"]
-    Rollback --> Failure["Return update failure"]
-    Stop -->|"stop fails"| PrepareFailure["Return preparation failure"]
-    Backup -->|"backup fails"| PrepareFailure
-```
-
-Important operational properties:
-
-- **No replacement while the tool is running:** `prepare` stops the process before filesystem modification. A failure to stop the tool aborts preparation, so no download or replacement is attempted.
-- **Rollback scope:** the shared runner attempts rollback only after `apply` fails. A preparation failure occurs before the lifecycle context is returned and therefore does not enter rollback through the shared runner.
-- **Backup cleanup is post-apply:** the backup is retained through download and write, then removed during finalization. This keeps recovery material available while replacement is in progress.
-- **Finalization errors:** the shared runner surfaces an error if finalization fails. Since the replacement has already been written, operators should inspect the update logs and leftover files rather than assuming that rollback occurred.
-- **Diagnostics for stale artifacts:** preparation clears an aside binary and logs update survivors before backup. These steps help identify files left from previous interrupted updates.
-
-## Invocation and Eligibility
-
-Tool update handling first loads the installed-tool record. It declines an update for a tool with no registry record, avoids stale downgrades unless repair is needed, and calculates whether the main tool or individual assets need change. A missing executable or an installation record left in the installing state forces a repair attempt.
-
-For an eligible main-tool update, the service constructs the updater dependencies and calls the shared runner. The updater factory dispatches based on the installation type:
+The standard updater is one implementation of the `ToolUpdater` lifecycle. The factory selects it for standard installations. On non-macOS platforms, the factory also temporarily uses it for GUI application installations while a platform-specific GUI updater is unavailable.
 
 ```mermaid
 flowchart LR
-    InstalledTool["Installed tool record"] --> InstallationType{"Installation type?"}
-    InstallationType -->|"Standard"| Standard["Standard Tool Updater"]
-    InstallationType -->|"Service"| Service["Service Tool Updater"]
-    InstallationType -->|"GUI application on macOS"| Gui["GUI Application Tool Updater"]
-    InstallationType -->|"GUI application elsewhere"| StandardFallback["Standard Tool Updater fallback"]
+    UpdateMessage["Tool update message"] --> UpdateService["Tool Agent Update Service"]
+    UpdateService --> Orchestrator["Common updater orchestration"]
+    Orchestrator --> Factory["Updater factory"]
+    Factory --> StandardUpdater["Platform Tool Updater Standard"]
+    Factory --> ServiceUpdater["Service tool updater"]
+    Factory --> GuiUpdater["GUI application updater"]
+    StandardUpdater --> KillService["Tool kill service"]
+    StandardUpdater --> DirectoryManager["Directory manager"]
+    StandardUpdater --> DownloadService["Download and binary writer"]
+    StandardUpdater --> RunManager["Tool run manager"]
+    DownloadService --> Executable["Updated executable"]
+    RunManager --> Executable
 ```
 
-This module is therefore the primary updater for normal endpoint-agent binaries and also supplies the current non-macOS GUI application fallback. It is not responsible for deciding the target version, selecting which tools receive an update, publishing installed versions, or persisting installed-tool state; those are coordinated by the surrounding tool update service.
+### Selection and Contract
 
-## Path and Process Semantics
+The common updater module defines four asynchronous lifecycle operations:
 
-The path resolution step is central to safe replacement. For each operation, the updater asks the directory manager for the executable location using the tool agent identifier and the installed record's executable-path setting:
+| Operation | Standard updater behavior |
+| --- | --- |
+| `prepare` | Stops the tool, resolves its executable path, clears stale aside state, logs survivors, and backs up the executable. |
+| `apply` | Downloads and writes the new executable. It returns no replacement installation metadata because the installation remains standard. |
+| `finalize` | Removes the backup and leaves restart execution to the run manager. |
+| `rollback` | Restores the backed-up executable after a failed apply operation. |
 
-- An absolute configured path is used unchanged.
-- A relative configured path is resolved inside the application-support directory for that tool.
-- An absent path uses the platform default executable name within the tool directory.
+The updater factory dispatches by installation kind. A standard installation, represented by `Installation::Standard`, always selects `StandardToolUpdater`.
 
-The tool kill service stops processes by a pattern derived from the tool identifier. The updater then performs backup, write, cleanup, or restoration against the resolved executable path. Re-resolving the path in each lifecycle method keeps all file operations tied to the installed-tool record that the runner supplied.
+```mermaid
+flowchart TD
+    Start["Installed tool"] --> InstallationType{"Installation type?"}
+    InstallationType -->|"Standard"| StandardUpdater["Standard tool updater"]
+    InstallationType -->|"Service"| ServiceUpdater["Service tool updater"]
+    InstallationType -->|"GUI application on macOS"| GuiUpdater["GUI application updater"]
+    InstallationType -->|"GUI application on other systems"| FallbackUpdater["Standard tool updater fallback"]
+```
 
-## Maintainership Notes
+## Dependencies and Data
 
-When changing this updater, retain the lifecycle ordering and the separation of concerns:
+`StandardToolUpdater::new` receives a `ToolUpdaterDeps` value. Although the dependency bundle includes a command-parameter resolver, the standard updater directly uses the following dependencies:
 
-1. Stop the tool before manipulating its executable.
-2. Keep backup creation before replacement.
-3. Return the backup through `UpdateContext` so shared rollback can recover it.
-4. Do not delete the backup until finalization.
-5. Preserve `needs_restart` for standard tools so the supervising run manager can restore normal operation.
-6. Keep platform-specific installation semantics in their corresponding updater strategy rather than expanding the standard path to cover service or macOS bundle behavior.
+| Dependency | Use in this module |
+| --- | --- |
+| Tool kill service | Stops processes whose command matches the tool agent identifier before the binary is changed. |
+| Directory manager | Resolves the canonical executable path for the installed tool. |
+| Download service | Participates in downloading and writing the replacement binary through the common helper. |
 
-Changes should be evaluated against interrupted-update cases: a failed stop, absent or unusable backup, failed download, failed write, failed restoration, and an inability to remove the backup after a successful replacement. In each case, verify the tool's executable path, process state, retained artifacts, and structured logs identified by the tool agent identifier.
+The update inputs are:
+
+| Input | Relevant fields | Purpose |
+| --- | --- | --- |
+| Installed tool | Tool agent identifier, installation descriptor, executable path | Identifies the executable and determines where it is stored. |
+| Download configuration | Operating system, source link, source filename, target filename, installation type | Identifies the artifact selected for the client platform. |
+| Update context | Optional backup path and restart flag | Carries state between lifecycle phases. |
+
+If an executable path is absolute, the directory manager uses it directly. If it is relative, it resolves it below the client application-support directory and the tool agent identifier. When the path is omitted, the default executable name is `agent.exe` on Windows and `agent` on other supported platforms.
+
+## Update Process
+
+The common orchestration invokes preparation, application, and finalization in sequence. It catches an error from application, attempts rollback, then returns the original application error. A finalization failure is reported to the caller but does not cause the common orchestration to invoke rollback.
+
+```mermaid
+sequenceDiagram
+    participant Service as Tool Agent Update Service
+    participant Core as Common Update Orchestrator
+    participant Standard as Standard Tool Updater
+    participant Kill as Tool Kill Service
+    participant Files as Tool File System
+    participant Download as Download Service
+    participant Runner as Tool Run Manager
+    Service->>Core: run update for installed tool and configuration
+    Core->>Standard: prepare tool
+    Standard->>Kill: stop tool by agent identifier
+    Standard->>Files: resolve executable, clear aside, create backup
+    Standard-->>Core: update context with backup and restart required
+    Core->>Standard: apply tool and configuration
+    Standard->>Download: download and write executable
+    alt application succeeds
+        Standard-->>Core: unchanged installation metadata
+        Core->>Standard: finalize tool and context
+        Standard->>Files: remove backup
+        Standard-->>Core: success
+        Core-->>Service: update complete
+        Service->>Runner: resume supervised tool execution
+    else application fails
+        Standard-->>Core: application error
+        Core->>Standard: rollback tool and context
+        Standard->>Files: restore executable from backup
+        Standard-->>Core: rollback result
+        Core-->>Service: application error
+    end
+```
+
+### Preparation
+
+Preparation is deliberately destructive only after the running process has been stopped:
+
+1. The updater logs the tool identifier and requests that the tool kill service stop the tool.
+2. A stop failure terminates the update before backup or replacement begins. The error is annotated with the tool identifier.
+3. It resolves the executable path from the installed tool's standard installation metadata.
+4. It clears an aside binary left by a previous update attempt and records processes that may have survived shutdown.
+5. It creates a backup and returns an `UpdateContext` containing that optional path and `needs_restart: true`.
+
+The context allows later phases to operate on the exact backup created for this update, rather than recomputing or guessing a rollback path.
+
+### Application
+
+Application resolves the same executable path and delegates artifact retrieval and replacement to the common binary-download helper. The helper receives the download configuration, destination path, and tool agent identifier. This separates transport and file-write behavior from installation-specific lifecycle decisions.
+
+The standard updater returns `None` for replacement installation metadata. In other words, a standard executable update does not change the `Installation` classification or its path description.
+
+### Finalization and Restart
+
+On successful application, finalization removes the backup. The updater does not launch the executable itself; it logs that it will be automatically restarted by the tool run manager. The restart flag in the context documents that requirement to the surrounding workflow.
+
+This boundary prevents the updater from competing with the client runtime's supervision and coordination responsibilities.
+
+### Failure and Rollback
+
+Only an apply failure initiates the rollback branch in the common orchestrator. The updater recalculates the target executable path and asks the common restore helper to replace it from the backup path recorded in the context.
+
+```mermaid
+flowchart TD
+    Prepare["Prepare update"] --> StopTool["Stop running tool"]
+    StopTool --> StopOk{"Tool stopped?"}
+    StopOk -->|"No"| Abort["Return preparation error"]
+    StopOk -->|"Yes"| Backup["Clear stale aside state and back up executable"]
+    Backup --> Apply["Download and write replacement"]
+    Apply --> ApplyOk{"Write succeeded?"}
+    ApplyOk -->|"Yes"| Finalize["Remove backup"]
+    Finalize --> Restart["Run manager restarts tool"]
+    ApplyOk -->|"No"| Rollback["Restore executable from backup"]
+    Rollback --> Failed["Return application error"]
+```
+
+If restoration also fails, common orchestration logs that secondary failure while preserving the original application failure as the returned error. Operators should therefore examine both the primary update error and rollback log entries when a device remains in an inconsistent state.
+
+## Interaction with Tool Update Service
+
+The tool update service is the policy and persistence boundary around this updater. Before invoking the update process, it:
+
+- Locates the installed tool record by tool agent identifier.
+- Detects interrupted installation state or a missing artifact and treats either as a repair condition.
+- Compares installed and requested versions, rejects downgrades unless explicitly allowed, and avoids updates where the target version is already installed.
+- Coordinates updates under a tool operation guard so concurrent tool operations do not conflict.
+- Publishes installed versions when no update is required and after applicable update work completes.
+
+The standard updater therefore assumes that it is given a valid installed-tool record and a download configuration already chosen for the host. Its concerns are local process control, executable replacement, and recovery.
+
+## Operational Guarantees and Limits
+
+### Guarantees
+
+- **Stop before replace:** An inability to stop the tool prevents the update from progressing to file replacement.
+- **Rollback material:** Successful preparation supplies a backup path for a subsequent failed application attempt.
+- **Consistent targeting:** Preparation, application, and rollback resolve the executable with the same directory-manager rule.
+- **Explicit restart intent:** The update context records that a standard tool must be restarted after replacement.
+- **Traceability:** Each lifecycle phase logs the tool agent identifier, and preparation logs potential surviving processes through the shared helper.
+
+### Limits
+
+- The module does not verify that the relaunched tool is healthy; lifecycle supervision is external to this updater.
+- The module does not roll back after a finalization error because rollback is tied to application failure in common orchestration.
+- The module does not itself choose an artifact, validate update policy, or mutate installed-tool version records.
+- Backup creation can yield no path, so restore behavior is necessarily dependent on the backup state recorded during preparation.
+
+## Maintenance Guidance
+
+When changing Platform Tool Updater Standard, keep these invariants intact:
+
+1. Preserve the prepare, apply, finalize, and rollback contract so it remains interchangeable with service and GUI application updater implementations.
+2. Stop the tool before moving or replacing its executable.
+3. Use `DirectoryManager` rather than constructing installation paths directly; it centralizes absolute, relative, and default executable-path rules.
+4. Keep the backup path in `UpdateContext` as the sole rollback source for the active update.
+5. Do not start the executable directly from finalization. The tool run manager owns supervised restart behavior.
+6. Retain the tool agent identifier in errors and structured logs so failures can be correlated with the device's installed-tool record.
+
+For questions, implementation feedback, or coordination with maintainers, use the [OpenMSP Slack community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA).

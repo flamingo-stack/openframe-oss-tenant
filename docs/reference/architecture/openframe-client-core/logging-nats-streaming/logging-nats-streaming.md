@@ -1,147 +1,173 @@
 # Logging Nats Streaming
 
-Logging Nats Streaming is the OpenFrame client agent's durable, best-effort log forwarding loop. It reads structured entries from the agent log and, once available, a discovered MeshCentral tool log; groups entries into bounded batches; and publishes each batch through NATS JetStream over a secure WebSocket endpoint. A batch is acknowledged before every source advances its read position, so a failed publish leaves the entries eligible for retry.
+Logging Nats Streaming is the OpenFrame client agent's asynchronous log-export pipeline. It runs in the Rust client implementation supplied by the `openframe_agent_lib` dependency from the OpenFrame OSS Library, reads local agent and discovered tool logs, groups them into batches, and publishes acknowledged batches to NATS JetStream through the tenant logs WebSocket endpoint.
 
-The implementation is supplied by the upstream OpenFrame OSS Library as part of the `openframe_agent_lib` Cargo artifact, which this repository consumes for its client runtime. The source of record is [nats_streaming.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/logging/nats_streaming.rs).
+The implementation is in [the OpenFrame OSS Library source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/logging/nats_streaming.rs). This repository runs that client library as part of its OpenFrame Client deployment.
 
-## Scope and Responsibilities
+## Responsibilities
 
-The module owns the delivery lifecycle after local logging has produced files. It does not configure the local tracing subscriber, parse every logging format, provision the remote endpoint, or persist received logs on the server. Its responsibilities are:
+- Wait for a usable credential before opening the log stream.
+- Connect to the tenant-scoped NATS logs endpoint over secure WebSocket transport.
+- Attach tenant, device, and key identity headers to the NATS connection.
+- Poll registered sources every 60 seconds and limit a publication to 50 log entries.
+- Start with the OpenFrame agent log and discover the MeshCentral log source after MeshCentral is installed.
+- Advance source read positions only when JetStream acknowledges the publish operation.
+- Roll source positions back after a failed publication so the batch can be retried.
+- Persist the main log's offset after a successful publication and coordinate log-file rotation.
 
-- Wait for a usable credential, preferring a device log key and falling back to the enrollment key.
-- Derive the tenant domain, identify the device, and connect to the `wss` NATS logs endpoint.
-- Attach tenant, credential, and machine identity headers during connection setup.
-- Register the agent log immediately and discover the MeshCentral log source after installation.
-- Read at most 50 entries across all registered sources every 60 seconds.
-- Publish JSON batches to the `agents.logs` subject and wait for the JetStream publish acknowledgment.
-- Commit source offsets only after an acknowledged publish, otherwise roll them back.
-- Rotate the main agent log only after its already-streamed portion reaches the rotation threshold.
+## Position in the Client
 
-## Architecture
+The run manager owns the long-lived collection and delivery loop. It uses the client configuration and device services to establish the connection context, and it delegates source cursor behavior to the logging source and rotation components.
 
 ```mermaid
 flowchart LR
-    AgentLog["OpenFrame log file"] --> Registry["Log source registry"]
-    MeshLog["MeshCentral log file"] --> Registry
-    Registry --> Manager["Log streaming run manager"]
-    InitialConfig["Initial configuration"] --> Manager
-    AgentConfig["Agent configuration"] --> Manager
-    MachineId["Machine ID service"] --> Manager
-    LogKey["Log key service"] --> Connection["NATS log connection"]
-    Manager --> Connection
-    Connection -->|"WebSocket and JetStream"| Nats["NATS logs endpoint"]
-    Nats -->|"publish acknowledgement"| Connection
-    Connection --> Manager
+    Config["Initial and agent configuration"] --> Manager["LogStreamingRunManager"]
+    Machine["Machine ID service"] --> Manager
+    KeyService["Log key service"] --> Manager
+    Directories["Directory manager"] --> Manager
+    Tools["Installed tools service"] --> Discovery["MeshCentral source discovery"]
+    Directories --> Discovery
+    Manager --> Registry["Log source registry"]
+    Discovery --> Registry
+    Registry --> OpenFrameLog["OpenFrame file source"]
+    Registry --> MeshLog["MeshCentral file source"]
     Manager --> Rotation["Log rotation manager"]
+    Manager --> Connection["NatsLogConnection"]
+    Connection --> Endpoint["Tenant NATS logs endpoint"]
+    Registry --> Batch["LogBatchMessage"]
+    Batch --> Connection
 ```
 
-`LogStreamingRunManager` is the orchestrator. Its constructor reads the server host from initial configuration, removes an `api.` prefix to obtain the tenant domain, obtains a hostname through `DeviceDataFetcher`, selects the main log and protected offset paths through `DirectoryManager`, and obtains or creates the persistent machine ID.
+### Construction and startup
 
-`NatsLogConnection` is a focused transport wrapper. It creates an `async_nats` connection to `wss://{server host}/ws/nats-logs`, then wraps the connected client with a JetStream context. The wrapper serializes a `LogBatchMessage`, publishes it to `agents.logs`, and does not report success until the broker returns a publish acknowledgment.
+`LogStreamingRunManager::new` derives its runtime context from services already available to the agent:
 
-## Credentials and Connection Identity
+| Input | Use in the module |
+|---|---|
+| Initial configuration service | Supplies the server address, stored log key or initial enrollment key, and organization identifier. |
+| Agent configuration service | Supplies the optional registered machine identifier placed in each published batch. |
+| Directory manager | Resolves the agent log location, the secured offset location, and the MeshCentral support directory. |
+| Machine ID service | Gets or creates the machine identifier used in the NATS connection header. |
+| Device data fetcher | Determines the hostname, falling back to `unknown` when it cannot be obtained. |
+| Installed tools service | Enables delayed discovery of the MeshCentral log file. |
+| Log key service | Is retained by the connection so client connection errors can signal key-refresh handling. |
 
-`LogStreamKey` makes the two permitted credentials explicit:
+`start` returns after spawning a Tokio task. That task first waits in ten-second intervals until it can choose a nonempty key, then retries the initial NATS connection every five seconds until successful. Consequently, agent startup is not blocked by unavailable logging credentials or a temporarily unreachable logs endpoint.
 
-| Key variant | Connection header | Selection rule |
+## Connection and credentials
+
+`NatsLogConnection` wraps an optional async NATS JetStream context. Its `connect` method creates an `async_nats` connection to the following endpoint shape:
+
+```text
+wss://{server host}/ws/nats-logs
+```
+
+The connection is configured to retry its initial connection and wait five seconds between reconnect attempts. It emits diagnostic events for connection, disconnection, server errors, and client errors. A client error also invokes `LogKeyService::connect_failed`, allowing the surrounding key service to react to connection failures.
+
+### Key selection
+
+The module supports the device lifecycle before and after a dedicated logging credential becomes available. `choose_key` prefers a nonempty stored log key. If none is present, it uses a nonempty initial enrollment key. The selected variant determines both the authentication header and the logged credential kind:
+
+| `LogStreamKey` variant | Header | When selected |
 |---|---|---|
-| `Log` | `x-log-key` | Used when the persisted log key exists and is nonempty. |
-| `Initial` | `x-initial-key` | Used only when no usable log key is stored and the enrollment key is nonempty. |
+| `Log` | `x-log-key` | A stored log key is present. |
+| `Initial` | `x-initial-key` | No usable log key is present and an initial key is available. |
 
-Every connection also sends `x-tenant-domain` and the client machine-ID header. The agent polls every 10 seconds until one of the two keys is available. This avoids starting a connection with an empty secret while allowing log delivery before the device has received its dedicated log key.
+Every connection also supplies `x-tenant-domain` and the client machine ID header. The tenant domain is derived by removing a leading `api.` from the configured server host; otherwise the configured host is retained.
 
-The NATS client retries its initial connection. If a connection attempt fails, the run manager waits five seconds and tries again. Once connected, the client logs connection, disconnection, server-error, and client-error events. A client error invokes the log key service's connection-failure signal, allowing that service to react to authentication or connection failure. The log key service subsequently requests a client restart after it completes its own key-acquisition run, so a restarted client can reconnect using the newly available key.
+> The module records the credential category in connection messages, not the credential value.
 
-## Source Registration and Discovery
+## Sources, batching, and delivery
 
-The source registry begins with one `FileLogSource` for the agent's `openframe.log`. It tracks source-specific offsets and treats reading as provisional until the batch succeeds.
+At startup, `create_source_registry` registers a `FileLogSource` for the OpenFrame agent's `openframe.log` file. The source uses a cursor stored in the secured directory as `log_stream_offset`.
 
-A separate asynchronous discovery task checks every 30 seconds for an installed tool whose identifier matches the MeshCentral source kind. Once found, it derives the MeshCentral log path from the application-support directory and registers a second `FileLogSource`. Discovery sends one source through a bounded channel and then exits; registration therefore occurs at most once during a streaming-manager lifetime.
+A separate Tokio task performs source discovery every 30 seconds. It queries installed tools for the MeshCentral tool identifier and only adds a MeshCentral source when the tool has an executable path. The added source reads the MeshCentral log in that tool's application-support directory and uses a separate secured cursor named `meshcentral_log_offset`. Discovery stops after the source is successfully sent to the streaming loop; the loop drains the channel and registers new sources before reading each batch.
 
-```mermaid
-flowchart TD
-    Start["Start streaming manager"] --> Main["Register OpenFrame file source"]
-    Start --> Discover["Wait 30 seconds"]
-    Discover --> Installed{"MeshCentral installed?"}
-    Installed -->|"No"| Discover
-    Installed -->|"Yes"| Build["Build MeshCentral file source"]
-    Build --> Queue["Send source to registry channel"]
-    Queue --> Done["Finish discovery task"]
-    Main --> Tick["Streaming loop tick"]
-    Tick --> Drain["Register queued sources"]
-```
-
-The registry divides the remaining per-cycle capacity among active sources and guarantees at least one entry of progress where data is available. It deactivates a source for that cycle after an empty read or read error, then deduplicates the combined entries before returning them. This gives the dynamically added source a share of the 50-entry batch budget without allowing one file to monopolize a cycle.
-
-## Batch Content and Delivery Flow
-
-A `LogBatchMessage` contains the hostname, tenant domain, logs, and optional machine and organization IDs. Each parsed `LogEntry` has a level, timestamp, message, and an optional repetition count. Machine ID comes from agent configuration and organization ID comes from initial configuration; either field is omitted from JSON when unavailable or empty.
+The source registry is responsible for aggregating source reads and applying either `commit_all` or `rollback_all`. The NATS streaming module treats this registry as the delivery boundary: data is committed only after the broker acknowledges the publish.
 
 ```mermaid
 sequenceDiagram
-    participant Timer as "60 second timer"
-    participant Registry as "Log source registry"
-    participant Connection as "NATS log connection"
-    participant Broker as "NATS JetStream"
-    Timer->>Registry: "read up to 50 entries"
-    Registry-->>Timer: "deduplicated entries"
-    alt no entries
-        Timer->>Timer: "check main log rotation"
-    else entries available
-        Timer->>Connection: "publish LogBatchMessage"
-        Connection->>Broker: "publish to agents.logs"
-        Broker-->>Connection: "publish acknowledgement"
-        alt acknowledgement received
-            Connection-->>Timer: "success"
-            Timer->>Registry: "commit all source positions"
-            Timer->>Timer: "save main log offset"
-        else serialization or publish failure
-            Connection-->>Timer: "error"
-            Timer->>Registry: "rollback all source positions"
+    participant Timer as Batch timer
+    participant Registry as Log source registry
+    participant Connection as NATS log connection
+    participant Broker as JetStream broker
+    Timer->>Registry: Read up to 50 logs
+    alt No logs available
+        Registry-->>Timer: Empty result
+        Timer->>Timer: Check log rotation
+    else Logs available
+        Registry-->>Timer: Log entries
+        Timer->>Connection: Publish serialized log batch
+        Connection->>Broker: Publish to agents.logs
+        Broker-->>Connection: Publish acknowledgment
+        alt Acknowledgment received
+            Connection-->>Timer: Success
+            Timer->>Registry: Commit all source positions
+            Timer->>Timer: Save main log offset
+        else Publish or acknowledgment fails
+            Connection-->>Timer: Error
+            Timer->>Registry: Roll back all source positions
         end
     end
 ```
 
-The loop reads on a 60-second interval. Before reading, it drains any newly discovered source from the channel. On an empty batch it does not publish and instead evaluates rotation readiness. On a nonempty batch it builds metadata at send time, publishes, and takes one of two paths:
+### Batch contents
 
-1. **Acknowledged delivery:** all sources commit their provisional positions. The manager records the current size of the main log in the protected offset file.
-2. **Failed delivery:** all sources roll back. The same entries remain available on the next cycle, prioritizing retry over loss.
+The module serializes a `LogBatchMessage` as JSON before publishing it to the `agents.logs` subject. A batch includes:
 
-The source abstraction also detects a file that became shorter than its stored position and resumes at position zero. This accounts for an externally truncated or replaced log file.
+- `hostname`, captured when the run manager is constructed.
+- `tenant_domain`, derived from the configured server host.
+- `logs`, the entries returned by all registered log sources.
+- Optional `machine_id`, read from agent configuration at each collection interval.
+- Optional `organization_id`, read from initial configuration when it is nonblank.
 
-## Offset and Rotation Behavior
+The 50-entry limit applies to each registry read. Batches are considered delivered only after both the JetStream publish operation and its acknowledgment succeed.
 
-The main OpenFrame log uses a second offset managed by `LogRotationManager`. The manager loads it from a protected file, defaulting to zero if the file is absent or unreadable. After a successful main-log batch, it saves the main log's current file length.
+## Processing loop and failure behavior
 
-When a cycle has no entries, the manager compares that recorded position with the current main-log length. It rotates only when all currently recorded bytes have been streamed and the file is at least the rotation threshold. A successful rotation resets the offset to zero. Read and write errors are logged rather than terminating the loop.
+The collection loop ticks every 60 seconds. Its behavior is designed to avoid moving local read positions ahead of durable broker acceptance.
 
-This rotation guard prevents deletion of unshipped main-log content. It applies to the main agent log path; the independently registered MeshCentral source maintains its own offset path.
+```mermaid
+flowchart TD
+    Tick["60 second tick"] --> Drain["Register discovered sources"]
+    Drain --> Read["Read up to 50 logs"]
+    Read --> HasLogs{"Logs available?"}
+    HasLogs -->|"no"| Rotate["Check log rotation"]
+    Rotate --> Tick
+    HasLogs -->|"yes"| Build["Build log batch"]
+    Build --> Publish["Publish to agents.logs"]
+    Publish --> Ack{"Acknowledged?"}
+    Ack -->|"yes"| Commit["Commit all source cursors"]
+    Commit --> Save["Save main log offset"]
+    Save --> Tick
+    Ack -->|"no"| Rollback["Roll back all source cursors"]
+    Rollback --> Tick
+```
 
-## Operational Characteristics
+On an empty read, the loop invokes `rotate_if_ready` with the last known main-file position. After a successful batch, it obtains the current metadata length for the main agent log and persists that value through `LogRotationManager::save_offset`. The offset is initially restored through `load_offset`.
 
-| Concern | Behavior implemented by Logging Nats Streaming |
+If serialization, publishing, or acknowledgment fails, the loop logs the error and rolls all sources back. It does not persist a new main-log offset. A later interval can therefore reread and retry the uncommitted data. Connection initialization similarly continues retrying after failures rather than terminating the background task.
+
+## Operational considerations
+
+- **Credential readiness:** If neither key is present, streaming remains in a ten-second wait loop. Verify agent enrollment and log-key provisioning when no connection is attempted.
+- **Connection diagnosis:** Connection events identify the tenant and credential type. Client-error events additionally notify the log-key service.
+- **Delivery semantics:** The source cursor advances after a broker acknowledgment, not merely after a publish request. Consumers should tolerate retries because a failed result triggers source rollback.
+- **Source discovery:** MeshCentral logs are unavailable to this pipeline until the installed-tools record exists and reports an executable path. The module retries discovery every 30 seconds.
+- **Volume control:** A maximum of 50 records per 60-second interval bounds individual batch size, but it also means sustained local log production can create a backlog.
+- **Logging scope:** This module publishes the OpenFrame agent log and, when discoverable, the MeshCentral log. It does not itself configure log formatting or create the log files.
+
+## Core types and methods
+
+| Component | Role |
 |---|---|
-| Startup before log credentials | Polls until a nonempty log key or initial key is present. |
-| Credential transition | Prefers a log key over an initial key at manager startup. A later key-service completion triggers a client restart. |
-| Initial connection failure | Retries from the manager after five seconds. |
-| Connection interruption | The NATS client has a five-second reconnect-delay callback and emits lifecycle errors. |
-| NATS acknowledgement failure | Does not commit offsets and retries the entries on a future interval. |
-| Empty files | Skips publishing and evaluates main-log rotation. |
-| Tool installed after startup | Performs periodic MeshCentral discovery until it registers the source. |
-| Read failure from one source | Logs the error and keeps other sources eligible within the same cycle. |
+| `LogStreamKey` | Represents either the normal log key or initial enrollment key and maps it to the appropriate request header. |
+| `NatsLogConnection::new` | Creates a connection holder with tenant, machine, credential, and key-service context. |
+| `NatsLogConnection::connect` | Establishes the secure WebSocket NATS connection and initializes JetStream. |
+| `NatsLogConnection::publish` | Serializes a log batch, publishes it to `agents.logs`, and waits for the broker acknowledgment. |
+| `LogStreamingRunManager::new` | Collects paths, host identity, tenant context, services, and the persistent machine ID. |
+| `LogStreamingRunManager::start` | Launches the asynchronous credential, connection, discovery, and batching workflow. |
 
-## Integration Boundaries
+## Boundaries
 
-Logging Nats Streaming belongs to the agent-side logging pipeline and depends on neighboring logging components for parsing, source state, and rotation. It specifically relies on the log parser's `LogBatchMessage` and `LogEntry` contract, the source registry's read/commit/rollback semantics, and the rotation manager's main-log offset handling.
-
-At the platform boundary, the module publishes only to the NATS logs WebSocket endpoint and `agents.logs` subject. The provided implementation does not define the server-side subscriber, retention policy, or downstream persistence mapping for that subject. Those pieces must be operated and documented with the platform's NATS and log-ingestion configuration rather than inferred from this client module.
-
-The tenant deployment defined in this repository includes NATS as a datasource for the OpenFrame client service configuration. That service-level NATS connection is separate from this module's dedicated secure-WebSocket logs connection, which is established directly by `NatsLogConnection`.
-
-## Maintenance Notes
-
-- Preserve the acknowledgement-before-commit ordering when changing transport code. Reversing it can create log loss on failed publishes.
-- Keep credential values out of diagnostics. Current connection messages identify only whether a log key or initial key is in use.
-- If adding a source, provide independent durable cursor behavior through the `LogSource` contract so registry-wide rollback remains meaningful.
-- Changes to batch size, interval, source discovery, key polling, or reconnect timing affect bandwidth, delay, and retry pressure. The current constants are 50 entries, 60 seconds, 30 seconds, 10 seconds, and five seconds respectively.
-- The tenant domain normalization removes only a leading `api.` prefix. Changes to server URL conventions should review this derivation and the NATS endpoint route together.
+Logging Nats Streaming is transport orchestration rather than a general logging subsystem. It depends on the parsing, source-registry, rotation, configuration, key-management, installed-tools, and directory services provided by the same OpenFrame client library. It publishes to NATS JetStream and does not persist remote logs itself. Downstream storage, indexing, and presentation are handled outside this module.

@@ -1,10 +1,11 @@
 sequenceDiagram
-    participant Test as "Integration test"
-    participant Api as "GraphQL API"
-    participant Inventory as "Software inventory service"
+    participant Test as "Integration Test"
+    participant Api as "Software API"
+    participant Mapper as "Jackson Mapper"
+    participant Dto as "Software Dto"
 
-    Test->>Api: Query software data with cursor
-    Api->>Inventory: List inventory page
-    Inventory->>Api: Nodes with pagination metadata
-    Api->>Test: Connection edges with cursors
-    Test->>Api: Query next page using cursor
+    Test->>Api: Request software inventory or vulnerabilities
+    Api->>Test: Return paginated JSON response
+    Test->>Mapper: Deserialize response payload
+    Mapper->>Dto: Populate edge nodes and cursors
+    Dto->>Test: Provide typed values for assertions

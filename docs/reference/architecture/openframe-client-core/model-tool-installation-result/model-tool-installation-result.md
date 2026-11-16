@@ -1,26 +1,32 @@
 # Model Tool Installation Result
 
-Model Tool Installation Result defines the compact Rust payload used to identify the tool-agent record associated with a tool-installation result. It is implemented by the `ToolInstallationResult` struct in the `openframe_agent_lib` crate, supplied by the OpenFrame OSS Library and run by this repository's OpenFrame client.
+Model Tool Installation Result defines the minimal Rust payload used to identify the tool-agent record associated with a tool installation result. It is implemented by the `ToolInstallationResult` struct in the upstream **OpenFrame OSS Library** crate, `openframe_agent_lib`, which this repository consumes at version `v0.0.5`.
 
-The module is intentionally a data contract: it contains no installation logic, transport code, validation, status field, or error detail. Its sole field provides the correlation key needed by an enclosing installation workflow.
+The module contains one serializable model with one field: `tool_agent_id`. It carries identity only; it does not encode success or failure, diagnostics, installed version, timestamps, or artifact metadata. Consumers that need those semantics must obtain them from the surrounding installation workflow or a different message model.
 
-**Source:** [tool installation result source](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/tool_installation_result.rs)
+## Source and Ownership
 
-## Contract
+The model is supplied by the OpenFrame OSS Library rather than implemented in this repository. The repository assembles that library into the OpenFrame client runtime.
 
-The public type is:
+| Item | Value |
+|---|---|
+| Crate | `openframe_agent_lib` |
+| Type | `ToolInstallationResult` |
+| Upstream source | [tool_installation_result.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/tool_installation_result.rs) |
+| Serialization | Serde `Serialize` and `Deserialize` |
+| Payload field | `tool_agent_id: String` |
 
-| Type | Field | Rust type | Meaning |
-|---|---|---|---|
-| `ToolInstallationResult` | `tool_agent_id` | `String` | Identifier of the tool-agent record to which this result belongs. |
+## Data Model
 
-The struct derives `Debug`, `Serialize`, and `Deserialize` from Serde:
+`ToolInstallationResult` derives `Debug`, `Serialize`, and `Deserialize`. Serde therefore maps the public Rust field directly to the JSON property `tool_agent_id` unless an enclosing transport applies additional transformation.
 
-- `Debug` supports diagnostic formatting during development and logging.
-- `Serialize` turns a result into a structured wire or persisted representation.
-- `Deserialize` reconstructs the result from that representation.
+```rust
+pub struct ToolInstallationResult {
+    pub tool_agent_id: String,
+}
+```
 
-Because the type has no Serde rename attributes, the default serialized field name is `tool_agent_id`. A compatible JSON representation is:
+A serialized instance has this shape:
 
 ```json
 {
@@ -28,60 +34,91 @@ Because the type has no Serde rename attributes, the default serialized field na
 }
 ```
 
-The identifier is mandatory when deserializing a normal payload because it is a non-optional `String` and has no declared default. The model itself does not constrain the identifier format, establish uniqueness, or verify that the referenced tool agent exists; those concerns belong to the surrounding workflow.
+### Contract Boundaries
 
-## Architecture
+| Concern | Responsibility of Model Tool Installation Result |
+|---|---|
+| Correlation | Identifies the target or completed tool-agent record through `tool_agent_id`. |
+| Encoding | Supports serialization and deserialization through Serde. |
+| Domain outcome | Not represented by this struct. There is no result-status or error field. |
+| Validation | Not performed by the struct itself. An empty or malformed identifier is not rejected at this model boundary. |
+| Persistence and delivery | Not implemented by this module. |
 
-Model Tool Installation Result sits at the boundary between an installation operation and the component that needs to associate that operation with a managed tool agent. The model depends only on Serde traits; it does not invoke the installer, store state, or publish a message by itself.
+## Architecture Context
+
+The model belongs to the Rust OpenFrame client model layer. It sits alongside installation-command and installed-tool models, while the client command handler and installation service provide the execution context. The supplied code establishes those neighboring components, but the available code graph records no direct callers, downstream consumers, or tests for `ToolInstallationResult`; do not infer a concrete publication subject or persistence path from this identity payload alone.
 
 ```mermaid
 flowchart LR
-    Installer["Installation workflow"] -->|"creates result"| Result["ToolInstallationResult"]
-    Result -->|"Serialize or Deserialize"| Serde["Serde"]
-    Result -->|"tool_agent_id"| Correlation["Tool-agent correlation"]
-    Correlation --> Consumer["Result consumer"]
+    CommandMessage["Tool installation command"] --> Handler["Tool installation handler"]
+    Handler --> InstallationService["Tool installation service"]
+    InstallationService --> InstalledTools["Installed tools service"]
+    InstallationService --> ResultModel["Model Tool Installation Result"]
+    ResultModel --> ResultPayload["Serialized tool agent identifier"]
 ```
 
-### Responsibilities and boundaries
+The diagram describes the module's architectural neighborhood: command processing and installation execution are separate responsibilities, while this module contributes only the identifier payload. It does not claim that the result is emitted at a particular point, because that behavior is not present in the supplied model implementation.
 
-| Concern | Owned by Model Tool Installation Result | Owned outside the module |
-|---|---|---|
-| Correlation identity | Carries `tool_agent_id` | Creates and interprets the identifier |
-| Encoding | Enables Serde serialization and deserialization | Chooses the transport or persistence format |
-| Installation outcome | Not represented | Determines success, failure, diagnostics, and retry behavior |
-| State changes | Not performed | Installs assets and updates tool state |
-| Delivery | Not performed | Sends, receives, stores, or acknowledges the enclosing result |
+## Component Relationships
+
+```mermaid
+flowchart TD
+    InstallationMessage["Tool installation message"] -->|"supplies tool agent identifier"| InstallationService["Tool installation service"]
+    InstallationService -->|"coordinates installation"| DownloadClient["Tool API and download clients"]
+    InstallationService -->|"records installed state"| InstalledTools["Installed tools service"]
+    InstallationService -->|"associates result identity"| ResultModel["ToolInstallationResult"]
+    ResultModel -->|"Serde serialization"| WirePayload["JSON payload"]
+```
+
+Related responsibilities are deliberately distinct:
+
+- **Tool installation message** carries installation instructions such as the tool-agent identifier, tool identity, version, assets, commands, and service details.
+- **Tool installation service** coordinates downloading, parameter resolution, local directories, process management, installed-tool storage, and connection processing.
+- **Installed tools service** stores information about installed tools.
+- **Model Tool Installation Result** remains a compact correlation model. It identifies the tool-agent record without duplicating installation command or installed-tool state.
 
 ## Data Flow
 
-The following flow shows the model's role without asserting a particular transport. An installation workflow obtains or already knows the relevant tool-agent identifier, constructs the payload, serializes it where needed, and a receiving workflow deserializes the payload to recover the same identifier for correlation.
+When an installation workflow needs to represent the associated tool-agent identity as a result payload, it creates or deserializes this model and serializes it at the transport boundary.
 
 ```mermaid
 sequenceDiagram
-    participant Install as Installation Workflow
-    participant Model as Model Tool Installation Result
-    participant Channel as Transport or Storage
-    participant Receive as Result Consumer
-    Install->>Model: Construct with tool_agent_id
-    Model->>Channel: Serialize payload
-    Channel->>Receive: Deliver payload
-    Receive->>Model: Deserialize payload
-    Model-->>Receive: Expose tool_agent_id
+    participant Sender as "Result producer"
+    participant Model as "ToolInstallationResult"
+    participant Serde as "Serde"
+    participant Receiver as "Result consumer"
+    Sender->>Model: Create with tool agent identifier
+    Model->>Serde: Serialize
+    Serde-->>Receiver: JSON with tool_agent_id
+    Receiver->>Model: Deserialize when required
 ```
 
-### Correlation invariant
+The only guaranteed datum in the payload is the identifier. A receiver must treat completion state, error details, and installed version as unavailable unless another contract supplies them.
 
-The value placed in `tool_agent_id` should identify the same logical tool-agent record before and after serialization. Since this module performs no lookup or validation, callers must ensure that they use the identifier expected by their installation orchestration and result-processing paths.
+## Lifecycle and Processing Guidance
 
-## Integration Context
+The model has no methods and no internal state transitions. Its effective lifecycle is determined by its owner:
 
-This model comes from the OpenFrame OSS Library artifact `openframe_agent_lib` version `v0.0.5`, an upstream dependency of OpenFrame OSS Tenant. The containing OpenFrame client has separate modules for installation commands, tool installation messages, installed-tool records, result storage, and outbound result processing. Model Tool Installation Result remains deliberately narrower than those modules: it expresses only the association between an installation result and a tool agent.
+```mermaid
+flowchart TD
+    Create["Create or deserialize result"] --> Identify["Read tool agent identifier"]
+    Identify --> Serialize["Serialize for transport or storage"]
+    Serialize --> Consume["Consumer correlates with tool agent"]
+```
 
-The organization code graph reports no direct callers or tests for `ToolInstallationResult` at the indexed revision. That result should be interpreted as an absence of graph-recorded direct references, not as evidence that the model is unused at runtime through serialization, generated code, or future integrations.
+For maintainers:
 
-## Maintenance Guidance
+1. Preserve the `tool_agent_id` field name when changing transport contracts, because Serde's default mapping exposes that exact name.
+2. Treat the type as a correlation envelope, not an authoritative installation-status record.
+3. Add fields only when every relevant producer and consumer can evolve compatibly; the current model is intentionally minimal.
+4. Keep validation outside this DTO or introduce explicit validation at a service boundary if identifier constraints become required.
 
-- Preserve `tool_agent_id` when backward compatibility of serialized payloads matters. Renaming the Rust field or adding a Serde rename changes the external contract unless migration support is added.
-- Do not add installation status, error data, timestamps, or asset metadata merely for convenience. Add those only when the owning result protocol requires them, as they alter the payload schema.
-- Keep validation in the workflow that understands identifier semantics. This model has no context for checking whether an identifier refers to a valid tool agent.
-- When extending the type, ensure both serialization and deserialization compatibility are considered, especially for stored or queued results.
+## Operational Considerations
+
+- Logging a `ToolInstallationResult` through its `Debug` implementation exposes the tool-agent identifier. Apply the client logging policy when that identifier is considered sensitive in a deployment.
+- Deserialization accepts the string representation required by Serde; the struct itself does not establish semantic identifier validation.
+- Because no direct callers or tests are recorded for this type in the available full code graph, changes require end-to-end contract review rather than relying on detected in-organization references alone.
+
+## Scope Summary
+
+Model Tool Installation Result is a library-provided, transport-ready identifier model used in the OpenFrame client domain. Its narrow design helps result-handling code correlate an installation-related payload to a tool-agent record without coupling the payload to the broader download, installation, persistence, or command-processing implementation.

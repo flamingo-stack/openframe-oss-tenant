@@ -1,0 +1,11 @@
+flowchart LR
+    Test["Execution History Tests"] -->|"create"| Script["Owned Script"]
+    Script -->|"create future schedule"| Schedule["Unfired Schedule"]
+    Schedule -->|"read"| Executions["Schedule Execution Connection"]
+    Schedule -->|"read"| ExecutionFacets["Execution Facets"]
+    Schedule -->|"read"| Runs["Schedule Run Connection"]
+    Schedule -->|"read"| RunFacets["Run Facets"]
+    Executions -->|"expects"| EmptyExecutions["Zero rows and zero count"]
+    ExecutionFacets -->|"expects"| EmptyExecutionFacets["Zero count and no statuses"]
+    Runs -->|"expects"| EmptyRuns["Zero rows and zero count"]
+    RunFacets -->|"expects"| EmptyRunFacets["Zero count, no statuses, no initiators"]

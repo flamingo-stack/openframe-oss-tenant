@@ -1,7 +1,0 @@
-flowchart LR
-    InstallService["Tool Installation Service"] -->|"requests artifact"| DownloadService["Services Github Download"]
-    UpdateService["Tool Agent Update Service"] -->|"requests artifact"| DownloadService
-    DownloadService -->|"HTTP GET"| ArtifactHost["Configured artifact host"]
-    DownloadService -->|"single binary"| BinaryWriter["Platform binary writer"]
-    DownloadService -->|"folder extraction on macOS"| ToolFolder["Managed tool folder"]
-    DownloadService -->|"DMG extraction on macOS"| DmgExtractor["Platform DMG extractor"]

@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Caller
+    participant Service as Execution Service
+    participant Tracker as Active Run Counter
+    participant Executor as Platform Executor
+    participant Result as RMM Result
+    Caller->>Service: execute(request, machine identifier)
+    Service->>Tracker: increment and create guard
+    Service->>Service: start timer and normalize timeout
+    Service->>Service: resolve privilege
+    Service->>Executor: execute ScriptParams
+    Executor-->>Service: execution result
+    Service->>Service: classify exit code 85
+    Service->>Result: construct correlated result
+    Service-->>Caller: return RMM Result
+    Service->>Tracker: guard drop decrements counter

@@ -1,123 +1,139 @@
 # Http Client Factory
 
-Http Client Factory builds the shared `reqwest::Client` used by the OpenFrame endpoint agent for HTTP-based control-plane interactions. The implementation is supplied by the **OpenFrame OSS Library** as part of the Rust `openframe_agent_lib` artifact, which this repository consumes at version `v0.0.5`. Its single function, [`build_agent_http_client`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/clients/http_client_factory.rs), standardizes request identity, timeout behavior, TLS validation, proxy handling, and connection reuse.
+Http Client Factory creates the shared `reqwest::Client` configuration used for the OpenFrame device agent's HTTP calls. It is implemented by the `build_agent_http_client` function in the OpenFrame OSS Library's `openframe_agent_lib` artifact, which this repository consumes at version `0.0.5`.
 
-## Responsibilities
+The factory establishes transport-wide behavior once: a machine identity header, a request timeout, an explicit TLS-validation mode, proxy bypassing, and disabled idle connection pooling. Higher-level API clients receive the completed `reqwest::Client`; they do not configure these cross-cutting transport rules themselves.
 
-`build_agent_http_client(machine_id, timeout, accept_invalid_certs)` accepts:
+**Source:** [http_client_factory.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/clients/http_client_factory.rs)
 
-| Input | Purpose |
-|---|---|
-| `machine_id` | Identifies the endpoint machine. It is converted into an HTTP header value. |
-| `timeout` | Sets the request timeout on the constructed client. |
-| `accept_invalid_certs` | Controls whether TLS certificate validation errors are accepted. |
+## Public Contract
 
-The factory returns `anyhow::Result<reqwest::Client>`. It can fail before a request is sent when the machine identifier is not valid for an HTTP header, or when `reqwest` cannot construct the client.
+```rust
+pub fn build_agent_http_client(
+    machine_id: &str,
+    timeout: Duration,
+    accept_invalid_certs: bool,
+) -> Result<Client>
+```
 
-## Constructed Client Policy
+| Input or result | Responsibility |
+| --- | --- |
+| `machine_id` | Converted to an HTTP header value and installed as the default value of the agent machine ID header. Invalid header values cause construction to fail. |
+| `timeout` | Applied as the `reqwest` client's overall request timeout. |
+| `accept_invalid_certs` | Controls whether the client accepts invalid TLS certificates. |
+| `Result<Client>` | Returns either a fully configured `reqwest::Client` or an error from header conversion or client construction. |
 
-The function creates a header map, inserts the `MACHINE_ID_HEADER` header, and applies the following client-wide policy:
-
-| Policy | Implementation effect | Operational rationale |
-|---|---|---|
-| Machine identity | Adds the configured machine identifier as a default header. | Every request made through the client carries endpoint identity without each caller rebuilding the header. |
-| Request timeout | Applies the supplied `Duration` with `Client::builder().timeout(...)`. | Prevents a request from waiting indefinitely. |
-| TLS validation switch | Applies `danger_accept_invalid_certs(accept_invalid_certs)`. | Supports explicitly selected environments that require invalid certificates to be accepted. This is security-sensitive and must remain disabled unless such behavior is intentionally configured. |
-| Proxy bypass | Applies `no_proxy()`. | Agent HTTP traffic does not use proxy configuration recognized by the client. |
-| No idle pool | Sets `pool_max_idle_per_host(0)`. | Disables idle connection pooling, causing later requests to establish fresh connections and therefore perform fresh DNS resolution. |
-
-The machine-header name is defined with the agent's machine identifier service, while this factory only validates and inserts the provided value. The factory does not create, persist, refresh, or authorize the identifier.
+The machine ID header name is supplied by the client library's `MACHINE_ID_HEADER` constant. This module owns neither machine ID generation nor authentication-token handling; it only installs the identity value provided by its caller.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    AgentRuntime["Endpoint agent runtime"] --> Factory["Http Client Factory"]
-    Factory --> Header["Default machine identifier header"]
-    Factory --> Timeout["Configured request timeout"]
-    Factory --> Tls["Configured TLS validation"]
-    Factory --> Network["No proxy and no idle pool"]
-    Header --> Client["Configured reqwest client"]
-    Timeout --> Client
-    Tls --> Client
-    Network --> Client
-    Client --> Auth["Authentication client"]
-    Client --> Registration["Registration client"]
-    Client --> RemoteAccess["Remote access client"]
-    Client --> ToolApi["Tool API client"]
-    Auth --> ControlPlane["OpenFrame control plane"]
-    Registration --> ControlPlane
-    RemoteAccess --> ControlPlane
-    ToolApi --> ControlPlane
+    AgentRuntime["OpenFrame Client Runtime"] --> Factory["Http Client Factory"]
+    Factory --> HeaderMap["Default Machine ID Header"]
+    Factory --> Timeout["Request Timeout"]
+    Factory --> Tls["TLS Validation Mode"]
+    Factory --> Proxy["Proxy Bypass"]
+    Factory --> Pool["No Idle Connection Pool"]
+    HeaderMap --> HttpClient["Configured reqwest Client"]
+    Timeout --> HttpClient
+    Tls --> HttpClient
+    Proxy --> HttpClient
+    Pool --> HttpClient
+    HttpClient --> AuthClient["Authentication Client"]
+    HttpClient --> RegistrationClient["Registration Client"]
+    HttpClient --> RemoteAccessClient["Remote Access Client"]
+    HttpClient --> ToolClient["Tool API Client"]
+    AuthClient --> Gateway["OpenFrame Gateway"]
+    RegistrationClient --> Gateway
+    RemoteAccessClient --> Gateway
+    ToolClient --> Gateway
 ```
 
-The factory is intentionally narrow: it owns transport defaults only. The higher-level clients own their base URL and endpoint-specific behavior. Each of the Authentication, Registration, Remote Access, and Tool API clients stores a `reqwest::Client` passed to its constructor, allowing them to share the factory's configured behavior.
+The library's authentication, registration, remote-access, and tool API client constructors each accept a `reqwest::Client`. Consequently, one factory-produced client can provide consistent transport behavior to each of these request-oriented adapters.
 
-## Client Interaction
-
-```mermaid
-sequenceDiagram
-    participant Runtime as Endpoint agent runtime
-    participant Factory as Http Client Factory
-    participant Consumer as API client
-    participant Server as OpenFrame control plane
-    Runtime->>Factory: build with machine identifier, timeout, TLS setting
-    Factory->>Factory: validate machine identifier as header value
-    Factory->>Factory: configure timeout, proxy bypass, no idle pool
-    Factory-->>Runtime: configured HTTP client
-    Runtime->>Consumer: construct with client and base URL
-    Consumer->>Server: send request with default machine header
-    Server-->>Consumer: HTTP response
-    Consumer-->>Runtime: operation result
-```
-
-## Request Lifecycle and DNS Behavior
+## Construction Flow
 
 ```mermaid
 flowchart TD
-    Start["A higher-level client starts an HTTP request"] --> Defaults["Reqwest applies default machine header and timeout"]
-    Defaults --> Proxy["Client bypasses proxy usage"]
-    Proxy --> Connection["No idle connection is reused"]
-    Connection --> Dns["A fresh connection performs DNS lookup"]
-    Dns --> Tls["TLS policy follows the configured certificate setting"]
-    Tls --> Send["Request is sent to the selected base URL"]
-    Send --> Result["Response or transport error returns to caller"]
+    Start["Caller supplies machine ID, timeout, and TLS mode"] --> Header["Create an empty header map"]
+    Header --> Parse["Convert machine ID to header value"]
+    Parse --> Valid{"Header value valid?"}
+    Valid -->|"no"| HeaderError["Return error with machine ID context"]
+    Valid -->|"yes"| Insert["Add the default machine ID header"]
+    Insert --> Configure["Configure the reqwest client builder"]
+    Configure --> Build{"Client builds?"}
+    Build -->|"no"| BuildError["Return builder error"]
+    Build -->|"yes"| Ready["Return configured HTTP client"]
 ```
 
-Disabling idle connections is a deliberate resiliency trade-off. It favors discovering changed DNS answers between requests over the reduced connection-establishment cost of HTTP connection reuse. The function itself does not implement retries, response-status interpretation, authentication, or DNS error recovery; those responsibilities remain with callers and their surrounding services.
+The error context added during header conversion identifies the failing operation as an invalid machine ID for a header. Builder failures are propagated through the function's `anyhow::Result` return value.
 
-## Integration Boundaries
+## Transport Policy
 
-### Inputs and validation
+### Identity Propagation
 
-The machine identifier is passed to `HeaderValue::from_str`. An invalid value stops construction with contextual error text indicating that the machine identifier cannot be used as a header. This protects the shared client from being created with malformed default headers.
+The factory creates a `HeaderMap`, parses the supplied machine ID into a `HeaderValue`, and registers it as a default header under `MACHINE_ID_HEADER`. Requests issued through the returned client therefore inherit the machine identity header unless a request overrides that header.
 
-`timeout` and `accept_invalid_certs` are direct transport settings. No default values, normalization, or policy checks are applied in this module; configuration assembly occurs outside the factory.
+This is request metadata rather than a credential exchange. Authentication and registration behavior belong to the API clients and services that use the client.
 
-### Consumers in the agent design
+### Time Boundaries
 
-The agent library defines four HTTP-focused client types that accept a `reqwest::Client` during construction:
+The caller supplies a `Duration`, which becomes the `reqwest` client timeout. The factory does not select a timeout value, implement retries, or add per-endpoint overrides. Callers must choose a duration appropriate to their operating environment and operation.
 
-- **Authentication client** performs secret- and refresh-token authentication flows.
-- **Registration client** registers and deregisters the agent.
-- **Remote Access client** updates device remote-access mode.
-- **Tool API client** retrieves tool assets.
+### TLS Behavior
 
-Their common client dependency gives these control-plane operations consistent machine identification and network behavior. The repository graph does not record direct organization-wide consumers of `build_agent_http_client`; this module should therefore be evaluated through its runtime wiring in the endpoint-agent library rather than treated as an independently consumed public integration point.
+`accept_invalid_certs` is passed directly to `danger_accept_invalid_certs`. When this option is enabled, certificate validation is weakened. It should therefore be enabled only when the deployment's trust requirements explicitly require it, such as a controlled local environment with a nonstandard certificate arrangement. The factory does not load or manage certificate authorities.
 
-## Security Considerations
+### Proxy and DNS Behavior
 
-- Treat `accept_invalid_certs` as an explicit exception path. When enabled, the client accepts invalid TLS certificates, weakening server-identity verification.
-- Keep machine identifiers valid for HTTP header values. The factory rejects invalid values rather than silently omitting endpoint identity.
-- The function deliberately disables proxy use. Deployments that require a proxy must account for this behavior at the agent transport-design level; this factory does not expose an alternate proxy path.
-- The default machine identifier header is attached to every request produced by this client. Do not reuse a client built for one machine identity in a context representing another machine.
+The configured client calls `no_proxy()`, preventing use of proxy configuration by this client. It also sets `pool_max_idle_per_host(0)`. The implementation documents this as disabling connection pooling so each request performs a fresh DNS lookup. This policy favors endpoint resolution freshness over the connection reuse normally provided by idle HTTP connection pooling.
+
+## Request Interaction
+
+```mermaid
+sequenceDiagram
+    participant Service as Agent Service
+    participant Factory as Http Client Factory
+    participant Client as reqwest Client
+    participant Api as OpenFrame Endpoint
+    Service->>Factory: build_agent_http_client(machine ID, timeout, TLS mode)
+    Factory->>Factory: validate machine ID header value
+    Factory->>Client: build with default transport policy
+    Factory-->>Service: configured client or error
+    Service->>Client: create API request
+    Client->>Api: request with machine ID header
+    Api-->>Client: HTTP response or transport failure
+    Client-->>Service: response or error
+```
+
+The factory is synchronous and has no background worker, mutable shared state, request queue, persistence, or retry loop. It performs its work during client creation, after which the returned `reqwest::Client` owns the configured transport behavior.
+
+## Module Boundaries
+
+| Concern | Owned by Http Client Factory | Delegated elsewhere |
+| --- | --- | --- |
+| Base HTTP transport | Builds the `reqwest::Client` and its shared defaults. | API-specific request paths and payloads. |
+| Device identity | Attaches the supplied machine ID as a default header. | Creation and persistence of machine IDs. |
+| Authentication | Does not authenticate requests. | Authentication Client and token-oriented services. |
+| Registration lifecycle | Does not register or deregister devices. | Registration Client and registration services. |
+| Remote access modes | Does not change remote access state. | Remote Access Client and remote access services. |
+| Tool downloads | Does not resolve or download assets. | Tool API Client and tool services. |
+| Certificate material | Selects whether invalid certificates are accepted. | Local TLS configuration and certificate provisioning. |
+
+## Operational Considerations
+
+- Treat a factory failure as a startup or dependency-initialization failure: no configured client is returned.
+- Validate machine ID inputs before reaching this module when possible. The function rejects values that `reqwest` cannot represent as a header value.
+- Keep certificate validation enabled by default. The invalid-certificate option changes a security-sensitive property for every request using the returned client.
+- Account for the proxy-bypass policy in environments that require an outbound HTTP proxy; this client will not use it.
+- Account for the no-idle-pool policy when evaluating latency and connection volume. Its stated purpose is fresh DNS resolution for each request.
 
 ## Maintenance Guidance
 
-When changing this module:
+Changes to this factory affect every consumer sharing the returned `reqwest::Client`. Preserve the separation between generic transport policy and endpoint-specific client behavior. In particular:
 
-1. Preserve error propagation from header validation and `reqwest` client construction.
-2. Evaluate timeout, proxy, TLS, and pooling changes across all four HTTP-focused clients, not just the immediate caller.
-3. Treat the no-idle-pool setting as behaviorally significant because it forces fresh DNS lookup during new connections.
-4. Test valid and invalid machine identifiers, the TLS policy choice, and request timeout behavior.
-5. Keep source-level changes in the OpenFrame OSS Library: the implementation documented here originates at [clients/openframe-client/src/clients/http_client_factory.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/clients/http_client_factory.rs).
+1. Keep machine identity handling limited to attaching the supplied value; avoid duplicating identity persistence logic here.
+2. Review any TLS-policy change as a security-impacting change.
+3. Review proxy and connection-pooling changes against agent deployments that rely on dynamic DNS or constrained networks.
+4. If adding another HTTP-facing adapter, accept an already constructed `reqwest::Client` so it inherits the common policy rather than creating a divergent client configuration.

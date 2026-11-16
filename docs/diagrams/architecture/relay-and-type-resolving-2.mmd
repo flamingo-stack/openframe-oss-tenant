@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client as "GraphQL Client"
+    participant Relay as "Relay Layer"
+    participant Loader as "NodeLoader"
+    participant Service as "Domain Service"
+
+    Client->>Relay: Request a typed node reference
+    Relay->>Loader: Select loader by node type
+    Loader->>Service: Look up raw identifier
+    Service->>Loader: Return optional value
+    Loader->>Relay: Return node or missing result
+    Relay->>Client: Produce GraphQL node response

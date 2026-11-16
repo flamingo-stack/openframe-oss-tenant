@@ -1,17 +1,24 @@
 sequenceDiagram
-    participant Caller as Caller
-    participant Detector as Platform Installation Detector
-    participant Probe as Platform Service Probe
-    participant Dirs as Directory Manager
-    Caller->>Detector: detect actual installation
-    Detector->>Detector: Check installation type and service name
-    Detector->>Probe: Probe configured service
-    alt Service exists
-        Probe-->>Detector: Existing service evidence
-        Detector->>Dirs: Resolve tool executable path
-        Dirs-->>Detector: Executable path
-        Detector-->>Caller: Service installation record
-    else No service or unsupported path
-        Probe-->>Detector: No matching evidence
-        Detector-->>Caller: No result
+    participant Caller
+    participant Detector as "Platform Installation Detector"
+    participant Directories as "DirectoryManager"
+    participant Host as "Operating system"
+    Caller->>Detector: detect_actual_installation(tool ID, config, directories)
+    Detector->>Detector: Inspect installation type
+    alt Service configuration
+        Detector->>Detector: Read service name
+        alt Service name missing
+            Detector-->>Caller: None
+        else Service name available
+            Detector->>Host: Check platform service registration
+            alt Registration found
+                Detector->>Directories: Resolve tool executable path
+                Directories-->>Detector: Expected executable path
+                Detector-->>Caller: Service installation metadata
+            else Registration absent or unsupported platform
+                Detector-->>Caller: None
+            end
+        end
+    else Standard or GUI application configuration
+        Detector-->>Caller: None
     end

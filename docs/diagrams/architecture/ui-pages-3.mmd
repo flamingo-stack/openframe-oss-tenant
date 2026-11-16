@@ -1,7 +1,7 @@
 flowchart LR
-    Scripts["Scripts Page"] --> Run["Run Script Page"]
-    Run --> Settings["Timeout And Parameters"]
-    Run --> Targets["Device Target Selection"]
-    Settings --> Ready["Execution Request Ready"]
-    Targets --> Ready
-    Ready --> Submit["Run Script"]
+    DeviceList["Devices Page"] -->|"open online device"| Details["Device Details Page"]
+    DeviceList -->|"add device"| NewDevice["New Device Page"]
+    Details -->|"remote control"| Desktop["Remote Desktop Page"]
+    Details -->|"remote shell"| Shell["Remote Shell Page"]
+    Details -->|"manage files"| Files["File Manager Page"]
+    Details -->|"run script"| RunScript["Run Script Page"]

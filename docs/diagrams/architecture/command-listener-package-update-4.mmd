@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant CP as Control Plane
+    participant NATS as NATS
+    participant CL as Command Listener
+    participant PH as Package Update Handler
+    participant OS as Order Store
+    participant WR as Update Worker
+    participant PM as Package Manager
+    participant SR as Status Reporter
+
+    CP->>NATS: Publish update command with delivery sequence
+    NATS->>CL: Deliver machine command
+    CL->>PH: Begin and run command
+    PH->>PH: Validate sequence and manager support
+    alt Unsupported manager
+        PH->>SR: Publish failed NotSupported status
+        PH-->>CL: Done outcome
+    else Supported manager
+        PH->>OS: Persist or update pending order
+        OS-->>PH: Accepted, stale, or superseded
+        opt A pending order was superseded
+            PH->>SR: Publish failed Superseded status
+        end
+        PH-->>CL: Done outcome
+        OS->>WR: Notify pending work
+        WR->>PM: Execute update when eligible
+        PM-->>WR: Execution result
+        WR->>SR: Publish lifecycle status
+    end

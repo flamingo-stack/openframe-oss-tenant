@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant ProfileFlow as "Profile or Identity Flow"
+    participant AuthRepo as "CustomAuthUserRepository"
+    participant Mongo as "MongoDB"
+
+    ProfileFlow->>AuthRepo: updateImageUrl(userId, imageUrl)
+    AuthRepo->>Mongo: Match AuthUser by _id
+    AuthRepo->>Mongo: Set imageUrl
+    Mongo-->>AuthRepo: Update result
+    AuthRepo-->>ProfileFlow: Complete

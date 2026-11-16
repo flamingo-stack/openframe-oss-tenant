@@ -1,9 +1,0 @@
-flowchart LR
-    UserRecord["Tenant user record"] --> Aggregate["User Aggregate Spec"]
-    Aggregate --> Event["User event"]
-    Event --> Projection["User On Tickets Projection"]
-    Projection --> TicketRepository["Ticket projection repository"]
-    TicketRepository --> Tickets["Ticket name copies"]
-    Projection --> UserRepository["User repository"]
-    UserRepository --> Reconciliation["Reconciliation result"]
-    Tickets --> Reconciliation

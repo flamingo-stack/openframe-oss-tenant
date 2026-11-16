@@ -1,7 +1,6 @@
 flowchart TD
-    TestService["OpenFrame test service"] --> Library["OpenFrame OSS Library"]
-    Library --> Artifact["openframe-test-service-core 7.0.11"]
-    Artifact --> Edge["Timetracking Dto: TimeEntryEdge"]
-    Edge --> Jackson["Jackson JSON mapping"]
-    Edge --> Lombok["Lombok generated data API"]
-    Edge --> TimeEntry["TimeEntry payload type"]
+    TestService["OpenFrame test service"] -->|"uses"| TestLibrary["OpenFrame test service core library"]
+    TestLibrary -->|"contains"| TimetrackingDto["Timetracking Dto"]
+    TimetrackingDto -->|"models edge from"| ApiLayer["API time-entry query"]
+    ApiLayer -->|"reads through"| RepositoryLayer["Time-entry repository support"]
+    RepositoryLayer -->|"stores"| MongoDb["MongoDB"]

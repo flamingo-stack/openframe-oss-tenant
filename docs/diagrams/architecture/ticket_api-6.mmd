@@ -1,9 +1,0 @@
-flowchart LR
-    Ticket["Ticket"] --> DeviceView["Ticket device view"]
-    Ticket --> CustomerView["Ticket organization view"]
-    Ticket --> UserView["Ticket user view"]
-    Ticket --> TimeEntryView["Time entry ticket view"]
-    DeviceView --> Mongo["Tenant scoped MongoDB"]
-    CustomerView --> Mongo
-    UserView --> Mongo
-    TimeEntryView --> Mongo

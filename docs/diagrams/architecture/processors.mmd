@@ -1,0 +1,13 @@
+flowchart LR
+    ApiService["OpenFrame API service"] --> Workflows["User, invitation, SSO, and secret workflows"]
+    Workflows --> Contracts["Processor contracts"]
+    Contracts --> ConditionalBeans["Conditional default beans"]
+    ConditionalBeans --> SecretProcessor["Agent registration secret processor"]
+    ConditionalBeans --> InvitationProcessor["Invitation processor"]
+    ConditionalBeans --> SsoProcessor["SSO configuration processor"]
+    ConditionalBeans --> UserProcessor["User processor"]
+    SecretProcessor --> Logs["Debug application logs"]
+    InvitationProcessor --> Logs
+    SsoProcessor --> Logs
+    UserProcessor --> Logs
+    CustomBean["Deployment-specific processor bean"] -."replaces default".-> ConditionalBeans

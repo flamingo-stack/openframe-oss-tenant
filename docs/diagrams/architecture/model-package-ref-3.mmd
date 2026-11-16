@@ -1,6 +1,11 @@
-flowchart TD
-    Start["Two package references"] --> BothWinget{"Both Winget?"}
-    BothWinget -->|"Yes"| FoldCase["Compare identifiers with ASCII case folding"]
-    BothWinget -->|"No"| Structural["Compare enum variant and all fields exactly"]
-    FoldCase --> Result["Return match result"]
-    Structural --> Result
+sequenceDiagram
+    participant Server as "Control plane"
+    participant Client as "Endpoint client"
+    participant Update as "Package update runner"
+    participant Manager as "Selected package manager"
+    Server->>Client: Package update with PackageRef
+    Client->>Update: Submit update target
+    Update->>Manager: Resolve or install reference
+    Manager-->>Update: Report package identity
+    Update->>Update: Compare references with matches
+    Update-->>Client: Record update outcome

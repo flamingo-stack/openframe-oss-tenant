@@ -1,17 +1,17 @@
 sequenceDiagram
-    participant I as Installer
-    participant C as Initial configuration
-    participant S as Mode service
-    participant A as Agent configuration
-    participant R as Remote access client
-    participant B as Backend device endpoint
-    I->>C: Save serialized mode
-    S->>C: Read pending mode
-    C-->>S: Stored wire name
-    S->>S: Parse known mode
-    S->>R: Set device mode
-    R->>A: Get access token
-    A-->>R: Access token
-    R->>B: PUT mode with bearer token
-    B-->>R: Device mode outcome
-    R-->>S: Outcome
+    participant Config as Initial Configuration
+    participant Service as Mode Service
+    participant Model as Mode Model
+    participant Api as Remote Access Client
+    participant Backend as Backend
+    Config->>Service: Return optional persisted name
+    Service->>Model: Parse wire name
+    alt recognized mode
+        Service->>Api: Set device mode
+        Api->>Api: Load access token
+        Api->>Backend: Send authenticated mode request
+        Backend-->>Api: Return HTTP response
+        Api-->>Service: Return classified outcome or error
+    else unknown mode
+        Service->>Config: Clear remote access mode
+    end

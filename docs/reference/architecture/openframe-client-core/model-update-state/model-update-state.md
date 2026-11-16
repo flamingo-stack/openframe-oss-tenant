@@ -1,163 +1,188 @@
 # Model Update State
 
-Model Update State is the durable update-recovery record used by the OpenFrame endpoint client. It is supplied at runtime by the `openframe_agent_lib` crate from the OpenFrame OSS Library, which this repository consumes at version `v0.0.5`. The model records the version targeted by a client self-update, its lifecycle phase, boot-recovery attempts, when the attempt started, and any failure reason written by the updater.
+Model Update State defines the durable, JSON-serializable record used by the OpenFrame endpoint client to track a client-binary update across process termination and later boots. It belongs to the Rust `openframe_agent_lib` supplied by the OpenFrame OSS Library and executed by this repository's client distribution.
 
-The model is deliberately small: it represents update intent and recovery status, rather than downloading artifacts, replacing binaries, or publishing results. Those duties belong to the endpoint client's update services. Its persisted presence is itself meaningful: the state service treats any readable state record as an incomplete update requiring recovery.
+The model holds the requested target version, the current update phase, crash-loop accounting, an initial timestamp, and an optional updater-provided failure reason. Its small, stable shape gives startup recovery code enough context to determine whether the process has reached the requested version, must wait for verification, or has failed.
 
-**Source:** [OpenFrame OSS Library: `update_state.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/update_state.rs)
+**Source:** [update_state.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/update_state.rs)
 
-## Purpose and Boundaries
+## Responsibilities
 
-An endpoint-client update crosses a process boundary: the running client prepares an updater, the updater replaces or launches the executable, and the next client process determines whether the target version actually started. Model Update State supplies the serializable contract that survives that boundary.
+- Model each recognized phase of an endpoint-client update.
+- Initialize an update record with the target version, the `validating` phase, zero boot attempts, and an RFC 3339 UTC start time.
+- Preserve compatibility with older state files whose phases precede `updater_launched`.
+- Carry failure information written by the updater script.
+- Provide a minimal mutation operation for changing the phase while the surrounding services manage persistence and recovery.
 
-It provides:
-
-- A canonical `target_version` identifying the requested client version.
-- An `UpdatePhase` value that communicates lifecycle and recovery context.
-- A `boot_attempts` counter used by restart recovery to detect an unresolved update loop.
-- Optional `started_at` and `last_error` diagnostic fields.
-- Serde serialization using snake-case enum names, allowing the state to be written as JSON.
-
-It does not validate version strings, perform file I/O, launch the updater, decide whether to roll back, or publish an update result. The surrounding client services own those operations.
-
-## Architecture
-
-The model is part of the Rust endpoint client assembled from the OpenFrame OSS Library. The `UpdateStateService` persists it under the secured client directory as `update_state.json`; update orchestration creates and changes it; startup handling consumes it after a restart.
-
-```mermaid
-flowchart LR
-    CommandListener["Update command listener"]
-    UpdateService["Client update service"]
-    StateModel["Model Update State"]
-    StateService["Update state service"]
-    StateFile["Secured update state JSON"]
-    Updater["Platform updater"]
-    StartupHandler["Startup update handler"]
-    ClientInfo["Client information service"]
-    Recovery["Cleanup and recovery services"]
-
-    CommandListener -->|"update message"| UpdateService
-    UpdateService -->|"creates and changes"| StateModel
-    UpdateService -->|"saves before launch"| StateService
-    StateService -->|"atomic write"| StateFile
-    UpdateService -->|"launches"| Updater
-    Updater -->|"stamps phase or error"| StateFile
-    StateFile -->|"loads on next start"| StartupHandler
-    StartupHandler -->|"reads"| StateService
-    StartupHandler -->|"updates status"| ClientInfo
-    StartupHandler -->|"cleans or recovers"| Recovery
-```
-
-The relationships shown above are operational dependencies, not fields within `UpdateState`. The model has no reference to the service layer and remains independently serializable.
+The model does not download artifacts, replace the executable, write files, decide rollback policy, or publish update results. Those responsibilities remain in the client update, update state, update handler, cleanup, and last-known-good services that consume this record.
 
 ## Data Model
 
-### Update State
+`UpdateState` contains the following serialized fields:
 
-`UpdateState` is a cloneable, serializable Rust structure with these persisted fields:
+| Field | Type | Serialization behavior | Purpose |
+|---|---|---|---|
+| `target_version` | string | Required | Canonical version that the client is attempting to run. |
+| `phase` | `UpdatePhase` | Required, snake case | The latest known update lifecycle position. |
+| `boot_attempts` | unsigned 32-bit integer | Defaults to zero if absent | Counts unresolved post-launch boots for crash-loop protection. |
+| `started_at` | optional string | Defaults to absent if omitted | UTC RFC 3339 timestamp assigned when a new record is created. |
+| `last_error` | optional string | Defaults to absent if omitted | Failure reason stamped by the updater script. |
 
-| Field | Type | Initialization and meaning |
-|---|---|---|
-| `target_version` | `String` | Required target version. The update service normalizes a validated semantic version before constructing the model. |
-| `phase` | `UpdatePhase` | Current lifecycle marker. `new` initializes it to `Validating`. |
-| `boot_attempts` | `u32` | Defaults to zero when absent, including when reading older JSON files. Startup recovery increments it only for unresolved launched or verifying updates. |
-| `started_at` | `Option<String>` | Defaults when absent. New records set it to the current UTC time encoded as RFC 3339. |
-| `last_error` | `Option<String>` | Defaults when absent. The updater script can stamp a human-readable failure reason here. |
-
-The constructor requires the target version, initializes the phase to `Validating`, sets `boot_attempts` to zero, timestamps the attempt, and clears any error. `set_phase` changes only the in-memory phase. Persisting a changed model requires the separate update-state service to save it.
-
-### Update Phase
-
-`UpdatePhase` is serialized with snake-case names. It includes the following phases:
-
-| Phase | Role |
-|---|---|
-| `Validating` | Initial state for a newly created update record. |
-| `Downloading` | Compatibility value for an update that is acquiring the artifact. |
-| `Extracting` | Compatibility value for unpacking an artifact. |
-| `PreparingUpdater` | Compatibility value for staging the updater. |
-| `UpdaterLaunched` | The external updater has been launched; restart verification is expected. |
-| `Completed` | Completion marker available to the protocol. |
-| `Verifying` | Verification is pending or in progress after a launch. |
-| `RolledBack` | Rollback marker available to the protocol. |
-| `Failed` | Failure marker available to the protocol. |
-
-The current client no longer saves records during the phases before `UpdaterLaunched`; the earlier values remain in the enum so that older state files can still be deserialized and handled. A state file in an older pre-launch phase is therefore treated as a failed update during startup recovery when the running version does not match its target.
-
-## Persistence and Compatibility
-
-`UpdateStateService` owns the durable record. On construction, it ensures the secured directory exists and selects `update_state.json` within it. Saving serializes pretty JSON and uses an atomic write. Loading distinguishes a missing file from a parsed record. Malformed JSON is delegated to the shared JSON parsing helper, which may quarantine the bad file rather than treat it as a valid update state.
-
-The service exposes the following behavioral contract:
-
-- `load` returns an optional parsed `UpdateState`.
-- `has_incomplete_update` returns true whenever a readable state record exists, regardless of its phase.
-- `clear` removes the state file when present after terminal handling.
-- `get_state_file_path` exposes the resolved path for diagnostics.
-
-The default annotations on `boot_attempts`, `started_at`, and `last_error` protect compatibility with state files written before those fields were added. The enum's retained historic phases similarly protect decoding of records from earlier client versions.
-
-## Update and Recovery Flow
-
-The update service first reserves the operation to prevent overlapping deliveries and defers the request while tool or package-update work is active. It validates and canonicalizes the requested version, skips a version already running, and applies a last-known-good downgrade guard. It constructs the model, records a transient client status of Updating, and executes the remaining update workflow. The state is saved only immediately before the updater is launched.
+The optional and defaulted fields let newer clients read state files that omit them. Conversely, the phase enumeration retains legacy values so an existing state file can still deserialize even though the client no longer saves phases before `updater_launched`.
 
 ```mermaid
-sequenceDiagram
-    participant Listener as Update command listener
-    participant Service as Client update service
-    participant State as Model Update State
-    participant Store as Update state service
-    participant Updater as Platform updater
-    participant Startup as Startup update handler
-
-    Listener->>Service: deliver target version
-    Service->>Service: reserve exclusive update operation
-    Service->>Service: validate and canonicalize version
-    Service->>State: create target version record
-    Service->>Store: save launched update state
-    Service->>Updater: launch staged updater
-    Updater-->>Startup: restart client process
-    Startup->>Store: load persisted state
-    Startup->>Startup: compare running and target versions
+classDiagram
+    class UpdateState {
+        +String target_version
+        +UpdatePhase phase
+        +u32 boot_attempts
+        +Option started_at
+        +Option last_error
+        +new(target_version)
+        +set_phase(phase)
+    }
+    class UpdatePhase {
+        <<enumeration>>
+        Validating
+        Downloading
+        Extracting
+        PreparingUpdater
+        UpdaterLaunched
+        Completed
+        Verifying
+        RolledBack
+        Failed
+    }
+    UpdateState --> UpdatePhase : "records"
 ```
 
-At startup, recovery follows this decision flow:
+## Update Phases
+
+The serialized enum uses snake-case names. The first four values are retained for compatibility with older state files; the current client persists state immediately before it launches the updater rather than saving those earlier checkpoints.
+
+| Rust variant | JSON value | Meaning in the recovery model |
+|---|---|---|
+| `Validating` | `validating` | Legacy pre-launch validation checkpoint. |
+| `Downloading` | `downloading` | Legacy artifact download checkpoint. |
+| `Extracting` | `extracting` | Legacy archive extraction checkpoint. |
+| `PreparingUpdater` | `preparing_updater` | Legacy pre-launch updater preparation checkpoint. |
+| `UpdaterLaunched` | `updater_launched` | The updater has been launched and the next boot may need to verify the replacement. |
+| `Completed` | `completed` | Update completion was recorded. |
+| `Verifying` | `verifying` | The client is awaiting or performing post-launch version verification. |
+| `RolledBack` | `rolled_back` | The update reverted to a known-good binary. |
+| `Failed` | `failed` | The update did not complete successfully. |
+
+## Construction and Mutation
+
+`UpdateState::new(target_version)` establishes the in-memory record used for a requested update:
+
+1. It retains the supplied target-version string.
+2. It sets the phase to `Validating`.
+3. It initializes `boot_attempts` to `0`.
+4. It records the current UTC time as an RFC 3339 string in `started_at`.
+5. It leaves `last_error` unset.
+
+`set_phase(phase)` changes only `phase`. It does not validate transition ordering, alter counters, persist the record, or clear an error. Callers must therefore coordinate lifecycle semantics and durable storage.
+
+```mermaid
+flowchart LR
+    Create["Create UpdateState"] --> Validating["validating"]
+    Validating --> Downloading["downloading"]
+    Downloading --> Extracting["extracting"]
+    Extracting --> Preparing["preparing_updater"]
+    Preparing --> Launched["updater_launched"]
+    Launched --> Verifying["verifying"]
+    Verifying --> Completed["completed"]
+    Verifying --> Failed["failed"]
+    Failed --> RolledBack["rolled_back"]
+```
+
+The diagram presents the conceptual lifecycle represented by the enum. The current client saves state only at the launch boundary; the earlier nodes remain deserializable historical checkpoints rather than newly persisted stages.
+
+## Runtime Integration
+
+The model is consumed by services in the same OpenFrame client library. The following relationships are based on the client implementation:
 
 ```mermaid
 flowchart TD
-    Begin["Client startup"] --> Load["Load update state"]
-    Load --> Present{"State record present?"}
-    Present -->|"No"| Normal["Continue normal startup"]
-    Present -->|"Yes"| Compare["Compare running and target versions"]
-    Compare --> Match{"Versions match?"}
-    Match -->|"Yes"| Success["Complete successful update handling"]
-    Match -->|"No"| Phase{"Launched or verifying phase?"}
-    Phase -->|"Yes"| Retain["Keep state for next boot"]
-    Phase -->|"No"| Failure["Mark failed, report, clean, clear state"]
+    Request["Client update message"] --> UpdateService["OpenFrame Client Update Service"]
+    UpdateService --> State["UpdateState"]
+    UpdateService --> StateService["Update State Service"]
+    StateService --> StateFile["Secured update_state.json"]
+    UpdateService --> Updater["Platform updater"]
+    Updater --> StateFile
+    Startup["Client startup"] --> Handler["Update Handler Service"]
+    Handler --> StateService
+    Handler --> ClientInfo["Client information service"]
+    Handler --> Cleanup["Update cleanup service"]
+    Handler --> KnownGood["Last-known-good service"]
 ```
 
-Before this decision path, startup crash-loop accounting examines unresolved `UpdaterLaunched` and `Verifying` records. If the target is not the currently running version, it increments and saves `boot_attempts`. When the configured maximum has already been reached, the handler marks the update failed and starts recovery using the reserve rollback path. It does not count attempts when the target already equals the running build, preventing a successful update from being misclassified as a loop.
+### Persistence Boundary
 
-## Failure Semantics
+The Update State Service locates the state file at `update_state.json` in the endpoint's secured directory. It serializes `UpdateState` as pretty JSON and writes it using the library's atomic-write utility. The utility creates the parent directory, flushes data before persisting, and atomically replaces the target file. A load returns either a parsed state or no state; the presence of any state is treated as an incomplete update requiring recovery. Clearing recovery state removes the file.
 
-Failure information may originate from either update execution or next-boot recovery:
+### Update Request Processing
 
-1. If update execution fails before the updater completes, the client marks its client-information status as Failed and clears any state record, preventing a stale record from triggering crash-loop logic later.
-2. If a state file survives restart and the running version differs from its target, older pre-launch phases and other non-verification phases are handled as failures.
-3. When failure handling runs, it uses `last_error` when present; otherwise it creates a phase-specific explanation, publishes a failed delivery result, performs cleanup, prunes old updater transcripts, and clears the state file.
-4. For a launched or verifying update with a different running version, the state is retained for later boots until success or the crash-loop guard resolves it.
+The OpenFrame Client Update Service creates an `UpdateState` after it validates and canonicalizes the requested semantic version. It updates separate client-information bookkeeping to `Updating`, then executes the update. The implementation saves the model once, immediately before the updater launches. If update execution returns an error, it records a failed client-information status and clears stale update state so it cannot be interpreted as an unresolved launch on a later boot.
 
-This split makes the model a recovery checkpoint, rather than a complete audit history. Once success or failure cleanup is complete, the record is removed.
+Before applying a request, the service holds an update guard to prevent concurrent duplicate updates. It marks client updates as pending while it checks for active tool operations or package upgrades. It also skips a request that targets the currently running version and rejects downgrade attempts when the requested version has lower precedence than the last-known-good anchor.
 
-## Maintenance Guidance
+### Startup Recovery and Failure Handling
 
-- Treat enum names and serialized field names as a persisted compatibility contract. Existing endpoint installations can retain state files across client upgrades.
-- Add a new phase only when startup recovery has a defined interpretation for it. A phase with no recovery rule falls into the failure path when the version does not match.
-- Keep `set_phase` free of persistence behavior. Callers must explicitly save transitions so I/O errors are visible at the service boundary.
-- Do not infer a completed update from a phase alone. Recovery verifies completion by comparing the running client version with `target_version`.
-- Preserve the optional and defaulted fields when evolving the schema to avoid rejecting older state files.
-- Avoid logging or placing secrets in `last_error`; it can be persisted and read during diagnostics.
+On startup, the Update Handler Service loads the state record and compares `target_version` with the compiled running version.
 
-## System Context
+```mermaid
+flowchart TD
+    Start["Client starts"] --> Load["Load update state"]
+    Load --> Exists{"State exists?"}
+    Exists -->|"no"| NoState["Report interrupted before launch"]
+    Exists -->|"yes"| Match{"Running version matches target?"}
+    Match -->|"yes"| Success["Handle successful update"]
+    Match -->|"no"| Phase{"Phase is launch or verification?"}
+    Phase -->|"yes"| Keep["Keep state for next boot"]
+    Phase -->|"no"| Failure["Handle update failure"]
+    Failure --> Status["Set client status to failed"]
+    Status --> Report["Publish failed delivery result"]
+    Report --> Cleanup["Clean artifacts and clear state"]
+```
 
-Model Update State is one component of the endpoint client delivered by this tenant repository. The repository builds and releases the client-facing services, while the Rust runtime behavior documented here is supplied by the OpenFrame OSS Library. The model coordinates only the local self-update lifecycle; management-side update dispatch, NATS delivery, client-info reporting, binary staging, updater scripts, and last-known-good recovery are separate concerns in the client and platform services.
+When an unresolved record is in `updater_launched` or `verifying` and the executable does not yet report the target version, startup retains the state for a subsequent boot. Other mismatches are handled as failures. Failure handling logs `last_error` when available, otherwise directs operators to the updater transcript in the logs directory; it reports a failed delivery result, cleans update artifacts, prunes updater transcripts, and removes the state file.
+
+For unresolved launch or verification states, boot accounting increments `boot_attempts` on each boot where the target version is still not running. Once the configured crash-loop threshold is reached, the handler treats the update as failed and initiates a reserve rollback path. Boot attempts are not incremented if the current executable already matches the target version.
+
+## Failure and Recovery Semantics
+
+The state file is a recovery signal rather than a permanent history. Its lifecycle is intentionally short:
+
+1. A new update is prepared in memory with version and timing metadata.
+2. State is saved at the updater-launch boundary.
+3. The updater can add a failure reason to `last_error`.
+4. A later boot verifies the running version against `target_version`.
+5. Success advances the surrounding services' success flow; failure publishes the outcome, removes staged artifacts, and clears state.
+6. Repeated unresolved boots activate crash-loop handling and reserve rollback.
+
+The Last Known Good Service is complementary to Model Update State. After a successful version is promoted, it copies the running executable to a reserve location and atomically saves a version anchor. Model Update State identifies an incomplete operation; the last-known-good anchor supplies the rollback reference and prevents unwanted downgrades.
+
+## Example Serialized Record
+
+The exact phase and optional fields vary by lifecycle point. This example shows a launch-boundary record:
+
+```json
+{
+  "target_version": "1.2.3",
+  "phase": "updater_launched",
+  "boot_attempts": 0,
+  "started_at": "2026-01-15T10:30:00Z",
+  "last_error": null
+}
+```
+
+## Maintenance Notes
+
+- Treat phase names and field names as persisted compatibility surface. Serde emits phase variants in snake case.
+- Add a new phase only with explicit recovery behavior in the update handler. An unrecognized or mismatched phase is routed through failure handling unless it is `updater_launched` or `verifying`.
+- Preserve defaults for fields that may be absent from existing state files.
+- Do not rely on `set_phase` for validation, persistence, timestamp updates, or error management; it performs only assignment.
+- Keep state-file writes atomic because an interrupted write must not leave recovery unable to deserialize the update record.
+- Investigate a retained state file alongside the updater transcript and the separate client update status when diagnosing a failed upgrade.

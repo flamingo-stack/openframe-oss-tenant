@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> AuthEntry
+    AuthEntry --> LoginForm: Login tab selected
+    LoginForm --> ProviderAvailable: Email retained and provider visible
+    ProviderAvailable --> SsoCredentials: OpenFrame provider selected
+    SsoCredentials --> DashboardLoading: Credentials accepted
+    DashboardLoading --> Authenticated: Dashboard checks pass
+    SsoCredentials --> LoginRejected: Credentials rejected
+    LoginRejected --> SsoCredentials: Retry credentials
+    Authenticated --> [*]

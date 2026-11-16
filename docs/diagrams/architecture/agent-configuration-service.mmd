@@ -1,0 +1,23 @@
+flowchart LR
+    subgraph Library["OpenFrame OSS Library"]
+        ConfigService["Agent Configuration Service"]
+        DirectoryManager["Directory Manager"]
+        ConfigModel["Agent Configuration Model"]
+        AtomicWrite["Atomic File Write"]
+        Registration["Agent Registration Service"]
+        Auth["Agent Auth Service"]
+        RefreshManager["Token Refresh Run Manager"]
+    end
+    SecureDir["Secured Directory"]
+    ConfigFile["agent_config.json"]
+    AuthServer["Authorization Service"]
+
+    Registration -->|"save registration data"| ConfigService
+    Auth -->|"read credentials and update tokens"| ConfigService
+    RefreshManager -->|"reauthenticate"| Auth
+    ConfigService -->|"resolve path"| DirectoryManager
+    ConfigService -->|"serialize or deserialize"| ConfigModel
+    ConfigService -->|"atomic persistence"| AtomicWrite
+    DirectoryManager -->|"provides"| SecureDir
+    AtomicWrite -->|"replaces"| ConfigFile
+    Auth -->|"token request"| AuthServer

@@ -1,0 +1,12 @@
+flowchart LR
+    Service["RMM Service Layer"]
+    Contract["Custom Policy Repository"]
+    Implementation["Mongo Repository Implementation"]
+    Policy["Package Auto Update Policy"]
+    Mongo[("MongoDB")]
+
+    Service -->|"uses"| Contract
+    Contract -->|"implemented by"| Implementation
+    Implementation -->|"bulk upsert and multi update"| Mongo
+    Implementation -->|"persists"| Policy
+    Policy -->|"stored in"| Mongo

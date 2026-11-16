@@ -1,9 +1,23 @@
-stateDiagram-v2
-    [*] --> Healthy
-    Healthy --> EarlyFailures: "record failure"
-    EarlyFailures --> EarlyFailures: "failure, fewer than five"
-    EarlyFailures --> Throttled: "fifth failure recorded"
-    Throttled --> Slow: "streak reaches one hour"
-    Throttled --> Healthy: "record success"
-    Slow --> Healthy: "record success"
-    Slow --> Slow: "failure, hourly logging"
+sequenceDiagram
+    participant Caller
+    participant Backoff as FailureLogBackoff
+    participant Target as Operation
+    participant Logs as Log Sink
+    Caller->>Backoff: should_log()
+    Backoff-->>Caller: true or false
+    Caller->>Target: attempt operation
+    alt operation fails
+        Target-->>Caller: error
+        opt logging was allowed and emitted
+            Caller->>Logs: write failure message
+        end
+        Caller->>Backoff: record_failure(logged)
+        Backoff-->>Caller: consecutive failure count
+    else operation succeeds
+        Target-->>Caller: success
+        Caller->>Backoff: record_success()
+        Backoff-->>Caller: prior streak or none
+        opt prior streak exists
+            Caller->>Logs: write recovery message
+        end
+    end

@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> NoPendingMode
+    NoPendingMode --> PendingMode: installer stores a mode
+    PendingMode --> InvalidMode: wire name is unknown
+    InvalidMode --> NoPendingMode: clear local value
+    PendingMode --> DeliveryInProgress: known mode starts background task
+    DeliveryInProgress --> DeliveryInProgress: backend call returns error
+    DeliveryInProgress --> Applied: backend applies mode
+    DeliveryInProgress --> NotSupported: backend does not support mode updates
+    DeliveryInProgress --> OverrideExists: backend retains different override
+    Applied --> ClearPending
+    NotSupported --> ClearPending
+    OverrideExists --> ClearPending
+    ClearPending --> NoPendingMode

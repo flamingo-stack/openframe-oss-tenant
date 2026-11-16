@@ -1,0 +1,11 @@
+flowchart TD
+    Prompt["Mutating request"] --> Assistant["Fae"]
+    Assistant --> Decision{"Approval required?"}
+    Decision -->|"yes"| Request["Approval request"]
+    Request --> Rejected["Automatic rejection"]
+    Rejected --> NoAction["Endpoint state unchanged"]
+    Decision -->|"no"| Evaluate["Evaluate intent"]
+    Evaluate --> Hypothetical{"Hypothetical or ambiguous?"}
+    Hypothetical -->|"yes"| Clarify["Clarify or explain"]
+    Clarify --> NoAction
+    Hypothetical -->|"no"| Execute["Approved command path"]

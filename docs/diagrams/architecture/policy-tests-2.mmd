@@ -1,0 +1,7 @@
+flowchart LR
+    Create["Create Policy"] --> Assign["Assign Online Windows Host"]
+    Assign --> Refetch["Request Host Re-evaluation"]
+    Refetch --> VerifyHost["Verify Host Policy Timestamp"]
+    VerifyHost --> Trigger["Trigger Fleet Aggregation"]
+    Trigger --> VerifyCounts["Verify Fresh Compliance Counts"]
+    VerifyCounts --> Delete["Delete Policy"]

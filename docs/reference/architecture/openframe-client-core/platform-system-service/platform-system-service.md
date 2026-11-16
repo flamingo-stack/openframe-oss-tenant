@@ -1,157 +1,209 @@
 # Platform System Service
 
-Platform System Service is the operating-system boundary for the OpenFrame Client agent. It starts, stops, verifies, and, on Windows, removes the agent's registered service while isolating platform-specific service-manager behavior from the rest of the client runtime.
+Platform System Service is the operating-system service lifecycle layer used by the OpenFrame Client agent. It abstracts how the agent starts, stops, verifies, and, when appropriate, removes its background service on macOS, Linux, and Windows. The implementation is supplied by the OpenFrame OSS Library's Rust client package and is assembled into this repository's OpenFrame Client runtime.
 
-The implementation is supplied by the `openframe_agent_lib` dependency from OpenFrame OSS Library and is run by this repository's OpenFrame Client. Its source is [`system_service.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/system_service.rs).
+Its central responsibility is safety during installation, upgrade, recovery, and removal. In particular, the Windows implementation prevents Service Control Manager (SCM) calls from indefinitely blocking asynchronous work, distinguishes retryable failures from permanent ones, and avoids deleting a service during update paths that cannot recreate it.
 
-## Responsibilities
+**Implementation source:** [system service module](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/system_service.rs)
 
-The module exposes a small asynchronous lifecycle interface:
+## Scope and Public Operations
+
+The module exposes the following lifecycle operations:
 
 | Operation | Purpose | Platform behavior |
 |---|---|---|
-| `start_service` | Starts a named agent service and reports failure with command or Service Control Manager context. | Runs `launchctl load` through `sudo` on macOS, `systemctl start` through `sudo` on Linux, or uses the Windows Service Control Manager. |
-| `stop_service` | Stops a service before update, restore, reinstall, or removal. | Uses `launchctl unload`, `systemctl stop`, or a guarded Windows stop and recovery procedure. |
-| `verify_service_running` | Confirms a newly installed Windows service reaches the running state. | Starts the service when Windows cannot confirm it is running; intentionally a no-op elsewhere. |
-| `service_clear_for_install` | Determines whether a service is absent or stopped and therefore safe to install over. | Performs a time-bounded Windows status query; returns true on non-Windows platforms. |
-| `remove_service` | Removes a prior service registration. | Performs Windows deletion and confirmation; it is a no-op on macOS and Linux. |
-| `service_exists`, `service_not_stopped`, and `service_running_state` | Provide existence and state probes for lifecycle callers. | Windows state comes from the Service Control Manager; the asynchronous running probe is bounded by the shared permit pool. |
+| `start_service` | Starts a registered agent service. | Runs `launchctl load` on macOS, `systemctl start` on Linux, and SCM start plus running-state confirmation on Windows. |
+| `stop_service` | Requests service shutdown. The `allow_delete` argument controls whether a wedged Windows service can be deleted as a recovery measure. | Uses `launchctl unload`, `systemctl stop`, or the SCM stop path. |
+| `verify_service_running` | Confirms that a newly installed Windows service reaches `RUNNING`; starts it when needed. | A deliberate no-op on macOS and Linux. |
+| `service_clear_for_install` | Determines whether installation or reinstall may safely proceed. | Windows requires the service to be missing or stopped; other platforms return safe-to-install. |
+| `remove_service` | Removes an existing service registration. | Implements SCM deletion on Windows; no-op elsewhere. |
+| `service_exists` | Checks whether a Windows service can be queried. | Windows-only synchronous SCM query. |
+| `service_not_stopped` | Tests whether a Windows service is in a non-stopped state. | Windows-only synchronous SCM query. |
+| `service_running_state` | Obtains a bounded asynchronous Windows state check. | Returns `Some` for a successful query and `None` if SCM is unavailable or the query fails. |
 
-The module does not register a service definition itself. Registration configuration and lifecycle orchestration belong to the client service and service-adapter layers. Platform System Service provides the low-level controls those layers use once they know the service name.
+The synchronous state helpers are documented in the code as off the restart path. The operations that may run as part of restart, stop, install, or deletion flows use the timed SCM wrapper instead.
 
-## Position in the Client Architecture
+## Architecture
+
+The operating-system-neutral API selects a platform-specific implementation at compile time. `cfg` gates ensure that only the relevant service manager integration is included in the target binary.
 
 ```mermaid
 flowchart TD
-    ClientLifecycle["OpenFrame Client lifecycle"] --> ServiceCore["Client service orchestration"]
-    ServiceCore --> Adapter["Cross platform service adapter"]
-    ServiceCore --> PlatformSystem["Platform System Service"]
-    PlatformSystem --> MacManager["macOS launchctl"]
-    PlatformSystem --> LinuxManager["Linux systemctl"]
-    PlatformSystem --> WindowsScm["Windows Service Control Manager"]
-    WindowsScm --> AgentProcess["Agent service process"]
-    MacManager --> AgentProcess
-    LinuxManager --> AgentProcess
+    Caller["Agent lifecycle caller"] --> API["Platform System Service API"]
+    API --> Start["start service"]
+    API --> Stop["stop service"]
+    API --> Verify["verify service running"]
+    API --> InstallCheck["service clear for install"]
+    API --> Remove["remove service"]
+    Start --> MacStart["macOS launchctl load"]
+    Start --> LinuxStart["Linux systemctl start"]
+    Start --> WindowsStart["Windows SCM start and poll"]
+    Stop --> MacStop["macOS launchctl unload"]
+    Stop --> LinuxStop["Linux systemctl stop"]
+    Stop --> WindowsStop["Windows SCM stop and recovery"]
+    Verify --> WindowsVerify["Windows SCM query and start"]
+    InstallCheck --> WindowsCheck["Windows missing or stopped check"]
+    Remove --> WindowsRemove["Windows delete and confirm"]
+    WindowsStart --> Pool["Timed permit pool"]
+    WindowsStop --> Pool
+    WindowsVerify --> Pool
+    WindowsCheck --> Pool
+    WindowsRemove --> Pool
+    Pool --> SCM["Windows Service Control Manager"]
 ```
 
-The OpenFrame Client uses this layer during service installation, update, restart, recovery, and uninstall paths. The `allow_delete` argument to `stop_service` is significant: callers that will recreate or permanently remove the registration may allow a final Windows deletion, while update and restore callers must prohibit deletion because they do not re-register the service.
+### Runtime Context and Dependencies
 
-## Platform Implementations
+Platform System Service belongs to the Rust OpenFrame Client implementation from the OpenFrame OSS Library. The tenant repository consumes the `openframe_agent_lib` Cargo artifact at version `v0.0.5`; the client runtime provides the higher-level installation, service-management, upgrade, and uninstallation workflows that invoke this module.
+
+At the module boundary, its direct responsibilities are intentionally narrow:
+
+- It uses service stop configuration for retry schedules, call timeouts, poll intervals, retry limits, and Windows SCM capacity limits.
+- It uses Tokio process execution for macOS, Linux, and Windows utility commands, plus Tokio timers for Windows polling and backoff.
+- It uses the timed permit pool to bound blocking SCM work that must be moved off the asynchronous runtime.
+- On Windows it uses `windows_service` for SCM access, `taskkill` for process-tree termination, and `sysinfo` for fallback process discovery by executable path.
+- It emits operational tracing at information, warning, and error levels so lifecycle failures include service names, attempts, platform command output, and SCM details.
+
+The module does not install service definitions itself. Instead, it coordinates the registered service lifecycle after higher-level service management has created or selected the service.
+
+## Platform Lifecycle Behavior
 
 ### macOS and Linux
 
-macOS maps a service name to `/Library/LaunchDaemons/<service name>.plist` and invokes `sudo launchctl load` or `sudo launchctl unload`. A missing plist and an already unloaded service are treated as an acceptable stop outcome.
+macOS derives a LaunchDaemon plist path under `/Library/LaunchDaemons` and runs `sudo launchctl load` to start or `sudo launchctl unload` to stop. Stop treats an absent plist and an already-unloaded service as non-fatal conditions, which supports idempotent cleanup.
 
-Linux invokes `sudo systemctl start <service name>` and `sudo systemctl stop <service name>`. A stop result indicating that the unit is not loaded or cannot be found is treated as already stopped. Other non-successful commands include command output in the returned error.
+Linux invokes `sudo systemctl start` and `sudo systemctl stop` for the supplied service name. Stop similarly treats manager messages indicating a unit is not loaded or not found as a successful cleanup result. Command-launch failures and unsuccessful commands with other error output are returned with context.
 
-These implementations use asynchronous child-process execution. They do not attempt a second start during `verify_service_running`, avoiding potentially unsafe redundant operations against launchd or systemd.
+Verification after installation and service-clear checks are intentionally relaxed outside Windows. The code avoids issuing an additional start against launchd or systemd because doing so might fail for an already-loaded unit, while the Windows-specific stop-pending recovery problem does not apply in the same way.
 
 ### Windows
 
-Windows uses the Service Control Manager rather than shelling out for ordinary lifecycle commands. Service Control Manager calls can block, so the module runs them outside the asynchronous runtime through a shared, bounded `TimedPermitPool`. Each call has a configured timeout. This prevents an unresponsive manager from indefinitely stalling an agent task or allowing an unlimited number of blocked worker threads.
+Windows provides the full recovery logic. Blocking SCM work is run through a shared `TimedPermitPool`. A call has a deadline and a bounded number of parked SCM threads. Consequently, a wedged SCM cannot consume unbounded async runtime capacity or cause each retry to create another permanently blocked worker.
 
-Start failures are classified before retrying:
+The module classifies failed starts as follows:
 
-- **Transient:** retry according to `SERVICE_START_RETRY_DELAYS_SECS`.
-- **Permanent:** stop immediately for missing image paths, disabled or absent services, and services marked for deletion.
-- **Unresponsive manager:** stop immediately after a timed-out call that may still occupy a permit.
+| Failure class | Response |
+|---|---|
+| Transient SCM or confirmation failure | Retry according to the configured start-delay schedule. |
+| Permanent SCM error | Fail immediately. The code identifies missing image paths, disabled services, non-existent services, and services already marked for deletion as permanent. |
+| Unresponsive SCM after a timed call | Fail immediately to avoid adding more blocked SCM calls. |
 
-An already-running service is treated as a successful start. After a successful start request, the module polls status until it observes `RUNNING`; failure to reach that state is retried under the configured schedule.
+A successful SCM start request is not considered sufficient. The module polls status and requires the service to reach `RUNNING`. It treats an already-running response as successful, preserving idempotent start behavior.
 
 ## Start Flow
 
-```mermaid
-flowchart TD
-    Request["Start service request"] --> Platform{"Platform?"}
-    Platform -->|"macOS"| MacStart["Run launchctl load"]
-    Platform -->|"Linux"| LinuxStart["Run systemctl start"]
-    Platform -->|"Windows"| TimedStart["Issue bounded SCM start call"]
-    TimedStart --> StartResult{"Start result?"}
-    StartResult -->|"success"| PollRunning["Poll for RUNNING state"]
-    StartResult -->|"transient failure"| RetryDelay["Wait configured retry delay"]
-    RetryDelay --> TimedStart
-    StartResult -->|"permanent or SCM unresponsive"| StartError["Return error"]
-    PollRunning --> Running{"Running?"}
-    Running -->|"yes"| Started["Return success"]
-    Running -->|"no"| RetryDelay
-    MacStart --> Started
-    LinuxStart --> Started
-```
-
-## Windows Stop and Recovery Flow
-
-Stopping is deliberately more defensive than starting because a service can remain in a transitional state, including `StopPending`. The first attempt issues an SCM stop request, then polls for a stopped or missing registration. Missing and inactive services are successful no-op outcomes.
-
-If stopping fails, times out, cannot accept a control request, or does not settle, Platform System Service escalates as follows:
-
-1. Query the service state and process identifier.
-2. If the manager exposes a process identifier, terminate that process tree with `taskkill`.
-3. If it does not expose an identifier, resolve the executable from the configured service image path and terminate only processes whose full executable path matches. Matching the path rather than a process name avoids killing a sibling tool with the same executable name.
-4. Poll and repeat up to the configured force-kill limit.
-5. If the service is still not clear, delete the service only when `allow_delete` is true. Otherwise, return an error so an update or restore cannot silently leave the agent unregistered.
+The Windows start sequence uses a bounded number of attempts. Each successful start request is followed by status polling; failure to reach `RUNNING` is retryable only while the SCM remains responsive.
 
 ```mermaid
 flowchart TD
-    StopRequest["Stop service request"] --> StopCall["Issue bounded SCM stop call"]
-    StopCall --> StopState{"Stopped or missing?"}
-    StopState -->|"yes"| StopComplete["Return success"]
-    StopState -->|"no or SCM failure"| ForceStop["Inspect service status"]
-    ForceStop --> PidAvailable{"Process ID available?"}
-    PidAvailable -->|"yes"| KillTree["Terminate process tree"]
-    PidAvailable -->|"no"| ResolvePath["Resolve configured executable path"]
-    ResolvePath --> KillPath["Terminate matching executable processes"]
-    KillTree --> Recheck["Poll service state"]
-    KillPath --> Recheck
-    Recheck --> Cleared{"Stopped or missing?"}
-    Cleared -->|"yes"| StopComplete
-    Cleared -->|"no and attempts remain"| ForceStop
-    Cleared -->|"no and delete allowed"| DeleteService["Delete service and confirm removal"]
-    Cleared -->|"no and delete forbidden"| StopError["Return error"]
-    DeleteService --> StopComplete
+    Begin["Start requested"] --> Call["Run SCM start in timed permit pool"]
+    Call --> StartOk{"Start call succeeded?"}
+    StartOk -->|"yes"| Poll["Poll SCM status for RUNNING"]
+    StartOk -->|"no"| Classify["Classify SCM failure"]
+    Poll --> Running{"Service is RUNNING?"}
+    Running -->|"yes"| Success["Return success"]
+    Running -->|"no"| Retryable["Treat confirmation failure as transient"]
+    Classify --> Permanent{"Permanent or unresponsive?"}
+    Permanent -->|"yes"| Failed["Return error"]
+    Permanent -->|"no"| Retryable
+    Retryable --> Delay{"Retry delay remains?"}
+    Delay -->|"yes"| Wait["Wait configured backoff"]
+    Wait --> Call
+    Delay -->|"no"| Exhausted["Return attempts exhausted error"]
 ```
 
-## Installation Safety and Deletion
+The permanent-error fast path matters during reinstall work: retries cannot restore a missing executable, enable a disabled service, recreate an absent registration, or clear a service that SCM has marked for deletion.
 
-`service_clear_for_install` is an installation guard. On Windows, it returns true only when the Service Control Manager reports that the registration is absent or stopped. An unresponsive manager or an indeterminate status returns false, causing the caller to avoid overwriting a still-active or wedged agent.
+## Stop, Force Stop, and Delete Safety
 
-`remove_service` first checks whether a registration is already absent. Otherwise it attempts to stop it without permitting forced deletion during the stop step, then issues a Service Control Manager delete operation. Deletion is followed by bounded polling until the service is actually absent. This protects a subsequent reinstall from the Windows `ERROR_SERVICE_MARKED_FOR_DELETE` condition, in which the name cannot yet be reused because a service handle remains open.
+`stop_service` accepts `allow_delete` because its callers have different guarantees:
 
-## Component Interaction
+- Install, reinstall, and uninstall paths may pass `true`. They can recreate or intentionally remove the service registration, so deleting a permanently wedged Windows service is an allowed final recovery action.
+- Update and restore paths must pass `false`. Those paths do not re-register the service. Deleting it there would leave the installed agent unable to start as a service.
+
+The Windows stop path first sends an SCM stop control through the timed pool. Missing services and inactive services are already-safe outcomes. If stop fails, cannot accept control, times out, or does not reach `STOPPED` after the configured poll count, the module escalates to force-stop handling.
+
+```mermaid
+flowchart TD
+    Request["Stop requested"] --> StopCall["Request SCM stop"]
+    StopCall --> Stopped{"Stopped or absent?"}
+    Stopped -->|"yes"| Complete["Return success"]
+    Stopped -->|"no"| Force["Force-stop recovery"]
+    Force --> Pid{"SCM exposes process ID?"}
+    Pid -->|"yes"| Taskkill["Run taskkill for process tree"]
+    Pid -->|"no"| Image["Read service image path"]
+    Image --> Match["Find processes with exact executable path"]
+    Match --> Kill["Terminate matching process trees"]
+    Taskkill --> Recheck["Recheck SCM state"]
+    Kill --> Recheck
+    Recheck --> Cleared{"Stopped or absent?"}
+    Cleared -->|"yes"| Complete
+    Cleared -->|"no"| DeleteAllowed{"Deletion allowed?"}
+    DeleteAllowed -->|"no"| StopError["Return recovery error"]
+    DeleteAllowed -->|"yes"| Delete["Delete service through SCM"]
+    Delete --> Confirm["Poll until service is absent"]
+    Confirm --> Complete
+```
+
+The image-path fallback addresses transitional SCM states, such as stop pending, where SCM may hide the process identifier. It parses the registered executable path and only targets processes whose full executable path exactly matches it. Matching full paths, rather than only an executable filename, prevents collateral termination of another tool with the same filename.
+
+Deletion is also confirmed by polling until SCM reports that the service is absent. This prevents an immediate reinstall from racing a still-open SCM handle and receiving a service-marked-for-deletion error.
+
+## Installation and Removal Contracts
+
+The installation path should call `service_clear_for_install` before registering over an existing Windows service. A `true` result means the service is absent or stopped. A failed or unresponsive status query returns `false`, deliberately stopping an unsafe overwrite of a live, wedged, or unqueryable service.
+
+After registration, `verify_service_running` checks whether the service is already running and otherwise delegates to the robust start flow. This validates the post-install state rather than trusting installer success alone.
+
+`remove_service` is a Windows-specific cleanup routine. It skips removal when the service is already missing, attempts a stop without allowing the stop path itself to delete the service, then sends the SCM delete operation and waits for disappearance. Failure to stop is logged before deletion is attempted, allowing deletion to recover registrations that cannot be gracefully stopped.
+
+## Component Interaction Sequence
+
+This sequence summarizes the relationship among a lifecycle caller, the service module, its bounded blocking-call facility, the SCM, and the process fallback.
 
 ```mermaid
 sequenceDiagram
-    participant Caller as Client lifecycle caller
-    participant Module as Platform System Service
-    participant Pool as Timed permit pool
-    participant Scm as Windows Service Control Manager
-    participant Process as Agent process
-    Caller->>Module: stop_service(name, allow delete)
-    Module->>Pool: request bounded SCM operation
-    Pool->>Scm: stop service
-    Scm-->>Pool: stop result
-    Pool-->>Module: result or timeout
-    Module->>Scm: query state
-    alt service does not stop
-        Module->>Process: terminate process tree or matching path
-        Module->>Scm: query state again
+    participant Caller
+    participant ServiceModule
+    participant PermitPool
+    participant SCM
+    participant ProcessControl
+    Caller->>ServiceModule: stop service with deletion policy
+    ServiceModule->>PermitPool: run timed SCM stop call
+    PermitPool->>SCM: request stop
+    SCM-->>PermitPool: stop result
+    PermitPool-->>ServiceModule: result or timeout
+    alt service reaches stopped state
+        ServiceModule-->>Caller: success
+    else stop fails or remains active
+        ServiceModule->>PermitPool: run timed SCM status query
+        PermitPool->>SCM: query state and process ID
+        SCM-->>PermitPool: status
+        PermitPool-->>ServiceModule: status
+        alt process ID available
+            ServiceModule->>ProcessControl: terminate process tree
+        else image path fallback
+            ServiceModule->>PermitPool: query service configuration
+            PermitPool->>SCM: read executable path
+            SCM-->>PermitPool: executable path
+            PermitPool-->>ServiceModule: executable path
+            ServiceModule->>ProcessControl: terminate exact path matches
+        end
+        ServiceModule->>SCM: recheck stopped or absent state
+        SCM-->>ServiceModule: current state
+        ServiceModule-->>Caller: success or policy constrained error
     end
-    alt still active and deletion allowed
-        Module->>Scm: delete service
-        Module->>Scm: confirm service absent
-    end
-    Module-->>Caller: success or contextual error
 ```
 
-## Operational Characteristics
+## Operational Notes for Maintainers
 
-- **Idempotent outcomes where safe:** Starting an already running Windows service and stopping a missing or inactive service succeed.
-- **Bounded failure behavior:** Windows Service Control Manager calls and state polls are time-bounded; repeated query failures are treated as manager unavailability rather than an infinite wait.
-- **Contextual diagnostics:** The module uses structured tracing for attempts, state transitions, retries, command failures, force-kill actions, and deletion outcomes. Windows error formatting preserves the underlying operating-system error where possible.
-- **Scoped destructive action:** Process termination by image path requires an exact path match, and registration deletion is permitted only for flows that recreate or remove the service.
-- **Platform-specific compilation:** Conditional compilation keeps Service Control Manager code and Windows-only dependencies out of macOS and Linux builds.
+- Preserve the distinction between an SCM call that cannot acquire capacity and a call that has timed out while still parked in SCM. The latter must not be retried blindly because it continues to hold a permit.
+- Preserve post-start confirmation. A successful request to start does not prove the service reached `RUNNING`.
+- Keep the `allow_delete` policy at call sites explicit. Passing `true` from an update or restore flow risks deleting a service that the flow cannot recreate.
+- Treat missing and already-stopped services as idempotent stop outcomes. This makes cleanup and uninstall resilient to partial prior state.
+- Preserve exact executable-path matching in the no-process-ID force-stop branch. A filename-only match can terminate unrelated installed tools.
+- The non-Windows no-op behavior for selected verification and install-clear functions is deliberate platform policy, not an omission of service manager support.
 
-## Maintenance Guidance
+## Failure Visibility
 
-Changes to retry delays, timeout values, poll counts, or maximum concurrent Service Control Manager calls affect recovery behavior under a wedged Windows service manager. Preserve the distinction between a pool that is temporarily busy and a call that timed out while still parked in the manager: the latter consumes a permit and must not trigger unbounded retries.
-
-When adding lifecycle callers, choose `allow_delete` conservatively. It should be true only for reinstall or uninstall paths that are guaranteed to register a replacement or intentionally remove the agent. For an in-place update, rollback, or restore, deletion can leave the tool unable to start until an external repair occurs.
+The module wraps process execution and SCM errors with operation-specific context. Logging records start attempt counts, retry delays, SCM status-query failures, stop escalation, process identifiers, executable-path fallback actions, and deletion confirmation problems. These records should be the primary diagnostic evidence when an install, upgrade, or uninstall reports a service lifecycle failure.

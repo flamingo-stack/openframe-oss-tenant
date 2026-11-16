@@ -1,0 +1,9 @@
+flowchart LR
+    InitialProcessor["Initial Authentication Processor"] -->|"initial authentication"| AuthService["Agent Auth Service"]
+    RefreshManager["Token Refresh Run Manager"] -->|"reauthentication"| AuthService
+    AuthService -->|"client or refresh grant"| AuthClient["Authentication Client"]
+    AuthClient -->|"HTTP form request"| ClientService["OpenFrame Client Service"]
+    AuthService -->|"read credentials and refresh token"| ConfigService["Agent Configuration Service"]
+    AuthService -->|"persist access and refresh tokens"| ConfigService
+    AuthService -->|"write encrypted access token"| SharedTokens["Shared Token Service"]
+    SharedTokens --> SecureStore["Secured Local Storage"]

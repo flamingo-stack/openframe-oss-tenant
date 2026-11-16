@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Flow as "Email Policy Flow"
+    participant Source as "Stored Policy Source"
+    participant Repository as "Mongo Repository"
+    participant Database as "MongoDB"
+    Flow->>Source: Check canonical address or domain
+    Source->>Repository: existsById
+    Repository->>Database: Identity lookup
+    Database-->>Repository: Present or absent
+    Repository-->>Source: Boolean result
+    Source-->>Flow: Blocked or allowed
+    alt datastore access failure
+        Repository-->>Source: DataAccessException
+        Source->>Source: Log warning
+        Source-->>Flow: Allowed
+    end

@@ -1,9 +1,0 @@
-stateDiagram-v2
-    [*] --> Pending: APPROVAL_REQUIRED
-    [*] --> Approved: Policy permits access
-    [*] --> Denied: DENY_ACCESS
-    Pending --> Approved: Device approves
-    Pending --> Revoked: Technician revokes
-    Approved --> Active: Session opens
-    Active --> Ended: Technician ends session
-    Ended --> Expired: Associated request expires

@@ -1,0 +1,12 @@
+flowchart LR
+    CommandListener["Command listener"] --> ClientUpdateHandler["Client update handler"]
+    ClientUpdateHandler --> UpdateService["Client Update Service"]
+    UpdateService --> DownloadService["GitHub download service"]
+    UpdateService --> StateService["Update state service"]
+    UpdateService --> ClientInfo["Client info service"]
+    UpdateService --> LastKnownGood["Last known good service"]
+    UpdateService --> ToolManager["Tool run manager"]
+    UpdateService --> ToolOps["Tool operation tracker"]
+    UpdateService --> Launcher["Platform updater launcher"]
+    Launcher --> ServiceManager["Operating system service manager"]
+    Launcher --> UpdatedClient["Replaced endpoint client"]

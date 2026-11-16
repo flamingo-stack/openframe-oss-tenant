@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Test as TicketsTest
+    participant Device as Device API
+    participant Ticket as Ticket API
+    Test->>Device: Find scoped online or offline device
+    Device-->>Test: Device and organization identifiers
+    Test->>Ticket: Create second ticket in active column
+    Ticket-->>Test: Created ticket
+    Test->>Ticket: Find column with at least two tickets
+    Ticket-->>Test: Column tickets and order keys
+    Test->>Ticket: Move last ticket before first ticket
+    Ticket-->>Test: Reordered ticket
+    Note over Test: Verify same column and changed order key

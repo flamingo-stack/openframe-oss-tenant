@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Monitoring
+    Monitoring --> Deferred: Tenant suspended or tool busy
+    Deferred --> Monitoring: Reactivated or operation complete
+    Monitoring --> Cooldown: Unhealthy condition found
+    Cooldown --> Healing: Cooldown available
+    Cooldown --> Monitoring: Cooldown not elapsed
+    Healing --> Monitoring: Healthy marker resets failure count
+    Healing --> Backoff: No healthy marker after recovery
+    Backoff --> Healing: Concrete condition or permitted retry
+    Backoff --> Monitoring: Missing-health retry cap reached

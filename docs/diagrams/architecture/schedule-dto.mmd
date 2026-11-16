@@ -1,8 +1,6 @@
 flowchart LR
-    ApiResponse["Schedule API response"] --> Criteria["ScheduleDeviceCriteria"]
-    ApiResponse --> Edge["ScriptScheduleEdge"]
-    Edge --> Node["ScriptSchedule node"]
-    Edge --> Cursor["Pagination cursor"]
-    Criteria --> Assertions["Test assertions"]
-    Node --> Assertions
-    Cursor --> Assertions
+    TestCode["Test code"] -->|"deserializes schedule response"| Edge["ScriptScheduleEdge"]
+    Edge -->|"contains"| Schedule["ScriptSchedule"]
+    Schedule -->|"may expose selection"| Criteria["ScheduleDeviceCriteria"]
+    Criteria -->|"organization, device type, OS type"| Selection["Device selection constraints"]
+    Api["Schedule API and GraphQL layer"] -->|"returns schedule data"| TestCode

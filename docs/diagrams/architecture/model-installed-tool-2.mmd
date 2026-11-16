@@ -1,30 +1,18 @@
-classDiagram
-    class InstalledTool {
-        tool agent identifier
-        tool identifier
-        tool type
-        version
-        run command arguments
-        agent identifier command arguments
-        optional uninstallation command arguments
-        installation
-        assets
-        state
-    }
-    class Installation {
-        Standard
-        GuiApp
-        Service
-    }
-    class InstalledAsset {
-        identifier
-        version
-        executable
-    }
-    class ToolRecordState {
-        Installing
-        Installed
-    }
-    InstalledTool --> Installation : "one installation"
-    InstalledTool --> InstalledAsset : "zero or more assets"
-    InstalledTool --> ToolRecordState : "one state"
+flowchart TD
+    Installation["Installation"]
+    Standard["Standard installation"]
+    GuiApp["GUI application"]
+    Service["Service"]
+    StandardPath["Optional executable path"]
+    GuiPath["Required executable path"]
+    Bundle["Optional bundle identifier"]
+    ServiceName["Required service name"]
+    ServicePath["Optional executable path"]
+    Installation --> Standard
+    Installation --> GuiApp
+    Installation --> Service
+    Standard --> StandardPath
+    GuiApp --> GuiPath
+    GuiApp --> Bundle
+    Service --> ServiceName
+    Service --> ServicePath

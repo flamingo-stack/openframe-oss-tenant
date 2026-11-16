@@ -1,0 +1,8 @@
+flowchart TD
+    Incoming["Incoming delivery sequence"] --> Read["Read type and target sequence record"]
+    Read --> SameMachine{"Same machine registration?"}
+    SameMachine -->|"no or absent"| Accept["Treat applied sequence as 0"]
+    SameMachine -->|"yes"| Compare{"Candidate is newer?"}
+    Compare -->|"yes"| Write["Store candidate sequence"]
+    Compare -->|"no"| Keep["Keep stored sequence"]
+    Accept --> Write

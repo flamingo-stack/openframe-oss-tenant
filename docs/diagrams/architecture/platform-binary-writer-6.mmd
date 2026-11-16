@@ -1,8 +1,0 @@
-flowchart LR
-    Request["Client update request"] --> Reserve["Reserve update guard"]
-    Reserve --> Validate["Validate version and update policy"]
-    Validate --> Download["Obtain selected executable bytes"]
-    Download --> Materialize["Platform Binary Writer materializes binary"]
-    Materialize --> Unlock["Windows unlock wait when applicable"]
-    Unlock --> Launch["Platform updater launches replacement"]
-    Launch --> State["Update state and running version handling"]

@@ -1,8 +1,0 @@
-flowchart TD
-    Request["Catalog query request"] --> Tenant["Apply tenant scope"]
-    Tenant --> Shield["Exclude system and software scripts"]
-    Shield --> Filters["Apply status, shell, platform, author, and tag filters"]
-    Filters --> Search["Apply escaped name substring search"]
-    Search --> Cursor["Apply valid ObjectId cursor"]
-    Cursor --> Sort["Sort and limit page"]
-    Sort --> Results["Return Script documents"]

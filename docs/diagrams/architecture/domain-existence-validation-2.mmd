@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Caller supplies candidate domains"] --> BeanCheck{"Custom validator bean available?"}
+    BeanCheck -->|"yes"| Custom["Use deployment specific validator"]
+    BeanCheck -->|"no"| Default["Register default validator"]
+    Default --> FalseResult["Return false"]
+    Custom --> CustomResult["Return implementation result"]

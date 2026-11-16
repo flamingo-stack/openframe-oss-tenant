@@ -1,133 +1,161 @@
 # Platform App Close
 
-Platform App Close is the operating-system boundary used during a forced graphical-application upgrade by the OpenFrame client agent. It makes a best-effort request for selected applications to exit, then tries to launch the updated application again in the appropriate interactive user context. The implementation is supplied by the `openframe_agent_lib` crate from the OpenFrame OSS Library and is run by this repository's OpenFrame client deployment.
+Platform App Close is a small, platform-specific lifecycle helper in the OpenFrame client agent. It asks selected GUI applications to exit before a forced upgrade and, where supported, starts the application again afterward. The implementation is supplied by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library and is run by this repository's OpenFrame client deployment.
 
-The module deliberately does not discover processes, replace binaries, or decide whether an update is permitted. Its narrow responsibility is the user-visible handoff around replacement: request a graceful close, report failures through structured logs, and reopen only on platforms with a supported session-launch mechanism.
+The module deliberately treats both operations as best effort. A failed close request is logged rather than escalated, and a relaunch reports success only when the operating-system launcher succeeds. It does not discover processes, decide which application requires an upgrade, persist update state, or terminate processes forcibly.
 
-**Implementation source:** [app close source](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/app_close.rs)
+**Source:** [app_close.rs in OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/app_close.rs)
 
 ## Responsibilities and Boundaries
 
-| Responsibility | Platform App Close behavior | Outside this module |
+| Responsibility | Mechanism | Boundary |
 |---|---|---|
-| Request application exit | Accepts a list of process identifiers and sends a platform-specific graceful close request. | Identifying upgrade candidates and owning their process metadata. |
-| Preserve user context | Uses the console user on macOS and the recorded session and user on Windows when reopening. | Managing login sessions or authenticating users. |
-| Relaunch outcome | Returns `true` once launch succeeds or is considered successfully handed to the platform launcher. | Verifying that the restarted application becomes healthy. |
-| Failure visibility | Emits warning logs for unsuccessful close or relaunch attempts and info logs for successful relaunches. | Retrying, rollback, and update-state persistence. |
-
-A close request is intentionally best effort. A Windows tray application can ignore a main-window close message, a process may already have exited, and Unix signal delivery does not guarantee that the application actually terminates. Callers must therefore retain their own upgrade-safety and failure-handling policy.
+| Request a graceful application close | `ask_to_close` receives process IDs and sends an operating-system-appropriate close request. | The caller selects the processes and handles the upgrade itself. |
+| Restore a user-facing application after an upgrade | `reopen` receives an application image path plus optional session and user context. | The module does not verify that a new process remains running after launch. |
+| Preserve observability | Structured `info` events record successful relaunches; structured `warn` events record close and relaunch failures. | It does not return diagnostics to the caller beyond the relaunch boolean. |
+| Maintain platform safety | Windows, macOS, and other Unix-like targets use separate implementations. | Unsupported platforms do not attempt a relaunch. |
 
 ## Architecture
 
+Platform App Close sits at the operating-system boundary of the client agent's forced-upgrade workflow. Upstream update orchestration supplies the process IDs, executable or application image path, and user/session context. The module then delegates to a platform-specific mechanism.
+
 ```mermaid
 flowchart LR
-    UpdateFlow["Client update or tool update flow"] --> CloseApi["Platform App Close"]
-    CloseApi --> CloseRequest["ask to close"]
-    CloseApi --> Relaunch["reopen"]
-    CloseRequest --> WindowsClose["Windows PowerShell CloseMainWindow"]
-    CloseRequest --> UnixClose["Unix SIGTERM"]
-    Relaunch --> MacLaunch["macOS console user launcher"]
-    Relaunch --> WindowsLaunch["Windows session launcher"]
-    Relaunch --> Unsupported["Unsupported platform warning"]
-    WindowsClose --> TargetApp["Target graphical application"]
-    UnixClose --> TargetApp
-    MacLaunch --> UpdatedApp["Updated graphical application"]
-    WindowsLaunch --> UpdatedApp
+    UpgradeFlow["Client update workflow"] -->|"process IDs and image path"| AppClose["Platform App Close"]
+    AppClose -->|"Windows close request"| PowerShell["PowerShell user script"]
+    AppClose -->|"Unix close request"| SysInfo["sysinfo process signal API"]
+    AppClose -->|"macOS relaunch"| MacSession["macOS console-user launcher"]
+    AppClose -->|"Windows relaunch"| WindowsSession["Windows session launcher"]
+    PowerShell --> WindowsApps["Windows GUI applications"]
+    SysInfo --> UnixApps["Unix GUI applications"]
+    MacSession --> MacApps["macOS application"]
+    WindowsSession --> WindowsApps
+    AppClose --> Telemetry["Structured tracing events"]
 ```
 
-Platform App Close is compiled conditionally, so each target contains only its relevant behavior:
+### Public Operations
 
-- **Windows:** sends a PowerShell `CloseMainWindow` request with user privilege, then uses the Windows session launcher to restore the application.
-- **macOS:** sends `SIGTERM` through `sysinfo`; reopening resolves the active console user and launches on that user's behalf.
-- **Other Unix targets:** sends `SIGTERM`; reopening is explicitly unsupported and returns `false`.
-
-## Core API
-
-### `ask_to_close`
-
-`ask_to_close(pids)` is asynchronous and returns no value. It accepts process identifiers owned by a higher-level update flow and asks each application to quit gracefully.
-
-| Target | Mechanism | Observed failure behavior |
-|---|---|---|
-| Windows | Executes a PowerShell loop that finds each process and invokes `CloseMainWindow`. The script has a 30-second timeout and runs with `Privilege::User`. | A nonzero script exit code generates a warning containing the return code and trimmed standard error. Missing processes are suppressed by the script. |
-| Non-Windows | Refreshes process information with `sysinfo` and invokes `kill_with(Signal::Term)` for every process found. | A process that rejects the signal produces a per-process warning. Absent processes produce no warning. |
-
-The Windows path asks applications with a conventional main window to close; it does not terminate them. The source explicitly notes that tray applications may ignore this message. The Unix path uses `SIGTERM`, which similarly gives applications an opportunity to handle termination rather than force-killing them.
-
-### `reopen`
-
-`reopen(image, session, user)` is asynchronous and returns a boolean. `image` identifies the application image or executable. The optional session and user values are meaningful on Windows; macOS instead obtains the current console user.
-
-| Target | Relaunch behavior | `true` result | `false` result |
+| Function | Inputs | Output | Platform behavior |
 |---|---|---|---|
-| macOS | Gets the console user and calls the user-session launcher. It waits up to 10 seconds for the launcher process. | The launcher remains active past the wait, exits successfully, or the implementation otherwise reaches the successful timeout branch. | No console user, launcher creation failure, unsuccessful launcher exit, or wait failure. |
-| Windows | Calls `launch_app_in_session` with the image and optional session and user. | The launcher returns a process identifier. | The session launcher returns an error. |
-| Other targets | Does not attempt launch. | Never. | Always, after logging an unsupported-platform warning. |
+| `ask_to_close` | Slice of process IDs | No result value | Windows asks each process to close its main window. Non-Windows targets send `SIGTERM` through `sysinfo`. |
+| `reopen` | Image path, optional session ID, optional user name | `true` when the launcher succeeds or the macOS launch remains active past the wait; otherwise `false` | macOS launches as the current console user; Windows launches into the supplied session and user context; other targets return `false`. |
 
-The result describes **launch handoff**, not application readiness. In particular, the macOS comment explains that the platform `open` behavior can return after Launch Services accepts the application, while a bare executable is itself the launched application. A successful result should not be treated as proof that the upgraded program completed initialization.
+## Close Request Flow
 
-## Close and Relaunch Flow
-
-```mermaid
-sequenceDiagram
-    participant Updater as Update flow
-    participant Close as Platform App Close
-    participant OS as Operating system
-    participant App as Graphical application
-    Updater->>Close: ask to close process identifiers
-    Close->>OS: send graceful close request
-    OS->>App: deliver close message or SIGTERM
-    Note over App: The app may exit, ignore the request, or already be absent
-    Updater->>Updater: replace application files
-    Updater->>Close: reopen image with session context
-    Close->>OS: launch in supported user context
-    OS->>App: start updated application
-    Close-->>Updater: return launch handoff result
-```
-
-This ordering is significant: the owner of the update must call the close request before it attempts replacement. Platform App Close does not wait for every process to disappear and has no file-lock or binary-swap logic. A caller that requires stronger replacement guarantees must coordinate process observation and executable replacement elsewhere.
-
-## Dependencies
+`ask_to_close` is asynchronous but intentionally non-failing at its API boundary. That design lets an update coordinator continue according to its own timeout and recovery policy while retaining warning logs for operations the module could not request.
 
 ```mermaid
 flowchart TD
-    AppClose["Platform App Close"] --> Executor["Script executor"]
-    Executor --> PowerShell["PowerShell on Windows"]
-    AppClose --> Sysinfo["sysinfo process API"]
-    AppClose --> MacSession["macOS user session utilities"]
-    AppClose --> WindowsSession["Windows session launcher"]
-    AppClose --> Tracing["Structured tracing logs"]
+    Start["Update coordinator supplies process IDs"] --> Platform{"Target platform?"}
+    Platform -->|"Windows"| BuildArgs["Convert process IDs to script arguments"]
+    BuildArgs --> RunScript["Run PowerShell as user"]
+    RunScript --> FindProcess["Find each process"]
+    FindProcess --> CloseWindow["Request CloseMainWindow"]
+    CloseWindow --> ScriptResult{"Script returned zero?"}
+    ScriptResult -->|"No"| LogCloseWarning["Log close warning with return code and stderr"]
+    ScriptResult -->|"Yes"| CloseDone["Close request complete"]
+    Platform -->|"Non-Windows"| Refresh["Refresh process information"]
+    Refresh --> SignalTerm["Send SIGTERM to each known process"]
+    SignalTerm --> SignalResult{"Signal request refused?"}
+    SignalResult -->|"Yes"| LogSignalWarning["Log process-specific warning"]
+    SignalResult -->|"No"| CloseDone
 ```
 
-| Dependency | Used by | Purpose |
+### Windows Close Semantics
+
+The Windows implementation constructs a PowerShell script, runs it with `Privilege::User`, and gives it a 30-second timeout. For every supplied process ID, the script obtains the process if it still exists and invokes `CloseMainWindow`. This is a request to the application's primary window rather than a forced process kill. As noted by the source, tray applications can ignore the message. A nonzero script return code produces a warning containing the return code and trimmed standard error.
+
+### Non-Windows Close Semantics
+
+The non-Windows implementation refreshes process details through `sysinfo`, then calls `kill_with(Signal::Term)` for each process currently visible by ID. A `false` result is logged as a warning. Missing processes and unavailable signal outcomes do not produce a close failure result, which is consistent with a process that exited while the upgrade workflow was preparing.
+
+## Relaunch Flow
+
+Relaunching is explicitly platform-dependent. The function accepts session and user values so the Windows implementation can restore the application to the originating interactive context. macOS instead finds the active console user and does not use the supplied session or user parameters.
+
+```mermaid
+flowchart TD
+    Begin["Upgrade finishes and supplies image path"] --> Target{"Target platform?"}
+    Target -->|"macOS"| ConsoleUser{"Console user available?"}
+    ConsoleUser -->|"No"| MacNoUser["Log warning and return false"]
+    ConsoleUser -->|"Yes"| MacLaunch["Launch as console user"]
+    MacLaunch --> MacStarted{"Launcher started?"}
+    MacStarted -->|"No"| MacLaunchFail["Log warning and return false"]
+    MacStarted -->|"Yes"| MacWait["Wait up to 10 seconds for launcher"]
+    MacWait --> MacStatus{"Launcher reports nonzero exit?"}
+    MacStatus -->|"Yes"| MacExitFail["Log warning and return false"]
+    MacStatus -->|"No"| MacSuccess["Log relaunch and return true"]
+    Target -->|"Windows"| WinLaunch["Launch in supplied user session"]
+    WinLaunch --> WinResult{"Launcher returned process ID?"}
+    WinResult -->|"Yes"| WinSuccess["Log process ID and return true"]
+    WinResult -->|"No"| WinFailure["Log warning and return false"]
+    Target -->|"Other"| Unsupported["Log unsupported relaunch and return false"]
+```
+
+### macOS Details
+
+On macOS, `reopen` obtains the console user and invokes the platform user-session launcher with the image path and no additional arguments. The module waits for up to 10 seconds for the launcher child:
+
+- A nonzero child exit status is treated as failure.
+- An error while waiting is treated as failure.
+- A successful exit, a still-running launcher after the timeout, or a wait result not matching either failure branch is treated as success.
+
+This accommodates application launch mechanisms that hand work to Launch Services and either exit quickly or remain active while the application starts. The success condition means the launch request was accepted; it is not a health check of the relaunched application.
+
+### Windows Details
+
+On Windows, `reopen` calls the Windows user-session launcher with the image path and optional session and user inputs. A returned process ID is logged with the image and session and yields `true`. A launcher error is logged and yields `false`. Process exit status is not awaited by this module.
+
+## Component Interaction
+
+The module has two direct integration surfaces: the cross-platform script executor for Windows close requests and platform user-session launchers for reopening. It also relies on `sysinfo` for non-Windows signalling and `tracing` for structured logs.
+
+```mermaid
+sequenceDiagram
+    participant Coordinator as Upgrade coordinator
+    participant Close as Platform App Close
+    participant OS as Operating system
+    participant Launcher as User session launcher
+    Coordinator->>Close: ask_to_close(process IDs)
+    alt Windows target
+        Close->>OS: PowerShell CloseMainWindow requests
+        OS-->>Close: Script result
+    else Non-Windows target
+        Close->>OS: SIGTERM per visible process
+        OS-->>Close: Signal outcome
+    end
+    Close-->>Coordinator: Close request finished
+    Coordinator->>Coordinator: Replace application binary
+    Coordinator->>Close: reopen(image, session, user)
+    alt macOS or Windows target
+        Close->>Launcher: Launch application for interactive user
+        Launcher-->>Close: Launch success or error
+    else Other target
+        Close->>Close: Log unsupported relaunch
+    end
+    Close-->>Coordinator: Relaunch boolean
+```
+
+## Operational Considerations
+
+- **Use graceful semantics:** Do not interpret `ask_to_close` as confirmation that an application has exited. The caller should independently wait for file locks or processes as required before replacing a binary.
+- **Expect races:** A supplied process can exit before it is signalled. The implementation treats that as non-fatal.
+- **Preserve interactive context:** Windows callers should pass the process session and user when known, because relaunching must target the user session rather than the agent's service context.
+- **Handle macOS login state:** Relaunch fails when no console user is available, such as when no user is interactively logged in.
+- **Plan for Linux behavior:** Linux and other targets that are neither macOS nor Windows can receive a close request but cannot be reopened by this module.
+- **Use logs for diagnosis:** Search the agent's structured logs for the image path, process ID, return code, standard error, session, or launcher error emitted by this module.
+
+## Failure Model
+
+| Scenario | Module response | Caller implication |
 |---|---|---|
-| Script executor and privilege model | Windows close path | Runs the bounded PowerShell close script as the user rather than an elevated process. |
-| `sysinfo` process API | Non-Windows close path | Locates supplied process identifiers and sends `SIGTERM`. |
-| macOS user-session utilities | macOS reopen path | Finds the console user and starts the image as that user. |
-| Windows session launcher | Windows reopen path | Starts the image within the supplied or resolved interactive session. |
-| `tracing` | All target paths | Records close and relaunch failures with process, image, session, status, or error context. |
+| Windows close script exits nonzero | Warning only | Determine whether to retry, wait, postpone, or use a separate recovery strategy. |
+| Non-Windows process refuses `SIGTERM` | Warning for that process ID | Continue observing process exit before file replacement. |
+| macOS has no console user | `reopen` returns `false` | Defer restoration until an interactive user is available, if required. |
+| macOS launcher fails or exits unsuccessfully | `reopen` returns `false` | Report or retry according to the update policy. |
+| Windows session launcher fails | `reopen` returns `false` | Preserve update outcome and surface a user-session launch failure. |
+| Unsupported relaunch target | `reopen` returns `false` | The coordinator must not assume application restoration on that platform. |
 
-The neighboring platform utilities that implement session management, process discovery, file replacement, and service lifecycle are separate concerns. Platform App Close should remain a small adapter over those capabilities rather than acquiring update-policy logic.
+## Maintenance Guidance
 
-## Error Handling and Operational Semantics
-
-The module favors continuity of the client update flow over strict failure propagation:
-
-1. `ask_to_close` logs problems but does not return an error. A close request failure is diagnostic information for the caller's broader update workflow.
-2. `reopen` converts expected launch failures into `false` and logs the reason. Its caller decides whether to mark the upgrade incomplete, retry, resume other tools, or report an update failure.
-3. Unsupported reopen targets fail explicitly rather than silently attempting a generic process spawn that could run in the wrong user context.
-4. No application termination is forced by this module. This avoids bypassing application cleanup, but it means callers must accommodate an application that does not exit in time.
-
-## Maintainer Guidance
-
-When changing Platform App Close:
-
-- Preserve the best-effort nature of close requests unless the calling update protocol is changed at the same time.
-- Keep user-session launches platform-specific. Starting a GUI application from a service account or the wrong session can succeed mechanically while making the application inaccessible to the interactive user.
-- Treat `reopen` success as a launcher result, not a readiness probe. Add readiness validation in the higher-level update owner if needed.
-- Maintain useful structured fields in log events, especially process identifiers for close failures and image and session information for relaunch failures.
-- Test platform branches on their native operating systems. Conditional compilation means a Linux build does not exercise Windows or macOS behavior.
-
-## Relationship to the OpenFrame Client
-
-This repository publishes the `openframe_client` crate and deploys the OpenFrame client as part of the tenant platform. The client assembles the OpenFrame OSS Library at version `7.0.11`; Platform App Close is library code included in that agent runtime. Its role is limited to the desktop-application transition that can occur during managed tool or client upgrades, while server-side services coordinate broader device management and delivery workflows.
+When changing Platform App Close, keep the module's role narrow: request a graceful exit, delegate launch to the platform session helpers, and provide precise structured telemetry. Do not add forced termination, update-state persistence, or process discovery here; those concerns belong to the surrounding client update, process-management, and platform modules. Changes should be validated on each conditional compilation target because both behavior and available dependencies differ across Windows, macOS, and other Unix-like systems.

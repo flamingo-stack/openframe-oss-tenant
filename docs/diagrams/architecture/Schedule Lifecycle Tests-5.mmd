@@ -1,0 +1,5 @@
+flowchart TD
+    InvalidInput["Invalid schedule input"] --> AttemptCreate["Attempt GraphQL creation"]
+    AttemptCreate --> ErrorResponse["GraphQL error response"]
+    ErrorResponse --> CountCheck["Compare filtered counts"]
+    CountCheck --> NoNewSchedule["No schedule was created"]

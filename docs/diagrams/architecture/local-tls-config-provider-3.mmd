@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Manager as NATS Connection Manager
+    participant Initial as Initial Configuration Service
+    participant Provider as Local Tls Config Provider
+    participant File as Local PEM CA File
+    participant Nats as NATS Client
+    Manager->>Initial: is_local_mode()
+    alt local mode enabled
+        Manager->>Provider: create_tls_config()
+        Provider->>Initial: get_local_ca_cert_path()
+        Initial-->>Provider: configured path
+        Provider->>File: read certificate bytes
+        File-->>Provider: PEM certificate data
+        Provider-->>Manager: custom ClientConfig
+        Manager->>Nats: connect with TLS client config
+    else local mode disabled
+        Manager->>Nats: connect with default options
+    end

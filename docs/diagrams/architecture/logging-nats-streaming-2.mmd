@@ -1,10 +1,23 @@
-flowchart TD
-    Start["Start streaming manager"] --> Main["Register OpenFrame file source"]
-    Start --> Discover["Wait 30 seconds"]
-    Discover --> Installed{"MeshCentral installed?"}
-    Installed -->|"No"| Discover
-    Installed -->|"Yes"| Build["Build MeshCentral file source"]
-    Build --> Queue["Send source to registry channel"]
-    Queue --> Done["Finish discovery task"]
-    Main --> Tick["Streaming loop tick"]
-    Tick --> Drain["Register queued sources"]
+sequenceDiagram
+    participant Timer as Batch timer
+    participant Registry as Log source registry
+    participant Connection as NATS log connection
+    participant Broker as JetStream broker
+    Timer->>Registry: Read up to 50 logs
+    alt No logs available
+        Registry-->>Timer: Empty result
+        Timer->>Timer: Check log rotation
+    else Logs available
+        Registry-->>Timer: Log entries
+        Timer->>Connection: Publish serialized log batch
+        Connection->>Broker: Publish to agents.logs
+        Broker-->>Connection: Publish acknowledgment
+        alt Acknowledgment received
+            Connection-->>Timer: Success
+            Timer->>Registry: Commit all source positions
+            Timer->>Timer: Save main log offset
+        else Publish or acknowledgment fails
+            Connection-->>Timer: Error
+            Timer->>Registry: Roll back all source positions
+        end
+    end

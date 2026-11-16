@@ -1,22 +1,14 @@
-sequenceDiagram
-    participant Timer as "60 second timer"
-    participant Registry as "Log source registry"
-    participant Connection as "NATS log connection"
-    participant Broker as "NATS JetStream"
-    Timer->>Registry: "read up to 50 entries"
-    Registry-->>Timer: "deduplicated entries"
-    alt no entries
-        Timer->>Timer: "check main log rotation"
-    else entries available
-        Timer->>Connection: "publish LogBatchMessage"
-        Connection->>Broker: "publish to agents.logs"
-        Broker-->>Connection: "publish acknowledgement"
-        alt acknowledgement received
-            Connection-->>Timer: "success"
-            Timer->>Registry: "commit all source positions"
-            Timer->>Timer: "save main log offset"
-        else serialization or publish failure
-            Connection-->>Timer: "error"
-            Timer->>Registry: "rollback all source positions"
-        end
-    end
+flowchart TD
+    Tick["60 second tick"] --> Drain["Register discovered sources"]
+    Drain --> Read["Read up to 50 logs"]
+    Read --> HasLogs{"Logs available?"}
+    HasLogs -->|"no"| Rotate["Check log rotation"]
+    Rotate --> Tick
+    HasLogs -->|"yes"| Build["Build log batch"]
+    Build --> Publish["Publish to agents.logs"]
+    Publish --> Ack{"Acknowledged?"}
+    Ack -->|"yes"| Commit["Commit all source cursors"]
+    Commit --> Save["Save main log offset"]
+    Save --> Tick
+    Ack -->|"no"| Rollback["Roll back all source cursors"]
+    Rollback --> Tick

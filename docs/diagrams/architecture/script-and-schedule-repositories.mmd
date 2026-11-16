@@ -1,0 +1,11 @@
+flowchart LR
+    Api["API and GraphQL services"] --> Queries["Script And Schedule Repositories"]
+    Schedulers["Scheduling and dispatch services"] --> Queries
+    Queries --> ScriptRepo["Script repository"]
+    Queries --> ScheduleRepo["Schedule repository"]
+    Queries --> ExecutionRepo["Script execution repository"]
+    Queries --> ScheduleRunRepo["Schedule run repository"]
+    ScriptRepo --> Mongo["MongoDB"]
+    ScheduleRepo --> Mongo
+    ExecutionRepo --> Mongo
+    ScheduleRunRepo --> Mongo

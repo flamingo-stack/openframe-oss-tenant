@@ -1,10 +1,10 @@
-flowchart TD
-    Platform["OpenFrame platform"] -->|"tool installation or update instruction"| Client["OpenFrame endpoint client"]
-    Client --> Handler["Tool installation or update handler"]
-    Handler --> Model["Model Installed Tool"]
-    Model --> InstallService["Tool installation service"]
-    Model --> UpdateService["Tool agent update service"]
-    Model --> ToolStore["Installed tools service"]
-    InstallService --> Host["Managed endpoint"]
-    UpdateService --> Host
-    ToolStore --> Host
+flowchart LR
+    Command["Tool command or update"]
+    Installer["Tool installation or update service"]
+    Record["Installed Tool record"]
+    Store["Installed tools service"]
+    Runtime["Run, restart, kill, or uninstall service"]
+    Command --> Installer
+    Installer -->|"creates or updates"| Record
+    Record -->|"saved and loaded"| Store
+    Store -->|"supplies record"| Runtime

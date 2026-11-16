@@ -1,0 +1,12 @@
+flowchart TD
+    Config["Mongo Reactive Config"] -->|"scans"| OAuthRepo["Reactive OAuth Client Repository"]
+    Config -->|"scans"| TenantRepo["Reactive Tenant Repository"]
+    Config -->|"scans"| UserRepo["Reactive User Repository"]
+    Config -->|"scans"| TenantProgressRepo["Reactive Tenant Onboarding Progress Repository"]
+    Config -->|"scans"| UserProgressRepo["Reactive User Onboarding Progress Repository"]
+
+    TenantRepo -->|"maps"| TenantDoc["Tenant Document"]
+    UserRepo -->|"maps"| UserDoc["User Document"]
+    OAuthRepo -->|"maps"| OAuthDoc["OAuth Client Document"]
+    TenantProgressRepo -->|"maps"| TenantProgressDoc["Tenant Onboarding Progress Document"]
+    UserProgressRepo -->|"maps"| UserProgressDoc["User Onboarding Progress Document"]

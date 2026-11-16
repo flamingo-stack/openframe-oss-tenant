@@ -1,0 +1,12 @@
+flowchart TD
+    Caller["Client update or startup caller"] --> Writer["Binary writer"]
+    Caller --> VersionProbe["Binary version probe"]
+    Writer --> Target["Target executable path"]
+    Writer --> Permissions["Executable permissions"]
+    VersionProbe --> Permissions
+    Permissions --> Target
+    VersionProbe --> Process["Binary process with --version"]
+    Process --> Parser["OpenFrame client version parser"]
+    Parser --> Result["Optional semantic version"]
+    Writer --> LockWait["Windows unlock wait"]
+    LockWait --> Process

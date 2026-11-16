@@ -1,0 +1,11 @@
+flowchart LR
+    Management["Management Service"] --> Nats["NATS"]
+    Management --> Kafka["Kafka"]
+    Management --> Mongo["MongoDB"]
+    Management --> Redis["Redis cluster"]
+    Management --> Pinot["Pinot"]
+    Management --> Fleet["Fleet MDM"]
+    Nats --> Client["Client service"]
+    Kafka --> Stream["Stream service"]
+    Mongo --> Api["API service"]
+    Pinot --> Api

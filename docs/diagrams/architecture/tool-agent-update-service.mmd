@@ -1,0 +1,11 @@
+flowchart LR
+    ControlPlane["OpenFrame platform"] -->|"update message"| CommandHandler["Tool update command handler"]
+    CommandHandler -->|"serialized update"| UpdateService["Tool Agent Update Service"]
+    UpdateService --> Registry["Installed tools registry"]
+    UpdateService --> Downloader["GitHub download service"]
+    Downloader --> ReleaseAsset["Tool release asset"]
+    UpdateService --> Updater["Platform tool updater"]
+    Updater --> Endpoint["Tool files and operating system service"]
+    UpdateService --> Publisher["Installed agent message publisher"]
+    Publisher -->|"installed versions"| NATS["NATS"]
+    NATS --> ControlPlane

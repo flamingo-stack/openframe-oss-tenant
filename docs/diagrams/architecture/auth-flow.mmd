@@ -1,12 +1,11 @@
 flowchart LR
-    TestCase["Integration test"] --> Contract["IAuthFlow contract"]
-    Contract --> OssFlow["AuthFlowOSS"]
-    Contract --> SaasFlow["AuthFlowSAAS"]
-    OssFlow --> TenantApi["Tenant discovery API"]
-    SaasFlow --> TenantApi
-    OssFlow --> OssAuth["OSS authorization redirects"]
-    SaasFlow --> SaasLogin["SaaS OAuth login redirects"]
-    SaasLogin --> LoginPage["Login page and CSRF field"]
-    OssAuth --> TokenCookies["Access and refresh token cookies"]
-    LoginPage --> TokenCookies
-    TokenCookies --> TestCase
+    TestRunner["Integration Test"] -->|"creates"| AuthContract["IAuthFlow"]
+    AuthContract -->|"implemented by"| OssFlow["AuthFlowOSS"]
+    AuthContract -->|"implemented by"| SaasFlow["AuthFlowSAAS"]
+    OssFlow -->|"discovers tenant"| TenantApi["TenantApi"]
+    SaasFlow -->|"discovers tenant"| TenantApi
+    OssFlow -->|"redirect steps"| AuthApi["AuthApi"]
+    SaasFlow -->|"redirect steps"| AuthServer["Authorization Server"]
+    AuthApi -->|"issues cookies"| TokenCookies["Access and Refresh Token Cookies"]
+    AuthServer -->|"issues cookies"| TokenCookies
+    TokenCookies -->|"used by"| TestRunner

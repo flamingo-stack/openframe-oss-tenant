@@ -1,16 +1,13 @@
-sequenceDiagram
-    participant Caller
-    participant Extractor as "Platform Dmg Extractor"
-    participant FileSystem as "Temporary filesystem"
-    participant Hdiutil as "hdiutil"
-    participant CopyTool as "cp"
-    Caller->>Extractor: extract_all(bytes, target, source path)
-    Extractor->>FileSystem: write temporary DMG
-    Extractor->>Hdiutil: attach read only at mount point
-    Hdiutil-->>Extractor: mount result
-    Extractor->>FileSystem: remove colliding target item
-    Extractor->>CopyTool: copy selected source recursively
-    CopyTool-->>Extractor: copy result
-    Extractor->>Hdiutil: detach mount point
-    Extractor->>FileSystem: remove temporary DMG
-    Extractor-->>Caller: copy success or copy error
+flowchart TD
+    Start["Extraction request"] --> MacCheck{{"macOS target?"}}
+    MacCheck -->|"no"| Unsupported["Return unsupported extraction error"]
+    MacCheck -->|"yes"| Stage["Write uniquely named temporary DMG"]
+    Stage --> Mount["Attach image read-only at temporary mount point"]
+    Mount --> SourceCheck{{"Source path supplied?"}}
+    SourceCheck -->|"yes"| SelectedPath["Select path inside mounted volume"]
+    SourceCheck -->|"no"| SelectedRoot["Select mounted volume root"]
+    SelectedPath --> Replace["Remove conflicting destination item"]
+    SelectedRoot --> Replace
+    Replace --> Copy["Copy recursively to target directory"]
+    Copy --> Cleanup["Attempt detach and remove temporary DMG"]
+    Cleanup --> Result["Return copy result"]

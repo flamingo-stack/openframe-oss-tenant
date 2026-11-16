@@ -1,0 +1,8 @@
+flowchart LR
+    Trigger["Scheduled trigger"] --> Lock["Acquire scheduler lock"]
+    Lock --> Decision{"Lock acquired?"}
+    Decision -->|"no"| Skip["Skip overlapping run"]
+    Decision -->|"yes"| Fetch["Fetch Brew and Winget catalogs"]
+    Fetch --> Write["Write package catalog"]
+    Write --> Metrics["Record synchronization metrics"]
+    Metrics --> Release["Release lock"]

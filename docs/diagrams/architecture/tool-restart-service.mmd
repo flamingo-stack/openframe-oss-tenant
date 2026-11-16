@@ -1,0 +1,11 @@
+flowchart LR
+    Caller["Client lifecycle caller"] --> RestartService["Tool Restart Service"]
+    RestartService --> ToolOps["Tool Ops lock and busy state"]
+    RestartService --> Registry["Installed Tools Service"]
+    Registry --> Record["Installed Tool record"]
+    RestartService --> KillService["Tool Kill Service"]
+    RestartService --> ServiceAdapter["Platform system service"]
+    RestartService --> RunManager["Tool Run Manager"]
+    KillService --> LocalTool["Local tool process or service"]
+    ServiceAdapter --> LocalTool
+    RunManager --> LocalTool

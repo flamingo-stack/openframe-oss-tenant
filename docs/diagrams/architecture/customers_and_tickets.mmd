@@ -1,9 +1,0 @@
-flowchart LR
-    Runner["OpenFrame Test Runner"] -->|"runs external-api tagged classes"| CustomerTest["External Customers Test"]
-    Runner -->|"runs external-api tagged classes"| TicketTest["External Tickets Test"]
-    CustomerTest -->|"authenticated customer requests"| Gateway["OpenFrame Gateway"]
-    TicketTest -->|"authenticated ticket requests"| Gateway
-    Gateway -->|"validated key and caller identity"| ExternalApi["External API Service"]
-    ExternalApi -->|"customer operations"| CustomerStore["Customer Data"]
-    ExternalApi -->|"ticket operations"| TicketStore["Ticket Data"]
-    ExternalApi -->|"ticket identity and ownership"| UserData["User Data"]

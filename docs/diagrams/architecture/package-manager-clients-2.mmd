@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Caller as "API Caller"
+    participant Client as "Package Manager Client"
+    participant Source as "Catalog or Upstream Source"
+
+    Caller->>Client: Search query with cursor and limit
+    Client->>Source: Read manager-specific page
+    Source->>Client: Package records
+    Client->>Client: Normalize hits and cursors
+    Client->>Caller: PackageSearchResult
+    Caller->>Client: Find package details
+    Client->>Source: Retrieve catalog record or metadata
+    Source->>Client: Package metadata
+    Client->>Client: Build install command and versions
+    Client->>Caller: PackageDetails

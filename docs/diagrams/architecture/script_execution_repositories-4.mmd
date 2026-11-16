@@ -1,7 +1,0 @@
-flowchart LR
-    FilterRequest["Tenant owner filters and search"] --> BaseCriteria["Base criteria"]
-    BaseCriteria --> CountQuery["Count all matching rows"]
-    BaseCriteria --> FacetCriteria["Remove current facet constraint"]
-    FacetCriteria --> Aggregate["Match then group and count"]
-    CountQuery --> FilteredCount["Filtered count"]
-    Aggregate --> FacetOptions["Value to count map"]

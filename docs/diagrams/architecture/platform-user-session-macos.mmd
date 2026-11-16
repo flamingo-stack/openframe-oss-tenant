@@ -1,10 +1,10 @@
-flowchart TD
-    Agent["OpenFrame client agent"] --> ToolManager["Tool run manager"]
-    ToolManager --> SessionModule["Platform User Session Macos"]
-    SessionModule --> Console["macOS console ownership"]
-    SessionModule --> Desktop["Dock and Finder processes"]
-    SessionModule --> ProcessTable["macOS process table"]
-    SessionModule --> Launchctl["launchctl asuser"]
-    SessionModule --> Sudo["sudo user fallback"]
-    Launchctl --> UserApp["User session application"]
-    Sudo --> UserApp
+flowchart LR
+    ClientService["OpenFrame Client Service"] --> ToolLifecycle["Tool Lifecycle Logic"]
+    ToolLifecycle --> SessionModule["Platform User Session Macos"]
+    SessionModule --> ConsoleDevice["macOS Console Device"]
+    SessionModule --> ProcessTools["macOS Process Utilities"]
+    SessionModule --> LaunchControl["launchctl asuser"]
+    SessionModule --> SudoFallback["sudo User Fallback"]
+    LaunchControl --> UserDesktop["Active User Desktop Session"]
+    SudoFallback --> UserDesktop
+    UserDesktop --> GuiTool["GUI Application or Executable"]

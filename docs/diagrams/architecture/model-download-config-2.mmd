@@ -1,0 +1,12 @@
+flowchart TD
+    Incoming["Receive download configuration"] --> PlatformCheck{"Current OS matches?"}
+    PlatformCheck -->|"no"| Skip["Do not select configuration"]
+    PlatformCheck -->|"yes"| OverrideCheck{"Version override needed?"}
+    OverrideCheck -->|"yes"| Rewrite["Replace original version in link"]
+    OverrideCheck -->|"no"| Preserve["Keep original link"]
+    Rewrite --> PathCheck{"Target has multiple path components?"}
+    Preserve --> PathCheck
+    PathCheck -->|"yes"| Extract["Use folder extraction workflow"]
+    PathCheck -->|"no"| Save["Use single target file workflow"]
+    Extract --> Install["Install using installation type metadata"]
+    Save --> Install

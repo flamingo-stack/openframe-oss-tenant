@@ -1,0 +1,8 @@
+flowchart LR
+    Config["Agent Configuration Service"] -->|"machine identifier"| Publisher["Package Manager Report Publisher"]
+    Console["Console user check"] -->|"session context"| Publisher
+    State["Package Manager State Resolver"] -->|"manager states"| Publisher
+    Dependency["Dependency Presence Resolver"] -->|"dependency states"| Publisher
+    Publisher -->|"serialized report"| Nats["NATS Message Publisher"]
+    Nats -->|"machine scoped subject"| Broker["NATS"]
+    Broker -->|"package manager report"| Platform["OpenFrame Client Service"]

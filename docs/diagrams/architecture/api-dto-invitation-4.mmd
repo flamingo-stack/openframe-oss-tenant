@@ -1,0 +1,10 @@
+flowchart LR
+    Dto["UpdateInvitationStatusRequest"] --> Status["InvitationStatus Enum"]
+    Dto --> Validation["Jakarta NotNull Validation"]
+    Dto --> Lombok["Lombok Data Accessors"]
+    Controller["Invitation Controller"] --> Service["Invitation Service"]
+    DataFetcher["Invitation Data Fetcher"] --> Service
+    Service --> Processor["Invitation Processor"]
+    Service --> Repository["Invitation Repository"]
+    Dto -. "not currently consumed by" .-> Controller
+    Dto -. "not currently consumed by" .-> DataFetcher

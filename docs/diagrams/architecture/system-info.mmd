@@ -1,9 +1,10 @@
 flowchart LR
-    Caller["Agent service or telemetry caller"] -->|"requests snapshot"| SystemInfo["System Info"]
-    SystemInfo -->|"locks and refreshes"| Sysinfo["sysinfo System collector"]
-    SystemInfo -->|"queries capacity"| DiskInfo["sys_info disk information"]
-    Sysinfo --> CpuMemory["CPU and memory values"]
-    DiskInfo --> DiskValues["Disk values"]
-    CpuMemory --> Metrics["SystemMetrics snapshot"]
+    Caller["Client Agent Caller"] -->|"collect_metrics()"| Collector["System Info"]
+    Collector -->|"lock and refresh"| Sysinfo["sysinfo System"]
+    Collector -->|"read capacity"| DiskInfo["sys_info Disk Info"]
+    Sysinfo --> CpuMemory["CPU and Memory Values"]
+    DiskInfo --> DiskValues["Disk Values or Zeroes"]
+    CpuMemory --> Metrics["System Metrics"]
     DiskValues --> Metrics
+    Collector -->|"timestamp sample"| Metrics
     Metrics --> Caller

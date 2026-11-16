@@ -1,128 +1,134 @@
 # Utils Latch
 
-Utils Latch is a small, in-process synchronization utility supplied by the `openframe_agent_lib` crate from the OpenFrame OSS Library. It provides a cloneable, one-way shared boolean: one holder sets the latch and every `Latch` or read-only `LatchView` sharing that state can subsequently observe it.
+Utils Latch is a small, in-memory synchronization primitive used by the Rust OpenFrame client. It provides a one-way, shared boolean signal: one task sets the signal and any holder of the latch or a read-only view can subsequently observe that it has been set. The state starts as `false` and the module deliberately exposes no reset operation.
 
-The implementation is defined in the OpenFrame OSS Library's [`latch.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/utils/latch.rs) and is incorporated at runtime by this repository through the pinned `openframe_agent_lib` dependency. It has no network, filesystem, service, or configuration dependency.
+The implementation is supplied by the `openframe_agent_lib` Cargo artifact from [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/utils/latch.rs). OpenFrame OSS Tenant consumes that library as part of the endpoint client runtime.
 
 ## Purpose and Scope
 
-Use Utils Latch to publish a monotonic local signal between concurrently running portions of the OpenFrame client process. The state begins as `false`, can be changed to `true`, and cannot be cleared through this module's public API.
+Use Utils Latch to communicate a permanent state transition within a running process, such as a shutdown, restart, or completion condition. It is intentionally narrower than a lock or notification primitive:
 
-This is deliberately narrower than a general synchronization primitive:
+- **Shared:** cloning either handle retains access to the same underlying state.
+- **One-way:** `set` changes the state from unset to set; no public API clears it.
+- **Non-blocking:** callers poll the state with `is_set`; there is no waiting or wake-up mechanism.
+- **Process-local:** state lives only in memory and is lost when the client exits.
+- **Thread-safe:** the underlying boolean is atomic and all reads and writes use sequentially consistent ordering.
 
-- It shares state within one process only; it is not persistent and cannot coordinate separate processes or hosts.
-- It supports observation and setting, not waiting or notification. A consumer must decide whether and how to poll.
-- It does not expose compare-and-set, reset, counters, or payload storage.
-- `set()` is idempotent: repeated calls retain the `true` state.
+It is not appropriate when consumers must wait efficiently for an event, when transitions need to be counted, or when a value must be carried with the signal.
 
 ## Architecture
 
-The module consists of two lightweight wrapper types over the same reference-counted atomic boolean.
+The module owns one `Arc<AtomicBool>`. A `Latch` is the mutable-capability handle, while `LatchView` is an observation-only handle. Both clone the same `Arc`, so each observes the same atomic flag.
 
 ```mermaid
 flowchart LR
-    Writer["Writer task"] -->|"set()"| Latch["Latch"]
+    Producer["Owner that can signal"] -->|"calls set()"| Latch["Latch"]
     Latch -->|"Arc clone"| AtomicState["Shared AtomicBool"]
-    Latch -->|"view()"| ReadOnlyView["LatchView"]
-    ReadOnlyView -->|"Arc clone"| AtomicState
-    ReaderOne["Reader task"] -->|"is_set()"| Latch
-    ReaderTwo["Reader task"] -->|"is_set()"| ReadOnlyView
-    Latch -->|"load()"| AtomicState
-    ReadOnlyView -->|"load()"| AtomicState
+    Latch -->|"calls view()"| View["LatchView"]
+    View -->|"Arc clone"| AtomicState
+    ConsumerA["Latch holder"] -->|"calls is_set()"| Latch
+    ConsumerB["Read-only consumer"] -->|"calls is_set()"| View
+    Latch -->|"stores true"| AtomicState
+    AtomicState -->|"loads current state"| Latch
+    AtomicState -->|"loads current state"| View
 ```
 
-### Components
+### Types and Operations
 
-| Component | Responsibility |
-|---|---|
-| `Latch` | Owns an `Arc<AtomicBool>`, implements `Clone` and `Default`, and provides mutation, inspection, and read-only view creation. |
-| `Latch::set` | Stores `true` in the shared atomic value. |
-| `Latch::is_set` | Loads and returns the current shared boolean value. |
-| `Latch::view` | Creates a `LatchView` by cloning the same `Arc`; it does not snapshot the current value. |
-| `LatchView` | Read-only handle over the same atomic state. It implements `Clone` and exposes only inspection. |
-| `LatchView::is_set` | Loads and returns the current shared boolean value. |
+| Component | Responsibility | State-changing capability |
+|---|---|---|
+| `Latch` | Owns a shared reference to the atomic flag and can create observation views. It derives `Clone` and `Default`. | Can call `set`. |
+| `Latch::set` | Stores `true` with `Ordering::SeqCst`. Repeating the call is harmless because the stored value remains `true`. | Yes. |
+| `Latch::is_set` | Loads the current flag with `Ordering::SeqCst`. | No. |
+| `Latch::view` | Returns a `LatchView` over a cloned shared reference to the same flag. | No. |
+| `LatchView` | Read-only wrapper around the shared flag. It derives `Clone`. | No. |
+| `LatchView::is_set` | Loads the current flag with `Ordering::SeqCst`. | No. |
+
+`Default` constructs a new latch around a default `AtomicBool`, whose initial value is `false`. The API makes the direction of authority explicit: components that only need to observe the condition should receive `LatchView`, not `Latch`.
 
 ## State Model
 
-`Latch::default()` initializes the wrapped `AtomicBool` using its default value, `false`. The only state transition made available by this module is `false` to `true`.
+Utils Latch has two observable states. The public interface permits only the forward transition.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Unset
-    Unset: false
-    Set: true
+    Unset: AtomicBool is false
+    Set: AtomicBool is true
     Unset --> Set: set()
     Set --> Set: set()
 ```
 
-Neither `Latch` nor `LatchView` can transition the value back to `false`. To represent a new cycle, construct a new `Latch` rather than attempting to reuse a set instance.
+There is no transition from `Set` to `Unset`. A caller that needs reusable cycles must create a new latch or use a different coordination primitive.
 
 ## Interaction Flow
 
-A common integration pattern is to retain the writable `Latch` with the component that decides the condition has occurred, then distribute `LatchView` instances to observers. Because a view shares the atomic allocation rather than copying a boolean, reads after `set()` observe the live shared state.
+A typical flow creates a latch, distributes a read-only view to background work, and later sets the latch from the owning control path. Polling consumers choose their own cadence and termination behavior.
 
 ```mermaid
 sequenceDiagram
-    participant Coordinator
-    participant Latch
-    participant Observer
-    Coordinator->>Latch: view()
-    Latch-->>Coordinator: LatchView
-    Observer->>Latch: is_set()
-    Latch-->>Observer: false
-    Coordinator->>Latch: set()
-    Observer->>Latch: is_set()
-    Latch-->>Observer: true
+    participant Owner as Latch owner
+    participant Latch as Latch
+    participant Worker as Background worker
+    Owner->>Latch: view()
+    Latch-->>Owner: LatchView
+    Owner->>Worker: provide LatchView
+    Worker->>Worker: view.is_set()
+    Owner->>Latch: set()
+    Latch->>Latch: store true with SeqCst
+    Worker->>Worker: view.is_set()
+    Worker->>Worker: stop or change behavior
 ```
 
-The observed order in the diagram is a usage pattern, not a blocking protocol. The observer may read before or after the writer runs; if it must react promptly, the caller needs an external scheduling or notification mechanism.
+The setter and readers do not communicate through a channel, callback, or condition variable. They communicate solely through the atomic value. Consequently, a reader may continue work until its next poll; setting the latch does not interrupt a task automatically.
 
-## Concurrency Semantics
+## Memory-Ordering Contract
 
-Every read and write uses `Ordering::SeqCst`:
+Every operation uses `Ordering::SeqCst`:
 
-- `set()` executes a sequentially consistent atomic store of `true`.
-- Both inspection methods execute sequentially consistent atomic loads.
-- Cloned `Latch` values and `LatchView` values all access the same atomic allocation through `Arc`.
+- `set` performs a sequentially consistent atomic store of `true`.
+- Both `is_set` methods perform sequentially consistent atomic loads.
+- All participating threads therefore observe the flag within the strongest ordering model offered by Rust atomics.
 
-This provides the strongest ordering used by Rust atomics for operations in this module. It does **not** make a multi-step workflow atomic. In particular, code that needs to perform an action exactly once cannot safely implement that requirement with an `is_set()` check followed by `set()`, because multiple callers can observe `false` before any writer stores `true`. Such a workflow requires a compare-and-swap-based primitive or separate mutual exclusion.
+This choice favors a simple, conservative cross-thread contract over weaker ordering optimizations. It guarantees atomic flag visibility but does not itself coordinate cancellation, join worker tasks, release external resources, or make unrelated non-atomic data safe to access.
 
-## Public API Contract
+## Usage Guidance
 
-| API | Result | Contract |
-|---|---|---|
-| `Latch::default()` | New `Latch` | Creates an unset, independently allocated latch. |
-| `Latch::clone()` | New `Latch` handle | Shares the original state, rather than copying it. |
-| `Latch::set(&self)` | `()` | Permanently records the set state for all shared handles. |
-| `Latch::is_set(&self)` | `bool` | Returns the atomic's current state. |
-| `Latch::view(&self)` | `LatchView` | Creates a read-only live view of the same state. |
-| `LatchView::clone()` | New `LatchView` handle | Shares the same state with the originating latch and other views. |
-| `LatchView::is_set(&self)` | `bool` | Returns the atomic's current state without exposing mutation. |
+### Recommended ownership pattern
 
-## Dependency and System Placement
+1. Create a `Latch` in the component that owns the lifecycle transition.
+2. Call `view` and pass the resulting `LatchView` to consumers that must only observe the condition.
+3. Have consumers check `is_set` at safe polling boundaries.
+4. Call `set` once the condition becomes permanent.
+5. Let consumers perform their own shutdown or completion work after observing the signal.
 
-Utils Latch belongs to the `utils` area of the Rust OpenFrame client library. At the repository level, OpenFrame OSS Tenant consumes the OpenFrame OSS Library at version `7.0.11`; the relevant Cargo artifact is `openframe_agent_lib` at version `v0.0.5`.
+This separation minimizes the number of components allowed to trigger the transition.
 
-```mermaid
-flowchart TD
-    Tenant["OpenFrame OSS Tenant"] -->|"consumes"| Library["OpenFrame OSS Library"]
-    Library -->|"provides"| AgentLibrary["openframe_agent_lib"]
-    AgentLibrary -->|"contains"| UtilsLatch["Utils Latch"]
-    UtilsLatch -->|"shared signal"| ClientTasks["OpenFrame client tasks"]
+### Example
+
+```rust
+let stop_latch = Latch::default();
+let worker_view = stop_latch.view();
+
+if !worker_view.is_set() {
+    // Perform one unit of work, then check again at the next safe boundary.
+}
+
+stop_latch.set();
+assert!(stop_latch.is_set());
+assert!(worker_view.is_set());
 ```
 
-The available organization-wide code graph reports no recorded consumers of `Latch` or `LatchView` at the indexed revision. The module should therefore be treated as a reusable utility whose current callers may be introduced alongside future client coordination work, rather than as an active cross-service interface.
+The example shows the intended one-way behavior: after `set`, both the owner and the previously-created view report the signal as set.
 
-## Maintenance Guidance
+## Constraints and Maintenance Notes
 
-- Preserve the shared `Arc<AtomicBool>` ownership model. Changing clones to copy a boolean would break propagation between holders.
-- Preserve the one-way contract unless a reset operation is explicitly designed and reviewed. Adding reset changes lifecycle assumptions and can introduce races for existing observers.
-- Keep `LatchView` mutation-free to retain capability separation between the component that owns the signal and components that only observe it.
-- If changing atomic ordering, document the required happens-before relationship and validate all concurrent call sites. The present implementation explicitly uses sequential consistency.
-- Add direct tests for default state, state visibility across cloned latches, view visibility after setting, and repeated `set()` calls when modifying the module.
+- Do not treat Utils Latch as a timeout, retry, lock, semaphore, or task join mechanism.
+- Do not expect setting a latch to wake blocked I/O or sleeping tasks; combine it with an appropriate cancellation or notification mechanism when prompt wake-up is required.
+- A `LatchView` cannot set or reset state by design. Preserve that capability boundary when evolving call sites.
+- Clones share state; they do not create independent flags.
+- The module includes a separate test module, `latch_tests.rs`, selected through the Rust `cfg(test)` configuration.
 
-## Source and Ownership
+## Relationship to the Client Runtime
 
-- Source module: [`clients/openframe-client/src/utils/latch.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/utils/latch.rs)
-- Owning library: OpenFrame OSS Library
-- Runtime consumer in this repository: the OpenFrame client dependency path
+Within the OpenFrame client codebase, Utils Latch is a low-level utility beneath higher-level runtime concerns such as command listeners, tool lifecycle management, update coordination, and service execution. It contains no networking, persistence, client configuration, platform behavior, or domain-specific policy. Its sole responsibility is safely publishing an in-process, irreversible boolean condition between cloned handles.

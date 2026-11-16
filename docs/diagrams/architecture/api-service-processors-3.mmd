@@ -1,7 +1,0 @@
-flowchart TD
-    Startup["Spring application startup"] --> Check{"Custom processor bean present?"}
-    Check -->|"No"| Default["Register conditional default processor"]
-    Check -->|"Yes"| Custom["Use custom processor"]
-    Default --> Callback["Receive lifecycle callback"]
-    Custom --> Callback
-    Callback --> Outcome["Observe or extend completed action"]

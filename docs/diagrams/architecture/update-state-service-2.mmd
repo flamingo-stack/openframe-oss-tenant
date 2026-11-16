@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Caller requests checkpoint"] --> Exists{"State file exists?"}
+    Exists -->|"no"| Missing["Return missing state"]
+    Exists -->|"yes"| Read["Read file bytes"]
+    Read --> Parse{"JSON parses?"}
+    Parse -->|"yes"| Parsed["Return parsed update state"]
+    Parse -->|"no"| Quarantine["Move corrupt file aside when possible"]
+    Quarantine --> Corrupt["Return corrupt file classification"]
+    Save["Caller saves update state"] --> Serialize["Serialize pretty JSON"]
+    Serialize --> Atomic["Write, flush, and atomically replace file"]
+    Clear["Caller clears state"] --> Remove{"State file exists?"}
+    Remove -->|"yes"| Delete["Remove file"]
+    Remove -->|"no"| Noop["Finish without changes"]

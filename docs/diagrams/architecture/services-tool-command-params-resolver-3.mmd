@@ -1,9 +1,0 @@
-sequenceDiagram
-    participant Caller as Tool workflow
-    participant Resolver as Command params resolver
-    participant Directory as Directory manager
-    Caller->>Resolver: process(tool agent ID, command arguments)
-    Resolver->>Resolver: replace standard placeholders
-    Resolver->>Directory: get asset path(tool agent ID, asset name, executable)
-    Directory-->>Resolver: platform adjusted asset path
-    Resolver-->>Caller: resolved command arguments

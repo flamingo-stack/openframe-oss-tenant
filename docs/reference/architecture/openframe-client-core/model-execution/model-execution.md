@@ -1,225 +1,161 @@
 # Model Execution
 
-Model Execution defines the Rust wire models that describe remote command and script work received by the OpenFrame client agent. It belongs to the `openframe_client` Cargo artifact supplied by OpenFrame OSS Library version `v0.0.5`, which this repository runs as part of its client deployment. The module is deliberately declarative: it parses execution payloads, normalizes them into executable requests, and serializes execution acknowledgements and results. Process creation, operating-system-specific execution, message subscription, and result transport are performed by neighboring agent components.
+Model Execution is the OpenFrame Client agent's execution-message contract. It defines how command, ad hoc script, bootstrap, software, and scheduled-script work is represented after the agent receives it, and how completed work is reported. The contract is implemented by the Rust client code supplied by the `openframe_agent_lib` dependency from [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/execution.rs).
 
-The implementation is in the OpenFrame OSS Library: [execution.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/execution.rs).
+This module intentionally contains data types and conversion rules rather than process-launching logic. It is the boundary between NATS-delivered JSON and the execution service that invokes an operating-system-specific executor.
 
 ## Responsibilities
 
-- Deserialize commands, one-off scripts, routed scripts, and scheduled script batches.
-- Represent shell selection, requested privilege, command arguments, time limits, and environment variables.
-- Convert every message variant into one or more normalized `ExecutionRequest` values.
-- Preserve execution, machine, script, and schedule identifiers needed to correlate server-side dispatch with agent-side outcomes.
-- Declare routing metadata, including message kind, result kind, durability, and privilege policy.
-- Serialize the result and acknowledgement payloads returned through the agent messaging path.
+Model Execution provides the following guarantees:
 
-It does **not** execute code, validate whether a device may run a payload, redact secret environment variable values, or publish messages. Those responsibilities remain with the agent execution, listener, logging, and messaging services.
+- **Typed inbound payloads.** Command, script, and scheduled-script payloads deserialize from camel-case JSON into typed Rust structures.
+- **Normalized execution requests.** Each message becomes one or more `ExecutionRequest` values with code, shell, arguments, environment variables, privilege, timeout, and correlation identifiers.
+- **Route-specific identity and policy.** The `ExecutionMessage` trait names the message kind, identifies whether a scheduled request is durable, and permits route-specific privilege behavior.
+- **Correlated outcomes.** `RmmResult` retains the execution, machine, script, and schedule identifiers needed to associate a device result with server-side execution history.
+- **Delivery acknowledgement selection.** `requires stream ack` identifies subjects that must be published through JetStream acknowledgement rather than a fire-and-forget publish.
 
-## Architecture and System Position
+## System Position
+
+The OpenFrame Client application subscribes to execution subjects through generic execution listeners. After a payload is parsed through the Model Execution contract, the execution service runs each normalized request and the result path publishes a serialized outcome. The tenant's Java client service consumes acknowledgements and result messages; downstream stream handlers update command or script execution history.
 
 ```mermaid
 flowchart LR
-    ControlPlane["OpenFrame control plane"] -->|"execution message"| Broker["NATS messaging"]
-    Broker -->|"payload"| Listener["Execution listener"]
-    Listener -->|"deserialize"| Model["Model Execution"]
-    Model -->|"ExecutionRequest values"| Service["Execution service"]
-    Service -->|"platform execution"| Executor["Unix or Windows executor"]
-    Executor -->|"outcome"| Result["RmmResult"]
-    Result -->|"publish"| Broker
-    Model -->|"ExecutionAck"| Broker
+    ControlPlane["OpenFrame control plane"] -->|"execution message"| Nats["NATS and JetStream"]
+    Nats --> Listener["Execution listener"]
+    Listener --> Model["Model Execution"]
+    Model --> Service["Execution service"]
+    Service --> Executor["Unix or Windows executor"]
+    Executor --> Result["RMM result"]
+    Result --> Outbox["Durable result outbox"]
+    Outbox -->|"result or acknowledgement"| Nats
+    Nats --> ClientCore["Client service result listeners"]
+    ClientCore --> Stream["Stream execution handlers"]
 ```
 
-The surrounding OpenFrame client agent consumes model values as follows:
+The Rust agent originates in OpenFrame OSS Library, while this repository assembles the services and infrastructure that receive the results. The tenant configuration identifies NATS as a datasource for the client-facing services, and execution results ultimately drive command and script history processing.
 
-| Boundary | Model Execution contribution | Consuming concern |
-|---|---|---|
-| Inbound dispatch | `ExecutionMessage::from_payload` identifies and decodes the JSON body for a message kind. | The execution listener receives and routes messaging traffic. |
-| Normalization | `to_requests` turns one message into a list of `ExecutionRequest` values. | The execution service coordinates execution and tracks running scripts. |
-| Operating-system launch | Each request supplies shell, privilege, arguments, timeout, environment values, and correlation IDs. | Platform executors invoke the appropriate local interpreter or command mechanism. |
-| Completion reporting | `RmmResult` supplies output, timing, exit state, and optional error and script metadata. | The result store and outbox publish durable outcomes. |
-| Delivery confirmation | `ExecutionAck` identifies accepted work. | Stream-aware transport can distinguish acknowledgement messages from ordinary publications. |
+## Message Model
 
-## Core Types
+### Execution Message Trait
 
-### Script Description
+`ExecutionMessage` is the common interface used by the generic listener. Every implementation supplies a message kind and implements three operations:
 
-`ScriptSpec` is the reusable executable definition embedded in a one-off `ScriptMessage` and each `ScriptScheduleExecutionItem`. Its deserialized camel-case fields are:
+1. Parse a UTF-8 JSON payload.
+2. Return the common execution identifier.
+3. Convert the message into one or more `ExecutionRequest` values.
 
-| Field | Purpose | Default when omitted |
-|---|---|---|
-| `code` | Script source text to execute. | Required |
-| `shell` | Interpreter or command shell. | Required |
-| `privilegeLevel` | Requested `User` or `Admin` execution level. | `Admin` during request conversion |
-| `args` | Ordered command arguments. | Empty list during request conversion |
-| `timeoutSeconds` | Maximum runtime in seconds. | 900 seconds during request conversion |
-| `envVars` | Environment variables as `ScriptEnvVar` records. | Empty list during request conversion |
+The trait also exposes optional schedule correlation, a result-kind override, a durable-delivery indicator, and a privilege-policy constant. This keeps listener and execution code generic while allowing message variants to define their own wire routing.
 
-`ScriptEnvVar` contains `name`, `value`, and a `secret` flag. Conversion formats each item as `name=value` for `ExecutionRequest.env_vars`. The flag is metadata on the inbound model; this source file does not implement masking or encryption. Callers and logging paths must therefore avoid exposing values that are marked secret.
-
-`ScriptShell` accepts uppercase wire names and maps them to the process parameter shown below:
-
-| Wire name | `as_param()` value |
-|---|---|
-| `POWERSHELL` | `powershell` |
-| `CMD` | `cmd` |
-| `BASH` | `bash` |
-| `PYTHON` | `python` |
-| `NUSHELL` | `nushell` |
-| `SHELL` | `sh` |
-
-### Inbound Message Families
-
-```mermaid
-classDiagram
-    class ExecutionMessage {
-        <<trait>>
-        KIND
-        RESULT_KIND
-        DURABLE
-        PRIVILEGE_POLICY
-        from_payload()
-        execution_id()
-        to_requests()
-        schedule_id()
-    }
-    class CommandMessage {
-        execution_id
-        code
-        shell
-        privilege_level
-        timeout
-    }
-    class ScriptMessage {
-        execution_id
-        machine_id
-        schedule_id
-        script_id
-        spec
-    }
-    class ScriptScheduleExecutionMessage {
-        execution_id
-        schedule_id
-        machine_id
-        initiated_by
-        scripts
-    }
-    class RoutedScriptMessage {
-        message
-        route marker
-    }
-    class ScriptSpec {
-        code
-        shell
-        privilege_level
-        args
-        timeout_seconds
-        env_vars
-    }
-    class ScriptScheduleExecutionItem {
-        script_id
-        spec
-    }
-    ExecutionMessage <|.. CommandMessage
-    ExecutionMessage <|.. ScriptMessage
-    ExecutionMessage <|.. ScriptScheduleExecutionMessage
-    ExecutionMessage <|.. RoutedScriptMessage
-    ScriptMessage *-- ScriptSpec
-    ScriptScheduleExecutionMessage *-- ScriptScheduleExecutionItem
-    ScriptScheduleExecutionItem *-- ScriptSpec
-    RoutedScriptMessage *-- ScriptMessage
-```
-
-`ExecutionMessage` is the common contract for all inbound work. Every implementation supplies a `KIND`, parser, stable execution identifier, and one or more requests. The optional trait members communicate additional delivery semantics:
-
-- `RESULT_KIND` defaults to `KIND` and identifies the outbound result category.
-- `DURABLE` defaults to `false`; scheduled script messages set it to `true`.
-- `PRIVILEGE_POLICY` defaults to `AsRequested`.
-- `schedule_id()` defaults to absent and is implemented for script and scheduled-script messages.
-
-| Message | Kind | Requests produced | Special behavior |
+| Message variant | Message kind | Requests produced | Special behavior |
 |---|---|---:|---|
-| `CommandMessage` | `command-execution` | One | Has command-specific `timeout`, whose JSON default is 900 seconds. No arguments, environment variables, script ID, or schedule ID are supplied. |
-| `ScriptMessage` | `script-execution` | One | Flattens a `ScriptSpec` alongside execution, machine, script, and optional schedule identity. |
-| `ScriptScheduleExecutionMessage` | `script-schedule-execution` | One per item in `scripts` | Uses `script-execution` as `RESULT_KIND` and marks the message durable. Each generated request uses the batch execution ID and batch schedule ID. |
-| Bootstrap routed script | `script-bootstrap-execution` | One | A typed route wrapping `ScriptMessage`. |
-| Software routed script | `software-execution` | One | Declares `InteractiveElevated` as its route-level privilege policy. |
+| `CommandMessage` | `command-execution` | One | Contains inline code and no script or schedule identifier. |
+| `ScriptMessage` | `script-execution` | One | Carries an optional script identifier and schedule identifier. |
+| Bootstrap script route | `script-bootstrap-execution` | One | Uses the standard script payload shape under a different route. |
+| Software script route | `software-execution` | One | Declares interactive elevated privilege policy. |
+| `ScriptScheduleExecutionMessage` | `script-schedule-execution` | One per embedded script | Is durable and reports under the script execution result kind. |
 
-`RoutedScriptMessage` uses a phantom route marker rather than adding route fields to the JSON document. `BootstrapRoute` and `SoftwareRoute` consequently share the exact `ScriptMessage` payload shape while retaining distinct type-level message kinds and policies.
+`RoutedScriptMessage` is a generic wrapper around `ScriptMessage`. It uses a zero-sized route marker to reuse the script schema while changing the NATS kind and, where needed, policy. Bootstrap and software execution therefore share fields and conversion logic with ordinary scripts instead of duplicating JSON models.
 
-## Request Conversion
+### Script Specification
 
-`ExecutionRequest` is the execution-ready internal representation. It borrows code, IDs, and arguments from the parsed message while owning the formatted environment-variable list.
+`ScriptSpec` is flattened into script messages and scheduled-script items. It contains:
+
+| Field | Meaning | Default when omitted |
+|---|---|---|
+| Code | Script source passed to the operating-system executor. | Required. |
+| Shell | Interpreter selector. | Required. |
+| Privilege level | Requested user or administrator context. | Administrator. |
+| Arguments | Ordered interpreter or script arguments. | Empty list. |
+| Timeout seconds | Per-request execution limit. | 900 seconds. |
+| Environment variables | Name and value pairs injected for the process. | Empty list. |
+
+Supported shells are PowerShell, Command Prompt, Bash, Python, Nushell, and the generic shell. `ScriptShell::as param` maps the serialized shell enum to the interpreter argument expected by the executor: PowerShell becomes `powershell`, Command Prompt becomes `cmd`, Bash becomes `bash`, generic shell becomes `sh`, Python becomes `python`, and Nushell becomes `nushell`.
+
+An environment variable also carries a `secret` marker. Model Execution preserves that marker when deserializing the payload, but request construction produces the executor input as `name=value` strings. Callers must therefore ensure that surrounding logging and transport paths do not expose secret values.
+
+### Request Conversion
 
 ```mermaid
 flowchart TD
-    Payload["Inbound JSON payload"] --> Parse["ExecutionMessage parser"]
+    Payload["Incoming JSON payload"] --> Parse["Deserialize execution message"]
     Parse --> Variant{"Message variant?"}
-    Variant -->|"Command"| CommandRequest["One request with command timeout"]
-    Variant -->|"Script or routed script"| ScriptRequest["One request from ScriptSpec"]
-    Variant -->|"Scheduled scripts"| BatchRequest["One request for each schedule item"]
-    CommandRequest --> Execute["Execution service"]
-    ScriptRequest --> Execute
-    BatchRequest --> Execute
-    Execute --> Outcome["RmmResult"]
+    Variant -->|"Command"| CommandRequest["Create one command request"]
+    Variant -->|"Script or routed script"| ScriptRequest["Create one script request"]
+    Variant -->|"Scheduled script"| Items["Iterate scheduled script items"]
+    Items --> ManyRequests["Create one request per script"]
+    CommandRequest --> Normalized["Normalized execution request"]
+    ScriptRequest --> Normalized
+    ManyRequests --> Normalized
+    Normalized --> Execute["Execution service"]
 ```
 
-The conversion rules are intentionally consistent across script paths:
+`ScriptSpec::to request` applies defaults and preserves correlation:
 
-1. The request keeps the enclosing `execution_id`.
-2. `ScriptSpec` provides code and shell.
-3. An omitted script privilege becomes `Admin`; an explicit value remains `User` or `Admin`.
-4. Missing arguments and environment variables become empty collections.
-5. An omitted script timeout becomes 900 seconds.
-6. Script and schedule IDs are included when available, allowing downstream outcome correlation.
+- It uses the parent execution identifier for every generated request.
+- It retains the script identifier and optional schedule identifier when available.
+- It converts each environment variable to an executor-compatible string.
+- It applies the default timeout if one is absent.
+- It initially assigns the default privilege policy, while the receiving route declares whether it should be interpreted as requested or interactively elevated.
 
-`PrivilegePolicy` is separate from requested `PrivilegeLevel`. `PrivilegeLevel` tells the executor whether the request asks for a user or administrator context. `PrivilegePolicy` describes route-level handling: `AsRequested` is the default, while `InteractiveElevated` is declared for the software route. Consumers that apply execution policy should read the associated `ExecutionMessage` policy rather than inferring it from JSON fields.
+A scheduled message contains a shared execution identifier and a list of script items. Each item has its own script identifier and specification; this prevents a multi-script schedule from losing per-script correlation even though it is dispatched as one schedule execution.
 
-## Result and Acknowledgement Flow
+## Privilege and Platform Execution
+
+`PrivilegeLevel` represents the requested execution context: user or administrator. `PrivilegePolicy` expresses how a route treats that request:
+
+- **As requested** is the default behavior.
+- **Interactive elevated** is declared by the software route, allowing its execution path to request elevation in an interactive user context.
+
+The execution service resolves the final privilege and invokes the correct platform executor. On Unix, the executor resolves the target run-as context, writes normalized code to a temporary script file, applies arguments and environment variables, configures process execution, and enforces the timeout. On Windows, it accepts PowerShell and Command Prompt, prepares a temporary script file, then runs normally or through the logged-on user's interactive session according to the resolved privilege.
+
+If the process cannot start, the execution service treats exit code `85` as an execution-start error and places the executor diagnostic into the optional result error field. Unsupported host platforms return the same exit code with an explicit unsupported-platform error. A zero timeout is normalized to 900 seconds by the execution service before execution begins.
+
+## Result and Acknowledgement Contracts
+
+`RmmResult` is the agent-to-platform result envelope. It reports standard output, standard error, exit code, elapsed milliseconds, timeout status, and an optional error. Script and schedule identifiers are omitted from JSON when absent; this lets the same result structure represent command and script work.
+
+`ExecutionAck` reports that a machine has acknowledged an execution. It includes the execution identifier, machine identifier, optional schedule identifier, and the collection of script identifiers involved. Its kind is `execution.acknowledge`.
 
 ```mermaid
 sequenceDiagram
     participant Server as "Control plane"
-    participant Broker as "NATS"
-    participant Listener as "Execution listener"
-    participant Service as "Execution service"
-    participant Host as "Local executor"
-    Server->>Broker: Publish execution payload
-    Broker->>Listener: Deliver payload
-    Listener->>Service: Parsed execution request or requests
-    Service->>Host: Invoke selected shell
-    Host-->>Service: Output, exit code, duration, timeout state
-    Service-->>Broker: Publish RmmResult
-    Listener-->>Broker: Publish ExecutionAck when applicable
-    Broker-->>Server: Deliver result and acknowledgement
+    participant Broker as "NATS or JetStream"
+    participant Agent as "OpenFrame Client"
+    participant Store as "Result store"
+    participant History as "Execution history"
+    Server->>Broker: Dispatch execution payload
+    Broker->>Agent: Deliver route message
+    Agent->>Broker: Publish execution acknowledgement
+    Agent->>Agent: Execute normalized request
+    Agent->>Store: Persist result for delivery
+    Store->>Broker: Publish result
+    Broker->>History: Deliver command or script result
+    History->>History: Correlate and update status
 ```
 
-`RmmResult` serializes these outcome fields: execution and machine IDs, standard output, standard error, integer exit code, execution duration in milliseconds, and a timeout flag. `error`, `script_id`, and `schedule_id` are omitted from the serialized payload when unavailable. Unlike the camel-case input structs and acknowledgement, this type does not declare a rename policy in this file; its serialized field names therefore follow Rust's default field naming.
+The result outbox persists outbound result payloads before delivery when the local result store is available. Its run manager wakes periodically or when notified, rejects entries that exceed the publisher payload limit, and removes an entry only after a successful publish. It selects JetStream publish acknowledgement for execution acknowledgements, delivery results, and package-update status subjects. Other subjects use normal publish semantics. This separation supports retries without treating every result channel as a stream-acknowledged channel.
 
-`ExecutionAck` uses camel-case serialization and contains the execution ID, machine ID, optional schedule ID, and the set of script IDs accepted by the agent. `EXECUTION_ACK_KIND` is `execution.acknowledge`.
+On the platform side, the client service's acknowledgement listener consumes `machine.*.execution.acknowledge` from the `EXECUTION_ACKNOWLEDGE` stream. Script results are consumed from `machine.*.script-execution.result`. Stream processing then correlates script history using the machine identifier, execution identifier, and script identifier. The script identifier is essential for scheduled runs because multiple scripts can share the same execution identifier and machine.
 
-The `requires_stream_ack` helper returns `true` when a subject ends with any of the following message kinds:
+## Execution Outcome Processing
 
-- `execution.acknowledge`
-- the delivery-result kind defined by the sibling delivery model
-- the package-update-status kind defined by the sibling package-update-status model
+The downstream stream handlers use fields originating in `RmmResult` to update execution rows:
 
-The suffix comparison permits these kinds to be used beneath a subject prefix while retaining the same acknowledgement decision.
+- The command handler correlates a row by machine identifier and execution identifier.
+- The script handler correlates a row by machine identifier, execution identifier, and script identifier.
+- Both handlers classify the outcome using exit code, timeout state, error, and agent failure reason.
+- Terminal rows are protected from duplicate or late results that would overwrite an already final state.
+- Standard output and standard error are bounded before persistence, and each truncation is recorded.
+- A completed scheduled script can trigger schedule aggregation; scheduled device-online dispatches can be marked processed after the result is applied.
 
-## Wire-Contract Considerations
+## Maintenance Notes
 
-- Input structs use serde field mapping. Most execution messages use camel-case JSON; `ScriptShell` and `PrivilegeLevel` use uppercase enum names.
-- `ScriptMessage` and schedule items flatten `ScriptSpec`, so specification properties appear at the same JSON level as the message-specific properties rather than in a nested `spec` object.
-- A scheduled payload accepts an omitted `scripts` field as an empty list. It consequently converts to no execution requests rather than failing solely because the collection is absent.
-- The `machine_id` and `initiated_by` fields are carried by models where present, but request conversion only places execution, script, and schedule correlation identifiers on `ExecutionRequest`.
-- All parsing uses `serde_json` and returns an `anyhow::Result`; malformed payloads fail parsing before any local execution request is produced.
+When extending Model Execution, preserve the following compatibility boundaries:
 
-## Maintenance Guidance
+1. **Keep wire names stable.** Payload fields use camel case and shell values use uppercase deserialization. Changing either breaks messages already emitted by the control plane.
+2. **Preserve correlation fields.** Any new execution form must keep enough identifiers for result listeners to locate the appropriate command or script history row.
+3. **Declare delivery semantics explicitly.** Set message kind, result kind, durability, and acknowledgement behavior deliberately rather than inheriting them by accident.
+4. **Review privilege behavior with the platform executors.** A new privilege level or policy requires compatible handling on both Unix and Windows.
+5. **Bound and protect output.** Execution output may be large or sensitive. Continue using the durable outbox and downstream truncation path rather than bypassing result handling.
 
-When evolving this module:
-
-1. Treat message kinds and serde names as interoperability contracts with the server and the client listener.
-2. Preserve the distinction between execution ID, script ID, and schedule ID. Scheduled work can generate multiple requests under one execution ID.
-3. Update all `ExecutionMessage` metadata when adding a new route, particularly `KIND`, result kind, durability, and privilege policy.
-4. Keep timeout behavior explicit. The default is 900 seconds both for `CommandMessage` deserialization and omitted script timeout conversion.
-5. Review the execution service, operating-system executors, and outbound result handling together with model changes, because this module only defines the data boundary.
-6. Consider secret environment-variable handling across the complete pipeline. The model preserves secret values in request strings and cannot itself prevent later output or logs from disclosing them.
+The authoritative implementation is [execution.rs in OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/execution.rs).

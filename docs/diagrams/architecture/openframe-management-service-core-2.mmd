@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Management Service Starts"] --> Keys["Initialize Agent Log Key and Registration Secret"]
+    Start --> Streams["Save Required NATS Streams"]
+    Start --> Agents["Load Integrated Tool Agent Configurations"]
+    Agents --> ClientConfig["Load Client Configuration"]
+    ClientConfig --> ClientVersion["Process Configured Client Version"]
+    ClientVersion --> Flags["Apply Client Feature Flags"]
+    Streams --> RemoveOld["Remove Obsolete NATS Streams"]

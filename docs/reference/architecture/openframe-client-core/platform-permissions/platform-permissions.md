@@ -1,154 +1,193 @@
 # Platform Permissions
 
-Platform Permissions is the host-operating-system permission boundary used by the OpenFrame Client agent. It is implemented in the `openframe_agent_lib` Cargo dependency, supplied by OpenFrame OSS Library version `0.0.5` and executed by this repository's client runtime. The module provides two distinct concerns:
+Platform Permissions is the client agent boundary for local filesystem modes, privilege checks, elevation prompts, and command execution. The code is provided by the `openframe_agent_lib` dependency from OpenFrame OSS Library and is run by the OpenFrame client packaged through this repository. The authoritative source is [permissions.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/permissions.rs).
 
-- A small `Permissions` value type that reads, applies, and verifies filesystem modes.
-- `PermissionUtils`, which detects administrative privilege, assesses operation capabilities, requests elevation where supported, and runs commands while reporting their output.
-
-The implementation is platform-aware: Unix targets use numeric mode bits and effective user identifiers, while Windows uses the read-only attribute for the available filesystem check. It is a local-machine utility; it does not call OpenFrame services or persist authorization decisions.
-
-**Source:** [permissions.rs in OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/permissions.rs)
-
-## Responsibilities and Boundaries
-
-The module centralizes permission-related behavior so installation, service control, logging, update, and tool-management paths can use a consistent platform abstraction.
-
-| Area | Responsibility | Important boundary |
-|---|---|---|
-| Filesystem modes | Construct expected file or directory modes, read a path's mode, set a mode, and compare the actual mode with the requested mode. | POSIX modes are applied and compared only on Unix. Windows does not emulate ownership or ACL semantics. |
-| Privilege status | Determine whether the process is already privileged. | Unix checks effective UID zero. Windows delegates to `is_elevated`. |
-| Elevation request | Invoke the platform's prompt mechanism when elevation is needed. | A successful prompt sets an in-process flag; it does not replace or relaunch the current process as an elevated process. |
-| Capability checks | Report whether a process may manage services, write protected locations, or read and write system logs. | Capabilities are computed locally and are not a policy or access-control system. |
-| Command execution | Run commands and translate process failures into typed errors. | Arguments are supplied by callers. The utility does not validate commands, escape arguments, or constrain an allowlist. |
+It is an operating-system utility, not a tenant authorization layer. It does not authenticate users, decide whether a remote operation is allowed, manage access-control lists, or change file ownership. Consumers choose the operation and use this module to test or establish the local conditions it needs.
 
 ## Architecture
 
-`Permissions` models desired filesystem state. `PermissionUtils` owns process-level administrative and capability decisions. Both expose `PermissionError` for operations that return recoverable errors, while `require_admin` deliberately terminates the process when the agent cannot continue without elevated rights.
+```mermaid
+flowchart LR
+    Client[Client]
+    Operations[Operations]
+    Permissions[Permissions]
+    Unix[Unix]
+    Windows[Windows]
+    Resources[Resources]
+
+    Client --> Operations
+    Operations --> Permissions
+    Permissions -->|Unix| Unix
+    Permissions -->|Windows| Windows
+    Unix --> Resources
+    Windows --> Resources
+```
+
+The client application and its installation, directory, service, update, diagnostic, and logging work are expected consumers. Platform Permissions contains the platform-specific mechanics; callers retain responsibility for target selection, retry policy, user messaging, and error handling.
+
+## Core API
+
+### Permission Values
+
+`Permissions` contains a public numeric `mode` field. On Unix, this is the lower nine POSIX permission bits.
+
+| API | Result | Intent |
+|---|---:|---|
+| `Permissions::directory()` | `0755` | Standard directory mode |
+| `Permissions::file()` | `0644` | Standard file mode |
+| `Permissions::from_path(path)` | Existing or approximated mode | Inspect a target |
+| `Permissions::apply(path)` | Success or `PermissionError` | Apply the requested mode |
+| `Permissions::verify(path)` | Boolean or `PermissionError` | Test the requested mode |
+
+Although the source comments describe the standard modes with `root:admin`, this module changes only mode bits. It does not alter owner or group.
+
+### Error Model
+
+`PermissionError` makes filesystem and process failures recoverable:
+
+- `Io` wraps metadata, permission, and process-launch errors.
+- `InvalidMode` and `InvalidPath` support validation-oriented callers, though this file does not construct them.
+- `AdminCheckFailed` signals unsupported privilege handling.
+- `ElevationRequired` signals a platform without an elevation implementation.
+- `CommandFailed` records the process exit code, or `-1` when no exit code is available.
+
+### Capability Model
+
+`Capability` represents local requirements checked by `PermissionUtils::has_capability`.
+
+| Capability | Evaluation |
+|---|---|
+| `ManageServices` | Requires administrator or root status |
+| `WriteSystemDirectories` | Requires administrator or root status |
+| `ReadSystemLogs` | Uses platform-specific log-read checks |
+| `WriteSystemLogs` | Requires administrator or root status |
+
+`warn_missing_capabilities()` tests every capability and logs a warning for each unavailable one. This is a preflight diagnostic, not a complete operating-system authorization policy.
+
+## Filesystem Flow
 
 ```mermaid
 flowchart TD
-    Caller["Client platform or service workflow"] --> PermissionValue["Permissions value"]
-    Caller --> Utility["PermissionUtils"]
-    PermissionValue --> Filesystem["Host filesystem"]
-    Utility --> AdminCheck["Administrative privilege check"]
-    Utility --> CapabilityCheck["Capability assessment"]
-    Utility --> Elevation["Platform elevation prompt"]
-    Utility --> CommandRunner["Operating system command runner"]
-    AdminCheck --> UnixIdentity["Unix effective user identifier"]
-    AdminCheck --> WindowsElevation["Windows elevation check"]
-    CapabilityCheck --> LogAccess["System log access check"]
-    Elevation --> WindowsUac["Windows UAC shell execution"]
-    Elevation --> MacPrompt["macOS AppleScript prompt"]
-    Elevation --> LinuxPrompt["Linux pkexec then sudo"]
-    CommandRunner --> HostProcess["Child process"]
+    Task[Task]
+    Build[BuildPermissions]
+    Apply[Apply]
+    Check{Unix}
+    Posix[SetPosixMode]
+    Approximate[UseReadonlyState]
+    Verify[Verify]
+    Result[Result]
+
+    Task --> Build
+    Build --> Apply
+    Apply --> Check
+    Check -->|yes| Posix
+    Check -->|no| Approximate
+    Posix --> Verify
+    Approximate --> Verify
+    Verify --> Result
 ```
 
-## Filesystem Permission Model
+### Unix Behavior
 
-`Permissions` contains one public field, `mode`, represented as a numeric Unix permission mask.
+On Unix, `apply` converts the stored mode into `std::fs::Permissions` and invokes `set_permissions`. `verify` compares `actual_mode & 0777` with the requested mode exactly. `from_path` returns the target mode masked with `0777`.
 
-| Constructor or operation | Behavior |
-|---|---|
-| `Permissions::directory()` | Returns mode `0755`, the module's standard directory mode. |
-| `Permissions::file()` | Returns mode `0644`, the module's standard file mode. |
-| `Permissions::from_path(path)` | Reads metadata. Unix targets retain only the low `0777` permission bits. Windows maps read-only to `0444` and otherwise returns `0644`. |
-| `apply(path)` | Unix constructs permissions from `mode` and updates the path. On non-Unix targets, a requested owner-write bit causes an existing read-only file to be made writable where supported. |
-| `verify(path)` | Unix compares the path's low `0777` bits for exact equality with `mode`. Windows considers a writable request satisfied when the target is not read-only. |
+Special bits such as set-user-ID, set-group-ID, and sticky are excluded from both inspection and verification. No path creation, recursive traversal, ownership change, or ACL update occurs.
 
-The comments describe the standard modes as `root:admin`, but this implementation only changes mode bits. It does not call ownership-changing APIs, so ownership and group assignment remain the caller or installer responsibility.
+### Windows and Other Non-Unix Behavior
 
-### Filesystem Data Flow
+Windows cannot receive numeric POSIX modes through this implementation. If the requested mode includes owner-write permission and the target exists, `apply` clears its read-only attribute. Otherwise it performs no change. `verify` considers a writable request valid when the target is not read-only; a request that does not require write access succeeds after metadata can be read.
 
-```mermaid
-flowchart LR
-    Request["Caller selects file or directory mode"] --> Profile["Permissions profile"]
-    Profile --> Apply["Apply requested mode"]
-    Apply --> Metadata["Filesystem metadata"]
-    Metadata --> Verify["Verify effective permission state"]
-    Verify --> Match{"Expected mode satisfied?"}
-    Match -->|"Yes"| Success["Continue workflow"]
-    Match -->|"No"| ErrorResult["Return permission error or false"]
-```
+`from_path` reports `0444` for read-only Windows paths and `0644` otherwise. On non-Unix targets other than Windows, it returns `0644`, `apply` succeeds without a numeric mode change, and `verify` succeeds after metadata lookup. These are deliberate approximations and must not be interpreted as Windows ACL enforcement.
 
-On Unix, missing paths and permission-denied metadata operations become `PermissionError::Io`. Invalid mode and invalid path error variants exist in the public error type, but the provided implementation does not construct them directly.
+## Privilege Checks
 
-## Administrative Privilege and Capabilities
+`PermissionUtils::is_admin()` first evaluates the process-local `ADMIN_PRIVILEGES_GRANTED` atomic flag. If the flag is not set, Unix checks whether the effective user ID is zero and Windows invokes `is_elevated::is_elevated()`. Unsupported platforms return false.
 
-`is_admin()` first observes the process-wide `ADMIN_PRIVILEGES_GRANTED` atomic flag. When the flag is unset, it evaluates platform state:
+`require_admin()` is the hard command-line guard. When the process is not considered elevated, it writes an instruction to standard error and exits with status `1`. Code needing recoverable control flow should use the result-returning APIs instead.
 
-- **Unix:** returns true only when the effective UID is zero.
-- **Windows:** uses the `is_elevated` crate.
-- **Other targets:** returns false.
+The `ReadSystemLogs` capability is distinct from the administrator-only capabilities:
 
-The available `Capability` variants deliberately map to concrete host requirements:
+- Unix root always passes.
+- macOS accepts membership of the configured administrator group ID `80`.
+- Linux inspects `/var/log` metadata for world readability, owner readability for the effective user, or group readability for a current group.
+- Windows requires the Event Log directory to exist and the process to be elevated.
 
-| Capability | Condition |
-|---|---|
-| `ManageServices` | Administrative privilege is required. |
-| `WriteSystemDirectories` | Administrative privilege is required. |
-| `WriteSystemLogs` | Administrative privilege is required. |
-| `ReadSystemLogs` | Root succeeds on Unix. macOS accepts membership in group ID `80`; Linux inspects access to `/var/log`; Windows requires the event-log path and administrative privilege. |
-
-`warn_missing_capabilities()` checks all four capabilities and emits a warning for each unavailable capability. This is diagnostic only: it does not grant access or stop a workflow. `require_admin()` is the hard-stop counterpart: it writes a message to standard error and exits with status `1` if `is_admin()` is false.
+The Unix group helper begins with capacity for sixteen groups. This is relevant if the client must recognize membership in unusually large group sets.
 
 ## Elevation and Command Interaction
-
-`ensure_admin()` returns immediately when the administrative flag is set or the process is already privileged. Otherwise, it requests elevation using the native mechanism and records a successful request in the atomic flag:
 
 ```mermaid
 sequenceDiagram
     participant Caller
-    participant Utility as PermissionUtils
-    participant Platform as Host platform
-    Caller->>Utility: ensure_admin()
-    Utility->>Utility: Check flag and current privilege
-    alt Already privileged
-        Utility-->>Caller: Ok
-    else Privilege absent
-        Utility->>Platform: Request elevation
-        alt Prompt succeeds
-            Platform-->>Utility: Success
-            Utility->>Utility: Set session flag
-            Utility-->>Caller: Ok
-        else Prompt fails or is cancelled
-            Platform-->>Utility: Failure status
-            Utility-->>Caller: PermissionError
-        end
+    participant Utility
+    participant Platform
+    participant Command
+    Caller->>Utility: run_as_admin
+    Utility->>Utility: check flag and admin state
+    alt elevated
+        Utility->>Command: run_command
+        Command-->>Utility: exit status
+    else prompt needed
+        Utility->>Platform: ensure_admin
+        Platform-->>Utility: prompt outcome
+        Utility->>Utility: set granted flag
+        Utility->>Command: run_command
+        Command-->>Utility: exit status
     end
+    Utility-->>Caller: success or error
 ```
 
-The mechanisms are Windows `ShellExecuteW` with the `runas` verb, macOS `osascript` with administrator privileges, and Linux `pkexec` followed by a `sudo` fallback. Unsupported platforms return `ElevationRequired`.
+`ensure_admin()` uses a platform-specific proof command to request elevation:
 
-A successful prompt is treated as a session-level grant by this module. Maintainers should not assume it changes the current process token or effective UID. In particular, `run_as_admin()` calls `ensure_admin()` and then invokes `run_command()` from the current process. Any caller that needs an actually elevated child process must validate the resulting operating-system behavior and not rely solely on the atomic flag.
+| Platform | Elevation attempt |
+|---|---|
+| Windows | ShellExecute starts `cmd.exe` using the UAC `runas` verb |
+| macOS | `osascript` runs a shell command with administrator privileges and a prompt |
+| Linux | `pkexec` is tried before a `sudo` fallback |
+| Other platforms | Returns `ElevationRequired` |
 
-`run_command(command, args)` captures a child process's output, logs standard output at info level and standard error at error level, and returns `CommandFailed` with the exit status when the command fails. Startup failure becomes `PermissionError::Io`.
+`run_as_admin(command, args)` runs directly if the atomic flag is set or `is_admin()` succeeds. Otherwise it calls `ensure_admin()` and then calls `run_command`. `run_command` captures standard output and standard error, logs non-empty streams, and returns `CommandFailed` for a nonzero exit status.
 
-## Capability Evaluation Process
+> **Elevation limitation:** a successful prompt runs only a small proof command and sets a process-local flag. It does not elevate the current process and does not wrap the requested command in an elevated launcher. A successful `ensure_admin()` therefore proves the prompt command succeeded, not that the subsequent direct command has inherited administrator or root authority. Operations that need guaranteed elevation must launch the intended command in the operating-system elevated context and verify its real effect.
+
+## Permission Preflight Process
 
 ```mermaid
 flowchart TD
-    Operation["Requested privileged operation"] --> Capability["Select required capability"]
-    Capability --> AdminNeed{"Administrative capability?"}
-    AdminNeed -->|"Yes"| Admin["Evaluate is_admin()"]
-    AdminNeed -->|"No"| ReadLogs["Evaluate system log access"]
-    Admin --> Result{"Available?"}
-    ReadLogs --> Result
-    Result -->|"Yes"| Proceed["Run caller workflow"]
-    Result -->|"No"| Warn["Warn or reject according to caller policy"]
+    Start[MaintenanceTask]
+    Need[DetermineMode]
+    Inspect[InspectTarget]
+    Match{ModeMatches}
+    Capability{CapabilityPresent}
+    Repair[ApplyMode]
+    Confirm[VerifyMode]
+    Error[ReportError]
+    Continue[Continue]
+
+    Start --> Need
+    Need --> Inspect
+    Inspect --> Match
+    Match -->|yes| Continue
+    Match -->|no| Capability
+    Capability -->|yes| Repair
+    Capability -->|no| Error
+    Repair --> Confirm
+    Confirm --> Match
 ```
 
-## Error Handling and Operational Guidance
+The module does not join these individual calls automatically. A consumer should determine the expected mode, inspect the target, check the required capability, apply a repair only when authorized, and verify the final state before relying on it.
 
-`PermissionError` distinguishes I/O failures, unsupported or failed elevation, an administrative-check failure, invalid-mode and invalid-path values, and nonzero command exits. Callers that use `apply`, `from_path`, command execution, or elevation should propagate or explicitly report the returned error. `verify` returns `Ok(false)` for a mismatch rather than treating the mismatch itself as an I/O failure.
+## Security and Operational Considerations
 
-When changing this module:
+1. Treat `Permissions` as a mode abstraction rather than an installer, recursive repair tool, or ACL manager.
+2. Verify after `apply` whenever a task requires a particular final mode.
+3. Re-check the authorization of the actual privileged action; the elevation flag is not a security boundary.
+4. Do not pass secrets through `run_command`: the implementation logs non-empty standard output and standard error.
+5. Use `require_admin` only at an intentional process boundary because it terminates the process.
+6. Preserve the distinct Unix and Windows semantics when changing behavior. A successful Windows operation does not establish an equivalent POSIX mode or ACL.
 
-1. Preserve the distinction between checking existing privilege and requesting elevation.
-2. Keep Unix mode operations behind their target guards; do not imply POSIX mode or ownership enforcement on Windows.
-3. Treat the session flag as optimization and workflow state, not proof that an operating-system security context changed.
-4. Add capability variants only with a platform-specific implementation and clear failure behavior for unsupported targets.
-5. Avoid passing untrusted command names or arguments to `run_command` or `run_as_admin`; execution authority belongs to the invoking workflow.
+## Maintenance Scope
 
-## System Role
+Changes can affect agent installation, directory repair, service control, system-log collection, binary updates, and cleanup. Review changes for missing paths, declined prompts, already-elevated processes, unsupported platforms, exact Unix-mode comparisons, Windows read-only handling, and command-output logging.
 
-Platform Permissions supports the OpenFrame Client's host-side lifecycle rather than the tenant's server authorization model. Its consumers can use it before writing protected files, interacting with services, accessing system logs, or performing commands that require elevated rights. The module therefore provides the local prerequisite checks and diagnostics that higher-level installation, service, update, and monitoring components need, while leaving their business decisions and remote authorization outside this boundary.
+Platform Permissions is implemented in the OpenFrame OSS Library, not directly in this repository. Update and review the linked library source first, then consume the appropriate dependency version in this tenant repository.

@@ -1,7 +1,0 @@
-flowchart TD
-    Results["Doctor report results"] --> Pending["Collect remediation markers"]
-    Pending --> Unique["Deduplicate remediation types"]
-    Unique --> Install["Run WebView2 installer"]
-    Install --> Outcome{"Installer outcome"}
-    Outcome -->|"Succeeded"| Healed["Record healed outcome"]
-    Outcome -->|"Failed"| Failed["Record failure details"]

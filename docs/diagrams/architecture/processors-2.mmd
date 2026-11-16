@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Caller as "API workflow"
+    participant Contract as "Processor contract"
+    participant Default as "Conditional default processor"
+    participant Logger as "Application logger"
+
+    Caller->>Contract: Complete lifecycle operation
+    Contract->>Default: Invoke matching post-process callback
+    Default->>Logger: Write debug context
+    Logger-->>Default: Accept log event
+    Default-->>Caller: Return

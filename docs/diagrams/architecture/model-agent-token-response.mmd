@@ -1,0 +1,9 @@
+flowchart LR
+    TokenEndpoint["Client OAuth Token Endpoint"] -->|"JSON token response"| AuthClient["AuthClient"]
+    AuthClient -->|"deserializes"| TokenResponse["AgentTokenResponse"]
+    TokenResponse -->|"returned to"| AuthService["AgentAuthService"]
+    AuthService -->|"updates"| ConfigService["Agent Configuration Service"]
+    ConfigService -->|"persists access and refresh tokens"| AgentConfig["Agent Configuration"]
+    AuthService -->|"updates"| SharedToken["Shared Token Service"]
+    SharedToken -->|"encrypts and writes"| SecureStore["shared_token.enc"]
+    TokenResponse -->|"lifetime metadata"| RefreshManager["Token Refresh Run Manager"]

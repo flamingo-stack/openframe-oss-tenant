@@ -1,0 +1,6 @@
+flowchart LR
+    Gateway["Gateway request handling"] --> NettyServer["Netty reactive server"]
+    Gateway --> HttpClient["Gateway HTTP client"]
+    Gateway --> WsClient["Reactor Netty WebSocket client"]
+    HttpClient --> UpstreamHttp["HTTP upstream"]
+    WsClient --> UpstreamWs["WebSocket upstream"]

@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Created
+    Created --> Updated
+    Updated --> Transitioned
+    Transitioned --> Resolved: Teardown transition
+    Resolved --> Archived: Teardown transition

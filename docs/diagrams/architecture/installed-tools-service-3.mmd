@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Tool installation or update request"] --> Prepare["Resolve assets and command parameters"]
+    Prepare --> Reserve["Record tool as Installing"]
+    Reserve --> Apply["Download, install, or update assets"]
+    Apply --> Outcome{"Operation successful?"}
+    Outcome -->|"yes"| Complete["Set record state to Installed"]
+    Outcome -->|"no"| Recover["Caller performs failure handling"]
+    Complete --> Runtime["Runtime services use stored tool metadata"]
+    Runtime --> Remove["Uninstall service removes record"]

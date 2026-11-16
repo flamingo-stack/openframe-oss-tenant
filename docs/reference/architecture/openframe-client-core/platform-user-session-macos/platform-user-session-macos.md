@@ -1,147 +1,168 @@
 # Platform User Session Macos
 
-Platform User Session Macos is the macOS-specific user-session bridge used by the OpenFrame client agent. It lets a privileged, machine-level agent determine whether an ordinary user owns the active console session, verify that the graphical desktop is usable, avoid duplicate launches, and start a tool in that user's session.
+Platform User Session Macos is the macOS-specific user-session boundary for the OpenFrame client agent. It identifies the person currently controlling the physical console, determines whether that person's graphical desktop is ready, detects an existing process, and starts a program inside that user's session. This is necessary when the agent runs with service-level privileges but an integrated graphical application must run in the logged-in user's Aqua session.
 
-The implementation is supplied by the OpenFrame OSS Library through the `openframe_agent_lib` Cargo dependency. This tenant repository assembles and runs that client behavior; the implementation source is maintained in the [macOS user-session source file](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/user_session/macos.rs).
+The implementation is supplied by the OpenFrame OSS Library's `openframe_agent_lib` Cargo artifact and is run by this repository's OpenFrame client. The authoritative implementation is [macos.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/user_session/macos.rs).
 
-## Scope and responsibilities
+## Scope and Responsibilities
 
-The module provides five operational capabilities:
+The module is deliberately small and platform-specific. It does not authenticate users, manage the client service, install tools, or maintain session state. Instead, it provides the primitives needed by higher-level tool and application lifecycle code:
 
-| Capability | Responsibility | Result |
-|---|---|---|
-| Console-user discovery | Reads the owner of `/dev/console` and resolves the account UID. | A console-user value containing the username and UID, or no user. |
-| Login-window protection | Rejects an empty name, `root`, and names beginning with an underscore. | Prevents a launch into the login window or Setup Assistant system account. |
-| GUI readiness check | Looks for both Dock and Finder for the target UID. | Confirms that the normal macOS desktop components are running. |
-| Duplicate detection | Searches process command lines for the supplied executable path. | Indicates whether a matching process is already running. |
-| User-context launch | Starts an application under the discovered user identity. | A child process handle, or a contextual error. |
+- Resolve the interactive console account from the owner of `/dev/console`.
+- Reject login-window and Setup Assistant owners rather than treating them as real users.
+- Resolve the account's numeric UID for macOS session targeting.
+- Verify basic GUI readiness by requiring both Dock and Finder for that UID.
+- Determine whether a process matching an executable path is already running.
+- Launch an executable as the console user, with dedicated handling for application bundles.
+- Prefer `launchctl asuser` and use `sudo -u` only if that primary launch mechanism fails.
 
-The module does not authenticate users, create macOS accounts, manage service lifecycle, or decide when tools should run. Those responsibilities remain with the client orchestration and tool-run-management layers.
+## Position in the Client Architecture
 
-## Placement in the client architecture
-
-The OpenFrame client is a machine agent that may run with elevated privileges while some integrated tools must run within the active desktop user's context. Platform User Session Macos is the OS adapter that crosses that boundary only after identifying a valid console user.
-
-```mermaid
-flowchart TD
-    Agent["OpenFrame client agent"] --> ToolManager["Tool run manager"]
-    ToolManager --> SessionModule["Platform User Session Macos"]
-    SessionModule --> Console["macOS console ownership"]
-    SessionModule --> Desktop["Dock and Finder processes"]
-    SessionModule --> ProcessTable["macOS process table"]
-    SessionModule --> Launchctl["launchctl asuser"]
-    SessionModule --> Sudo["sudo user fallback"]
-    Launchctl --> UserApp["User session application"]
-    Sudo --> UserApp
-```
-
-The module is part of the OpenFrame client core supplied by OpenFrame OSS Library version `7.0.11` for Maven components and by `openframe_agent_lib` version `v0.0.5` for the Rust agent library. In this repository, the OpenFrame Client service is one of the deployed tenant services; its service image is published as `ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-client`.
-
-## Core model
-
-### Console user
-
-The console-user model carries two fields:
-
-- **Username**: The account returned as the `/dev/console` owner.
-- **UID**: The numeric user identifier resolved by invoking `id` for that username.
-
-The discovery operation returns no value when a system rather than a regular user owns the console, when either system command fails, or when the UID cannot be parsed. This makes the absence of a usable interactive session an expected condition rather than a launch target.
-
-### Valid interactive user criteria
-
-A console owner is considered a login user only when all of the following are true:
-
-1. The username is nonempty.
-2. The username is not `root`.
-3. The username does not begin with an underscore.
-
-The last two exclusions account for the macOS login window and Setup Assistant behavior described by the implementation. A service must therefore defer GUI-tool startup rather than substituting a system identity.
-
-## Dependency and interaction model
+The OpenFrame client service can run independently of a user's desktop session. Platform User Session Macos bridges that service context to the active GUI context when an installed tool must be launched for the logged-in user.
 
 ```mermaid
 flowchart LR
-    Discovery["Console-user discovery"] --> Stat["stat reads console owner"]
-    Discovery --> Identity["id resolves numeric UID"]
-    Readiness["GUI readiness check"] --> PgrepDesktop["pgrep finds Dock and Finder"]
-    Liveness["Process liveness check"] --> PgrepPath["pgrep matches executable path"]
-    Launch["User-context launch"] --> Exists["Executable path check"]
-    Launch --> Preferred["launchctl asuser"]
-    Preferred --> Bundle["open application bundle"]
-    Preferred --> Direct["Direct executable launch"]
-    Preferred --> Fallback["sudo user fallback"]
+    ClientService["OpenFrame Client Service"] --> ToolLifecycle["Tool Lifecycle Logic"]
+    ToolLifecycle --> SessionModule["Platform User Session Macos"]
+    SessionModule --> ConsoleDevice["macOS Console Device"]
+    SessionModule --> ProcessTools["macOS Process Utilities"]
+    SessionModule --> LaunchControl["launchctl asuser"]
+    SessionModule --> SudoFallback["sudo User Fallback"]
+    LaunchControl --> UserDesktop["Active User Desktop Session"]
+    SudoFallback --> UserDesktop
+    UserDesktop --> GuiTool["GUI Application or Executable"]
 ```
 
-All operating-system commands are invoked locally. The module neither sends data to an OpenFrame service nor persists state. It emits informational logs for discovered users, existing processes, and successful child-process creation, and warning logs when no regular user is available or the preferred launch mechanism fails.
+The module is part of the `platform.user_session.macos` implementation in the OpenFrame OSS Library. Its only direct operating-system dependencies are standard macOS utilities:
 
-## Launch behavior
+| Dependency | Role | How it is used |
+|---|---|---|
+| `/dev/console` | Identifies the active console owner | Its owner is read with `stat -f %Su /dev/console`. |
+| `stat` | Reads the console owner name | Supplies the candidate account name. |
+| `id` | Resolves a UID | Converts the accepted account name to the numeric UID used by `launchctl`. |
+| `pgrep` | Checks process presence | Tests Dock and Finder readiness and searches for an executable-path match. |
+| `launchctl` | Preferred session launcher | Runs a command within the selected user's context. |
+| `open` | Application-bundle launcher | Opens an application bundle without foreground activation. |
+| `sudo` | Fallback launcher | Runs a non-bundle executable as the username when `launchctl` fails. |
 
-The user-context launch operation accepts an executable path, an argument list, and an already discovered console user. Its behavior is ordered as follows:
+## Core Components
 
-1. Verify that the executable path exists. A missing path fails immediately.
-2. Attempt a launch through `launchctl asuser` using the console user's UID.
-3. If the executable resides beneath a directory whose name ends in `.app`, invoke macOS `open` through `launchctl`.
-4. For an application bundle, use the non-activating option so a daemon-initiated launch does not steal foreground focus. Forward provided arguments after the `open` argument separator.
-5. For a non-bundle executable, invoke the executable directly through `launchctl` with its arguments.
-6. If the preferred launch fails, log the failure and retry through `sudo` under the console username.
-7. Return the spawned child process handle from the successful mechanism or return the failure from the fallback.
+### Console User
 
-The bundle path is discovered by walking upward from the executable path until an ancestor ending in `.app` is found. This supports tools whose actual executable is nested inside an application bundle while preserving a direct-executable path for other tool types.
+`ConsoleUser` is the data boundary between discovery and launching. It holds:
 
-## User-session launch flow
+| Field | Meaning |
+|---|---|
+| `username` | The accepted owner name of `/dev/console`. |
+| `uid` | The numeric UID resolved for that username. |
+
+Keeping both representations prevents repeated account lookups: the UID is used for `launchctl asuser`, while the username is used by the fallback `sudo -u` command.
+
+### Console User Discovery
+
+`get_console_user` reads the owner of `/dev/console` with `stat`, then validates it before looking up the UID with `id -u`.
+
+An account is accepted only when it is non-empty, not `root`, and does not begin with an underscore. This filtering matters because macOS can report `root` while the login window owns the console and can report an underscore-prefixed system account during Setup Assistant. In either situation, the module logs a warning and returns no user instead of launching software into a non-interactive or system-owned context.
+
+`session_user` follows the same console-based model. Its input session identifier is intentionally ignored because the implementation treats the current console owner as authoritative on a Mac with one GUI session.
 
 ```mermaid
 flowchart TD
-    Begin["Tool requires graphical user context"] --> FindUser["Discover console user"]
-    FindUser --> ValidUser{"Regular user found?"}
-    ValidUser -->|"No"| Defer["Defer user-session launch"]
-    ValidUser -->|"Yes"| Ready["Check Dock and Finder"]
-    Ready --> DesktopReady{"GUI session ready?"}
-    DesktopReady -->|"No"| Wait["Wait for usable desktop"]
-    DesktopReady -->|"Yes"| Running["Check matching executable"]
-    Running --> AlreadyRunning{"Process already running?"}
-    AlreadyRunning -->|"Yes"| Reuse["Avoid duplicate launch"]
-    AlreadyRunning -->|"No"| Exists["Verify executable exists"]
-    Exists --> Present{"Executable exists?"}
-    Present -->|"No"| Failure["Return launch error"]
-    Present -->|"Yes"| Preferred["Try launchctl asuser"]
-    Preferred --> PreferredOk{"Launch succeeded?"}
-    PreferredOk -->|"Yes"| Started["Return child process"]
-    PreferredOk -->|"No"| Fallback["Try sudo as user"]
-    Fallback --> Started
+    Start["Discover Console User"] --> ReadOwner["Run stat for console owner"]
+    ReadOwner --> OwnerFound{"Owner available?"}
+    OwnerFound -->|"no"| NoUser["Return no console user"]
+    OwnerFound -->|"yes"| ValidateUser{"Regular login user?"}
+    ValidateUser -->|"no"| Warn["Log warning and return no user"]
+    ValidateUser -->|"yes"| ResolveUid["Run id to resolve UID"]
+    ResolveUid --> UidFound{"UID parsed?"}
+    UidFound -->|"no"| NoUser
+    UidFound -->|"yes"| ConsoleUser["Return ConsoleUser"]
 ```
 
-GUI readiness and process liveness are separate checks. Readiness requires both Dock and Finder under the target UID, whereas liveness searches for the requested executable path. Callers can use readiness to avoid launching before login initialization completes and liveness to prevent a second instance immediately before invoking the launcher.
+### GUI Session Readiness
 
-## Operational considerations
+`is_gui_session_ready` provides a lightweight readiness gate. It runs `pgrep -u <uid> -x` for both `Dock` and `Finder`, returning `true` only when both process checks succeed. Failure to execute a check is treated as `false`.
 
-### Execution context
+This does not prove that every macOS user-interface facility is ready. It is a conservative signal that the principal desktop shell processes exist for the selected UID, suitable for avoiding a launch during the login transition.
 
-This module is designed for an agent that can invoke `stat`, `id`, `pgrep`, `launchctl`, and, when needed, `sudo`. The fallback requires that the runtime environment permits switching to the discovered username. A failed fallback is surfaced to the caller with context identifying that user.
+### Existing-Process Detection
 
-### Focus and launch coalescing
+`is_process_running` asynchronously invokes `pgrep -f` with the supplied executable path. A successful process search is reported as running, and matching PIDs are logged. If `pgrep` cannot start, the function returns `false`.
 
-Application bundles are opened with a non-activating request. The launch path intentionally does not force a new application instance: callers are expected to perform the liveness check near launch time, while a normal macOS open request can coalesce with an instance that is still starting.
+The operation is a detection primitive, not a locking mechanism. Callers that require single-instance behavior need to re-check close to launch or use their own coordination. The module's application-bundle launch path deliberately relies on a plain `open` invocation, which can coalesce with an instance that is already starting.
 
-### Failure interpretation
+### User-Context Launching
 
-| Condition | Module behavior | Caller implication |
+`launch_as_user` first verifies that the requested executable path exists. It then attempts the preferred `launchctl` path and logs the failure before falling back to `sudo -u`.
+
+For a path located inside an application bundle, the module walks the path's ancestors and selects the first name ending in `.app`. It then runs the equivalent of `launchctl asuser <uid> open -g -a <bundle>`, appending `--args` and caller-provided arguments when needed. The `-g` option prevents the service-triggered launch from taking focus. The module intentionally omits `open -n`, allowing ordinary macOS application-opening behavior to reuse or coalesce with an in-progress instance.
+
+For an executable that is not inside an application bundle, it invokes `launchctl asuser <uid> <executable>` followed by the caller's arguments. If either launchctl strategy cannot be spawned, the fallback invokes `sudo -u <username> <executable>` with the same arguments.
+
+```mermaid
+flowchart TD
+    Request["Launch Request"] --> Exists{"Executable exists?"}
+    Exists -->|"no"| Missing["Return executable not found error"]
+    Exists -->|"yes"| Bundle{"Path is inside an app bundle?"}
+    Bundle -->|"yes"| OpenBundle["Launch with launchctl and open"]
+    Bundle -->|"no"| LaunchBinary["Launch executable with launchctl"]
+    OpenBundle --> LaunchctlResult{"Launchctl spawned?"}
+    LaunchBinary --> LaunchctlResult
+    LaunchctlResult -->|"yes"| Started["Return child process"]
+    LaunchctlResult -->|"no"| Fallback["Launch with sudo as username"]
+    Fallback --> FallbackResult{"Fallback spawned?"}
+    FallbackResult -->|"yes"| Started
+    FallbackResult -->|"no"| LaunchError["Return contextual launch error"]
+```
+
+## End-to-End Interaction
+
+A caller coordinating a GUI tool uses the primitives in sequence: discover the user, wait for a viable desktop session, avoid an unnecessary duplicate launch, then start the tool in the user context.
+
+```mermaid
+sequenceDiagram
+    participant Caller as Tool Lifecycle Caller
+    participant Session as Platform User Session Macos
+    participant Macos as macOS Utilities
+    participant Desktop as User Desktop Session
+    Caller->>Session: get_console_user()
+    Session->>Macos: stat console owner
+    Session->>Macos: id username UID
+    Macos-->>Session: ConsoleUser
+    Caller->>Session: is_gui_session_ready(uid)
+    Session->>Macos: pgrep Dock and Finder
+    Macos-->>Session: readiness result
+    Caller->>Session: is_process_running(executable path)
+    Session->>Macos: pgrep executable path
+    Macos-->>Session: running result
+    Caller->>Session: launch_as_user(executable arguments user)
+    Session->>Macos: launchctl asuser
+    Macos->>Desktop: launch application or executable
+    Desktop-->>Session: child process created
+    Session-->>Caller: launch result
+```
+
+## Operational Outcomes and Failure Handling
+
+| Condition | Behavior | Operational implication |
 |---|---|---|
-| Login window or Setup Assistant owns the console | Returns no console user and records a warning. | Do not start a user-facing tool. Retry when a regular session appears. |
-| Dock or Finder is absent | GUI readiness is false. | Treat the desktop as not ready; defer launch. |
-| Executable does not exist | Returns an error before attempting either launch mechanism. | Validate tool installation and path construction. |
-| Preferred launcher fails | Logs a warning and tries the user-switch fallback. | A successful fallback remains a valid launch. |
-| Process query fails | Reports not running. | The caller may continue with its normal launch safeguards. |
+| No logged-in regular user | Returns `None` from console discovery and logs a warning for a rejected owner. | The caller should defer GUI work rather than launch as `root` or a setup account. |
+| UID lookup fails or is not numeric | Returns `None`. | The module cannot target a user session safely. |
+| Dock or Finder is absent | GUI readiness is `false`. | The caller should retry according to its own lifecycle policy. |
+| Executable path does not exist | `launch_as_user` returns an error before attempting a launcher. | The caller must resolve installation or path issues. |
+| `launchctl` setup or spawn fails | Logs a warning and tries `sudo -u`. | The fallback can preserve launch capability but is not equivalent to the primary session launcher. |
+| `sudo` setup or spawn fails | Returns an error annotated with the username. | The caller receives failure context for logging and recovery. |
+| Process lookup command fails | Reports no running process. | Callers should not interpret this as strong evidence that no instance exists. |
 
-## Maintenance guidance
+## Security and Maintenance Considerations
 
-- Keep console-user validation conservative. Launching as `root` or an underscore-prefixed system account would violate the module's interactive-session contract.
-- Preserve the distinction between an application bundle and a plain executable. Bundles require macOS `open` semantics; direct binaries are launched directly.
-- Do not treat a successful spawn as proof that the graphical application is fully ready. The returned child handle represents the launcher process, and application startup remains asynchronous.
-- When changing command invocation, retain captured standard output and standard error for launch commands so failures remain diagnosable by the calling agent's logging.
-- Test changes on a real macOS host across the login window, a newly logged-in desktop, an already-running application, a bundled application, and a non-bundle executable.
+- Treat `ConsoleUser` as an operating-system-derived identity. The module uses the console owner rather than caller-provided user input to select the target account.
+- Preserve the regular-user filter when changing discovery logic. Launching as `root` or an underscore-prefixed system account would violate the module's GUI-session contract.
+- Keep the initial executable existence check before process creation. It produces an immediate, explicit error instead of relying on launcher-specific failure behavior.
+- Preserve argument forwarding exactly in both launch paths. Application bundles receive arguments only after `--args`; direct executables and the fallback receive the argument list directly.
+- Do not treat `is_gui_session_ready` or `is_process_running` as synchronization guarantees. They are best-effort observations of mutable operating-system state.
+- Test changes on macOS at the login window, during Setup Assistant where applicable, after a normal desktop login, and with both application-bundle and ordinary executable paths.
 
-## Relationship to the wider system
+## Relationship to the Wider Platform
 
-Platform User Session Macos is a narrow platform implementation beneath the OpenFrame client agent. It enables the higher-level tool lifecycle to place GUI applications in the human user's desktop session without coupling that lifecycle to macOS command details. Other client subsystems continue to handle tool installation, process lifecycle decisions, configuration, and remote command delivery; this module supplies only the local session discovery, readiness signals, liveness lookup, and user-context spawn primitive needed by those flows.
+Platform User Session Macos is a leaf platform adapter within the OpenFrame client library. Higher-level client functionality determines which integrated tool should run and when; this adapter only establishes whether an interactive macOS user context exists and how to start a selected local program in that context. The surrounding client and service lifecycle documentation should be consulted for tool installation, update orchestration, and process ownership policies.

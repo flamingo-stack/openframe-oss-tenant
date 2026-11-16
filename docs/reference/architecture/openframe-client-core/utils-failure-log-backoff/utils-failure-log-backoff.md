@@ -1,145 +1,184 @@
 # Utils Failure Log Backoff
 
-Utils Failure Log Backoff is a small, in-memory Rust utility used by the OpenFrame Client agent to keep persistent failures visible without allowing a high-frequency retry loop to flood logs. It deliberately controls **logging only**: callers retain ownership of retry timing, failure handling, and recovery behavior.
+Utils Failure Log Backoff is a small, in-memory Rust utility used by the OpenFrame client agent to reduce repeated failure messages while preserving the caller's retry behavior. It logs the first five failures in a consecutive streak, then permits one failure log every two minutes. Once the same streak has lasted an hour, it permits one log per hour. A successful attempt resets the streak and lets the caller report recovery immediately.
 
-The implementation is supplied by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library. Its source is available in the [OpenFrame OSS Library source file](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/utils/failure_log_backoff.rs).
+The implementation is supplied by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library. Its source is [failure log backoff.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/utils/failure_log_backoff.rs).
 
-## Purpose and Scope
+## Purpose and Boundaries
 
-A transient operation can fail many times while the client continues retrying. Logging every attempt produces repeated messages, can obscure other diagnostic information, and increases log transport volume. Utils Failure Log Backoff tracks one consecutive failure streak and tells its caller whether the current attempt should be logged.
+Long-running agent tasks can fail repeatedly when an upstream dependency, network path, or local resource remains unavailable. Logging every failed attempt can obscure useful events and increase log volume. Utils Failure Log Backoff separates **observability cadence** from **work cadence**:
 
-Its policy is intentionally simple:
+- It decides whether the caller should emit logs for the next attempt.
+- It records that an attempt failed and whether a failure message was actually emitted.
+- It resets state and reports the completed streak when an attempt succeeds.
+- It does not delay, schedule, retry, emit logs, persist state, or classify errors.
 
-- Log each of the first five consecutive failures.
-- After the fifth failure, permit one failure log at most every two minutes.
-- Once the same streak has lasted for at least one hour, permit one failure log at most every hour.
-- When an attempt succeeds, return a summary of the completed streak and reset immediately.
-
-The state is process-local and is not persisted. A restarted client begins a new streak. The utility has no I/O, network, configuration, or retry scheduling responsibilities.
-
-## Architecture
-
-`FailureLogBackoff` holds the state for a single independently tracked operation. The caller must invoke `should_log` before performing or reporting an attempt, then give the resulting decision to `record_failure` if that attempt fails. On success, the caller invokes `record_success`.
+The caller remains responsible for retry timing, executing the operation, selecting log content, and recording a recovery message from the value returned by `record_success`.
 
 ```mermaid
 flowchart LR
-    Caller["Retrying client operation"] -->|"should log?"| Backoff["FailureLogBackoff"]
-    Backoff -->|"logging decision"| Logger["Caller logging layer"]
-    Caller -->|"failed attempt"| Recorder["record failure"]
-    Logger -->|"logged boolean"| Recorder
-    Recorder -->|"updates streak state"| Backoff
-    Caller -->|"successful attempt"| Success["record success"]
-    Success -->|"returns summary and resets"| Backoff
+    Caller["Agent task or retry loop"] -->|"should_log()"| Backoff["FailureLogBackoff"]
+    Caller -->|"attempt operation"| Operation["External or local operation"]
+    Operation -->|"failure"| Caller
+    Caller -->|"record_failure(logged)"| Backoff
+    Operation -->|"success"| Caller
+    Caller -->|"record_success()"| Backoff
+    Caller -->|"emit selected failure and recovery logs"| LogSink["Configured log sink"]
 ```
 
-### Internal State
+## State Model
 
-| Field | Meaning | Lifecycle |
+`FailureLogBackoff` contains only three pieces of state:
+
+| Field | Meaning | Initial value |
 |---|---|---|
-| `failures` | Number of consecutive failures recorded in the current streak. | Starts at zero, increments in `record_failure`, resets after `record_success`. |
-| `first_failure` | Monotonic timestamp captured for the first failure in the streak. | Set once when the first failure is recorded, then cleared by reset. |
-| `last_logged` | Monotonic timestamp of the most recently emitted failure log. | Updated only when `record_failure(true)` is called, then cleared by reset. |
+| `failures` | Number of consecutive failed attempts in the current streak. | `0` |
+| `first_failure` | Monotonic timestamp established by the first recorded failure. | Absent |
+| `last_logged` | Monotonic timestamp for the latest failure that the caller confirms it logged. | Absent |
 
-The timestamps use Rust `Instant`, so elapsed durations are measured with a monotonic clock rather than wall-clock time. This avoids changing the policy due to normal system clock adjustments.
+`new()` creates this empty state. The `Default` implementation delegates to `new()`, so either construction path produces the same policy state.
 
-## Public API
+The component uses `std::time::Instant`, rather than wall-clock time. Consequently, elapsed-time decisions are monotonic within the process and are not affected by system clock changes. Its state is process-local: restarting the agent starts a new streak.
 
-| API | Responsibility | Result |
-|---|---|---|
-| `FailureLogBackoff::new` | Creates an empty tracker. | A tracker with zero failures and no timestamps. |
-| `FailureLogBackoff::should_log` | Evaluates whether logs for the next attempt should be emitted. | `true` when the caller should log, otherwise `false`. It does not mutate state. |
-| `FailureLogBackoff::record_failure` | Records a failed attempt after the caller decides whether it actually logged it. | The updated consecutive-failure count. A `true` argument updates the last-log timestamp. |
-| `FailureLogBackoff::record_success` | Completes the current failure streak. | `Some((count, duration))` when failures preceded the success, otherwise `None`; state is reset in both cases. |
+## Logging Policy
 
-`Default` is equivalent to `new`, allowing the tracker to be constructed through Rust's standard default mechanism.
+The internal interval policy has three tiers:
 
-## Backoff Policy
-
-The policy evaluates the already-recorded failure count and elapsed duration since the first failure. The caller checks before the next failure is recorded; therefore, the first five failures are eligible for immediate logging.
-
-| Streak condition at decision time | Permitted failure-log cadence |
+| Consecutive failures and elapsed streak time | Failure-log decision |
 |---|---|
-| No recorded failure, no emitted failure log, or fewer than five recorded failures | Every failure |
-| At least five recorded failures and the streak is younger than one hour | At most once every two minutes |
-| At least five recorded failures and the streak is one hour old or older | At most once every hour |
+| Fewer than 5 failures already recorded | Log every failure. |
+| At least 5 failures and the streak is younger than 1 hour | Log at most once every 2 minutes. |
+| At least 5 failures and the streak has lasted at least 1 hour | Log at most once every hour. |
 
-The two-minute and one-hour intervals are fixed implementation constants, not runtime configuration. A log that is suppressed must be recorded with `record_failure(false)`; otherwise the internal `last_logged` timestamp would incorrectly indicate that a message was emitted.
+The decision is intentionally evaluated **before** an operation is attempted. In the normal call order, failures one through five are all eligible for logging: before the fifth attempt, only four failures have been recorded. After that fifth failure is recorded as logged, the two-minute tier applies to subsequent attempts.
+
+```mermaid
+flowchart TD
+    Start["Call should_log before an attempt"] --> Metadata{"Failure timestamps present?"}
+    Metadata -->|"no"| LogNow["Allow log"]
+    Metadata -->|"yes"| Early{"Recorded failures fewer than 5?"}
+    Early -->|"yes"| LogNow
+    Early -->|"no"| Long{"Failing for at least 1 hour?"}
+    Long -->|"no"| Throttled{"At least 2 minutes since last logged failure?"}
+    Long -->|"yes"| Slow{"At least 1 hour since last logged failure?"}
+    Throttled -->|"yes"| LogNow
+    Throttled -->|"no"| Suppress["Suppress this failure log"]
+    Slow -->|"yes"| LogNow
+    Slow -->|"no"| Suppress
+```
+
+If either timestamp is absent, `should_log()` returns `true`. This includes the first attempt and protects observability when failures were recorded with `logged` set to `false`: throttling starts only after a failure is actually logged.
+
+## Component Operations
+
+### `should_log`
+
+`should_log(&self) -> bool` determines whether logs for the imminent attempt should be emitted. It does not mutate state. When the utility is throttling, it compares the elapsed time since `last_logged` with the interval selected from the current failure count and elapsed streak duration.
+
+Call this before running an operation so the caller can avoid constructing or emitting a noisy failure message when logging is suppressed.
+
+### `record_failure`
+
+`record_failure(&mut self, logged: bool) -> u64` updates the failure streak after an unsuccessful attempt:
+
+1. Increments the consecutive failure count.
+2. Captures the first-failure timestamp if this is the first recorded failure.
+3. Captures `last_logged` only when `logged` is `true`.
+4. Returns the current streak length.
+
+The `logged` argument must reflect what happened, rather than merely the preceding `should_log()` decision. For example, if logging was allowed but an outer condition prevented the log from being emitted, pass `false`; the absence of a recorded log keeps future attempts eligible to report the failure.
+
+### `record_success`
+
+`record_success(&mut self) -> Option<(u64, Duration)>` terminates the current failure streak and resets all state to a fresh instance. When a failure had been recorded, it returns the streak count and total elapsed failure duration. When no failure was active, it returns `None`.
+
+The returned tuple supports a recovery log such as a message that identifies how many failures preceded the successful attempt and how long the condition persisted. Recovery reporting is not subject to the failure-log throttle.
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Backoff as FailureLogBackoff
+    participant Target as Operation
+    participant Logs as Log Sink
+    Caller->>Backoff: should_log()
+    Backoff-->>Caller: true or false
+    Caller->>Target: attempt operation
+    alt operation fails
+        Target-->>Caller: error
+        opt logging was allowed and emitted
+            Caller->>Logs: write failure message
+        end
+        Caller->>Backoff: record_failure(logged)
+        Backoff-->>Caller: consecutive failure count
+    else operation succeeds
+        Target-->>Caller: success
+        Caller->>Backoff: record_success()
+        Backoff-->>Caller: prior streak or none
+        opt prior streak exists
+            Caller->>Logs: write recovery message
+        end
+    end
+```
+
+## Caller Integration Pattern
+
+A retry loop should retain one backoff instance for the lifecycle of the operation it monitors. This pseudocode illustrates the required ordering; the retry delay is intentionally owned by the caller.
+
+```rust
+let mut backoff = FailureLogBackoff::new();
+
+loop {
+    let log_failure = backoff.should_log();
+
+    match attempt_operation() {
+        Ok(()) => {
+            if let Some((failures, duration)) = backoff.record_success() {
+                log_recovery(failures, duration);
+            }
+        }
+        Err(error) => {
+            if log_failure {
+                log_failure_message(&error);
+            }
+            let failures = backoff.record_failure(log_failure);
+            schedule_next_attempt(failures);
+        }
+    }
+}
+```
+
+In production code, pass `true` to `record_failure` only after the log call has actually been made. The `schedule_next_attempt` placeholder represents an independent retry policy; Utils Failure Log Backoff must not be treated as a retry backoff mechanism.
 
 ## Failure and Recovery Flow
 
 ```mermaid
 flowchart TD
-    Start["Begin attempt"] --> Check["Call should log"]
-    Check --> Attempt["Run operation"]
-    Attempt --> Outcome{"Attempt succeeded?"}
-    Outcome -->|"No"| Emit{"Logging permitted?"}
-    Emit -->|"Yes"| Write["Emit failure log"]
-    Emit -->|"No"| Skip["Suppress repeated failure log"]
-    Write --> RecordLogged["Call record failure with true"]
-    Skip --> RecordQuiet["Call record failure with false"]
-    RecordLogged --> Retry["Continue caller retry policy"]
-    RecordQuiet --> Retry
-    Outcome -->|"Yes"| Recover["Call record success"]
-    Recover --> Summary{"Was there a prior failure streak?"}
-    Summary -->|"Yes"| Report["Use returned count and duration"]
-    Summary -->|"No"| Clean["No recovery summary"]
+    Attempt["Run caller-managed attempt"] --> Result{"Operation succeeded?"}
+    Result -->|"no"| Decide["Evaluate decision captured from should_log"]
+    Decide --> Emit{"Log enabled?"}
+    Emit -->|"yes"| FailureLog["Write failure log"]
+    Emit -->|"no"| RecordSilent["Record failure with logged false"]
+    FailureLog --> RecordLogged["Record failure with logged true"]
+    RecordSilent --> Retry["Caller schedules next attempt"]
+    RecordLogged --> Retry
+    Result -->|"yes"| Reset["Call record_success and reset state"]
+    Reset --> Prior{"Prior failure streak exists?"}
+    Prior -->|"yes"| Recovery["Write recovery log immediately"]
+    Prior -->|"no"| Continue["Continue normal work"]
+    Recovery --> Continue
 ```
 
-### Decision Semantics
+## Operational Considerations
 
-`should_log` returns `true` until both a first-failure timestamp and a last-logged timestamp exist. This ensures an initial failure is observable and also prevents accidental permanent suppression if previous failures were deliberately not logged.
+- **Scope instances carefully.** One instance represents one independently meaningful failure condition. Sharing an instance across unrelated operations combines their failures and can hide useful logs.
+- **Keep the call order stable.** Evaluate `should_log` before attempting work, then call exactly one of `record_failure` or `record_success` after the result is known.
+- **Do not count suppressed messages as logged.** A suppressed failure must use `logged = false`; otherwise the module may delay the next observable log despite no message being written.
+- **Expect no cross-restart continuity.** The module has no durable state, so a process restart re-enables immediate failure logging.
+- **Serialize mutation when sharing.** `record_failure` and `record_success` require mutable access. If multiple tasks share an instance, callers need their own synchronization and should confirm that shared aggregation matches their desired logging semantics.
+- **Test policy boundaries.** Cover the fifth recorded failure, just-before and just-after the two-minute interval, the one-hour streak transition, a failure that was not logged, and reset after success.
 
-Once throttling applies, the method compares the elapsed time since the last **actually logged** failure against the active interval. It does not increment counters or alter timestamps; recording remains an explicit caller action after the operation outcome is known.
+## Relationship to the OpenFrame Client
 
-### Recovery Semantics
+This utility belongs to the Rust OpenFrame client code that is assembled into the tenant deployment through the `openframe_agent_lib` dependency. It is a local observability primitive, not a network protocol component: it has no direct dependency on NATS, the gateway, or the logging transport. Higher-level client services can use it around reconnect, publication, download, or other repeated operations to make persistent faults visible without producing a message for every retry.
 
-`record_success` snapshots the failure count and total elapsed time from the first recorded failure, then replaces the tracker state with a new empty tracker. Recovery is therefore immediately eligible for reporting even if failure logs had been throttled. A subsequent failure starts a completely new streak and again logs immediately.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Healthy
-    Healthy --> EarlyFailures: "record failure"
-    EarlyFailures --> EarlyFailures: "failure, fewer than five"
-    EarlyFailures --> Throttled: "fifth failure recorded"
-    Throttled --> Slow: "streak reaches one hour"
-    Throttled --> Healthy: "record success"
-    Slow --> Healthy: "record success"
-    Slow --> Slow: "failure, hourly logging"
-```
-
-## Caller Integration Contract
-
-A caller should retain one `FailureLogBackoff` instance for each failure stream it wants to throttle independently. For example, unrelated network connections or background jobs should not share a tracker when their failures need separate visibility and recovery summaries.
-
-```rust
-let mut backoff = FailureLogBackoff::new();
-
-let should_log = backoff.should_log();
-match perform_operation() {
-    Ok(()) => {
-        if let Some((failures, duration)) = backoff.record_success() {
-            log_recovery(failures, duration);
-        }
-    }
-    Err(error) => {
-        if should_log {
-            log_failure(&error);
-        }
-        backoff.record_failure(should_log);
-    }
-}
-```
-
-The `logged` argument must represent whether the caller truly emitted the failure log, not merely the recommendation returned by `should_log`. If a logging subsystem rejects or intentionally bypasses a permitted message, pass `false` so the utility does not postpone the next eligible log based on a message that was never produced.
-
-## Operational Characteristics and Maintenance Notes
-
-- **Retry independence:** The utility neither sleeps nor returns a retry delay. It is safe to use around any caller-defined retry schedule.
-- **No shared synchronization:** Mutation requires a mutable reference. If multiple tasks share a tracker, the owner must provide the appropriate synchronization and define what constitutes one shared streak.
-- **No persistence:** State is lost on process restart. This favors simple local behavior but means a recurring failure may emit early-streak logs after each restart.
-- **Recovery observability:** Call `record_success` for every successful attempt, including success after a quiet, throttled failure period, so stale state does not carry into later failures.
-- **Threshold changes:** Adjusting the count or duration constants changes operational log volume. Maintain the ordering from frequent initial logging to progressively slower logging, and verify that recovery remains immediate.
-
-## System Context
-
-This module runs inside the Rust OpenFrame Client assembled by this repository through the OpenFrame OSS Library dependency. It is a reusable local utility rather than a server endpoint or message consumer. The broader client provides logging, NATS connectivity, authentication, command listeners, and service orchestration; Utils Failure Log Backoff provides only the narrow state machine used to make repeated local failure reporting readable.
+Because the utility is library code from OpenFrame OSS Library, changes to its thresholds or semantics affect every client path that chooses to use the type. Preserve the distinction between logging suppression and retry behavior when modifying it.

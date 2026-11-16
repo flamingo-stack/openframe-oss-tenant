@@ -1,6 +1,0 @@
-flowchart TD
-    ServerConfig["Integrated tool configuration"] --> Retriever["Fleet MDM secret retriever"]
-    FleetService["Fleet MDM service"] --> Retriever
-    Retriever --> Resolver["Tool Command Params Resolver"]
-    Resolver --> Delivery["Command delivery infrastructure"]
-    Delivery --> Agent["Endpoint tool agent"]

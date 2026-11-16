@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Tool Configuration Request"] --> Tenant["Resolve Current Tenant"]
+    Tenant --> Existing["Find Tool by Tenant and Key"]
+    Existing --> Preserve["Reuse Existing Identifier and API Key"]
+    Preserve --> Save["Save Changed Tool Configuration"]
+    Save --> Debezium["Create or Update Debezium Connectors"]
+    Debezium --> Hooks["Run Post Save Hooks"]
+    Hooks --> Response["Return Saved Tool"]

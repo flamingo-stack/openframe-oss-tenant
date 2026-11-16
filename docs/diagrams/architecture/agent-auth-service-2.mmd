@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Startup as Initial Authentication Processor
+    participant Auth as Agent Auth Service
+    participant Config as Agent Configuration Service
+    participant Client as Authentication Client
+    participant Server as Client Service
+    participant Shared as Shared Token Service
+    Startup->>Auth: authenticate initial
+    Auth->>Config: get client credentials
+    Config-->>Auth: client identifier and secret
+    Auth->>Client: authenticate with secret
+    Client->>Server: client credentials token request
+    Server-->>Client: token response
+    Client-->>Auth: access and refresh tokens
+    Auth->>Config: update both tokens
+    Auth->>Shared: encrypt and atomically save access token
+    Auth-->>Startup: token response

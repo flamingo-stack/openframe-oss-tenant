@@ -1,124 +1,148 @@
 # Utils Timed Permit Pool
 
-Utils Timed Permit Pool is a small asynchronous Rust utility supplied by the `openframe_agent_lib` crate from OpenFrame OSS Library. It runs a blocking closure on Tokio's blocking-worker pool while bounding the number of calls that may still be executing after their callers have timed out. The bound prevents repeated timeouts from accumulating an unbounded number of parked blocking threads.
+Utils Timed Permit Pool is a small Rust concurrency utility in the OpenFrame client agent. It runs a synchronous closure on Tokio's blocking executor while enforcing a bounded number of active blocking calls and independently timing both admission and execution. Its central safety property is that a call that exceeds its caller-visible timeout continues to retain its permit until the underlying blocking closure actually returns. This prevents repeated timeouts from creating an unbounded accumulation of parked blocking work.
 
-The implementation is maintained in [the OpenFrame OSS Library source](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/utils/timed_permit_pool.rs). OpenFrame OSS Tenant consumes the library as `openframe_agent_lib` version `v0.0.5`; this module runs as part of the OpenFrame client agent, rather than as a tenant-side Java service.
+The implementation is supplied by the OpenFrame OSS Library as part of the `openframe_agent_lib` Cargo artifact, consumed by this repository's client runtime. The authoritative implementation is [timed permit pool source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/utils/timed_permit_pool.rs).
 
-## Responsibilities
+## Responsibilities and Boundaries
 
-- Limit concurrently admitted blocking operations to the capacity selected at construction.
-- Wait for admission for at most the caller-provided timeout.
-- Execute admitted work with `tokio::task::spawn_blocking`, so the async runtime is not blocked by the closure.
-- Apply the same timeout duration to waiting for the closure result.
-- Retain a permit inside a timed-out blocking task until the underlying closure actually returns.
-- Distinguish overload, a closed semaphore, an execution timeout, and a Tokio task failure.
+The module provides `TimedPermitPool` and its `PermitPoolError` result type. It is deliberately narrow:
 
-The pool does **not** cancel or interrupt a closure when the execution timeout expires. A closure may therefore finish later, and its retained permit is released only at that point.
+- constructs a pool with a fixed maximum number of permits;
+- waits only up to a caller-provided duration for an available permit;
+- moves an admitted `Send + 'static` closure to `tokio::task::spawn_blocking`;
+- waits only up to the same duration for that task's result; and
+- classifies admission exhaustion, a closed semaphore, execution timeout, and blocking-task failure.
 
-## Architecture
+It does not cancel a closure after the execution timeout, manage a work queue, retry failed work, inspect closure progress, or expose pool resizing and shutdown controls. The closure itself is responsible for eventually returning and for any lower-level timeout or cancellation behavior it needs.
+
+## Architecture and Dependencies
 
 ```mermaid
 flowchart LR
-    Caller["Async caller"] -->|"call(what, timeout, closure)"| Pool["Timed Permit Pool"]
-    Pool -->|"acquire owned permit"| Semaphore["Shared Tokio semaphore"]
-    Pool -->|"spawn admitted closure"| Blocking["Tokio blocking worker"]
-    Blocking -->|"result or panic"| Pool
-    Pool -->|"Result value or Permit Pool Error"| Caller
-    Blocking -->|"returns and drops permit"| Semaphore
+    ClientRuntime["OpenFrame client runtime"] --> Pool["Timed Permit Pool"]
+    Pool --> Semaphore["Tokio semaphore"]
+    Pool --> Timeout["Tokio timeout"]
+    Pool --> BlockingExecutor["Tokio blocking executor"]
+    BlockingExecutor --> Closure["Synchronous closure"]
+    Semaphore --> Permit["Owned permit"]
+    Permit --> Closure
+    Closure --> Result["Value or task failure"]
+    Timeout --> CallerResult["Pooled call result"]
+    Result --> CallerResult
 ```
 
-`TimedPermitPool` owns an `Arc<Semaphore>` and stores the configured maximum separately for diagnostic messages. Each `call` clones the semaphore reference and obtains an owned permit. Moving that permit into the blocking closure is the key lifecycle rule: dropping the waiting future after a result timeout cannot return capacity while the blocking operation is still running.
+`TimedPermitPool` owns an `Arc<Semaphore>` and records the configured maximum for error reporting. An owned semaphore permit is moved into the blocking closure rather than being held by the async caller. Rust drops that permit only when the closure exits, returning capacity to the semaphore at that time.
 
-## Public API
-
-| Item | Role |
-| --- | --- |
-| `TimedPermitPool::new(max)` | Creates a pool with `max` permits. The implementation does not validate the value; with zero permits, no call can be admitted and calls become `Busy` when their admission timeout elapses. |
-| `TimedPermitPool::call(what, timeout, f)` | Asynchronously acquires capacity, runs the `Send + 'static` closure off-runtime, and returns its `Send + 'static` result or a `PermitPoolError`. |
-| `PermitPoolError::is_busy()` | Returns `true` only for the `Busy` variant, allowing callers to recognize an operation that was never started. |
-
-The `what` label is copied into every error variant generated by `call`. Callers should provide an operation description suitable for logs and diagnostics, without embedding secrets.
+| Component | Role |
+|---|---|
+| `TimedPermitPool` | Holds shared permit state and the configured maximum number of concurrent calls. |
+| `new(max)` | Creates a semaphore initialized with `max` permits. No validation or dynamic reconfiguration is performed. |
+| `call(what, timeout, f)` | Performs timed admission, schedules `f` off the async runtime, then applies a second timed wait to the task result. |
+| `PermitPoolError` | Describes why a value was not returned to the caller. |
+| `PermitPoolError::is_busy()` | Identifies the admission-exhaustion case, where the closure was never scheduled. |
 
 ## Call Lifecycle
 
-```mermaid
-flowchart TD
-    Start["Caller invokes call"] --> Acquire["Wait for an owned semaphore permit"]
-    Acquire --> AcquireTimedOut{"Admission timeout?"}
-    AcquireTimedOut -->|"Yes"| Busy["Return Busy, closure not started"]
-    AcquireTimedOut -->|"No"| AcquireClosed{"Semaphore closed?"}
-    AcquireClosed -->|"Yes"| Closed["Return Closed, closure not started"]
-    AcquireClosed -->|"No"| Spawn["Move permit into spawn blocking closure"]
-    Spawn --> Wait["Wait for task result up to timeout"]
-    Wait --> RunTimedOut{"Execution timeout?"}
-    RunTimedOut -->|"Yes"| TimedOut["Return Timed Out, task continues"]
-    RunTimedOut -->|"No"| TaskFailed{"Task join failed?"}
-    TaskFailed -->|"Yes"| Failed["Return Task Failed"]
-    TaskFailed -->|"No"| Success["Return closure value"]
-    TimedOut --> ReleaseLater["Closure returns later, permit drops"]
-    Success --> ReleaseNow["Closure returns, permit drops"]
-    Failed --> ReleaseNow
-```
-
-There are two independent timeout windows, each equal to `timeout`:
-
-1. **Admission window:** the pool waits for an owned semaphore permit. Expiry produces `Busy`; the closure has not been submitted, so retrying does not add blocking work.
-2. **Execution window:** once admitted, the pool waits for the `spawn_blocking` join handle. Expiry produces `TimedOut`, but Tokio's blocking task is not aborted by this result. It retains the permit until it exits.
-
-Consequently, a caller can receive `TimedOut` while `is_busy()` remains `false`. That result means work was issued and may still have side effects. Treat retries according to the operation's idempotency rather than as an automatically safe retry.
-
-## Error Semantics
-
-| Variant | When it occurs | Was the closure started? | Operational implication |
-| --- | --- | --- | --- |
-| `Busy { what, max }` | A permit did not become available before the admission timeout. | No | This is the only condition for which `is_busy()` is `true`. Back off or retry if appropriate. |
-| `Closed { what, source }` | Semaphore acquisition reports closure. | No | The shown pool does not expose a close operation, but this branch preserves an explicit failure mode if the semaphore is closed through shared ownership or future implementation changes. |
-| `TimedOut { what, ms }` | The spawned blocking task did not finish before the execution timeout. | Yes | Work may still be running and still consumes capacity. Do not assume it was canceled. |
-| `TaskFailed { what, source }` | Tokio reports a join failure for the blocking task. | Yes | Inspect the join error; the task did not yield a normal value. |
-
-## Permit Ownership and Backpressure
+The same `timeout` argument is used twice: once while acquiring a permit and once while awaiting the blocking task. Consequently, an invocation that obtains a permit can take up to roughly two timeout intervals before it returns a timeout-related result. The execution interval begins only after admission succeeds.
 
 ```mermaid
 sequenceDiagram
-    participant C1 as Caller One
-    participant P as Timed Permit Pool
-    participant S as Semaphore
-    participant W as Blocking Worker
-    C1->>P: call with timeout and closure
-    P->>S: acquire owned permit
-    S-->>P: permit
-    P->>W: spawn closure with permit
-    P-->>C1: Timed Out after execution window
-    Note over W: Closure keeps running with permit
-    W-->>S: Closure exits and permit drops
-    participant C2 as Caller Two
-    C2->>P: call with timeout and closure
-    P->>S: acquire owned permit
-    S-->>P: permit becomes available
-    P->>W: spawn closure with permit
+    participant Caller
+    participant Pool as Timed Permit Pool
+    participant Semaphore
+    participant Executor as Tokio Blocking Executor
+    participant Work as Blocking Closure
+    Caller->>Pool: call(what, timeout, closure)
+    Pool->>Semaphore: acquire owned permit
+    alt permit acquired before timeout
+        Semaphore-->>Pool: owned permit
+        Pool->>Executor: spawn blocking task with permit
+        Executor->>Work: run closure
+        alt closure returns before timeout
+            Work-->>Executor: value
+            Executor-->>Pool: task result
+            Pool-->>Caller: Ok(value)
+        else execution wait expires
+            Pool-->>Caller: TimedOut
+            Note over Work: Closure continues and retains permit until it returns
+        else task fails
+            Executor-->>Pool: join error
+            Pool-->>Caller: TaskFailed
+        end
+    else permit wait expires
+        Pool-->>Caller: Busy
+        Note over Caller: Closure was not scheduled
+    else semaphore is closed
+        Semaphore-->>Pool: acquire error
+        Pool-->>Caller: Closed
+    end
 ```
 
-This design makes the configured capacity a cap on **actual unfinished blocking work**, not merely on the number of callers currently awaiting results. It avoids a common timeout failure mode in which a caller gives up, releases an accounting slot, and permits additional blocking calls even though the original operating-system call remains stuck.
+### Permit Retention After Timeout
 
-The trade-off is deliberate backpressure. If all admitted closures outlive their callers' execution timeouts, later calls wait for a permit and eventually return `Busy`. Capacity recovers only when the abandoned closures complete. Choose the pool size and timeouts based on the maximum acceptable number and duration of such operations.
+The execution-timeout branch is the module's defining behavior. Timing out the `JoinHandle` wait does not stop `spawn_blocking` work. Because the task captures the owned permit in a local binding, capacity remains occupied while the closure continues. When it returns, normal drop behavior releases the permit. This makes the configured maximum an upper bound on in-flight blocking closures, including closures that have already timed out from the caller's perspective.
 
-## Integration Boundaries
+```mermaid
+flowchart TD
+    Start["Caller invokes pooled call"] --> Acquire["Wait for an owned permit"]
+    Acquire --> AcquireDecision{{"Permit acquired before timeout?"}}
+    AcquireDecision -->|"no"| Busy["Return Busy and do not start closure"]
+    AcquireDecision -->|"yes"| Spawn["Spawn blocking closure with permit"]
+    Spawn --> Await["Wait for task result"]
+    Await --> CompleteDecision{{"Task completed before timeout?"}}
+    CompleteDecision -->|"yes"| ReturnValue["Return value or TaskFailed"]
+    CompleteDecision -->|"no"| ReturnTimeout["Return TimedOut to caller"]
+    ReturnTimeout --> Continue["Closure continues with permit"]
+    Continue --> Release["Closure returns and releases permit"]
+    ReturnValue --> Release
+```
 
-The module directly depends only on Rust standard-library synchronization and duration types, `thiserror` for error formatting, and Tokio's semaphore, timer, and blocking-task APIs. It has no network, filesystem, persistence, or configuration responsibilities.
+## Result Semantics
 
-The module tree places Utils Timed Permit Pool alongside other OpenFrame client utility modules, including failure log backoff, filesystem persistence, in-progress tracking, JWT timing, latches, and version comparison. It is a reusable concurrency boundary for client-agent code that must call blocking APIs safely from async workflows; it does not define the policy or domain behavior of those workflows.
+| Outcome | Meaning | Was the closure started? | Capacity effect |
+|---|---|---:|---|
+| `Ok(T)` | The blocking closure finished and returned its value within the execution wait. | Yes | Its permit is released as the task exits. |
+| `Busy { what, max }` | No permit became available during admission. | No | No permit was acquired and no blocking thread was scheduled. |
+| `Closed { what, source }` | Semaphore acquisition reported closure. | No | No permit was acquired. The pool's public API does not expose a close operation, but this branch preserves the underlying semaphore error. |
+| `TimedOut { what, ms }` | The blocking task did not finish within the execution wait. | Yes | The permit remains held until the closure actually exits. |
+| `TaskFailed { what, source }` | The blocking task produced a Tokio join error. | Yes | Task termination drops the captured permit. |
 
-The available organization-wide code graph records no consumers of `TimedPermitPool` outside its defining library at the indexed snapshot. That does not change the utility's contract, but it means current usage must be verified in the consuming source revision before modifying behavior or removing the API.
+The `what` label is propagated into each error display message, allowing callers to identify the protected operation in logs. `Busy` additionally reports the pool maximum, while `TimedOut` reports the timeout in milliseconds.
 
-## Maintainer Guidance
+## Using the API
 
-- Keep the owned permit in the closure's capture set. Releasing it before the blocking closure returns would break the protection against timed-out work accumulating.
-- Keep admission and execution failures distinct. A `Busy` result means no work started; a `TimedOut` result does not.
-- Do not put synchronous work directly in `call` before `spawn_blocking`; the async runtime must remain responsive.
-- Use a finite, realistic timeout. The same value controls both queueing time and the time the caller waits after dispatch.
-- Ensure closures are safe to outlive their caller. They must own or hold valid `Send + 'static` data and should tolerate the caller no longer observing their result.
-- Test the critical cases: normal completion, admission exhaustion, execution timeout with delayed permit release, and a panic or cancellation causing a join error.
+The call closure cannot borrow stack-local data because it must be `Send + 'static`; pass owned data into it with a `move` closure. The result type is also constrained to `Send + 'static` because it crosses from the blocking executor back to the async caller.
 
-## Summary
+```rust
+use std::time::Duration;
 
-Utils Timed Permit Pool combines Tokio semaphore admission with blocking-task timeouts. Its defining guarantee is conservative capacity accounting: an operation that has timed out to its caller continues to occupy one of the bounded slots until it actually finishes. This makes overload visible as `Busy` and prevents unbounded accumulation of long-running blocking operations in the OpenFrame client agent.
+let pool = TimedPermitPool::new(4);
+let operation_name = "read local inventory";
+let path = inventory_path.to_owned();
+
+match pool
+    .call(operation_name, Duration::from_secs(5), move || read_inventory(path))
+    .await
+{
+    Ok(inventory) => process_inventory(inventory),
+    Err(error) if error.is_busy() => schedule_retry(),
+    Err(error) => report_operation_failure(error),
+}
+```
+
+Choose `max` based on the resource being protected, such as the acceptable number of simultaneously parked I/O or native-library calls. A zero-sized pool is allowed by the constructor; it admits no call, so calls wait until their admission timeout and then return `Busy` unless the semaphore is otherwise changed internally.
+
+## Operational Guidance
+
+- Set the outer timeout to the maximum time the async workflow can wait, not as an assumption that the blocking work is stopped.
+- Ensure the closure has its own bounded behavior when possible. A closure that never returns permanently consumes one permit and reduces the pool's usable capacity.
+- Treat `Busy` differently from `TimedOut`: `Busy` means no call was issued and retrying does not add parked work, while `TimedOut` means work may still be running.
+- Use a stable, descriptive `what` value so timeout, capacity, and task-failure logs can be correlated.
+- Avoid wrapping async work in this pool. It is specifically for synchronous operations that would otherwise block Tokio runtime worker threads.
+
+## System Placement
+
+The module is part of the OpenFrame client agent utility layer rather than a network endpoint, persistent store, or service controller. It depends only on Rust standard-library synchronization and duration types, Tokio synchronization, timeout, and blocking-task primitives, plus `thiserror` for error presentation. The code graph records no current organization-wide callers for `TimedPermitPool`; this module is therefore a reusable concurrency boundary whose behavior should be preserved if future client workflows adopt it.
+
+The source declares a local test module, but no test definitions are included in the supplied component set. Maintainers changing the implementation should preserve the key invariant: an execution timeout returns promptly to the caller without releasing the permit until the blocking closure has returned.

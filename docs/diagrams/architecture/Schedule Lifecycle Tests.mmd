@@ -1,0 +1,8 @@
+flowchart LR
+    TestRunner["Test runner"] --> TestClass["ScriptScheduleTest"]
+    TestClass --> ScriptApi["Script API"]
+    TestClass --> ScheduleApi["Script schedule API"]
+    ScriptApi --> GraphqlApi["GraphQL API"]
+    ScheduleApi --> GraphqlApi
+    GraphqlApi --> SchedulingDomain["Script scheduling domain"]
+    SchedulingDomain --> ScheduleData["Schedule data"]

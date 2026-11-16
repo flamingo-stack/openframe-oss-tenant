@@ -1,8 +1,0 @@
-flowchart TD
-    Scheduler["Catalog Synchronization Scheduler"] --> Lock["Distributed Lock"]
-    Lock --> BrewFetch["Brew Catalog Fetcher"]
-    Lock --> WingetFetch["winget Catalog Fetcher"]
-    BrewFetch --> Writer["Package Catalog Writer"]
-    WingetFetch --> Writer
-    Writer --> Mongo["Package Catalog"]
-    Mongo --> SearchClients["Brew and winget Search Clients"]

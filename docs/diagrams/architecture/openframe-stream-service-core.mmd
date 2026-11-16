@@ -1,0 +1,11 @@
+flowchart LR
+    Sources["Integrated Tools and Native RMM"] --> KafkaIn["Kafka Inbound Topics"]
+    KafkaIn --> StreamService["Openframe Stream Service"]
+    StreamService --> Normalize["Deserialize and Normalize"]
+    Normalize --> Enrich["Tenant and Context Enrichment"]
+    Enrich --> Routes["Destination Routing"]
+    Routes --> Cassandra["Cassandra Event Log"]
+    Routes --> Loki["Loki Event Log"]
+    Routes --> PinotKafka["Kafka for Pinot"]
+    Routes --> MongoHistory["Mongo RMM History"]
+    Routes --> DeviceSoftware["Mongo Device Software"]

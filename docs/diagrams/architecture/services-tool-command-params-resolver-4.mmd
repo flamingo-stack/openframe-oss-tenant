@@ -1,6 +1,0 @@
-flowchart LR
-    TenantPlatform["OpenFrame tenant platform"] --> ToolDefinition["Tool command definition"]
-    ToolDefinition --> EndpointClient["OpenFrame endpoint client"]
-    EndpointClient --> Resolver["Services Tool Command Params Resolver"]
-    Resolver --> ToolCommand["Concrete local command"]
-    ToolCommand --> ExecutionPath["Execution service and platform executor"]

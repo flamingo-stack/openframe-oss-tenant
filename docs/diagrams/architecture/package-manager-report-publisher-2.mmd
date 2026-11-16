@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Runner as Package Manager Report Run Manager
+    participant Publisher as Package Manager Report Publisher
+    participant Config as Agent Configuration Service
+    participant State as Package Manager State Resolver
+    participant Nats as NATS Message Publisher
+    participant Broker as NATS
+    Runner->>Publisher: publish()
+    Publisher->>Config: get_machine_id()
+    Config-->>Publisher: machine identifier
+    Publisher->>Publisher: check console user presence
+    loop Each known manager
+        Publisher->>State: state_of(manager, session context)
+        State-->>Publisher: manager state
+    end
+    opt Dependency reporting enabled and manager present
+        Publisher->>Publisher: resolve dependency presence
+    end
+    Publisher->>Nats: publish(subject, report)
+    Nats->>Nats: serialize JSON
+    Nats->>Broker: publish and flush
+    Broker-->>Nats: transport completion
+    Nats-->>Publisher: success or error
+    Publisher-->>Runner: success or error

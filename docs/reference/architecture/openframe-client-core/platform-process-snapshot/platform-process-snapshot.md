@@ -1,156 +1,138 @@
 # Platform Process Snapshot
 
-Platform Process Snapshot is a small, read-only process-inspection utility used by the OpenFrame client agent. It is implemented in the `openframe_agent_lib` crate supplied by the OpenFrame OSS Library and is run on managed endpoints by this repository's OpenFrame Client deployment. Its source is maintained in the [OpenFrame OSS Library process snapshot implementation](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/process_snapshot.rs).
+Platform Process Snapshot provides a synchronous, cross-platform view of locally running processes for the OpenFrame client agent. It is implemented by the `openframe_agent_lib` dependency rather than in this repository: [`process_snapshot.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/process_snapshot.rs). The tenant repository assembles that library into the OpenFrame client runtime.
 
-The module converts the operating system process table into a compact `RunningProcess` record. It exposes two operations:
+The module deliberately returns only processes whose executable image is readable. Each retained entry identifies the process, its executable path, the parent executable when it can be resolved, whether it was launched by the Windows Service Control Manager, and, on Windows, its session identifier. This is sufficient for update-safety checks without exposing a platform-specific process API to higher-level services.
 
-- `snapshot()` collects every discoverable process that has a readable executable image.
-- `alive(pids)` reports which requested process identifiers still occur in a freshly collected snapshot.
+## Responsibilities
 
-This boundary centralizes platform-specific details needed by higher-level client lifecycle, update, and tool-management code without creating or stopping processes itself.
+- Enumerate the current process table using `sysinfo` with executable-path refresh explicitly enabled.
+- Normalize process metadata into the `RunningProcess` value.
+- Enrich an entry with its parent image when the parent remains in the same refreshed table and its image is readable.
+- Detect Windows service children from a parent executable named `services.exe`.
+- Resolve the Windows session for each process when the operating system API permits it.
+- Provide `alive` as a simple filter over a newly collected snapshot.
 
-## Responsibilities and Boundaries
+The module does not terminate processes, parse command lines, determine file-lock ownership, or retain process state between calls. Process termination and file-lock diagnostics belong to other platform facilities.
 
-| Responsibility | Implementation | Result |
-|---|---|---|
-| Enumerate processes | `snapshot()` creates and refreshes a `sysinfo::System` process view. | One `RunningProcess` record per process with a readable executable path. |
-| Identify executable images | The process executable path is copied into `image`. | Callers can compare executable locations rather than relying only on a process name. |
-| Capture parent context | The parent process is resolved from the same in-memory process map. | `parent_image` identifies the parent executable when it remains available. |
-| Recognize Windows services | The parent executable name is compared with `services.exe` on Windows. | `is_service` is true only for processes detected as service-control-manager children. |
-| Associate Windows sessions | Windows calls `ProcessIdToSessionId`. | `session` carries a session identifier when the operating system provides one. |
-| Check liveness | `alive()` filters a new snapshot against requested identifiers. | A list of requested identifiers still visible in the refreshed process view. |
-
-The module deliberately does not retain a system handle or cache snapshots. Each public operation observes the process table at its own point in time. It also does not infer process identity from a PID alone across time: callers that need stronger identity guarantees must combine the returned PID with their own lifecycle controls.
-
-## Architecture
+## Position in the Client Runtime
 
 ```mermaid
 flowchart LR
-    Caller["Client lifecycle or tool management caller"] -->|"snapshot() or alive()"| Module["Platform Process Snapshot"]
-    Module -->|"refresh process metadata"| Sysinfo["sysinfo System process view"]
-    Sysinfo -->|"process entries"| Module
-    Module -->|"Windows session lookup"| WinApi["Windows ProcessIdToSessionId"]
-    Module -->|"RunningProcess records"| Caller
+    TenantRepo["OpenFrame OSS Tenant"] --> ClientRuntime["OpenFrame client runtime"]
+    ClientRuntime --> AgentLibrary["openframe agent library"]
+    AgentLibrary --> ProcessSnapshot["Platform Process Snapshot"]
+    ProcessSnapshot --> Sysinfo["sysinfo process table"]
+    ProcessSnapshot --> WindowsApi["Windows session API"]
+    UpdateGate["Package update gate"] --> ProcessSnapshot
+    UpdateGate --> Decision["Clear or blocked decision"]
 ```
 
-### Component Relationships
+The principal verified integration is the package update gate. Its asynchronous wrapper runs `snapshot` on a blocking task, combines the returned processes with a resolved application identity, and blocks the update if a relevant non-service application process remains active. If obtaining the snapshot fails at the task boundary, the gate represents the result as an undetermined condition and blocks rather than assuming the update is safe.
 
-```mermaid
-flowchart TD
-    Snapshot["snapshot()"] --> Refresh["Refresh executable metadata"]
-    Refresh --> ProcessMap["Process map"]
-    ProcessMap --> Image["Readable executable image"]
-    ProcessMap --> Parent["Parent process image"]
-    Image --> Record["RunningProcess"]
-    Parent --> Record
-    Record --> Service["Windows service classification"]
-    Record --> Session["Windows session lookup"]
-    Alive["alive(pids)"] --> Snapshot
-    Snapshot --> Filter["Filter requested PIDs"]
-    Filter --> LivePids["Live PID list"]
-```
+## Core Data Model
 
-The source module belongs to the OpenFrame client platform layer. Its immediate dependency is the Rust `sysinfo` process API. The session lookup uses the Windows API only in Windows builds; non-Windows builds compile a replacement that returns no session. Higher-level callers decide how to react to the resulting process facts, keeping process enumeration separate from update, installation, and termination policy.
+`RunningProcess` is a cloneable, equality-comparable record with the following fields:
 
-## Data Model
-
-`RunningProcess` is the snapshot contract:
-
-```rust
-pub struct RunningProcess {
-    pub pid: u32,
-    pub image: PathBuf,
-    pub parent_image: Option<PathBuf>,
-    pub is_service: bool,
-    pub session: Option<u32>,
-}
-```
-
-| Field | Meaning | Availability and semantics |
+| Field | Meaning | Availability |
 |---|---|---|
-| `pid` | Operating-system process identifier. | Present for every returned record. |
-| `image` | Filesystem path of the process executable. | A record is emitted only when this path can be read. |
-| `parent_image` | Filesystem path of the parent executable. | Absent when there is no parent, the parent has exited, or its executable path is unavailable. |
-| `is_service` | Whether the process was started by the Windows Service Control Manager. | True only on Windows when the resolved parent file name equals `services.exe`, ignoring ASCII case. Always false on non-Windows builds. |
-| `session` | Windows session identifier. | Present only on Windows when `ProcessIdToSessionId` succeeds. Always absent on non-Windows builds. |
+| `pid` | Operating-system process identifier, represented as an unsigned 32-bit value. | Every emitted record. |
+| `image` | Readable executable image path. | Every emitted record; entries without an image are excluded. |
+| `parent_image` | Executable image path of the parent process. | Optional when no parent exists, the parent is absent from the refreshed table, or its image is unreadable. |
+| `is_service` | Whether the process was launched by Windows Service Control Manager. | `true` only on Windows when the parent filename equals `services.exe` without case sensitivity; otherwise `false`. |
+| `session` | Windows session identifier. | Optional; unavailable on non-Windows systems and when the Windows lookup fails. |
 
-`RunningProcess` derives `Debug`, `Clone`, `PartialEq`, and `Eq`, which makes records straightforward to log, duplicate, and compare in client code and tests.
+The absence of a parent image is not a process failure signal. It preserves uncertainty caused by parent exit or inaccessible metadata.
 
 ## Snapshot Collection Flow
 
 ```mermaid
 flowchart TD
-    Start["Caller invokes snapshot()"] --> Create["Create a new System instance"]
-    Create --> Refresh["Refresh processes with executable metadata always updated"]
-    Refresh --> Iterate["Iterate process entries"]
-    Iterate --> Readable{"Readable executable image?"}
-    Readable -->|"No"| Skip["Skip process"]
-    Readable -->|"Yes"| CopyImage["Copy executable path"]
-    CopyImage --> ResolveParent["Resolve parent image from same process map"]
-    ResolveParent --> Classify["Classify service status on Windows"]
-    Classify --> Session["Resolve session on Windows"]
-    Session --> Build["Build RunningProcess record"]
-    Build --> More{"More processes?"}
-    Skip --> More
-    More -->|"Yes"| Iterate
-    More -->|"No"| Return["Return process records"]
+    Start["Caller requests snapshot"] --> Refresh["Create system view and refresh process executable paths"]
+    Refresh --> Iterate["Iterate refreshed processes"]
+    Iterate --> ImageCheck{"Readable executable image?"}
+    ImageCheck -->|"No"| Skip["Exclude process"]
+    ImageCheck -->|"Yes"| Parent["Resolve parent executable image when available"]
+    Parent --> Service["Classify Windows service parent"]
+    Service --> Session["Resolve Windows session when supported"]
+    Session --> Record["Create RunningProcess record"]
+    Record --> Collect["Collect result vector"]
+    Skip --> Collect
 ```
 
-### Refresh Scope
+`snapshot` creates a fresh `sysinfo::System` instance and refreshes process information with executable updates set to always refresh. It then iterates the resulting map. A process becomes a result only if `process.exe()` supplies a path. Parent resolution is performed against that same map, so it neither launches another system query nor follows a parent outside the collected view.
 
-The refresh is intentionally specific: the `sysinfo` process view is refreshed with executable metadata configured to update on every snapshot. This is significant because `image`, parent-derived service detection, and any caller comparison by executable location depend on current executable path information. Other process attributes are not part of this module's output contract.
+On Windows, the service classifier checks the resolved parent filename. The check is intentionally narrow: only a case-insensitive match on `services.exe` produces `is_service: true`. On every other target, compile-time platform selection yields `false`. Similarly, session lookup invokes `ProcessIdToSessionId` only in Windows builds; other builds return no session.
 
-### Parent Resolution
-
-Parent data is best effort. The module first retrieves the process's parent PID, then looks up that PID in the very same snapshot map, then reads that parent executable path. Any failure in this chain produces `None` for `parent_image`; it does not discard the child process record. This preserves useful process information while accurately representing an incomplete parent relationship.
-
-## Liveness Query Flow
+## Liveness Query
 
 ```mermaid
 sequenceDiagram
     participant Caller
-    participant Alive as "alive()"
-    participant Snapshot as "snapshot()"
-    participant ProcessView as "Refreshed process view"
-    Caller->>Alive: requested PIDs
-    Alive->>Snapshot: collect current processes
-    Snapshot->>ProcessView: refresh executable metadata
-    ProcessView-->>Snapshot: RunningProcess records
-    Snapshot-->>Alive: current snapshot
-    Alive-->>Caller: requested PIDs found in snapshot
+    participant Alive as "alive"
+    participant Snapshot as "snapshot"
+    participant OS as "Process table"
+    Caller->>Alive: "PID list"
+    Alive->>Snapshot: "Collect fresh process records"
+    Snapshot->>OS: "Refresh executable metadata"
+    OS-->>Snapshot: "Readable process records"
+    Snapshot-->>Alive: "RunningProcess vector"
+    Alive-->>Caller: "Input PIDs still present"
 ```
 
-`alive()` is a convenience query rather than a separate operating-system probe. It calls `snapshot()` and returns only requested PID values for which a snapshot record exists. Consequently, a process without a readable executable image is excluded from both `snapshot()` and `alive()`, even if the operating system still has that PID. The output preserves the order and duplicates of the input PID slice because it filters the original input iterator.
+`alive` accepts a slice of process identifiers, takes one fresh snapshot, and returns the input identifiers that occur in that snapshot. It preserves input order and preserves duplicate identifiers because it filters the supplied slice rather than producing identifiers from the process table. A PID is considered alive solely by its presence in the fresh snapshot; it is not matched against a captured executable path or process start time. Consequently, callers that require protection from operating-system PID reuse need an additional identity check outside this module.
 
-## Platform Behavior
+Because `alive` is built on `snapshot`, a running process whose executable path is unavailable is not reported as alive by this API. This follows the module's readable-image contract and is important for consumers treating the result as an eligibility signal.
 
-| Platform | Session behavior | Service behavior | Process image and parent behavior |
-|---|---|---|---|
-| Windows | Calls `ProcessIdToSessionId`; failures become `None`. | Checks whether the parent executable is named `services.exe`, using case-insensitive ASCII comparison. | Uses `sysinfo` executable and parent data; unreadable child images are omitted. |
-| Non-Windows | Always returns `None`. | Always returns `false`. | Uses the same `sysinfo` collection and parent-image best-effort logic. |
+## Package Update Gate Interaction
 
-The compile-time conditional implementations avoid invoking Windows APIs outside Windows builds. The public data model stays consistent across platforms, allowing callers to consume optional fields rather than maintaining separate interfaces.
+The package update gate uses Platform Process Snapshot to avoid updating an application that is actively running:
 
-## Operational Considerations
+```mermaid
+flowchart TD
+    Request["Package update request"] --> Resolve["Resolve application identity"]
+    Request --> Gather["Gather process snapshot in blocking task"]
+    Resolve --> Check["Check update gate"]
+    Gather --> Check
+    Check --> Valid{"Identity and snapshot available?"}
+    Valid -->|"No"| Unknown["Block as undetermined"]
+    Valid -->|"Yes"| Filter["Find processes under install directory"]
+    Filter --> Exclude["Exclude service and self-parented records"]
+    Exclude --> Match["Match known main executable names"]
+    Match --> Holders{"Any holders?"}
+    Holders -->|"No"| Clear["Update gate clear"]
+    Holders -->|"Yes"| Blocked["Block with PID image and session"]
+```
 
-- **Point-in-time observation:** Processes can start or exit before, during, or after collection. The returned vector is a best-effort view rather than a transactional operating-system inventory.
-- **Permission and visibility limits:** Only processes with readable executable paths are represented. A missing process in `alive()` means it was not represented in the new snapshot, not necessarily that a PID can never exist.
-- **Parent races:** A parent may exit between the child's enumeration and parent lookup, yielding no parent image while retaining the child record.
-- **Windows service heuristic:** Service status is intentionally derived from the parent image name. It describes the observed launch relationship and is not a universal service-management query.
-- **PID reuse:** PID values may be reused by an operating system. A long-lived workflow should not treat a later positive PID match as proof that it is the original executable without also validating `image` or applying its own lifecycle guard.
-- **Cost:** Every `snapshot()` and `alive()` call builds a fresh `sysinfo::System` and refreshes process executable metadata. Callers that need multiple related decisions should reuse one returned snapshot where their own consistency requirements permit it.
+The verified decision logic uses these properties from `RunningProcess`:
 
-## Maintenance Guide
+1. It selects processes whose image is under the resolved install directory.
+2. It excludes entries marked as service processes.
+3. It excludes a record when its parent image equals its own image without case sensitivity, preventing that parent-child pattern from being treated as an interactive application holder.
+4. It either matches the executable filename against derived main-image names or accepts all candidates if the main images are unknown.
+5. It returns a blocking decision containing each holder's PID, executable path, and optional session when candidates remain.
 
-When changing Platform Process Snapshot, preserve the following contract points unless coordinated changes are made with its client-layer callers:
+This makes the process snapshot an observation boundary: it gathers platform metadata, while update policy decides which observed processes prevent package installation.
 
-1. Keep unreadable child executable paths out of the returned snapshot. This is the current inclusion rule used by `alive()`.
-2. Keep parent lookup optional and non-fatal; parent image unavailability must not remove an otherwise valid child record.
-3. Preserve platform-neutral fields and their documented fallback values: non-Windows session is absent and non-Windows service status is false.
-4. Treat the Windows `services.exe` check as a heuristic coupled to parent executable discovery. If changing it, review consumers that distinguish service-hosted and user-session processes.
-5. Retain the fresh-snapshot behavior of `alive()` unless callers are explicitly migrated to a cached or injected process view.
-6. Add or update the co-located `process_snapshot_tests.rs` test module when changing filtering, parent resolution, platform fallback, or liveness semantics.
+## Platform Behavior and Operational Considerations
 
-## System Context
+| Concern | Behavior |
+|---|---|
+| Process visibility | The result is based on the process information visible to the agent process and excludes records without readable executable paths. |
+| Windows service detection | Relies on the immediate parent image filename being `services.exe`; it does not inspect service registration. |
+| Windows session metadata | Uses the operating-system process-to-session lookup and returns no value if it fails. |
+| Non-Windows behavior | No session is reported and no process is labeled a service by this module. |
+| Snapshot freshness | Each `snapshot` and `alive` call independently refreshes the process table; there is no cache. |
+| Threading | The module itself is synchronous. The package update gate moves snapshot collection to a blocking task so it can be used from asynchronous coordination. |
 
-OpenFrame OSS Tenant publishes and deploys the OpenFrame Client alongside platform services. The client agent functionality documented here is supplied by the OpenFrame OSS Library's `openframe_agent_lib` dependency, pinned for this repository at version `v0.0.5`. Platform Process Snapshot is local endpoint plumbing: it supplies process facts that client update and integrated-tool workflows may use, while application services, messaging, policy, and delivery remain outside this module's responsibility.
+## Maintenance Guidance
+
+- Preserve the exclusion of unreadable executable images unless every consumer is updated to handle incomplete process identity safely.
+- Treat `is_service` as a narrow heuristic for update gating, not a general service-management truth source.
+- Keep session lookup behind platform-specific compilation. The optional field is the cross-platform contract.
+- Avoid adding state or caching here unless callers can explicitly reason about snapshot age; update-safety decisions depend on fresh observation.
+- When extending process identity, consider how `alive` should behave for PID reuse and whether callers need a start-time or executable-path comparison.
+
+## Source and Ownership
+
+Platform Process Snapshot is supplied by the OpenFrame OSS Library as cargo artifact `openframe_agent_lib` at version `v0.0.5`, which this repository consumes for the client agent. Its implementation source is [`clients/openframe-client/src/platform/process_snapshot.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/process_snapshot.rs). The OpenFrame OSS Tenant repository publishes and deploys the surrounding OpenFrame client service and its container image; it does not define this process-snapshot implementation.

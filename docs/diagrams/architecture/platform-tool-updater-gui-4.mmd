@@ -1,0 +1,16 @@
+flowchart TD
+    Finalize["Finalize updated application"] --> DeleteBackup["Best effort backup deletion"]
+    DeleteBackup --> Restart{"Restart requested?"}
+    Restart -->|"No"| Complete["Complete"]
+    Restart -->|"Yes"| UserCheck["Wait for console user"]
+    UserCheck --> Preferences{"Bundle identifier present?"}
+    Preferences -->|"Yes"| Resolve["Resolve command parameters"]
+    Resolve --> Write["Write application preferences"]
+    Write --> Chat{"Chat tool?"}
+    Chat -->|"Yes"| Background["Use background launch flag"]
+    Chat -->|"No"| NoArgs["Launch without direct arguments"]
+    Preferences -->|"No"| DirectArgs["Use configured launch arguments"]
+    Background --> Launch["Launch as console user"]
+    NoArgs --> Launch
+    DirectArgs --> Launch
+    Launch --> Complete

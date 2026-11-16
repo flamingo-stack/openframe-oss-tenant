@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Startup invokes publication"] --> Resolve["Resolve and validate hostname"]
+    Resolve --> HostnameFound{"Hostname available?"}
+    HostnameFound -->|"no"| Skip["Log warning and skip"]
+    HostnameFound -->|"yes"| LoadId["Load persisted machine identifier"]
+    LoadId --> ConfigOk{"Configuration available?"}
+    ConfigOk -->|"no"| ConfigFailure["Log publication failure"]
+    ConfigOk -->|"yes"| Publish["Publish and flush hostname message"]
+    Publish --> TransportOk{"Publish succeeded?"}
+    TransportOk -->|"no"| TransportFailure["Log publication failure"]
+    TransportOk -->|"yes"| ServerProcess["Server validates and updates hostname"]
+    ServerProcess --> Ack["Acknowledge processed message"]

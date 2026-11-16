@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Start dependency evaluation"] --> Enabled{"Dependency reporting enabled?"}
+    Enabled -->|"no"| Omit["Emit no dependency records"]
+    Enabled -->|"yes"| Owner{"Owning manager present?"}
+    Owner -->|"no"| Skip["Skip dependency"]
+    Owner -->|"yes"| Detect["Determine dependency presence"]
+    Detect --> Map["Map presence to report state"]
+    Map --> Add["Add dependency record"]

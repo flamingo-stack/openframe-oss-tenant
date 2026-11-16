@@ -1,7 +1,17 @@
-flowchart TD
-    CatalogSources["Package catalog sources"] --> Sync["Catalog synchronization"]
-    Sync --> SearchService["Package search services"]
-    SearchService --> Fetcher["PackageSearchDataFetcher"]
-    Fetcher --> Response["Package search response"]
-    Response --> Edge["Packagesearch Dto edge"]
-    Edge --> Test["PackageSearchTest assertions"]
+classDiagram
+    class PackageSearchEdge {
+        +PackageSearchItem node
+        +String cursor
+    }
+    class PackageSearchItem {
+        +String id
+        +String name
+        +String version
+        +String publisher
+        +String iconUrl
+        +String installCommand
+        +String packageType
+        +Integer popularity
+        +String packageManager
+    }
+    PackageSearchEdge --> PackageSearchItem : node

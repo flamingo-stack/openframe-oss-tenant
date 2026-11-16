@@ -1,0 +1,12 @@
+flowchart LR
+    CallerA["Installation or update caller"] -->|"try_lock(tool ID)"| ToolOps["Tool Ops"]
+    CallerB["Restart or run caller"] -->|"try_lock(tool ID)"| ToolOps
+    ToolOps --> LockRegistry["Lock registry by tool ID"]
+    ToolOps --> OpState["Operation state"]
+    LockRegistry --> ToolMutex["Tokio mutex per tool"]
+    ToolMutex --> ToolLock["Tool Lock"]
+    ToolLock -->|"mark_busy()"| ToolOpGuard["Tool Operation Guard"]
+    ToolOpGuard --> BusySet["Busy tool IDs"]
+    ToolOpGuard --> ReleasedSet["Released tool IDs"]
+    Observer["Run manager or scheduler"] -->|"is_busy or any_busy"| ToolOps
+    Observer -->|"take_released"| ToolOps

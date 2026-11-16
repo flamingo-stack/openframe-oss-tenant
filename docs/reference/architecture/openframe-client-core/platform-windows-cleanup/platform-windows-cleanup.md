@@ -1,122 +1,152 @@
 # Platform Windows Cleanup
 
-Platform Windows Cleanup is the Windows-only deferred-removal mechanism used by the OpenFrame client during uninstallation. A running Windows executable cannot reliably delete itself, so the module writes a uniquely named PowerShell helper into the update staging directory, launches it without a visible window, and lets the helper remove the client binary only after the client process has exited.
+Platform Windows Cleanup is the OpenFrame Client component that removes the client executable only after the running process has exited. It is implemented by the `windows_cleanup.rs` module in the OpenFrame OSS Library and is assembled into this repository through the `openframe_client` Cargo dependency. Its narrow responsibility is the final, self-deleting cleanup stage of Windows uninstallation; it does not stop services, deregister the device, or remove integrated tools.
 
-The implementation is supplied by the `openframe_agent_lib` dependency from OpenFrame OSS Library. Its authoritative source is [`windows_cleanup.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/windows_cleanup.rs). This module does not perform remote calls or report a cleanup outcome to a server; it operates on local paths and relies on tracing logs for diagnostics.
+**Source:** [windows_cleanup.rs in OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/windows_cleanup.rs)
 
-## Responsibilities
+## Purpose and Scope
 
-- Generate a PowerShell cleanup program for a specific binary path and running client process ID.
-- Persist the helper in the update staging directory rather than the system temporary directory.
-- Start PowerShell detached, hidden, and with standard streams disconnected.
-- Wait for the originating process, retry binary deletion, and use a permission-recovery fallback only when ordinary deletion fails.
-- Remove the cleanup script itself and only then remove empty installation directories.
+Windows cannot delete an executable while it is in use. The client therefore writes a uniquely named PowerShell cleanup script to its update staging directory, starts that script without a visible window, and then allows the client process to terminate. The detached script waits for the original process, removes the executable, deletes itself, and removes only directories that are empty.
 
-## Architecture and Position in the Client
+The two public functions are:
 
-Platform Windows Cleanup is a narrow platform utility. The Windows uninstall workflow owns the broader lifecycle: it stops and removes the service, makes best-effort deregistration attempts, removes managed tools and other files, unregisters the Apps and Features entry, removes the binary directory from the system path, and invokes this module only when the executable is still present.
+| Component | Responsibility |
+|---|---|
+| `generate_binary_cleanup_script` | Produces the PowerShell source, embedding the process identifier, executable path, optional binary directory, and staging directory. |
+| `execute_binary_cleanup_script` | Creates the staging directory and script file, then launches PowerShell in the background. |
+
+## Placement in the Client Lifecycle
+
+The Windows uninstaller invokes Platform Windows Cleanup only after it has attempted service removal, optional device deregistration, integrated-tool removal, directory cleanup, Apps and Features deregistration, and removal of the binary directory from the Windows `PATH`. It passes the executable's installation path and its parent directory as the binary directory.
 
 ```mermaid
 flowchart TD
-    UninstallFlow["Windows uninstall workflow"] -->|"binary still exists"| CleanupLaunch["Execute binary cleanup script"]
-    CleanupLaunch --> StagingDirectory["Update staging directory"]
-    CleanupLaunch --> ScriptFile["Unique PowerShell script"]
-    ScriptFile --> PowerShell["Detached hidden PowerShell process"]
-    PowerShell --> WaitForClient["Wait for OpenFrame client exit"]
-    WaitForClient --> RemoveBinary["Remove installed binary"]
-    RemoveBinary --> RemoveScript["Remove helper script"]
-    RemoveScript --> EmptyDirectoryCleanup["Remove empty bin, staging, and parent directories"]
+    UninstallRequest["Windows uninstall request"] --> ServiceCleanup["Remove client service"]
+    ServiceCleanup --> Deregistration["Attempt device deregistration"]
+    Deregistration --> ToolCleanup["Uninstall integrated tools"]
+    ToolCleanup --> DirectoryCleanup["Remove logs and application support data"]
+    DirectoryCleanup --> EntryCleanup["Remove Apps and Features entry and PATH entry"]
+    EntryCleanup --> CleanupLaunch["Launch Platform Windows Cleanup"]
+    CleanupLaunch --> ClientExit["Client process exits"]
+    ClientExit --> ScriptCleanup["Script removes executable and empty directories"]
 ```
 
-The helper is deliberately external to the client process. That separation is essential because it allows the binary to be unlocked before deletion is attempted. On Windows, `get_update_staging_directory` resolves to an `update` directory beneath the installation directory. Keeping the script there avoids environments that block scripts launched from the system temporary directory. On non-Windows builds the staging-directory helper resolves to the process temporary directory, but this module's primary execution path is the Windows PowerShell flow.
+This component is distinct from the regular update path. The update launcher also uses the update staging directory to write a PowerShell updater, while update cleanup removes stale backups and temporary update files. Platform Windows Cleanup is specifically the post-exit removal mechanism needed during uninstallation.
 
-## Core Components
+## Architecture and Dependencies
 
-### `generate_binary_cleanup_script`
+```mermaid
+flowchart LR
+    Uninstaller["Windows uninstaller"] --> Executor["execute binary cleanup script"]
+    Executor --> StagingDirectory["Update staging directory"]
+    Executor --> ScriptGenerator["generate binary cleanup script"]
+    ScriptGenerator --> PowerShellScript["Unique PowerShell cleanup script"]
+    Executor --> PowerShellResolver["PowerShell path resolver"]
+    PowerShellResolver --> PowerShell["Windows PowerShell process"]
+    PowerShell --> ProcessWait["Wait for client process"]
+    ProcessWait --> BinaryRemoval["Delete client executable"]
+    BinaryRemoval --> EmptyDirectoryRemoval["Remove empty binary and staging directories"]
+```
 
-`generate_binary_cleanup_script` creates the PowerShell source from four inputs:
+### Local Collaborators
 
-| Input | Purpose |
+| Collaborator | Relationship |
 |---|---|
-| Installation path | The executable to delete after the originating process exits. |
-| Current process ID | The process the helper waits for and, at the timeout boundary, attempts to stop. |
-| Optional binary directory | The directory containing the executable; it is eligible for removal only if empty. |
-| Staging directory | The directory containing the helper script; it is checked for emptiness after the script deletes itself. |
+| Windows uninstaller | Calls `execute_binary_cleanup_script` when the installed executable still exists. It logs a warning rather than failing the broader uninstall if launching cleanup fails. |
+| Directory utilities | `get_update_staging_directory` determines where the script is written. On Windows, this is the install directory's `update` subdirectory. |
+| PowerShell resolver | On Windows, resolves the System32 Windows PowerShell executable, with a `powershell.exe` fallback. |
+| Windows updater launcher | Uses the same staging-directory strategy for its own PowerShell scripts, avoiding locations that may block temporary scripts. |
+| Update cleanup service | Separately removes aged update backups and temporary leftovers. It is complementary to, rather than a replacement for, this post-exit deletion. |
 
-Before interpolation, each path is converted to a lossy string and single quotes are doubled. This preserves PowerShell single-quoted literal boundaries when a path itself contains a single quote.
+## Cleanup Execution Flow
 
-The generated program defines `Remove-EmptyDir`, a bounded helper that:
+```mermaid
+sequenceDiagram
+    participant Uninstaller as "Windows Uninstaller"
+    participant Cleanup as "Platform Windows Cleanup"
+    participant Disk as "Update Staging Directory"
+    participant PowerShell as "PowerShell Script"
+    participant Client as "Client Process"
 
-1. Treats a missing or unspecified directory as already clear.
-2. Enumerates all entries, including hidden entries, and refuses to remove a nonempty directory.
-3. Makes up to three removal attempts, sleeping one second between failed attempts.
+    Uninstaller->>Cleanup: execute cleanup with executable path and binary directory
+    Cleanup->>Disk: create staging directory and unique script
+    Cleanup->>Cleanup: generate script with current process identifier
+    Cleanup->>PowerShell: start hidden background process
+    Cleanup-->>Uninstaller: return launch result
+    PowerShell->>Client: poll until process exits
+    PowerShell->>PowerShell: force stop after timeout if still present
+    PowerShell->>Disk: remove executable with retries
+    PowerShell->>Disk: delete its own script
+    PowerShell->>Disk: remove eligible empty directories
+```
 
-### `execute_binary_cleanup_script`
+### Script Generation
 
-`execute_binary_cleanup_script` is the Rust-side launcher. It obtains the current process ID, creates the update staging directory, creates a cleanup script whose filename includes a random UUID, writes the generated script, and starts it asynchronously.
+`generate_binary_cleanup_script` converts the supplied paths to PowerShell-safe single-quoted values by doubling embedded apostrophes. The generated script receives:
 
-On Windows, the launcher resolves PowerShell by preferring the System32 Windows PowerShell executable and falling back to `powershell.exe`. It starts the command with no profile, hidden window mode, execution-policy bypass, null standard input, and discarded standard output and error. The initial process creation includes flags to hide the window and break away from a job object. If Windows returns access denied for the breakaway attempt, the module logs a warning and retries without the breakaway flag so cleanup can still run inside the existing job.
+- the original client process identifier;
+- the executable path to remove;
+- the optional directory containing the executable; and
+- the update staging directory, which also contains the cleanup script.
 
-The launcher returns an error when it cannot create the staging directory or script, write the contents, or spawn PowerShell. Once the child process has been spawned successfully, it does not wait for the cleanup result; the cleanup occurs after the client has exited.
+The optional binary directory is represented as an empty value when not supplied. This prevents the script from attempting directory removal without a known directory boundary.
 
-## Cleanup Process
+### Launch Behavior
+
+`execute_binary_cleanup_script` obtains the current process identifier, creates the staging directory, and writes a script with a UUID-based filename. It starts PowerShell with no profile, a hidden window, and an execution-policy bypass. Standard input, output, and error are redirected to null handles.
+
+On Windows, the initial process launch requests both no-window and job-object breakaway creation flags. If Windows returns access denied because the current job does not permit breakaway, the component retries with the no-window flag only. This fallback preserves the cleanup attempt in restricted process environments.
+
+## Script Process Flow
 
 ```mermaid
 flowchart TD
-    Start["Cleanup helper starts"] --> WaitLoop["Poll originating process every 500 milliseconds"]
+    Start["Cleanup script starts"] --> WaitLoop["Poll original process for up to 30 seconds"]
     WaitLoop --> ProcessGone{"Process gone?"}
-    ProcessGone -->|"Yes"| Verify["Verify process is absent"]
-    ProcessGone -->|"No, under 30 seconds"| WaitLoop
-    ProcessGone -->|"No, timeout"| ForceStop["Attempt forced process stop"]
+    ProcessGone -->|"yes"| Verify["Verify process is absent"]
+    ProcessGone -->|"no"| ForceStop["Force stop process and wait two seconds"]
     ForceStop --> Verify
     Verify --> StillRunning{"Process still running?"}
-    StillRunning -->|"Yes"| DeleteSelfFailure["Delete helper and exit with failure"]
-    StillRunning -->|"No"| DeleteBinary["Try forced binary deletion up to five times"]
-    DeleteBinary --> BinaryRemoved{"Binary removed?"}
-    BinaryRemoved -->|"No"| PermissionRecovery["Take ownership, grant access, retry deletion"]
-    BinaryRemoved -->|"Yes"| DeleteSelf["Delete helper script"]
-    PermissionRecovery --> DeleteSelf
-    DeleteSelf --> PruneDirectories["Remove empty eligible directories"]
-    PruneDirectories --> Finish["Exit successfully"]
+    StillRunning -->|"yes"| ScriptDeleteFailure["Delete script and exit with failure"]
+    StillRunning -->|"no"| RemoveBinary["Attempt executable removal"]
+    RemoveBinary --> RetryRemoval["Retry up to five times with bounded backoff"]
+    RetryRemoval --> OwnershipFallback{"Executable remains?"}
+    OwnershipFallback -->|"yes"| Ownership["Attempt ownership and ACL adjustment, then remove"]
+    OwnershipFallback -->|"no"| SelfDelete["Delete cleanup script"]
+    Ownership --> SelfDelete
+    SelfDelete --> EmptyDirs["Remove empty binary and staging directories"]
+    EmptyDirs --> Finish["Exit successfully"]
 ```
 
-### Process-exit coordination
+### Process and File-Removal Safeguards
 
-The script polls the process ID for up to 30 seconds in 500-millisecond intervals. If the timeout is reached, it attempts a forced stop and waits an additional two seconds. It then performs a final process lookup. If the process remains present, the helper deletes itself and exits with a failure status rather than attempting to delete a potentially locked executable.
+1. **Bounded wait:** The script polls the original process every 500 milliseconds for up to 30 seconds. If it remains, the script makes a best-effort forced stop and waits two more seconds.
+2. **Final liveness check:** If the original process is still present after the forced-stop attempt, the script deletes itself and exits with a nonzero status instead of deleting a potentially active executable.
+3. **Retrying deletion:** The script attempts forced executable deletion up to five times. Delays use exponential backoff, capped at eight seconds.
+4. **Ownership fallback:** When normal removal still fails and the executable exists, the script attempts `takeown` and grants full access through `icacls` before one final removal attempt. Errors remain nonfatal to the script.
+5. **Self-removal before directory checks:** The script deletes itself before checking directory emptiness. This is necessary because the script resides in the staging directory and would otherwise prevent that directory from being considered empty.
+6. **Empty-directory policy:** Directory removal uses `Test-Path` and enumerates entries before removal. Each empty directory receives up to three removal attempts. The script only considers removal of the parent installation directory after both the binary directory and staging directory have been removed successfully.
 
-### Binary removal and retries
+## Error Handling and Observability
 
-When the binary exists, normal removal is attempted up to five times. The delay is exponential and capped at eight seconds. If all ordinary attempts fail and the target still exists, the helper invokes `takeown` and `icacls` to take ownership and grant full access, then retries forced removal.
+The Rust side adds context to failures to create the staging directory, create or write the script, and spawn PowerShell. These failures are returned to the caller. The Windows uninstaller logs such an error and continues its completion path, so a cleanup-launch failure does not reintroduce the service or cancel earlier uninstallation steps.
 
-The ownership and access-control fallback is deliberately a last resort because it changes permissions on the target binary. It is scoped to the configured binary path and is only reached after ordinary forced deletion fails.
+The cleanup script deliberately sets PowerShell error handling to continue silently. This reflects its best-effort terminal role: it should remove what it can without surfacing interactive prompts or leaving a visible shell. The Rust component logs the current process identifier, script path, selected PowerShell executable, breakaway fallback, and successful launch to support diagnosis before its own process exits.
 
-### Directory pruning
+## Platform Considerations
 
-After binary deletion is attempted, the helper removes its own script before inspecting directories. This ordering matters: the helper resides in the staging directory, so it would otherwise prevent that directory from being empty. It then:
+Although the Rust function includes a non-Windows compilation branch that invokes `powershell.exe`, the generated payload and its intended lifecycle are Windows-specific. The script relies on Windows process inspection, PowerShell, `takeown`, and `icacls`. Callers should use this module only for the Windows uninstallation path.
 
-1. Attempts to remove an empty binary directory.
-2. Attempts to remove an empty staging directory.
-3. Attempts to remove the parent of the binary directory only when both prior removals succeeded and a binary directory was supplied.
+The component assumes it can write under the update staging directory. The uninstaller's prior cleanup may remove other application data, but this staging location must remain available long enough to write and run the deferred script.
 
-Nonempty directories are retained. Failures in normal binary removal and empty-directory removal are intentionally nonfatal to the helper's final success path, whereas an active originating process triggers the explicit failure exit.
+## Maintenance Guidance
 
-## Interactions With Adjacent Client Functions
+- Preserve the order in which the script removes itself and evaluates directory emptiness; changing it can leave the staging directory behind.
+- Treat the executable path and directory arguments as untrusted path content for script-generation purposes. Maintain the current single-quote escaping whenever interpolating new PowerShell values.
+- Keep process termination and final verification separate. The verification prevents removal while the target process remains alive.
+- If the cleanup scope expands, retain the empty-directory checks and avoid recursive deletion of installation parents. This module currently removes directories only when they have no remaining entries.
+- Test changes on systems where the client process is locked, where the executable has restrictive permissions, and where the launcher runs inside a job object that denies breakaway.
 
-| Client concern | Interaction with Platform Windows Cleanup |
-|---|---|
-| Windows uninstall | Invokes the launcher after service teardown, tool cleanup, local directory cleanup, Apps and Features unregistering, and system path removal. |
-| Update staging | Provides a trusted location for the generated script. The same location is used by updater mechanics to avoid system temporary-directory script restrictions. |
-| Executable updates | Binary replacement stages a sibling temporary executable and renames it into place. Cleanup is complementary: it handles final deletion after uninstallation, not an in-place update swap. |
-| General update cleanup | Separately removes aged update artifacts and pre-swap copies. It does not replace the deferred process-exit deletion performed here. |
+## Source and Ownership
 
-## Operational Notes
-
-- The cleanup target and optional binary directory are derived by the caller from the installed executable path. Callers must not pass user-controlled arbitrary paths to this utility.
-- The script filename uses a UUID, reducing collisions between concurrent or repeated cleanup attempts.
-- Child-process output is intentionally suppressed. Investigations should use client tracing emitted when the script is created, when its path is selected, when PowerShell is selected, and when the background helper starts.
-- The helper is best effort for file and directory cleanup. A failed spawn is surfaced to the caller, which logs a warning in the uninstall flow; a successfully spawned helper runs independently of the terminating client.
-- Changes to waiting behavior, permission recovery, or deletion scope should be tested on Windows with service-managed client processes, job-object constraints, locked binaries, and nonempty installation directories.
-
-## Maintenance Boundaries
-
-Keep this module focused on deferred local cleanup. Service removal, server deregistration, tool uninstall, installation-path migration, update state, and ongoing stale-artifact sweeps belong to their respective client subsystems. In particular, do not turn the generated helper into a general-purpose PowerShell executor: its inputs should remain limited to the installed binary, its known directories, and the originating process ID.
+The implementation belongs to the OpenFrame OSS Library rather than this repository. OpenFrame OSS Tenant consumes `openframe_agent_lib` version `v0.0.5`; its OpenFrame Client runtime executes the library code. Review and modify the linked library source for behavior changes, then update the consuming dependency through the normal release process.

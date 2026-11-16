@@ -1,13 +1,20 @@
-flowchart TD
-    Start["Run manager worker"] --> Resolve["Resolve system timezone"]
-    Resolve --> Available{"Timezone available?"}
-    Available -->|"No"| LocalWarning["Log warning and do not create report"]
-    Available -->|"Yes"| Build["Build MachineTimezoneMessage"]
-    Build --> Publish["Publish to JetStream subject"]
-    Publish --> Acked{"Publish acknowledgement received?"}
-    Acked -->|"No"| PublishError["Return publishing error"]
-    Acked -->|"Yes"| Deliver["Listener receives message"]
-    Deliver --> Valid{"Payload and machine state accepted?"}
-    Valid -->|"No"| Ignore["Acknowledge without update"]
-    Valid -->|"Yes"| Persist["Write machine timezone"]
-    Persist --> Complete["Acknowledge delivery"]
+sequenceDiagram
+    participant Manager as Machine timezone run manager
+    participant Fetcher as Device data fetcher
+    participant Publisher as Machine timezone publisher
+    participant Nats as NATS JetStream
+    participant Listener as Machine timezone listener
+    participant Service as Machine timezone service
+    Manager->>Fetcher: Get system timezone
+    Fetcher-->>Manager: Timezone or no value
+    Manager->>Publisher: Publish timezone
+    Publisher->>Nats: Publish acknowledged JSON to machine ID subject
+    Nats->>Listener: Deliver message
+    Listener->>Listener: Extract machine ID and deserialize JSON
+    alt Nonblank timezone
+        Listener->>Service: Update machine timezone
+        Listener->>Nats: Acknowledge message
+    else Blank or invalid processing
+        Listener->>Listener: Log condition
+        Note over Listener,Nats: Blank values are acknowledged without an update, exceptions remain unacknowledged for redelivery
+    end

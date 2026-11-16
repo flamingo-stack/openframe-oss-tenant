@@ -1,0 +1,8 @@
+flowchart LR
+    Registry["Installed tools registry"] -->|"tool records"| Manager["Tool Run Manager"]
+    Resolver["Command parameter resolver"] -->|"resolved launch arguments"| Manager
+    Operations["Tool operation coordinator"] -->|"busy and release state"| Manager
+    Killer["Tool stop service"] -->|"stop leftovers"| Manager
+    Manager -->|"spawn and supervise"| Standard["Standard tool process"]
+    Manager -->|"start through operating system"| Service["Service installation"]
+    Manager -->|"launch for logged-in user"| Gui["Graphical application"]

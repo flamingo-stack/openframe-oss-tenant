@@ -1,7 +1,0 @@
-flowchart LR
-    RunManager["Machine Timezone Run Manager"] -->|"invokes publish"| Publisher["Services Machine Timezone Publisher"]
-    Fetcher["Device Data Fetcher"] -->|"resolved IANA time zone"| RunManager
-    Config["Agent Configuration Service"] -->|"machine identifier"| Publisher
-    Publisher -->|"JSON publish with broker acknowledgement"| Nats["NATS JetStream"]
-    Nats -->|"machine identifier in subject"| Listener["Machine Timezone Listener"]
-    Listener -->|"valid time zone update"| ServerService["Machine Timezone Service"]

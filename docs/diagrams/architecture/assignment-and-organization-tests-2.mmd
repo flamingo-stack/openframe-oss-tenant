@@ -1,0 +1,15 @@
+flowchart LR
+    FixtureFolder["Fixture folder"] --> SourceArticle["Source article"]
+    FixtureFolder --> ArticleOne["Target article one"]
+    FixtureFolder --> ArticleTwo["Target article two"]
+    FixtureTicket["Fixture ticket"] --> TicketAssignment["Ticket assignment"]
+    SourceArticle --> TicketAssignment
+    SourceArticle --> ArticleAssignments["Article assignments"]
+    ArticleOne --> ArticleAssignments
+    ArticleTwo --> ArticleAssignments
+    SourceArticle --> DeviceAssignment["Device assignment"]
+    QaDevice["QA Windows device"] --> DeviceAssignment
+    TicketAssignment --> QueryChecks["Counts, filters, sorting, and paging"]
+    ArticleAssignments --> QueryChecks
+    DeviceAssignment --> QueryChecks
+    QueryChecks --> Cleanup["Unassign and archive fixtures"]

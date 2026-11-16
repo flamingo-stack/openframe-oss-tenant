@@ -1,0 +1,12 @@
+flowchart TD
+    Operator["Installer or service command"] --> Service["Service Management"]
+    Service --> Directories["Directory Manager"]
+    Service --> InitialConfig["Installation Initial Config Service"]
+    Service --> Adapter["Cross Platform Service Manager"]
+    Adapter --> WindowsScm["Windows Service Control Manager"]
+    Adapter --> LaunchDaemon["macOS LaunchDaemon"]
+    Adapter --> Systemd["Linux systemd"]
+    Service --> Client["OpenFrame Client runtime"]
+    Service --> PlatformUninstall["Platform uninstall flow"]
+    PlatformUninstall --> Deregistration["Deregistration Service"]
+    PlatformUninstall --> Tools["Integrated tool cleanup"]

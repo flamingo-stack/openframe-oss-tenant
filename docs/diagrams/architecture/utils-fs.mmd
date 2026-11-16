@@ -1,12 +1,11 @@
 flowchart LR
-    Client["OpenFrame Client agent"]
-    Services["Client services"]
-    Utils["Utils Fs"]
-    Temp["Same directory temporary file"]
-    State["JSON state file"]
-    Quarantine["Quarantined corrupt file"]
-    Client --> Services
-    Services --> Utils
-    Utils --> Temp
-    Temp --> State
-    Utils --> Quarantine
+    ClientRuntime["OpenFrame Client runtime"] --> StateOwner["State-owning service"]
+    StateOwner --> JsonApi["Utils Fs JSON read API"]
+    StateOwner --> WriteApi["Utils Fs atomic write API"]
+    JsonApi --> LocalFile["Persistent JSON file"]
+    WriteApi --> TempFile["Same-directory temporary file"]
+    TempFile --> Replace["Atomic replacement"]
+    Replace --> LocalFile
+    JsonApi --> Quarantine["Sibling corrupt file"]
+    Quarantine --> LocalDirectory["Persistent state directory"]
+    LocalFile --> LocalDirectory

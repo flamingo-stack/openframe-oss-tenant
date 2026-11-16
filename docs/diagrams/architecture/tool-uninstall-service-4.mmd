@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Caller as Client Uninstaller
+    participant Service as Tool Uninstall Service
+    participant Inventory as Installed Tools Service
+    participant Killer as Tool Kill Service
+    participant Process as Tool Uninstaller
+    Caller->>Service: uninstall_all()
+    Service->>Inventory: get_all()
+    Inventory-->>Service: installed tools
+    loop Each recorded tool
+        Service->>Killer: stop_installed_tool()
+        Service->>Process: executable with resolved arguments
+        Process-->>Service: output and exit status
+        alt Successful exit
+            Service->>Killer: stop_tool_by_path()
+            Service->>Service: clean GUI and service remnants
+        else Failed, timed out, or non-zero exit
+            Service->>Service: log failure and clean residual service
+        end
+    end
+    Service-->>Caller: aggregate completion

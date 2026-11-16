@@ -1,7 +1,0 @@
-flowchart TD
-    Gateway["OpenFrame Gateway"] --> ExternalApi["OpenFrame External API"]
-    ExternalApi --> RestResources["Rest Resources"]
-    RestResources --> ApiServices["API Service Domain Capabilities"]
-    RestResources --> DataLayer["Mongo and Other Data Services"]
-    Authorization["Authorization Server"] -.->|"Identity and access context"| Gateway
-    OpenApi["OpenAPI Description"] --> ExternalApi

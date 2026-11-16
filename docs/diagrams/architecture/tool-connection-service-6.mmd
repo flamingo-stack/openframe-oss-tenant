@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Manager as Tool Connection Processing Manager
+    participant Registry as Tool Connection Service
+    participant Publisher as Tool Connection Message Publisher
+    participant Broker as NATS
+    participant Backend as Client Backend
+
+    Manager->>Registry: Load retained connections
+    Manager->>Manager: Resolve current tool mapping
+    Manager->>Registry: Save current connection
+    Manager->>Publisher: Publish agent tool ID and tool type
+    Publisher->>Broker: Publish machine-scoped message
+    Broker->>Backend: Deliver connection message

@@ -1,0 +1,23 @@
+flowchart TD
+    Start["Start tool loop"] --> Sweep["Sweep eligible orphan helpers"]
+    Sweep --> Load["Reload installed-tool record"]
+    Load --> Exists{"Record exists?"}
+    Exists -->|"no"| Cleanup["Remove loop state"]
+    Exists -->|"yes"| Busy{"Tool operation busy?"}
+    Busy -->|"yes"| ShortWait["Wait fifteen seconds"]
+    ShortWait --> Load
+    Busy -->|"no"| CommandSet{"Identifier command configured?"}
+    CommandSet -->|"no"| EmptyId["Use empty agent-side identifier"]
+    CommandSet -->|"yes"| Resolve["Resolve command parameters"]
+    Resolve --> Execute["Run identifier command"]
+    Execute --> Valid{"Successful nonempty output?"}
+    Valid -->|"no"| Retry["Back off and retry"]
+    Retry --> Load
+    Valid -->|"yes"| Publish["Publish connection mapping"]
+    EmptyId --> Publish
+    Publish --> Published{"Published?"}
+    Published -->|"no"| ShortWait
+    Published -->|"yes"| Save["Save local connection record"]
+    Save --> Resweep["Sweep eligible orphan helpers"]
+    Resweep --> Wait["Wait for periodic interval or wake signal"]
+    Wait --> Load

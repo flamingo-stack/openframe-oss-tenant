@@ -1,0 +1,13 @@
+flowchart LR
+    ControlPlane["Control plane"] -->|"Tool agent update message"| CommandListener["Command listener"]
+    CommandListener --> ToolUpdateHandler["Tool update handler"]
+    ToolUpdateHandler --> ToolOps["Per-tool operation lock"]
+    ToolUpdateHandler --> UpdateService["Tool agent update service"]
+    UpdateService --> InstalledTools["Installed tools service"]
+    UpdateService --> DownloadService["Download service"]
+    UpdateService --> ToolUpdater["Platform tool updater"]
+    UpdateService --> VersionPublisher["Installed agent publisher"]
+    InstalledTools --> LocalRecord["Installed tool record"]
+    DownloadService --> ArtifactSource["Configured artifact source"]
+    ToolUpdater --> DeviceTool["Local tool installation"]
+    VersionPublisher --> ControlPlane

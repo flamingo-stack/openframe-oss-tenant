@@ -1,7 +1,0 @@
-flowchart TD
-    InitialAuth["Initial Authentication"] --> TokenResponse["Access and Refresh Tokens"]
-    RefreshManager["Token Refresh Run Manager"] --> Reauth["Reauthentication"]
-    Reauth --> TokenResponse
-    TokenResponse --> SharedToken["Services Shared Token"]
-    SharedToken --> EncryptedFile["Encrypted shared_token.enc"]
-    EncryptedFile --> LocalConsumer["Local Token Consumer"]

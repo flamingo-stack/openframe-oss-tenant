@@ -1,6 +1,0 @@
-flowchart TD
-    ConfigWriter["Initial configuration setup"] --> ConfigStore["Persisted server host"]
-    ConfigStore --> InitialConfig["Initial Configuration Service"]
-    InitialConfig --> UrlResolver["Services Tool Url Params Resolver"]
-    UrlResolver --> UrlConsumer["Tool URL consumer"]
-    CommandResolver["Services Tool Command Params Resolver"] --> CommandConsumer["Tool command consumer"]

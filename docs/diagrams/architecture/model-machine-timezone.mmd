@@ -1,9 +1,7 @@
 flowchart LR
-    SystemClock["Managed machine operating system"] -->|"time-zone identifier"| Fetcher["Device data fetcher"]
-    Fetcher -->|"String or no value"| RunManager["Machine timezone run manager"]
-    RunManager --> Publisher["Machine timezone publisher"]
-    AgentConfig["Agent configuration service"] -->|"machine identifier"| Publisher
-    Publisher -->|"JSON message"| Nats["NATS JetStream"]
-    Nats -->|"machine ID and payload"| Listener["Machine timezone listener"]
-    Listener --> Validator["Machine timezone service"]
-    Validator --> Repository["Machine repository and writer"]
+    EndpointOs["Endpoint operating system"] -->|"time-zone lookup"| Fetcher["Device data fetcher"]
+    Fetcher -->|"time-zone string"| RunManager["Machine timezone run manager"]
+    RunManager -->|"publish request"| Publisher["Machine timezone publisher"]
+    Publisher -->|"serialized message"| Nats["NATS JetStream"]
+    Nats -->|"machine ID subject"| Listener["Machine timezone listener"]
+    Listener -->|"timezone update"| Service["Machine timezone service"]

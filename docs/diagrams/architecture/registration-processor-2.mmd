@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Process invoked"] --> ReadMachineId["Read machine identifier"]
+    ReadMachineId --> HasMachineId{{"Machine identifier present?"}}
+    HasMachineId -->|"yes"| AlreadyRegistered["Log already registered"]
+    AlreadyRegistered --> Complete["Return success"]
+    HasMachineId -->|"no"| Attempt["Call registration service"]
+    Attempt --> Successful{{"Registration succeeded?"}}
+    Successful -->|"yes"| SuccessLog["Log registration succeeded"]
+    SuccessLog --> Complete
+    Successful -->|"no"| FailureLog["Log contextual registration error"]
+    FailureLog --> Delay["Wait 60 seconds"]
+    Delay --> Attempt

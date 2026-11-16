@@ -1,7 +1,0 @@
-flowchart LR
-    Server["Client token endpoint"] -->|"JSON token response"| AuthClient["Authentication client"]
-    AuthClient -->|"deserialize"| TokenModel["Model Agent Token"]
-    TokenModel -->|"token response"| AuthService["Agent authentication service"]
-    AuthService -->|"persist credentials"| ConfigService["Agent configuration service"]
-    AuthService -->|"encrypt access credential"| SharedToken["Shared token service"]
-    RefreshManager["Token refresh run manager"] -->|"reauthenticate"| AuthService

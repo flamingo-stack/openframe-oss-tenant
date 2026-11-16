@@ -1,0 +1,12 @@
+flowchart LR
+    Agent["Endpoint Agent"] -->|"HTTP registration and tokens"| Api["Client HTTP Controllers"]
+    Agent -->|"NATS telemetry and results"| Listeners["NATS Listeners"]
+    Kafka["Kafka Delivery Hand Off"] -->|"Delivery dispatch"| Dispatch["Delivery Dispatch Listener"]
+    Api --> Registration["Registration and Authentication Services"]
+    Listeners --> Domain["Client and RMM Services"]
+    Dispatch --> Domain
+    Schedulers["Scheduled Jobs"] --> Domain
+    Domain --> Mongo["MongoDB State"]
+    Domain --> Nats["NATS Commands"]
+    Domain --> KafkaOut["Kafka Event Logs"]
+    Redis["Redis"] -->|"ShedLock"| Schedulers

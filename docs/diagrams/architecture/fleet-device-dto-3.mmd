@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Test as "Test scenario"
+    participant Payload as "Fleet response payload"
+    participant Mapper as "Jackson mapper"
+    participant Dto as "Fleet Device Dto"
+
+    Test->>Payload: Obtain device-related response
+    Payload->>Mapper: JSON content
+    Mapper->>Dto: Populate software, users, and vulnerabilities
+    Dto->>Test: Typed data for assertions

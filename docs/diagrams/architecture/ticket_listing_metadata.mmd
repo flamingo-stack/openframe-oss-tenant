@@ -1,0 +1,9 @@
+flowchart LR
+    TicketList["Ticket List Response"] --> PageInfo["Ticket Page Info"]
+    PageInfo --> StartCursor["Start Cursor"]
+    PageInfo --> EndCursor["End Cursor"]
+    PageInfo --> NextPage["Has Next Page"]
+    PageInfo --> PreviousPage["Has Previous Page"]
+    TicketList --> StatusCount["Ticket Status Definition Count"]
+    StatusCount --> Status["Ticket Status Definition"]
+    StatusCount --> Count["Ticket Count"]

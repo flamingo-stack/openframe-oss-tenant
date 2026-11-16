@@ -1,5 +1,6 @@
 flowchart LR
-    Response["Time-entry connection response"] --> Edge["TimeEntryEdge"]
-    Edge --> Node["node: TimeEntry"]
-    Edge --> Cursor["cursor: String"]
-    Test["Test code"] --> Edge
+    ApiResponse["Paginated time-entry response"] -->|"deserializes"| Edge["Timetracking Dto: TimeEntryEdge"]
+    Edge -->|"node"| Entry["TimeEntry test DTO"]
+    Edge -->|"cursor"| Cursor["Opaque pagination cursor"]
+    Edge -->|"consumed by"| TestCode["Time-tracking integration tests"]
+    TestCode -->|"uses cursor for next page"| ApiResponse

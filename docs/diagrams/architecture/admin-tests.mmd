@@ -1,0 +1,13 @@
+flowchart LR
+    Pipeline["End-to-end pipeline"] -->|"admin-setup"| Fixture["AdminFixtureTest"]
+    Fixture -->|"create request"| Generator["InvitationGenerator"]
+    Generator --> Request["Invitation request"]
+    Fixture -->|"invite user"| InvitationApi["Invitation API"]
+    InvitationApi --> Invitation["Invitation"]
+    Fixture -->|"accept invitation"| InvitationApi
+    InvitationApi --> Accepted["Accepted invitation response"]
+    Fixture -->|"store identifier and email"| Context["PipelineContext"]
+    Pipeline -->|"functional phase"| FunctionalTests["Tests requiring an administrator"]
+    FunctionalTests -->|"read fixture identity"| Context
+    Pipeline -->|"admin-teardown"| Fixture
+    Fixture -->|"delete saved user"| UserApi["User API"]

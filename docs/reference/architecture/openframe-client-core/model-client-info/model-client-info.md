@@ -1,166 +1,179 @@
 # Model Client Info
 
-Model Client Info defines the persisted, local status record for an OpenFrame endpoint client. It is implemented by the `openframe_agent_lib` library from [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/openframe_client_info.rs), which this repository assembles into the endpoint-client runtime.
+Model Client Info is the persisted local identity and update-summary model for the OpenFrame endpoint client. It is implemented by the `openframe_agent_lib` Cargo artifact supplied by OpenFrame OSS Library and is used at runtime by this repository's OpenFrame client service. The model records the version that is running, a requested update target, update status, the executable path, and timestamps that describe update activity.
 
-The model has a deliberately narrow responsibility: retain the version currently running, an optionally requested target version, update lifecycle status, the managed executable location, and timestamps for update bookkeeping. It is local client state, rather than an update command or the durable update execution state.
+The source implementation is maintained in [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/openframe_client_info.rs).
 
 ## Responsibilities
 
-- Represent client update state in a serializable Rust value.
-- Preserve the version reported by the running client binary.
-- Retain an optional target version while an update is being tracked.
-- Record the managed binary path used by client update and installation logic.
-- Expose timestamps for the latest update check and latest version update.
-- Provide defaults so a newly created or absent record begins in a safe `Current` state.
+- Provide a serializable on-disk snapshot of client version and binary location.
+- Represent the user-visible lifecycle of a client update with a small, stable status enum.
+- Preserve the requested target version while an update is running or has failed.
+- Supply bookkeeping data to the client information and update-handling services without making update decisions itself.
 
-## Data Model
+Model Client Info does not download an update, replace an executable, publish a message, or manage update phases. Those responsibilities remain in surrounding client services.
 
-`OpenFrameClientInfo` derives `Serialize`, `Deserialize`, `Debug`, `Clone`, and `Default`. Its fields are public, allowing the client information service to load, alter, and save the complete record.
+## Model
 
-| Field | Rust type | Meaning | Default behavior |
-|---|---|---|---|
-| `current_version` | `String` | Version believed to be running on the endpoint. | Empty string until discovered or reconciled. |
-| `target_version` | `Option<String>` | Requested version associated with the tracked update. | `None` when no target is stored. |
-| `status` | `ClientUpdateStatus` | Local update lifecycle marker. | `Current`. |
-| `binary_path` | `String` | Path of the endpoint-client executable managed by the updater. | Empty string until set. |
-| `last_update_check` | `Option<String>` | RFC 3339 timestamp of the most recent status update attempt. | `None` until status tracking occurs. |
-| `last_updated` | `Option<String>` | RFC 3339 timestamp of the most recent version reconciliation or version write. | `None` until a version changes. |
+The module exposes two Rust types.
 
-### Update Status Values
+| Type | Purpose |
+| --- | --- |
+| `ClientUpdateStatus` | Lifecycle classification for the client update summary. It serializes to lowercase strings and defaults to `Current`. |
+| `OpenFrameClientInfo` | Serializable record containing version, target, status, binary path, and update timestamps. It derives `Default`, so absent persisted data yields empty strings, absent optional fields, and a `Current` status. |
 
-`ClientUpdateStatus` is serialized with `serde(rename_all = "lowercase")`. Consequently, its on-disk JSON values are lowercase even though the Rust variants use PascalCase.
+### Update Status
 
-| Rust variant | Serialized value | Meaning |
-|---|---|---|
-| `Current` | `current` | No update is recorded as active. This is the default. |
-| `Updating` | `updating` | An accepted update is being prepared or launched. |
-| `Updated` | `updated` | An update completion state may be recorded by the surrounding update workflow. |
-| `Failed` | `failed` | The attempted update did not complete successfully. |
+| Status | Meaning |
+| --- | --- |
+| `Current` | Default state indicating no active or recorded exceptional update state. |
+| `Updating` | An update has been accepted and update work is underway. |
+| `Updated` | A completed-update classification available to consumers of the model. |
+| `Failed` | The most recent update attempt failed or was determined to be unsuccessful during startup handling. |
 
-The model itself does not enforce legal transitions. The surrounding services own transition timing and error handling.
+Because the enum uses lowercase serialization, persisted values are `current`, `updating`, `updated`, and `failed`.
 
-## Architecture and Ownership
+### Persisted Fields
 
-The Model Client Info types are part of the Rust endpoint client supplied by OpenFrame OSS Library. In this repository, the endpoint client is packaged and deployed as part of the OpenFrame tenant platform. `OpenFrameClientInfoService` owns persistence and controlled mutation; `OpenFrameClientUpdateService` coordinates update reservations, downloads, update state, running tools, and lifecycle status changes.
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `current_version` | `String` | Version attributed to the currently running client binary. |
+| `target_version` | `Option<String>` | Version requested for an update, when one is being tracked. |
+| `status` | `ClientUpdateStatus` | Summary update state. |
+| `binary_path` | `String` | Path of the client executable recorded by the client information service. |
+| `last_update_check` | `Option<String>` | RFC 3339 UTC timestamp written when the update status is changed. |
+| `last_updated` | `Option<String>` | RFC 3339 UTC timestamp written when the recorded running version changes. |
+
+## Architecture and Boundaries
+
+Model Client Info belongs to the Rust endpoint client. `OpenFrameClientInfoService` owns its persistence lifecycle, storing the serialized record as `openframe_client_info.json` beneath the directory manager's secured directory. It creates that directory before use, reads the record through the quarantine-aware JSON helper, and writes updates atomically.
 
 ```mermaid
 flowchart LR
-    Runtime["OpenFrame endpoint client runtime"] --> InfoService["OpenFrame client info service"]
-    UpdateService["OpenFrame client update service"] --> InfoService
-    InfoService --> InfoModel["OpenFrameClientInfo"]
-    InfoModel --> Status["ClientUpdateStatus"]
-    InfoService --> InfoFile["Local client info JSON file"]
-    UpdateService --> UpdateState["Separate update state service"]
-    UpdateService --> ToolManager["Tool run manager"]
-    UpdateService --> Downloader["GitHub download service"]
+    Model["Model Client Info"]
+    InfoService["Client Information Service"]
+    UpdateService["Client Update Service"]
+    Handler["Update Handler Service"]
+    State["Update State Service"]
+    Storage["Secured Client Info File"]
+    Binary["Running Client Binary"]
+    Publisher["Installed Agent Publisher"]
+
+    InfoService -->|"reads and writes"| Model
+    InfoService -->|"atomic JSON persistence"| Storage
+    UpdateService -->|"sets update status"| InfoService
+    UpdateService -->|"creates phase state"| State
+    Handler -->|"reconciles version and failure status"| InfoService
+    Handler -->|"reads update phase"| State
+    Binary -->|"supplies running version"| Handler
+    Handler -->|"reports running version"| Publisher
 ```
 
-### Separation From Other Update Records
+### Dependency Relationships
 
-Model Client Info is a concise operational snapshot. It is not interchangeable with the update request or the update-state record:
-
-| Record | Primary purpose | Distinguishing data |
-|---|---|---|
-| Model Client Info | Persist local version and status summary. | Current version, target version, status, binary path, timestamps. |
-| Client update message | Describe a requested update. | Requested version and platform-specific download configurations. |
-| Update state | Track an individual update attempt across process replacement. | Target version, phase, boot attempt count, start time, and updater-stamped error. |
-
-This division prevents request payloads and crash-recovery metadata from being conflated with the endpoint's persisted status summary.
-
-## Persistence Semantics
-
-`OpenFrameClientInfoService` retrieves this model from its configured local file path. When that file is absent, `get` returns `OpenFrameClientInfo::default()` rather than treating the absence as an error. Saving serializes pretty JSON and writes through the shared atomic-write utility, so the service does not directly expose partially written JSON as the intended persistence result.
+The model has no behavior beyond derived serialization, cloning, equality for the status enum, and defaults. Its operational dependencies are therefore consumers rather than imports:
 
 ```mermaid
 flowchart TD
-    ReadRequest["Read client info"] --> ReadFile["Read local JSON file"]
-    ReadFile --> Exists{"Record exists?"}
-    Exists -->|"No"| DefaultInfo["Return default client info"]
-    Exists -->|"Yes"| Deserialize["Deserialize OpenFrameClientInfo"]
-    Deserialize --> Caller["Client information service caller"]
-    Caller --> Mutation["Update one or more fields"]
-    Mutation --> Serialize["Serialize pretty JSON"]
-    Serialize --> AtomicWrite["Atomically write local file"]
+    Model["Model Client Info"]
+    InfoService["Client Information Service"]
+    UpdateService["Client Update Service"]
+    Handler["Update Handler Service"]
+    StateModel["Update State Model"]
+    Download["Download Service"]
+    LastKnownGood["Last Known Good Service"]
+    Tools["Tool Run Manager and Tool Operations"]
+
+    InfoService -->|"persists"| Model
+    UpdateService -->|"reads and changes"| InfoService
+    Handler -->|"reads and changes"| InfoService
+    UpdateService -->|"coordinates with"| StateModel
+    UpdateService -->|"downloads through"| Download
+    UpdateService -->|"prevents downgrade using"| LastKnownGood
+    UpdateService -->|"defers around"| Tools
 ```
 
-### Service Operations
+The separate update-state model is the authoritative process-level state for target version, phase, boot attempts, start time, and updater-reported error. Model Client Info is the durable, concise status view; it must not be interpreted as a replacement for phase-level recovery state.
 
-The information service provides the following behavior around the model:
+## Persistence Semantics
 
-- `get` loads the record, returning default data if no record exists.
-- `save` serializes and atomically persists the complete record.
-- `set_binary_path` changes only `binary_path` before saving.
-- `set_update_status` changes `status` and `target_version`, then stamps `last_update_check` with the current UTC RFC 3339 time.
-- `update_version` changes `current_version`, stamps `last_updated`, and saves.
-- `reconcile_version` compares the stored version with the executing binary's version. When they differ, it records the running version and refreshes `last_updated`.
+`OpenFrameClientInfoService` establishes the following behavior:
 
-`reconcile_version` only changes the version and update timestamp. It does not infer a target version or update status, which keeps runtime truth reconciliation independent from update lifecycle decisions.
+1. **Creation:** initialization resolves the secured-directory path, ensures client directories exist, and targets `openframe_client_info.json`.
+2. **Read:** `get` uses a JSON reader that can quarantine invalid content. A missing file is not an error; it returns `OpenFrameClientInfo::default()`.
+3. **Write:** `save` serializes pretty JSON and uses an atomic write, avoiding a partially written record during replacement.
+4. **Version reconciliation:** `reconcile_version` compares `current_version` with the actual running version. If they differ, it overwrites the recorded version and stamps `last_updated`.
+5. **Status change:** `set_update_status` updates both `status` and `target_version`, then stamps `last_update_check`.
+6. **Path change:** `set_binary_path` replaces only the saved `binary_path` before persisting.
+
+A missing record is deliberately recoverable. A corrupt record is handled by the JSON helper's quarantine path rather than being silently treated as valid prior state.
 
 ## Update Interaction Flow
 
-The update service uses Model Client Info for bookkeeping, not as the update lock or the source of executable state. Before applying a request, it reserves a process-wide update guard, skips a request matching the currently running version, and defers while protected operations are busy. During application, it validates and canonicalizes the requested version, checks the last-known-good version to prevent disallowed downgrades, and reads the stored current version for diagnostic logging.
-
-Once an update is ready to proceed, the service attempts to record `Updating` and the canonical target version. A bookkeeping write failure is logged but does not prevent the actual update from continuing. If the update operation fails, it attempts to record `Failed` with the same target version and clears separate update-state data so stale state cannot affect later boot recovery.
+An update request carries a requested version and one or more download configurations. The client update service reserves a single in-progress update, checks for conflicting tool activity, validates and canonicalizes the version, and skips work if that version is already running. For an eligible request it records `Updating` with the target version before beginning update execution. Bookkeeping failure is logged but does not block the update attempt.
 
 ```mermaid
 sequenceDiagram
-    participant Command as Update command
-    participant Update as Client update service
-    participant Info as Client info service
-    participant State as Update state service
-    participant Tools as Tool run manager
-    Command->>Update: Request target version
-    Update->>Tools: Mark client update pending
-    Update->>Info: Read current client info
-    Update->>Info: Set updating and target version
-    Update->>State: Create update attempt state
-    Update->>Update: Download and launch updater
-    alt update launch fails
-        Update->>Info: Set failed and target version
-        Update->>State: Clear update attempt state
-    else updater launches
-        Update-->>Command: Report launch accepted
+    participant Listener as Command Listener
+    participant Update as Client Update Service
+    participant Info as Client Information Service
+    participant State as Update State Service
+    participant Handler as Update Handler Service
+    participant Binary as Client Binary
+
+    Listener->>Update: Reserve update request
+    Update->>Update: Reject duplicate or defer around busy tools
+    Update->>Update: Validate and canonicalize requested version
+    Update->>Info: Set Updating and target version
+    Update->>State: Create and persist update phase state
+    Update->>Binary: Launch updater process
+    Binary->>Handler: Start updated client
+    Handler->>State: Load pending update state
+    alt Running version matches target
+        Handler->>Info: Reconcile and record successful running version
+    else Update failed
+        Handler->>Info: Set Failed and target version
+        Handler->>State: Clear update state after cleanup
+    else Verification pending
+        Handler->>State: Retain state for later boot handling
     end
 ```
 
-## State Interpretation Guidelines
+## Startup Recovery and Failure Handling
 
-Consumers should interpret this record as observational local state:
+On startup, the update handler examines persisted phase state alongside the version compiled into the running binary.
 
-- `current_version` is corrected by the running executable during reconciliation, making it the preferred local observation of the active binary version.
-- `target_version` identifies the version associated with the latest tracked update state. Its presence alone does not prove that an update has completed.
-- `status` supplies the lifecycle context required to interpret `target_version`.
-- `last_update_check` is updated when the service records a status, rather than only after a successful binary replacement.
-- `last_updated` is updated when a version is saved or reconciled, rather than on every status transition.
-- `binary_path` is mutable independently of version fields because deployment location can change without changing the active binary version.
-
-Because the persisted model may be missing on a new installation, callers must tolerate empty strings and absent optional timestamps. The default enum state is `Current`, but that state does not populate `current_version` or `binary_path` by itself.
-
-## JSON Shape
-
-The exact optional-field emission behavior follows the default Serde configuration in this type: optional fields are represented as JSON values or `null` because the model has no `skip_serializing_if` attributes.
-
-```json
-{
-  "current_version": "1.2.3",
-  "target_version": "1.2.4",
-  "status": "updating",
-  "binary_path": "/path/to/openframe-client",
-  "last_update_check": "2026-01-15T12:34:56Z",
-  "last_updated": "2026-01-01T09:00:00Z"
-}
+```mermaid
+flowchart TD
+    Start["Client Startup"] --> Load["Load Pending Update State"]
+    Load --> Present{"State Present?"}
+    Present -->|"no"| Interrupted["Report Interrupted Before Launch"]
+    Present -->|"yes"| Match{"Running Version Matches Target?"}
+    Match -->|"yes"| Success["Handle Successful Update"]
+    Match -->|"no"| Pending{"Phase Is Launching Or Verifying?"}
+    Pending -->|"yes"| Keep["Keep State For Next Boot"]
+    Pending -->|"no"| Failed["Set Failed Status"]
+    Failed --> Cleanup["Report Failure, Clean Up, Clear State"]
 ```
 
-The values above are illustrative only. In particular, binary paths are operating-system and installation-location dependent.
+For an unresolved updater-launch or verification state, the handler records boot attempts. If the target version still does not match the running version after the configured maximum number of attempts, the crash-loop guard treats the update as failed, performs failure cleanup, clears update state, and initiates rollback handling. This protects the client from retaining an indefinitely unresolved update record.
 
-## Maintenance Considerations
+## Version Reporting
 
-- Treat serialized status names as a persisted compatibility contract. Renaming an enum variant or modifying the lowercase serialization convention changes stored data compatibility.
-- New fields should have sensible defaults or optional types so existing local records remain readable.
-- Keep lifecycle policy in update services rather than adding transition validation to this data-only model unless all existing callers are updated together.
-- Preserve the distinction between local client info and crash-recovery update state. Clearing failed update state should not erase the diagnostic summary retained in Model Client Info.
-- Use the information service for writes so file access continues to use its centralized JSON parsing, quarantine behavior, and atomic persistence path.
+The update handler publishes the running OpenFrame client version through the installed-agent publisher after startup. It obtains the machine identifier from agent configuration and retries publication up to five times with one-second waits. This remote version report is distinct from Model Client Info persistence:
 
-## Source
+- the persisted record supports local continuity and update bookkeeping;
+- the publisher announces the running version to the platform;
+- reconciliation corrects local `current_version` when the executable's running version disagrees with stored data.
 
-The model is provided by OpenFrame OSS Library at [clients/openframe-client/src/models/openframe_client_info.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/openframe_client_info.rs). The tenant repository consumes `openframe_agent_lib` version `v0.0.5` as part of its endpoint-client runtime.
+## Maintenance Guidance
+
+- Keep `ClientUpdateStatus` values backward compatible: the lowercase serialized names are persisted data.
+- Add a status only when consumers can distinguish it from phase-level `UpdateState`; otherwise prefer keeping the additional detail in the update-state model.
+- Do not treat `target_version` as proof that an update was applied. Confirm the running version and the update-state outcome.
+- Preserve atomic persistence and the missing-file default behavior when changing the client information service.
+- Treat `binary_path` as local metadata. The actual executable replacement and platform-specific updater behavior are outside this model.
+
+## Source Scope
+
+This documentation covers the two types defined in the Model Client Info module and their verified use by the client information, client update, and update handler services in OpenFrame OSS Library. Platform-specific binary replacement, downloader selection, tool shutdown, and rollback mechanics are intentionally outside the model's scope.

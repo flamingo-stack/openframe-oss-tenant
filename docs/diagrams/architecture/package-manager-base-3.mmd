@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Probe WinGet on Windows"] --> Execute["Run PowerShell as user"]
+    Execute --> Timeout{"Timed out or setup failure?"}
+    Timeout -->|"Yes"| Unknown["Presence.Unknown"]
+    Timeout -->|"No"| ExitCode{"Exit code"}
+    ExitCode -->|"0"| Present["Presence.Present"]
+    ExitCode -->|"1"| Absent["Presence.Absent"]
+    ExitCode -->|"Other"| Unknown

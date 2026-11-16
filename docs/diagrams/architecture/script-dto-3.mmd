@@ -1,59 +1,14 @@
-classDiagram
-    class RunScriptRequest {
-        String mode
-        String target
-        Integer script
-        Integer timeout
-        List args
-        List envVars
-        Boolean runAsUser
-    }
-    class CreateScriptScheduleRequest {
-        String name
-        String taskType
-        String runTimeDate
-        Boolean enabled
-        Integer dailyInterval
-    }
-    class Action {
-        String type
-        Integer script
-        Integer timeout
-        List scriptArgs
-        List envVars
-    }
-    class ScriptSchedule {
-        Integer id
-        String name
-        Integer actionsCount
-        Integer agentsCount
-    }
-    class ScheduleAssignDeviceResponse {
-        Integer agentsCount
-        Integer taskResultsCreated
-        Integer taskResultsDeleted
-    }
-    class ScheduleExecutionHistory {
-        Integer total
-        Integer limit
-        Integer offset
-    }
-    class Result {
-        Integer id
-        String agentId
-        Integer retcode
-        String status
-    }
-    class ScriptAuthor {
-        String id
-        String firstName
-        String lastName
-        String email
-    }
-    class Image {
-        String imageUrl
-        String hash
-    }
-    CreateScriptScheduleRequest "1" *-- "0..*" Action
-    ScheduleExecutionHistory "1" *-- "0..*" Result
-    ScriptAuthor "1" *-- "0..1" Image
+sequenceDiagram
+    participant Test as "Script test"
+    participant Api as "Script API"
+    participant Scheduler as "Scheduler"
+    participant Device as "Assigned device"
+
+    Test->>Api: Create schedule request
+    Api->>Scheduler: Store schedule and actions
+    Test->>Api: Assign device
+    Api-->>Test: Assignment response counts
+    Scheduler->>Device: Run scheduled action
+    Device-->>Scheduler: Execution result
+    Test->>Api: Request execution history
+    Api-->>Test: Paginated history results

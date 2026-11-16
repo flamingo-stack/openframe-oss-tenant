@@ -1,0 +1,11 @@
+flowchart TD
+    Pending["Pending durable result"] --> Limit["Read publisher maximum payload"]
+    Limit --> Fits{"Payload fits limit?"}
+    Fits -->|"no"| Skip["Skip oversized entry"]
+    Fits -->|"yes"| AckNeeded{"Stream acknowledgement required?"}
+    AckNeeded -->|"yes"| Acked["Publish through JetStream"]
+    AckNeeded -->|"no"| Raw["Publish raw through core NATS"]
+    Acked --> Published{"Publish succeeded?"}
+    Raw --> Published
+    Published -->|"yes"| Remove["Remove outbox entry"]
+    Published -->|"no"| Retain["Keep entry for later retry"]

@@ -1,0 +1,12 @@
+flowchart TD
+    Request["User settings request"] --> ScopedQuery["Create tenant-scoped user query"]
+    ScopedQuery --> Upsert["Upsert enabled flag and timestamps"]
+    Upsert --> MutedCheck{"Muted groups supplied?"}
+    MutedCheck -->|"yes"| ReplaceMuted["Set muted groups"]
+    MutedCheck -->|"no"| PreserveMuted["Leave stored muted groups unchanged"]
+    ReplaceMuted --> Execute["Execute Mongo upsert"]
+    PreserveMuted --> Execute
+    Execute --> Race{"Duplicate key race?"}
+    Race -->|"no"| Done["Settings saved"]
+    Race -->|"yes"| Retry["Update existing row"]
+    Retry --> Done

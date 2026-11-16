@@ -1,12 +1,14 @@
 sequenceDiagram
-    participant Control as OpenFrame platform
-    participant Handler as Client command handler
+    participant Handler as Tool installation handler
     participant Installer as Tool installation service
+    participant Record as Installed Tool record
     participant Store as Installed tools service
-    participant Host as Managed endpoint
-    Control->>Handler: Tool installation or update message
-    Handler->>Installer: Reserve installation work
-    Installer->>Store: Save record in installing state
-    Installer->>Host: Place assets and configure tool
-    Installer->>Store: Save installed record and metadata
-    Store-->>Control: Installed version available to report
+    participant Runner as Tool run manager
+    Handler->>Installer: Submit installation work
+    Installer->>Record: Create record with installing state
+    Installer->>Store: Save reserved record
+    Installer->>Record: Set installation metadata and assets
+    Installer->>Record: Set installed state
+    Installer->>Store: Save completed record
+    Runner->>Store: Load installed record
+    Runner->>Record: Inspect variant and launch arguments

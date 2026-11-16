@@ -1,0 +1,5 @@
+flowchart TD
+    Device["Selected Enrolled Device"] --> Compatible{"Platform Compatible?"}
+    Compatible -->|"yes"| Assign["Assign or Resolve by Criteria"]
+    Compatible -->|"no"| Reject["Return GraphQL Error"]
+    Assign --> Picker["Assigned and Available Picker Views"]

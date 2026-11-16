@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Caller invokes publish"] --> Build["Build subject and payload"]
+    Build --> Send["Serialize, publish, and flush through NATS"]
+    Send --> Result{"Transport succeeds?"}
+    Result -->|"yes"| Complete["Return success"]
+    Result -->|"no"| Context["Attach destination topic to error"]
+    Context --> Failure["Return error to caller"]
+    Complete --> Consume["Listener receives message"]
+    Consume --> Process{"Listener processing succeeds?"}
+    Process -->|"yes"| Ack["Acknowledge message"]
+    Process -->|"no"| Unacked["Leave message unacknowledged for redelivery"]

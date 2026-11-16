@@ -1,27 +1,17 @@
-flowchart TD
-    subgraph PublicApi["Public Windows API"]
-        FileQuery["get locking processes"]
-        DirectoryQuery["get directory lock holders"]
-        LockLogger["log file lock info"]
-        Formatter["format locking processes"]
+sequenceDiagram
+    participant Caller
+    participant LockModule as "Platform File Lock"
+    participant RestartManager as "Windows Restart Manager"
+    Caller->>LockModule: Request holder query
+    LockModule->>RestartManager: RmStartSession
+    LockModule->>RestartManager: RmRegisterResources
+    LockModule->>RestartManager: RmGetList count query
+    RestartManager-->>LockModule: Required record count or ERROR_MORE_DATA
+    alt holders found
+        LockModule->>RestartManager: RmGetList data query
+        RestartManager-->>LockModule: RM_PROCESS_INFO records
+        LockModule-->>Caller: Lock holder records
+    else no holders
+        LockModule-->>Caller: Empty holder list
     end
-    subgraph QueryLayer["Restart Manager query layer"]
-        DirectoryWalk["Bounded directory walk"]
-        Encoding["UTF 16 path encoding"]
-        Session["Restart Manager session"]
-        NativeList["Native process list"]
-    end
-    subgraph Models["Diagnostic models"]
-        SimpleModel["Locking Process"]
-        RichModel["Lock Holder"]
-    end
-    FileQuery --> Encoding
-    DirectoryQuery --> DirectoryWalk
-    DirectoryWalk --> Encoding
-    Encoding --> Session
-    Session --> NativeList
-    NativeList --> SimpleModel
-    NativeList --> RichModel
-    LockLogger --> FileQuery
-    LockLogger --> Formatter
-    Formatter --> SimpleModel
+    LockModule->>RestartManager: RmEndSession on scope exit

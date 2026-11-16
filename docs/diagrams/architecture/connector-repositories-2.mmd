@@ -1,8 +1,10 @@
 sequenceDiagram
-    participant Service as "Connector Service"
+    participant Recovery as "Connector Recovery Manager"
     participant Alerts as "Connector Alert Repository"
     participant Mongo as "MongoDB"
-    Service->>Alerts: Find unresolved alert by connector name
-    Alerts->>Mongo: Query connector name and resolved false
-    Mongo-->>Alerts: Matching document or no match
-    Alerts-->>Service: Optional connector alert
+    Recovery->>Alerts: Find unresolved alert by connector name
+    Alerts->>Mongo: Query connector name and unresolved state
+    Mongo-->>Alerts: Matching alert or no record
+    Alerts-->>Recovery: Optional alert
+    Recovery->>Alerts: Save updated alert after resolution
+    Alerts->>Mongo: Persist alert state and resolution time

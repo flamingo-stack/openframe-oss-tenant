@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Uninstaller as "Windows Uninstaller"
+    participant Cleanup as "Platform Windows Cleanup"
+    participant Disk as "Update Staging Directory"
+    participant PowerShell as "PowerShell Script"
+    participant Client as "Client Process"
+
+    Uninstaller->>Cleanup: execute cleanup with executable path and binary directory
+    Cleanup->>Disk: create staging directory and unique script
+    Cleanup->>Cleanup: generate script with current process identifier
+    Cleanup->>PowerShell: start hidden background process
+    Cleanup-->>Uninstaller: return launch result
+    PowerShell->>Client: poll until process exits
+    PowerShell->>PowerShell: force stop after timeout if still present
+    PowerShell->>Disk: remove executable with retries
+    PowerShell->>Disk: delete its own script
+    PowerShell->>Disk: remove eligible empty directories

@@ -1,0 +1,9 @@
+flowchart TD
+    Services["OpenFrame Services"] --> Common["Openframe Data Mongo Common"]
+    Common --> Models["Shared Documents and Enums"]
+    Common --> Catalog["Package Catalog Repository Support"]
+    Common --> Tenant["Default Tenant Provider"]
+    Models --> Mongo["MongoDB Documents"]
+    Catalog --> MongoTemplate["Spring MongoTemplate"]
+    MongoTemplate --> Mongo["MongoDB Collections"]
+    Tenant --> TenantScoped["Tenant-Scoped Documents"]

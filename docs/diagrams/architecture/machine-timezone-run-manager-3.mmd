@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Worker starts"] --> WaitConnection["Wait for connected NATS client"]
+    WaitConnection --> Trigger["Wait for timer tick or reconnect event"]
+    Trigger --> Resolve["Resolve host timezone"]
+    Resolve --> Found{"Timezone available?"}
+    Found -->|"no"| Skip["Log warning and skip report"]
+    Found -->|"yes"| Changed{"Reconnect or value changed?"}
+    Changed -->|"no"| Suppress["Suppress duplicate report"]
+    Changed -->|"yes"| Publish["Publish with 30 second timeout"]
+    Publish --> Delivered{"Publish acknowledged?"}
+    Delivered -->|"yes"| Remember["Store timezone as last sent"]
+    Delivered -->|"no"| Failure["Log error and retain previous value"]
+    Remember --> Trigger
+    Skip --> Trigger
+    Suppress --> Trigger
+    Failure --> Trigger

@@ -1,8 +1,0 @@
-flowchart TD
-    ResourceContracts["Resource Contracts"] --> Controllers["External API controllers"]
-    ResourceContracts --> Mapper["Base REST mapper"]
-    Controllers --> CallerResolution["API caller resolution"]
-    Controllers --> ApplicationServices["Application services"]
-    ApplicationServices --> ApiContracts["API contracts and mapping"]
-    ApplicationServices --> DataRepositories["Mongo data repositories"]
-    ApplicationServices --> TenantContext["Tenant-aware infrastructure"]

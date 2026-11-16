@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Stream as "Inventory Stream Handler"
+    participant Aggregate as "Aggregation Repository"
+    participant Software as "Software Projector"
+    participant Matcher as "Winget Package Matcher"
+    participant Catalog as "Package Catalog Repository"
+    participant Store as "Software Repository"
+
+    Stream->>Aggregate: Request title rollup
+    Aggregate->>Software: Return rollup or no result
+    Software->>Matcher: Match program when required
+    Matcher->>Catalog: Find catalog entries by keys
+    Catalog->>Matcher: Return candidates
+    Matcher->>Software: Return package match outcome
+    Software->>Store: Save projection or delete stale record

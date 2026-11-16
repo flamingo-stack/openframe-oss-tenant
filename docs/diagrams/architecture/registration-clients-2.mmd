@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Processor as Registration Processor
+    participant Service as Agent Registration Service
+    participant Store as Machine Information Store
+    participant Client as Registration Client
+    participant API as Client Service API
+    participant Config as Agent Configuration Service
+    Processor->>Service: register agent
+    Service->>Store: read persisted credentials
+    alt saved credentials available
+        Service->>Client: register with credentials
+        Client->>API: POST reinstall
+    else no saved credentials
+        Service->>Client: register without credentials
+        Client->>API: POST register
+    end
+    API-->>Client: machine and client credentials
+    Client-->>Service: registration response
+    Service->>Store: persist machine identifier and secret
+    Service->>Config: save registration data
+    Service-->>Processor: registration complete

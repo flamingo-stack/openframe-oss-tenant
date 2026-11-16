@@ -1,9 +1,13 @@
 sequenceDiagram
     participant Test as Package search test
-    participant Json as Response JSON
-    participant Edge as PackageSearchEdge
-    participant Item as PackageSearchItem
-    Test->>Json: Receive package search result
-    Json->>Edge: Bind node and cursor
-    Edge->>Item: Store item as node
-    Test->>Edge: Read node and cursor
+    participant Client as Test GraphQL client
+    participant API as Package search API
+    Test->>Client: Search with first and no after cursor
+    Client->>API: searchPackages request
+    API-->>Client: Connection with edges and page information
+    Client-->>Test: PackageSearchEdge list
+    Test->>Test: Read final edge cursor
+    Test->>Client: Search with first and after cursor
+    Client->>API: Next page request
+    API-->>Client: Next connection page
+    Client-->>Test: Next PackageSearchEdge list

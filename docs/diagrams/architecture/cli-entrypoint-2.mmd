@@ -1,15 +1,7 @@
-sequenceDiagram
-    participant Operator
-    participant Cli as "Cli Entrypoint"
-    participant Installer as "Installation Workflow"
-    participant Service as "System Service"
-    participant Auth as "Authentication Workflow"
-
-    Operator->>Cli: install
-    Cli->>Installer: Run with install parameters
-    Installer->>Service: Register service
-    Note over Service: Parameterless installation can wait for configuration
-    Operator->>Cli: auth with tenant parameters
-    Cli->>Auth: Run with install parameters
-    Auth->>Service: Persist configuration becomes available
-    Service->>Service: Continue client startup
+flowchart LR
+    Doctor["Doctor command"] --> Checks["Diagnostic check results"]
+    Checks --> Pending{"Pending remediation?"}
+    Pending -->|"no"| Complete["Return diagnostic result"]
+    Pending -->|"yes"| Heal["Run asynchronous healing"]
+    Heal --> Report["Print healing outcomes"]
+    Report --> Complete

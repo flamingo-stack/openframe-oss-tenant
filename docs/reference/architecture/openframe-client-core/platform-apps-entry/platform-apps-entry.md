@@ -1,151 +1,181 @@
 # Platform Apps Entry
 
-Platform Apps Entry maintains the Windows **Apps & Features** registration for an installed OpenFrame Client binary. It creates or updates a machine-wide uninstall record, keeps its displayed version current after a platform update, and removes the record during uninstall. The implementation belongs to the `openframe_agent_lib` library supplied by OpenFrame OSS Library and is run by this repository's OpenFrame Client distribution.
+Platform Apps Entry maintains the Windows **Apps & Features** record for an installed OpenFrame Client binary. It is a small Windows-specific integration layer in the `openframe_agent_lib` crate from OpenFrame OSS Library. The tenant repository runs that client as part of its deployed platform, while the implementation itself is supplied by the library dependency.
 
-The module is intentionally narrow: it does not install, replace, or remove the client binary. Instead, it publishes the metadata and uninstall commands that Windows Settings and other Add/Remove Programs consumers use to present the installed client.
+Its public operations are deliberately narrow:
 
-**Source:** [apps_entry.rs in OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/apps_entry.rs)
+- `register` creates or updates the system-wide uninstall record.
+- `refresh` updates the record after a platform update only when the supplied path is the currently running installed binary.
+- `unregister` removes the record and treats an already-absent record as a successful outcome.
 
-## Responsibilities
+The implementation is available in the [OpenFrame OSS Library source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/apps_entry.rs).
 
-Platform Apps Entry owns one registry location:
+## Scope and Responsibilities
 
-`HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\com.openframe.client`
+Platform Apps Entry owns the registry data used by Windows to display OpenFrame Client in Add or Remove Programs. The entry is stored beneath the machine-wide uninstall branch at `SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\com.openframe.client`.
 
-It provides three public operations:
+The module does not install the service, replace binaries, perform an uninstall, or manage application directories. Those responsibilities remain with the surrounding client platform and service-management code. Instead, this module makes the installed client discoverable to Windows and supplies Windows with the commands and metadata needed to present an uninstall action.
 
-| Operation | Purpose | Outcome |
-|---|---|---|
-| `register(install_path)` | Creates or rewrites the uninstall record for the supplied client executable. | Returns an error when creating the key or writing a value fails. |
-| `refresh(install_path)` | Re-registers the entry after an update only when the supplied path resolves to the running installed executable. | Returns no error to its caller; it logs a warning if registration fails. |
-| `unregister()` | Deletes the uninstall record. | Is idempotent: a missing registry key is treated as success. |
+## Runtime Context
 
-The module writes to `HKEY_LOCAL_MACHINE`, so callers must run in a context permitted to modify the machine-level uninstall registry tree.
-
-## Architecture
+The module is compiled for the client agent and runs with access to the local machine registry. Registration targets `HKEY_LOCAL_MACHINE`, so creating, updating, and removing the entry require permissions sufficient to modify the machine-level uninstall registry branch.
 
 ```mermaid
 flowchart LR
-    ClientBinary["Installed OpenFrame Client binary"] --> Registration["Platform Apps Entry"]
-    Registration --> RegistryKey["HKLM uninstall registry key"]
-    RegistryKey --> WindowsSettings["Windows Apps and Features"]
-    WindowsSettings --> UninstallCommand["Elevated uninstall command"]
-    UninstallCommand --> ClientBinary
+    ClientLifecycle["OpenFrame Client lifecycle"] -->|"register, refresh, or unregister"| AppsEntry["Platform Apps Entry"]
+    AppsEntry -->|"create or remove values"| Registry["Windows machine registry"]
+    Registry -->|"lists installed software"| WindowsUI["Apps and Features"]
+    WindowsUI -->|"runs uninstall command"| ElevatedShell["Elevated PowerShell"]
+    ElevatedShell -->|"invokes uninstall"| ClientBinary["OpenFrame Client binary"]
 ```
-
-The registry record is a projection of the installed executable. Windows reads the record to display the application and invoke the supplied uninstall command; the command starts the same installed executable with its `uninstall` argument.
 
 ## Registry Contract
 
-`register` obtains the compile-time `OPENFRAME_VERSION` value and creates the registry key if necessary. It then rewrites the following values, ensuring that an existing entry is brought into line with the current installation path and binary version.
+When registration succeeds, Platform Apps Entry writes a consistent group of values under its uninstall key.
 
-| Registry value | Value source | Role |
+| Registry value | Purpose | Source |
 |---|---|---|
-| `DisplayName` | Fixed value: `OpenFrame Client` | Name shown by Windows. |
-| `DisplayVersion` | Compile-time `OPENFRAME_VERSION` | Version shown by Windows. |
-| `Publisher` | Fixed value: `Flamingo AI, Inc.` | Publisher shown by Windows. |
-| `URLInfoAbout` | Fixed OpenFrame site URL | Product-information target. |
-| `InstallLocation` | Parent directory of `install_path` | Installation directory reported to Windows. |
-| `DisplayIcon` | `install_path` | Executable used as the application icon source. |
-| `UninstallString` | PowerShell command that starts the binary as administrator and waits | Interactive elevated uninstall path. |
-| `QuietUninstallString` | Executable plus `uninstall` argument | Noninteractive command metadata. |
-| `NoModify` | Numeric flag `1` | Suppresses Modify in Windows UI. |
-| `NoRepair` | Numeric flag `1` | Suppresses Repair in Windows UI. |
+| `DisplayName` | Shows **OpenFrame Client** in the Windows application list. | Fixed module metadata |
+| `DisplayVersion` | Shows the client version. | Compile-time `OPENFRAME_VERSION` value |
+| `Publisher` | Identifies **Flamingo AI, Inc.** as publisher. | Fixed module metadata |
+| `URLInfoAbout` | Provides the OpenFrame product URL. | Fixed module metadata |
+| `InstallLocation` | Identifies the directory containing the installed binary. | Parent directory of the supplied path |
+| `DisplayIcon` | Lets Windows use the client binary as the display icon source. | Supplied binary path |
+| `UninstallString` | Starts an elevated, hidden PowerShell process which waits for the binary's `uninstall` command to finish. | Supplied binary path and resolved PowerShell path |
+| `QuietUninstallString` | Provides a direct `uninstall` invocation for non-interactive callers. | Supplied binary path |
+| `NoModify` | Tells Windows not to offer a modify action. | Enabled flag |
+| `NoRepair` | Tells Windows not to offer a repair action. | Enabled flag |
 
-If `install_path` has no parent, `InstallLocation` is written as an empty string. The entry is still constructed from the executable path for the icon and uninstall metadata.
+The visible version comes from the version embedded while building the agent, rather than from a runtime lookup. Consequently, invoking `refresh` after a successful binary replacement is what synchronizes the displayed version with the updated executable.
 
-## Component Interaction
+## Component Design
+
+The public API delegates work through a short sequence of private helpers. This isolates registry mutation, command construction, and installed-binary validation.
+
+```mermaid
+flowchart TD
+    Register["register"] --> RegisterAt["register at registry root"]
+    RegisterAt --> EntryValues["build entry values"]
+    EntryValues --> PowerShellPath["resolve PowerShell path"]
+    EntryValues --> UninstallCommand["build elevated uninstall command"]
+    RegisterAt --> UninstallKey["uninstall registry key"]
+
+    Refresh["refresh"] --> InstalledCheck["verify current installed binary"]
+    InstalledCheck -->|"matching path"| Register
+    InstalledCheck -->|"not matching"| Skip["skip registry update"]
+
+    Unregister["unregister"] --> UnregisterAt["remove registry subtree"]
+    UnregisterAt --> UninstallKey
+```
+
+### Registration
+
+`register` opens the local-machine registry root and creates the dedicated uninstall subkey if it is absent. It then writes every defined value. Errors while creating the key or writing an individual value are returned with context identifying the failed registry operation. On completion, it logs that the Apps and Features entry was registered.
+
+The module derives the normal uninstall command from a PowerShell executable under the system root. If the `SystemRoot` environment variable is unavailable, it falls back to the conventional Windows directory. The command starts the installed client with the `uninstall` argument by using PowerShell elevation and waiting for the process to complete. Single quotes in the binary path are escaped before being included in the PowerShell command.
+
+### Refresh
+
+`refresh` is intentionally best-effort. Before changing the entry, it resolves both the path passed by the caller and the running executable to canonical paths. Registration proceeds only when those paths match. This avoids publishing an Apps and Features entry for a staging copy, helper process, or otherwise unrelated executable.
+
+If the path check fails, refresh returns without side effects. If registration then fails, it logs a warning rather than returning an error to its caller. This behavior allows post-update bookkeeping to fail without converting a completed binary update into a failed client update.
+
+### Unregistration
+
+`unregister` deletes the complete uninstall subkey. A missing key is explicitly treated as success, making cleanup repeatable and safe after partial installs or previous removal. Other registry failures are returned with cleanup-specific context, and successful removal is logged.
+
+## Operational Flows
+
+### Install or Registration Flow
 
 ```mermaid
 sequenceDiagram
-    participant Caller
+    participant Lifecycle as Client Lifecycle
     participant Entry as Platform Apps Entry
     participant Registry as Windows Registry
-    participant Settings as Windows Settings
-    Caller->>Entry: register(install path)
-    Entry->>Registry: create uninstall key
+    Lifecycle->>Entry: register installed binary path
+    Entry->>Entry: resolve version and PowerShell path
+    Entry->>Entry: build metadata and uninstall values
+    Entry->>Registry: create uninstall subkey
     Entry->>Registry: write display and uninstall values
-    Entry-->>Caller: success or contextual error
-    Settings->>Registry: read installed application metadata
-    Settings->>Entry: invoke registered uninstall command
+    Registry-->>Entry: write success
+    Entry-->>Lifecycle: registration success
 ```
 
-The public registration method is deliberately fail-fast. Each registry creation or value-write failure is returned with context identifying the affected Apps & Features action or value. This makes installation and update failures diagnosable by the higher-level client lifecycle code.
+### Post-Update Refresh Flow
 
-## Registration Flow
+```mermaid
+sequenceDiagram
+    participant Update as Client Update Flow
+    participant Entry as Platform Apps Entry
+    participant FileSystem as File System
+    participant Registry as Windows Registry
+    Update->>Entry: refresh installed binary path
+    Entry->>FileSystem: canonicalize current executable
+    Entry->>FileSystem: canonicalize supplied path
+    alt paths match
+        Entry->>Registry: update uninstall metadata
+        Registry-->>Entry: success or error
+        Entry-->>Update: completion, errors logged
+    else paths do not match or cannot resolve
+        Entry-->>Update: no registry change
+    end
+```
+
+### Removal Flow
 
 ```mermaid
 flowchart TD
-    Start["Register requested"] --> OpenRoot["Open HKEY LOCAL MACHINE"]
-    OpenRoot --> CreateKey["Create or open uninstall key"]
-    CreateKey --> BuildValues["Build display and uninstall values"]
-    BuildValues --> WriteValues["Write each registry value"]
-    WriteValues --> Success["Log registration success"]
-    CreateKey --> CreateError["Return key creation error"]
-    WriteValues --> WriteError["Return value write error"]
+    Start["Client removal begins"] --> Remove["Call unregister"]
+    Remove --> Delete["Delete uninstall registry subtree"]
+    Delete --> Exists{"Registry key exists?"}
+    Exists -->|"yes"| Removed["Entry removed and logged"]
+    Exists -->|"no"| Idempotent["Treat removal as successful"]
+    Delete -->|"other registry error"| Failure["Return contextual error"]
 ```
 
-### Elevated uninstall command
+## Dependencies and Boundaries
 
-The interactive uninstall command uses the PowerShell executable beneath the system root. The system root is read from `SystemRoot` and defaults to `C:\Windows` if the environment value is unavailable. PowerShell is asked to start the installed client with the `uninstall` argument using the `RunAs` verb and to wait for completion.
+Platform Apps Entry depends on:
 
-Before embedding the executable path in the PowerShell single-quoted argument, the code doubles single quotes. This preserves the intended path representation inside the PowerShell command. The quiet uninstall value instead directly records the executable path followed by `uninstall`.
+- The Windows registry through the Rust `winreg` crate, for machine-wide uninstall registration.
+- File-system canonicalization, for the refresh safety check.
+- The running process path, to distinguish the actual installed client from staging or temporary copies.
+- The compile-time `OPENFRAME_VERSION` value, for `DisplayVersion`.
+- Structured tracing, for successful registration or removal and non-fatal refresh failures.
 
-## Refresh Flow and Update Safety
+It interacts conceptually with adjacent client platform functions in the OpenFrame Client library:
 
-A binary replacement should not allow an arbitrary path to create a machine-wide registration. `refresh` first checks that the caller-supplied `install_path` canonicalizes to the same location as the process's canonical current executable.
+- Installation and service management call lifecycle operations that can register or remove this metadata.
+- Binary update handling should invoke refresh after the updated binary is active.
+- Uninstall handling should invoke unregistration as part of cleanup.
 
-```mermaid
-flowchart TD
-    Start["Refresh requested"] --> ResolveCurrent["Canonicalize current executable"]
-    ResolveCurrent --> ResolveInstalled["Canonicalize supplied install path"]
-    ResolveInstalled --> Match{"Paths match?"}
-    Match -->|"No"| Skip["Return without registry changes"]
-    Match -->|"Yes"| Register["Call register"]
-    Register --> Registered["Registration updated"]
-    Register --> Warn["Log warning and continue"]
-```
+These adjacent responsibilities are not implemented in Platform Apps Entry; this separation keeps Windows application-list metadata independent from service control, binary replacement, and deletion logic.
 
-This guard makes refresh applicable only to the process executing from the installed location. It prevents refresh from acting when the current executable cannot be discovered, the supplied path cannot be canonicalized, or both paths refer to different files. Unlike direct registration, refresh is best-effort: errors are written to the tracing log and do not propagate.
+## Failure Semantics and Maintenance Notes
 
-## Unregistration Flow
+| Situation | Behavior | Maintainer implication |
+|---|---|---|
+| Registry key creation fails | `register` returns an error with context. | Confirm elevation and registry permissions. |
+| Writing any value fails | `register` returns an error naming the failed value. | Inspect the affected value type and local registry policy. |
+| Supplied refresh path is not the running installed binary | `refresh` performs no work. | Pass the final active binary path after replacement. |
+| Refresh registration fails | `refresh` logs a warning and does not propagate the failure. | Check client logs and repair registration if Windows metadata is stale. |
+| Uninstall key does not exist | `unregister` succeeds. | Cleanup may be retried safely. |
+| Uninstall key removal has another error | `unregister` returns an error with context. | Investigate permissions, locks, or policy restrictions. |
 
-```mermaid
-flowchart TD
-    Start["Unregister requested"] --> OpenRoot["Open HKEY LOCAL MACHINE"]
-    OpenRoot --> DeleteKey["Delete uninstall key and descendants"]
-    DeleteKey --> Missing{"Key exists?"}
-    Missing -->|"No"| Success["Treat as success and log removal"]
-    Missing -->|"Yes"| Success
-    DeleteKey --> Failure["Return contextual deletion error"]
-```
+When modifying this module, preserve the stable uninstall key name to avoid leaving obsolete Apps and Features entries behind. Any change to the uninstall command must continue to account for paths containing single quotes and must keep elevation explicit for a machine-level client installation. Changes to displayed metadata should be evaluated against both interactive Windows removal and quiet uninstall automation.
 
-`unregister` deletes the complete module-owned key tree rather than individual values. Deleting a missing key is explicitly accepted, allowing uninstallation cleanup to be safely retried and to run after partial installation states.
+## Security Considerations
 
-## Operational Behavior
+The module writes to a system-wide registry location and exposes an executable command to Windows. Its safeguards are therefore practical rather than cosmetic:
 
-### Logging
+- The interactive uninstall command requests elevation through PowerShell instead of assuming the Apps and Features process already has administrative rights.
+- The client path is escaped for its PowerShell single-quoted argument context.
+- Refresh validates that it is registering the currently running installed executable before changing registry state.
+- Modify and repair actions are disabled because Platform Apps Entry does not implement those workflows.
 
-Successful calls to `register` and `unregister` emit informational tracing events. A failed refresh emits a warning with the formatted error chain. The refresh path otherwise remains silent when its installed-binary identity check does not pass, because no registry action was attempted.
+The quiet uninstall command launches the client executable directly, so callers of that command are responsible for supplying a context with the permissions needed by the client uninstall operation.
 
-### Error boundaries
+## Source and Ownership
 
-| Boundary | Behavior |
-|---|---|
-| Registry key creation fails | `register` returns an error describing Apps & Features key creation failure. |
-| A registry value write fails | `register` returns an error identifying the value that could not be written. |
-| Registry deletion fails for a reason other than a missing key | `unregister` returns an error describing Apps & Features removal failure. |
-| Path identity cannot be established during refresh | `refresh` exits without attempting registration. |
-| Registration fails during refresh | `refresh` logs the failure and returns normally. |
-
-## Maintenance Guidance
-
-- Keep the uninstall key identifier stable unless a deliberate migration is introduced. Changing it leaves older Apps & Features entries behind unless cleanup handles the previous key.
-- Treat `UninstallString` and `QuietUninstallString` as a compatibility contract with Windows management tooling. Changes must continue to execute the installed client rather than a transient updater or staging binary.
-- Preserve the canonical-path check when evolving refresh behavior. It is the module's safeguard against writing registration metadata for an executable that is not the running installed client.
-- Add new registry values through the centralized entry-value collection so every registration consistently writes the complete record.
-- Retain idempotent unregistration so interrupted or repeated uninstall workflows converge on the desired state: no OpenFrame Client uninstall entry.
-
-## System Context
-
-Platform Apps Entry is a Windows-specific adapter within the OpenFrame Client's platform layer. It complements the client installation, service-management, binary-update, and uninstall facilities by making the installed client discoverable and removable through standard Windows application-management surfaces. The containing repository distributes the OpenFrame Client as part of the tenant platform, while the executable behavior documented here is implemented by the OpenFrame OSS Library artifact.
+Although this documentation is generated for the OpenFrame OSS Tenant runtime, Platform Apps Entry is implemented by the OpenFrame OSS Library's `openframe_agent_lib` dependency. The tenant repository consumes version `v0.0.5` of that Cargo artifact. Refer to the linked library source for implementation changes; deployment and orchestration remain responsibilities of the tenant service environment.

@@ -1,0 +1,11 @@
+flowchart TD
+    Entry["Directory entry"] --> Match{"Recognized updater artifact?"}
+    Match -->|"No"| Keep["Leave unchanged"]
+    Match -->|"Yes"| Policy{"Minimum age supplied?"}
+    Policy -->|"No"| Delete["Delete file or directory"]
+    Policy -->|"Yes"| Age{"Old enough and age known?"}
+    Age -->|"No"| Keep
+    Age -->|"Yes"| Delete
+    Delete --> Result{"Removal succeeded?"}
+    Result -->|"Yes"| Count["Log removal and increment count"]
+    Result -->|"No"| Warn["Log warning and continue"]

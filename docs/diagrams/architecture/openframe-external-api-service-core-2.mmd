@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client as External Client
+    participant Gateway as OpenFrame Gateway
+    participant API as External API Service
+    participant Domain as Shared Domain Services
+    participant Store as Tenant Data Stores
+    Client->>Gateway: Request with X-API-Key
+    Gateway->>Gateway: Validate key and enforce rate limits
+    Gateway->>API: Forward identity headers
+    API->>API: Bind ApiCaller and validate request
+    API->>Domain: Execute domain operation
+    Domain->>Store: Query or update tenant data
+    Store->>Domain: Return result
+    Domain->>API: Return domain result
+    API->>Client: REST response with millisecond timestamps

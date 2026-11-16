@@ -1,0 +1,8 @@
+flowchart LR
+    LogKeyService["Log Key Service"] -->|"reads and saves keys"| InitialConfig["Initial configuration service"]
+    LogKeyService -->|"gets bearer token"| AgentConfig["Agent configuration service"]
+    LogKeyService -->|"GET request"| ClientApi["Client API"]
+    LogKeyService -->|"stops retries when applicable"| Deactivation["Deactivation service"]
+    LogKeyService -->|"notified on failed connection"| LogStream["Log streaming run manager"]
+    LogKeyService -->|"drain and request"| RestartGate["Restart gate"]
+    RestartGate --> ServiceManager["Platform service manager"]

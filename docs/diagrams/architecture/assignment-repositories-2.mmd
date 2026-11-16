@@ -1,10 +1,12 @@
 flowchart TD
-    Request["Listing request"] --> Validate["Validate sort field"]
-    Validate --> Query["Filter by item and target type"]
-    Query --> Search{"Search text present?"}
-    Search -->|"Yes"| Filter["Apply literal case insensitive display name filter"]
-    Search -->|"No"| Cursor["Evaluate cursor"]
+    Request["List Request"] --> Query["Build Item and Target Query"]
+    Query --> Search{"Search Provided?"}
+    Search -->|"yes"| Filter["Add Literal Display Name Filter"]
+    Search -->|"no"| Cursor{"Cursor Provided?"}
     Filter --> Cursor
-    Cursor --> Sort["Sort by selected field and identifier tie breaker"]
-    Sort --> Limit["Apply result limit"]
-    Limit --> Results["Return assignment page"]
+    Cursor -->|"no"| Sort["Apply Selected Sort and ID Tie Breaker"]
+    Cursor -->|"yes"| Resolve["Resolve Cursor ObjectId and Document"]
+    Resolve --> Continue["Add Continuation Criteria"]
+    Continue --> Sort
+    Sort --> Limit["Apply Page Limit"]
+    Limit --> Results["Return Item Assignments"]

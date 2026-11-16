@@ -1,6 +1,7 @@
 flowchart LR
-    Service["OpenFrame Test Service"] -->|"deserializes remote-access payload"| Edge["RemoteAccessRequestEdge"]
+    TestCase["Remote access session test"] -->|"queries audit history"| Api["Remote access API"]
+    Api -->|"returns connection payload"| Edge["RemoteAccessRequestEdge"]
     Edge -->|"node"| Audit["RemoteAccessRequestAudit"]
-    Edge -->|"cursor"| Cursor["Pagination Cursor"]
-    Audit -->|"embedded technician"| Technician["RemoteAccessTechnician"]
-    Technician -->|"id and name"| Identity["Technician Identity"]
+    Edge -->|"cursor"| Cursor["Pagination cursor"]
+    Audit -->|"technician"| Technician["RemoteAccessTechnician"]
+    Audit -->|"session"| Session["Remote session"]

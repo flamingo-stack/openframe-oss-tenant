@@ -1,0 +1,14 @@
+flowchart TD
+    Result["RMM result payload"] --> Report["Build agent result report"]
+    Report --> Outcome["Classify execution outcome"]
+    Outcome --> ScriptType["Choose script finished or failed type"]
+    Result --> Lookup["Look up execution and script"]
+    Lookup --> Package{"Package action present?"}
+    Package -->|"yes"| PackageMessage["Build install or update message"]
+    Package -->|"no"| ScriptMessage["Build message from script name"]
+    Lookup --> Sanitize["Remove identifiers and secret values"]
+    Sanitize --> Details["Attach script input to result details"]
+    ScriptType --> Event["Normalized event"]
+    PackageMessage --> Event
+    ScriptMessage --> Event
+    Details --> Event

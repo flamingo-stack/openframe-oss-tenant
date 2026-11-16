@@ -1,15 +1,17 @@
 sequenceDiagram
     participant Runner as "Test Runner"
-    participant Base as "External Api Base Test"
-    participant Key as "API Key Provisioning"
+    participant Config as "External API Configuration"
     participant Gateway as "Gateway"
-    participant Service as "External API Service"
+    participant Api as "External API"
+    participant Tenant as "QA Tenant"
 
-    Runner->>Base: Start concrete test class
-    Base->>Key: Obtain configured or temporary key
-    Key-->>Base: API key
-    Base->>Gateway: Request with X-API-Key
-    Gateway->>Service: Validated request with derived caller identity
-    Service-->>Gateway: Resource or error response
-    Gateway-->>Base: HTTP response and rate-limit headers
-    Base-->>Runner: Assertions and best-effort cleanup
+    Runner->>Config: Obtain supplied or temporary API key
+    Config->>Gateway: Request or use API key
+    Runner->>Gateway: Send External API request
+    Gateway->>Gateway: Validate API key and inject identity
+    Gateway->>Api: Forward authorized request
+    Api->>Tenant: Read or mutate resource
+    Tenant-->>Api: Resource result
+    Api-->>Gateway: HTTP response
+    Gateway-->>Runner: Response and rate-limit headers
+    Runner->>Tenant: Archive or restore test-owned state

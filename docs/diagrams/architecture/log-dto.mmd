@@ -1,5 +1,6 @@
-flowchart TD
-    TestCase["Log focused test"] --> Dto["OrganizationFilterOption"]
-    Dto --> JsonMapper["Jackson JSON mapper"]
-    TestCase --> TestLibrary["OpenFrame Test Service Core"]
-    TestLibrary --> TenantBuild["OpenFrame OSS Tenant test runtime"]
+flowchart LR
+    TestCode["Test code"] -->|"deserializes response data"| Dto["OrganizationFilterOption"]
+    Dto -->|"id"| OrganizationId["Organization identifier"]
+    Dto -->|"name"| OrganizationName["Organization display name"]
+    Jackson["Jackson mapper"] -->|"populates known properties"| Dto
+    UnknownFields["Unknown response properties"] -->|"ignored"| Dto

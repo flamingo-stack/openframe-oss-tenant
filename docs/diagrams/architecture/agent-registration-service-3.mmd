@@ -1,0 +1,14 @@
+flowchart TD
+    Begin["Start registration"] --> ReadKey["Read initial key"]
+    ReadKey --> KeyPresent{"Key is non-empty?"}
+    KeyPresent -->|"no"| FailKey["Fail with fresh-install instruction"]
+    KeyPresent -->|"yes"| ReadSaved["Read persisted machine info"]
+    ReadSaved --> SavedAvailable{"Credentials available?"}
+    SavedAvailable -->|"yes"| Reinstall["Attempt reinstall"]
+    SavedAvailable -->|"no"| Fresh["Register as new machine"]
+    Reinstall --> SecretValid{"Secret accepted?"}
+    SecretValid -->|"yes"| Persist["Persist successful response"]
+    SecretValid -->|"no"| Fresh
+    Fresh --> Persist
+    Persist --> SaveConfig["Save agent configuration"]
+    SaveConfig --> Complete["Return registration response"]

@@ -1,6 +1,0 @@
-flowchart TD
-    GatewayConfig["Gateway route for API traffic"] --> Gateway["OpenFrame gateway"]
-    Gateway --> ApiApp["OpenFrame API application"]
-    ApiApp --> TenantModule["Api Service Tenant"]
-    TenantModule --> SpringWeb["Spring request context"]
-    TenantModule --> ApiContract["API library tenant contract"]

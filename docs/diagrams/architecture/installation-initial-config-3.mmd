@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Evaluate installation input"] --> Empty{"All fields are absent or blank?"}
+    Empty -->|"yes"| Flags{"Local mode off, no tags, no remote access mode?"}
+    Flags -->|"yes"| Deferred["Parameterless installation"]
+    Flags -->|"no"| Parameterized["Parameterized installation"]
+    Empty -->|"no"| Parameterized
+    Parameterized --> Required{"Server URL, initial key, and organization ID supplied?"}
+    Required -->|"yes"| Persist["Build and save configuration"]
+    Required -->|"no"| Error["Fail validation"]

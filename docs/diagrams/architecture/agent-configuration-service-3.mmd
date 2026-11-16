@@ -1,0 +1,14 @@
+flowchart TD
+    Start["Registration or token update"] --> Lock["Acquire shared write lock"]
+    Lock --> Load["Load current configuration"]
+    Load --> Exists{"Configuration file exists?"}
+    Exists -->|"No"| Defaults["Use default configuration"]
+    Exists -->|"Yes"| Read["Read and deserialize JSON"]
+    Defaults --> Merge["Replace only owned fields"]
+    Read --> Merge
+    Merge --> Serialize["Serialize complete configuration"]
+    Serialize --> Persist["Atomically write replacement file"]
+    Persist --> Success["Return success"]
+    Read --> ErrorRead["Return read or JSON error"]
+    Serialize --> ErrorSerialize["Return serialization error"]
+    Persist --> ErrorWrite["Return write error"]

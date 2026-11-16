@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Start service"] --> ReadConfig["Read pending mode"]
+    ReadConfig --> ReadResult{"Read succeeded?"}
+    ReadResult -->|"no"| LogReadError["Log error and return no task"]
+    ReadResult -->|"yes"| HasMode{"Mode present?"}
+    HasMode -->|"no"| NoTask["Return no task"]
+    HasMode -->|"yes"| ParseMode["Parse wire name"]
+    ParseMode --> ValidMode{"Recognized mode?"}
+    ValidMode -->|"no"| LogUnknown["Log warning and clear pending value"]
+    LogUnknown --> NoTask
+    ValidMode -->|"yes"| SpawnTask["Spawn background apply task"]
+    SpawnTask --> TaskHandle["Return task handle"]

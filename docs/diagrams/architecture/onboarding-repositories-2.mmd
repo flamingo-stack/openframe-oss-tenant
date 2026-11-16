@@ -1,9 +1,9 @@
-flowchart TD
-    Request["Onboarding workflow"] --> TenantInput["Resolve trusted tenant identifier"]
-    TenantInput --> ScopeCheck{"Tenant identifier present?"}
-    ScopeCheck -->|"No"| Reject["Reject or handle before repository access"]
-    ScopeCheck -->|"Yes"| RepositoryCall["Call explicit repository lookup"]
-    RepositoryCall --> TenantRecord["Tenant progress by tenant identifier"]
-    RepositoryCall --> UserRecord["User progress by user and tenant identifiers"]
-    TenantRecord --> MongoDB[("MongoDB")]
-    UserRecord --> MongoDB
+sequenceDiagram
+    participant Workflow as "Onboarding Workflow"
+    participant Repository as "Progress Repository"
+    participant Mongo as "MongoDB"
+    Workflow->>Repository: Look up progress with explicit scope identifiers
+    Repository->>Mongo: Query onboarding progress document
+    Mongo-->>Repository: Matching document or no document
+    Repository-->>Workflow: Optional progress result
+    Note over Workflow: Initialize or update progress when no record exists

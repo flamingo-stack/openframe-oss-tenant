@@ -1,0 +1,17 @@
+flowchart TD
+    Input["Command arguments and tool-agent identifier"] --> Scan["Scan arguments for conditional placeholders"]
+    Scan --> ServerNeeded{"Server URL used?"}
+    ServerNeeded -->|"yes"| ReadServer["Read configured server host"]
+    ServerNeeded -->|"no"| EmptyServer["Use empty server replacement"]
+    Scan --> MachineNeeded{"Machine ID used?"}
+    MachineNeeded -->|"yes"| ReadMachine["Read persisted machine identifier"]
+    MachineNeeded -->|"no"| EmptyMachine["Use empty machine replacement"]
+    ReadServer --> TokenPath["Build secured shared token path"]
+    EmptyServer --> TokenPath
+    ReadMachine --> TokenPath
+    EmptyMachine --> TokenPath
+    TokenPath --> Standard["Replace standard placeholders in every argument"]
+    Standard --> AssetMatch{"Asset placeholder present?"}
+    AssetMatch -->|"yes"| AssetPath["Resolve executable asset path for tool"]
+    AssetMatch -->|"no"| Output["Return resolved argument vector"]
+    AssetPath --> Output

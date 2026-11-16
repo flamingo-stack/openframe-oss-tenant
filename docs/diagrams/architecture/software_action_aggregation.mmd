@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Tenant action query"] --> Match["Match tenant and requested filters"]
+    Match --> Search["Apply package-name search"]
+    Search --> Lookup["Join matching script executions"]
+    Lookup --> Reconcile["Reconcile device counts and status"]
+    Reconcile --> Project["Project action summary fields"]
+    Project --> ExcludeScheduled["Exclude scheduled-only actions"]
+    ExcludeScheduled --> Result["Page count facet or single result"]

@@ -1,9 +1,6 @@
 flowchart LR
-    Installer["Installer or CLI"] -->|"typed mode"| Model["Model Remote Access Mode"]
-    Model -->|"wire name"| InitialConfig["Initial configuration file"]
-    InitialConfig -->|"pending mode"| ModeService["Remote access mode service"]
-    ModeService -->|"authenticated HTTP request"| DeviceEndpoint["Device mode endpoint"]
-    DeviceEndpoint -->|"applied outcome"| ModeService
-    ModeService -->|"clear pending value"| InitialConfig
-    Nats["NATS remote access messages"] --> Listener["Remote access message listener"]
-    Listener --> Tools["Tool run manager"]
+    Variant["RemoteAccessMode variant"] -->|"Serde serialization"| WireName["Canonical SCREAMING SNAKE CASE name"]
+    WireName -->|"persist or send"| ConfigAndApi["Install configuration and device mode API"]
+    ConfigAndApi -->|"read persisted name"| Parser["from wire name"]
+    Parser -->|"recognized"| KnownMode["Some remote access mode"]
+    Parser -->|"unknown or invalid"| UnknownMode["None"]

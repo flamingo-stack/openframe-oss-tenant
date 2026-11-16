@@ -1,9 +1,0 @@
-flowchart LR
-    WriteCaller["Application service or repository caller"] --> Repository["Machine, tag, or assignment repository"]
-    Repository --> Aspect["Machine Tag Event Aspect"]
-    Aspect --> EventService["Machine Tag Event Service"]
-    EventService --> DataLookup["Machine and tag data lookup"]
-    DataLookup --> EventService
-    EventService --> KafkaProducer["Tenant-aware Kafka producer"]
-    KafkaProducer --> DeviceTopic["Outbound device topic"]
-    DeviceTopic --> Projection["Downstream device projection"]

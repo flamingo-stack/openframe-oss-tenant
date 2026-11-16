@@ -1,0 +1,8 @@
+flowchart LR
+    Payload["Existing JSON payload"] --> Mapper["Spring JsonMapper"]
+    Mapper --> Compatibility["Jackson 2 compatibility customizer"]
+    Compatibility --> Decision{"No-args constructor available?"}
+    Decision -->|"yes"| SetterPath["Use no-args constructor and setters"]
+    Decision -->|"no"| NativePath["Use Jackson creator detection"]
+    SetterPath --> Result["Preserve defaults for absent fields"]
+    NativePath --> Result

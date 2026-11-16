@@ -1,0 +1,7 @@
+flowchart TD
+    SecurityCore["Openframe Security Core"] --> AuthServer["Authorization server"]
+    SecurityCore --> Gateway["Gateway"]
+    SecurityCore --> ApiService["API service"]
+    AuthServer --> Jwt["Signed JWT"]
+    Jwt --> Gateway
+    Jwt --> ApiService

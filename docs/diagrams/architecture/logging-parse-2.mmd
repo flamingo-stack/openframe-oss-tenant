@@ -1,14 +1,10 @@
 flowchart TD
-    Start["Receive path, offset, and maximum count"] --> Open["Open log file"]
-    Open --> CheckSize{"File shorter than offset?"}
-    CheckSize -->|"Yes"| Reset["Use offset zero"]
-    CheckSize -->|"No"| Seek["Use supplied offset"]
-    Reset --> Seek
-    Seek --> Read["Read lines through buffered reader"]
-    Read --> Parse{"Line parses?"}
-    Parse -->|"No"| Next["Read next line"]
-    Parse -->|"Yes"| Add["Append LogEntry"]
-    Add --> Limit{"Maximum reached?"}
-    Limit -->|"No"| Next
-    Next --> Read
-    Limit -->|"Yes"| Position["Return entries and file position"]
+    Start["Read one line"] --> Trace{"Valid tracing format?"}
+    Trace -->|"yes"| TraceEntry["Create client log entry"]
+    Trace -->|"no"| Normalize["Remove optional stdout prefix"]
+    Normalize --> Tool{"Tool fields present?"}
+    Tool -->|"yes"| ToolEntry["Create tool log entry"]
+    Tool -->|"no"| Skip["Ignore line"]
+    TraceEntry --> Next["Continue reading"]
+    ToolEntry --> Next
+    Skip --> Next

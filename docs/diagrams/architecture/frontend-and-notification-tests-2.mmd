@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Tenant Event Request"] --> ValidType{"Dashboard activity type?"}
+    ValidType -->|"no"| BadType["HTTP 400"]
+    ValidType -->|"yes"| ValidSubtype{"Nonblank subtype?"}
+    ValidSubtype -->|"no"| BadSubtype["HTTP 400"]
+    ValidSubtype -->|"yes"| ValidRepeat{"Repeat mode present?"}
+    ValidRepeat -->|"no"| BadRepeat["HTTP 400"]
+    ValidRepeat -->|"yes"| Accepted["HTTP 202 and empty body"]

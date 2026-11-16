@@ -1,16 +1,8 @@
-sequenceDiagram
-    participant Server as Server Delivery Dispatcher
-    participant Broker as NATS
-    participant Agent as Endpoint Agent
-    participant Store as Result Store
-    participant Outbox as Result Outbox
-    Server->>Broker: Dispatch work for machine
-    Broker->>Agent: Deliver work
-    Agent->>Store: Enqueue ACKED result
-    Store->>Outbox: Pending result available
-    Outbox->>Broker: Publish machine result subject
-    Agent->>Agent: Perform delivery work
-    Agent->>Store: Enqueue DONE or FAILED result
-    Store->>Outbox: Pending result available
-    Outbox->>Broker: Publish final result
-    Broker->>Server: Deliver correlated result
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> Acked: Client accepts delivery
+    Acked --> Done: Work completes
+    Pending --> Failed: Acceptance fails
+    Acked --> Failed: Work fails
+    Done --> [*]
+    Failed --> [*]

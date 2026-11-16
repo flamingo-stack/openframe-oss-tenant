@@ -1,0 +1,13 @@
+flowchart LR
+    Runner["Test Runner"] --> KB["KnowledgeBaseTest"]
+    Runner --> OB["OnboardingTest"]
+    KB --> KBApi["Knowledge Base API"]
+    KB --> TagApi["Tag API"]
+    KB --> AttachmentApi["Attachment API"]
+    OB --> OnboardingApi["Onboarding API"]
+    KBApi --> GraphQL["Tenant GraphQL API"]
+    TagApi --> GraphQL
+    OnboardingApi --> GraphQL
+    AttachmentApi --> Storage["Attachment Storage"]
+    GraphQL --> KBData["Knowledge Base Data"]
+    GraphQL --> ProgressData["User Onboarding Progress"]

@@ -1,9 +1,0 @@
-flowchart LR
-    AgentConfig["Agent Configuration Service"] -->|"machine identifier"| Publisher["Package Manager Report Publisher"]
-    PackageCatalog["Known Package Managers"] -->|"Brew, Chocolatey, Winget"| StateResolver["Manager State Resolver"]
-    ConsoleSession["Console User Presence"] -->|"session context"| StateResolver
-    StateResolver -->|"manager states"| Publisher
-    DependencyCatalog["Known Dependencies"] -->|"optional dependency states"| Publisher
-    Publisher -->|"JSON publish"| NatsPublisher["NATS Message Publisher"]
-    NatsPublisher -->|"machine report subject"| Nats["NATS"]
-    Nats -->|"package manager inventory"| Server["OpenFrame Server Processing"]

@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Caller
+    participant Adapter as CrossPlatformServiceManager
+    participant Manager as NativeServiceManager
+    participant OS as OperatingSystem
+    participant Client as OpenFrameClient
+    Caller->>Adapter: install()
+    Adapter->>Adapter: Resolve label and working directory
+    Adapter->>Adapter: Prepare platform configuration and log directories
+    Adapter->>Manager: install(service context)
+    Manager->>OS: Register service definition
+    alt Windows recovery configured
+        Adapter->>OS: Configure SCM failure actions
+    end
+    Adapter->>Manager: start(service label)
+    Manager->>OS: Start service
+    OS->>Client: Execute run-as-service

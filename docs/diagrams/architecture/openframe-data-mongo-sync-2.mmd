@@ -1,0 +1,12 @@
+flowchart LR
+    Application["Application request"] --> Context["Tenant context"]
+    Context --> TenantMode{"Tenant isolation enabled?"}
+
+    TenantMode -->|"yes"| TenantTemplate["Tenant-aware MongoTemplate"]
+    TenantMode -->|"no"| StandardTemplate["MongoTemplate"]
+
+    TenantTemplate --> TenantQuery["Tenant-scoped query"]
+    StandardTemplate --> StandardQuery["Standard query"]
+
+    TenantQuery --> MongoDb["MongoDB"]
+    StandardQuery --> MongoDb

@@ -1,11 +1,9 @@
 flowchart TD
-    Request["Filtered Time Entry Request"] --> Filter["Build MongoDB Query"]
-    Filter --> SortCheck{"Valid Sort Field?"}
-    SortCheck -->|"No"| DefaultSort["Use Date as Default"]
-    SortCheck -->|"Yes"| SelectedSort["Use Requested Sort"]
-    DefaultSort --> DatePath{"Date Sort?"}
-    SelectedSort --> DatePath
-    DatePath -->|"Yes"| DatePipeline["Aggregate by Work Day, Created At, and Identifier"]
-    DatePath -->|"No"| StandardQuery["Apply Sort Value and Identifier Keyset Predicate"]
-    DatePipeline --> Page["Return Limited Page"]
-    StandardQuery --> Page
+    Request["List request with filter and cursor"] --> BuildQuery["Build filtered query"]
+    BuildQuery --> SortCheck{"Date sort?"}
+    SortCheck -->|"yes"| DatePipeline["Add work-day field and compound cursor match"]
+    DatePipeline --> DateOrder["Sort by work day, created time, identifier"]
+    SortCheck -->|"no"| CursorLookup["Resolve tenant-scoped cursor document"]
+    CursorLookup --> StandardOrder["Apply field and identifier keyset ordering"]
+    DateOrder --> ResultPage["Return limited time-entry page"]
+    StandardOrder --> ResultPage

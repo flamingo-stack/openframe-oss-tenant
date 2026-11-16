@@ -1,0 +1,7 @@
+flowchart LR
+    Caller["Service or repository operation"] --> RetryRuntime["Spring Retry runtime"]
+    RetryRuntime --> Persistence["Mongo data access"]
+    Persistence --> MongoDb["MongoDB"]
+    Persistence -->|"failure"| RetryRuntime
+    RetryRuntime --> Listener["Optimistic Locking Retry Listener"]
+    Listener --> Logs["Application logs and alerting"]

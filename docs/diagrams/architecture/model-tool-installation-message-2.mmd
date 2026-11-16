@@ -1,12 +1,12 @@
 flowchart TD
-    Receive["Receive installation message"] --> ToolVersion["Resolve tool version by tool identifier"]
-    ToolVersion --> AssetCheck{"Assets present?"}
-    AssetCheck -->|"No"| ToolDownloads["Use tool-level download configurations"]
-    AssetCheck -->|"Yes"| AssetLoop["Evaluate each asset"]
-    AssetLoop --> AssetVersion["Resolve asset version by asset identifier"]
-    AssetVersion --> Filename["Find filename matching current operating system"]
-    Filename --> Match{"Filename matches?"}
-    Match -->|"Yes"| AssetDownloads["Use asset download configurations when supplied"]
-    Match -->|"No"| NoFilename["No supported local filename selected"]
-    ToolDownloads --> Execute["Pass instruction to installation flow"]
-    AssetDownloads --> Execute
+    InstallationMessage["Tool installation message"] --> ToolFields["Tool identity, version, commands, service metadata"]
+    InstallationMessage --> ToolDownloads["Primary download configurations"]
+    InstallationMessage --> Assets["Optional assets"]
+    ToolFields --> ToolVersion["Effective tool version"]
+    ToolVersion --> Overrides["Tool version overrides lookup"]
+    Assets --> AssetFields["Asset identity, source, path, executable flag"]
+    Assets --> FilenameMappings["Local filename configurations"]
+    Assets --> AssetDownloads["Optional asset download configurations"]
+    AssetFields --> AssetVersion["Effective asset version"]
+    AssetVersion --> Overrides
+    FilenameMappings --> OsMatch["Current OS match"]

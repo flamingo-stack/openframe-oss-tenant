@@ -1,168 +1,59 @@
+## Quick Start
 
-# Quick Start
+> **Scope check:** OpenFrame OSS Tenant is a Kubernetes-deployed platform: nine Spring Boot services (Java 25, Spring Boot 4.1.1) plus a Rust endpoint agent, assembled from the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) (pinned to `7.0.11`) and deployed through Helm charts and Argo CD. There is no single `docker-compose up` or local npm/yarn entry point in this repository — the fastest path to a running system is the [OpenFrame CLI](https://github.com/flamingo-stack/openframe-cli), an external tool maintained in its own repository.
 
-This guide gets a copy of **OpenFrame OSS Tenant** building locally and explains what you get once it is deployed. OpenFrame OSS Tenant is the deployable, tenant-oriented distribution of [OpenFrame](https://openframe.ai) ([flamingo.run/openframe](https://www.flamingo.run/openframe)) — it assembles Spring Boot services, a Rust endpoint agent, shared configuration, Helm charts, and Argo CD application definitions into a single MSP operations platform. For background on the project and Flamingo, see [Introduction](./introduction.md).
+This page gets you to a running OpenFrame tenant and a first API call in roughly five minutes, then points you at what to read next.
 
-> **Note:** This repository is a **service distribution**, not a single binary you `npm install` or `pip install`. There is no local Docker Compose file or one-line installer script in this repository. "5-minute setup" here means building the Java services with Maven and understanding how the pieces fit together — full environment bring-up (Kubernetes, datastores, Helm) is covered in [Local Development](../development/setup/local-development.md) and [Environment Setup](../development/setup/environment.md).
+### Who this is for
 
-## What you are installing
+You want to see OpenFrame running (gateway, API, authorization server, client service, and backing data stores) without first learning the full Kubernetes manifest layout. If you want the full picture of how the pieces fit together first, read [Introduction](./introduction.md) before continuing.
 
-OpenFrame OSS Tenant publishes nine Maven modules and one Rust/Cargo binary:
+---
 
-| Ecosystem | Artifact | Version |
-|---|---|---|
-| maven | `com.openframe:openframe-api` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-authorization-server` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-client` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-config` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-external-api` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-gateway` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-management` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-stream` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-test` | 1.0.0-SNAPSHOT |
-| cargo | `openframe_client` | 0.1.0 |
+## TL;DR: 5-Minute Setup
 
-Most of the actual domain logic (authentication, device management, ticketing, remote management, data access) is implemented in the pinned [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib) (version `7.0.11` for the Java modules, `v0.0.5` for the Rust `openframe_agent_lib` crate). This repository owns the runnable applications, Dockerfiles, shared configuration, and Kubernetes/Helm deployment topology. No other repository in the organization currently declares a dependency on OpenFrame OSS Tenant's published artifacts.
+OpenFrame OSS Tenant publishes Maven artifacts and container images; it is not run by cloning and building this repository directly for a quick trial. The supported quick-start path is the **OpenFrame CLI**, an external tool that provisions a local Kubernetes-based OpenFrame environment for you.
 
-## TL;DR — 5-minute local build
+1. **Install the OpenFrame CLI.**
+   Follow the installation instructions in the CLI's own repository — do not assume it lives inside this repository:
+   [flamingo-stack/openframe-cli#installation](https://github.com/flamingo-stack/openframe-cli#installation)
 
-These steps build the Java services and the Rust client from source. They do **not** start a running platform (databases, Kafka, NATS, the gateway) — for that, see [Local Development](../development/setup/local-development.md).
+2. **Bootstrap a tenant environment with the CLI.**
+   The CLI handles cluster creation and deploys the platform's Argo CD application-of-apps (the same `manifests/app-of-apps` chart that this repository's release workflow publishes to `oci://ghcr.io/flamingo-stack/openframe-oss-tenant/app-of-apps`). Follow the CLI's documented bootstrap command in its docs:
+   [flamingo-stack/openframe-cli/tree/main/docs](https://github.com/flamingo-stack/openframe-cli/tree/main/docs)
 
-### 1. Prerequisites
+3. **Wait for the Argo CD sync waves to settle.**
+   Behind the scenes, Argo CD applies the application tree defined in `manifests/apps/values.yaml` in order: the `platform` wave first (namespace, ingress-nginx, `openframe-config`, dev-tools), then the `datasources` wave (Cassandra, Kafka, MongoDB, MongoDB for MeshCentral, MySQL for Fleet MDM, NATS, Pinot, Redis Cluster, ZooKeeper), and finally the tenant application itself (`manifests/tenant`), which deploys the OpenFrame services, Fleet MDM, MeshCentral, and the frontend.
 
-Check [Prerequisites](./prerequisites.md) for a full list. At minimum you need:
+4. **Confirm the gateway is reachable.**
+   The OpenFrame Gateway is the single entry point for browser, API, and agent traffic. Its routes (defined in `configs/base/openframe-gateway.yml`) fan out to the backing services:
 
-- **Java 25** and **Maven** (the root [`pom.xml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/pom.xml) targets `<java.version>25</java.version>` and extends `spring-boot-starter-parent` 4.1.1)
-- **Rust** and `cargo` (for the `openframe-client` endpoint agent under `clients/openframe-client`)
-- A GitHub personal access token with read access to `flamingo-stack/openframe-oss-lib`, since the Maven and Cargo dependencies are pulled from that private/organization-scoped source
+   | Path prefix | Routed to |
+   |---|---|
+   | `/sas/**` | Authorization Server |
+   | `/api/**` | OpenFrame API |
+   | `/api-docs/**` | External API (Swagger/API docs) |
+   | `/clients/**` | Client Service (agent registration and delivery) |
+   | everything else | OpenFrame frontend |
 
-### 2. Clone the repository
+   Once the gateway responds, your tenant is up.
 
-```bash
-git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
-cd openframe-oss-tenant
-```
+5. **Explore with the CLI or kubectl.**
+   Use whatever cluster-inspection commands the OpenFrame CLI documents (or plain `kubectl get pods -A`) to confirm the platform and tenant namespaces are healthy before moving on to the Hello World call below.
 
-### 3. Build the Java services
+> **Why no `docker-compose.yml` here?** This repository has no Docker Compose files and no bundled CLI scripts of its own — `setup.dockerComposeFiles` and `setup.cliFiles` are both empty for this repository. Each service instead ships its own multi-stage `Dockerfile` (for example `openframe/services/openframe-api/Dockerfile`), built with Maven and run on `eclipse-temurin:25-jre-alpine-3.23`, and the deployment topology lives in the `manifests/` Helm charts consumed by Argo CD. The CLI is the supported shortcut around assembling all of that by hand.
 
-The repository root [`pom.xml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/pom.xml) is a multi-module Maven project. Its `<modules>` list is:
+For the full prerequisite list (CLI version, cluster requirements, access to the OpenMSP community for support), see [Prerequisites](./prerequisites.md).
 
-```text
-openframe/services/openframe-config
-openframe/services/openframe-api
-openframe/services/openframe-client
-openframe/services/openframe-stream
-openframe/services/openframe-management
-openframe/services/openframe-gateway
-openframe/services/openframe-external-api
-openframe/services/openframe-authorization-server
-openframe/services/openframe-test
-```
+---
 
-A full build of every module:
+## Hello World: Your First API Call
 
-```bash
-mvn clean package -U --batch-mode --no-transfer-progress
-```
+Once your tenant is running behind the gateway, the simplest "hello world" is an authenticated call to the OpenFrame API through `/api/**`. The API service (`com.openframe:openframe-api`) exposes REST and GraphQL endpoints backed by MongoDB, Redis, Cassandra, and Pinot, as described in `docs/reference/architecture/README.md`.
 
-To build just one service (mirroring how the release Dockerfiles do it), use `-pl` with `-am` so Maven also builds the modules it depends on. For example, for `openframe-api`:
+Because this is a multi-tenant platform behind OAuth2/OIDC (the Authorization Server under `/sas/**`), there is no bundled default login. Obtain the access details for your freshly bootstrapped environment from whatever output the OpenFrame CLI prints during setup, or from your environment configuration — never assume a hardcoded username or password here.
 
-```bash
-mvn clean package -U \
-  -pl openframe/services/openframe-api \
-  -am \
-  --batch-mode --no-transfer-progress \
-  -Dmaven.javadoc.skip=true \
-  -Dmaven.test.skip=true
-```
-
-This same pattern (seen in [`openframe/services/openframe-api/Dockerfile`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/openframe/services/openframe-api/Dockerfile) and the sibling Dockerfiles for `openframe-authorization-server`, `openframe-client`, `openframe-config`, `openframe-external-api`, and `openframe-gateway`) applies to each service module.
-
-> Maven authentication to the OpenFrame OSS Library artifacts uses `.mvn/settings.xml` together with a `GITHUB_TOKEN` secret, as shown in each service's Dockerfile build stage (`--mount=type=secret,id=GITHUB_TOKEN`). Configure equivalent credentials locally before building.
-
-### 4. Build the Rust endpoint agent
-
-The endpoint agent lives in [`clients/openframe-client`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/Cargo.toml) and is a thin binary over the `openframe-agent-lib` crate (pulled from `openframe-oss-lib` at tag `v0.0.5`). Its [`Makefile`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/Makefile) requires `OPENFRAME_VERSION` to be set, because the library's build script panics without it:
-
-```bash
-cd clients/openframe-client
-OPENFRAME_VERSION=0.0.0-dev make build
-```
-
-Other Makefile targets:
-
-```bash
-make lint   # fmt-check + clippy
-make test   # build, then cargo test
-make clean  # cargo clean
-```
-
-Cross-compilation is supported through the `TARGET` variable, e.g. `make build TARGET=x86_64-unknown-linux-musl`.
-
-## Basic "Hello World" example
-
-Because this is a distributed platform of nine services plus an agent, there is no single "hello world" script. The closest equivalent is starting one service locally against the shared configuration and observing it register with the platform's config server and datastores.
-
-### Running a single service
-
-Each service has a thin bootstrap class with a `main` method, for example [`ApiApplication`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/openframe/services/openframe-api/src/main/java/com/openframe/api/ApiApplication.java):
-
-```java
-@SpringBootApplication
-@ComponentScan(basePackages = {
-        "com.openframe.api",
-        "com.openframe.data",
-        "com.openframe.core",
-        "com.openframe.notification",
-        "com.openframe.kafka"
-})
-@Slf4j
-public class ApiApplication {
-    public static void main(String[] args) {
-        log.info("Starting OpenFrame API");
-        SpringApplication.run(ApiApplication.class, args);
-    }
-}
-```
-
-Every service resolves its configuration from the OpenFrame Config Server at startup. [`openframe/services/openframe-api/src/main/resources/application.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/openframe/services/openframe-api/src/main/resources/application.yml) shows this pattern:
-
-```yaml
-spring:
-  application:
-    name: openframe-api
-  config:
-    import: "optional:configserver:${SPRING_CONFIG_URL:http://openframe-config.microservices.svc.cluster.local:8888}"
-```
-
-The same `optional:configserver:` import appears in `openframe-authorization-server` and `openframe-client`'s `application.yml` files. This means a service started outside a cluster will look for a config server at `localhost` or wherever `SPRING_CONFIG_URL` points, but will continue starting even if that server is unreachable (the import is `optional`).
-
-Shared, cross-service defaults — datastore URIs, gateway routes, security token lifetimes, logging — live in [`configs/base/application.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/application.yml) and per-service files such as `configs/base/openframe-api.yml` and `configs/base/openframe-gateway.yml`. These are the files the Config Server serves to each running service.
-
-To run the API service against a config server reachable at a custom address:
-
-```bash
-cd openframe/services/openframe-api
-mvn spring-boot:run -Dspring-boot.run.arguments="--SPRING_CONFIG_URL=http://localhost:8888"
-```
-
-### Expected output
-
-A healthy single-service startup produces log output similar to:
-
-```text
-Starting OpenFrame API
-...
-Tomcat started on port(s): 8080 (http)
-...
-Started ApiApplication in 12.345 seconds (process running for 13.0)
-```
-
-Without a reachable config server, MongoDB, Redis, Kafka, or NATS, the service will log connection warnings or fail health checks for the datasources it needs (for example `spring.mongodb.uri` and `spring.data.redis.cluster.nodes`, both defined in `configs/base/application.yml`). This is expected when running a service in isolation — the platform is designed to run as a full set of services backed by its datastores, described next.
-
-### Verifying a running service
-
-Every service shares the monitoring configuration in `configs/base/application.yml`:
+A minimal health check that does not require authentication is the gateway's routed actuator surface. Every service shares the common monitoring block defined in `configs/base/application.yml`:
 
 ```yaml
 management:
@@ -174,73 +65,85 @@ management:
         include: health,info,metrics,prometheus
 ```
 
-Once a service is up, its health endpoint is reachable at a path like `/management/v1/health` on that service's port, and returns a JSON body reporting `"status": "UP"` when its dependencies are reachable.
+So, once you know the externally reachable gateway host for your environment, a first call looks like this:
 
-## How the pieces fit together
+```bash
+# Replace <gateway-host> with the address your CLI bootstrap reported
+curl -s https://<gateway-host>/api/management/v1/health
+```
+
+### Expected Output
+
+A healthy OpenFrame API instance returns a Spring Boot Actuator health payload, for example:
+
+```json
+{
+  "status": "UP"
+}
+```
+
+If you instead see a connection refused or timeout, the gateway, the `openframe-api` pod, or the Argo CD sync may still be converging — re-check the sync wave status (step 3 above) before investigating further.
+
+### A Slightly Richer Hello World: Register a Device
+
+The platform's actual "hello world" workload is registering a managed endpoint. The Client Service (`com.openframe:openframe-client`, routed at `/clients/**`) exposes `POST /api/agents/register`, documented in [Registration and Authentication](../reference/architecture/openframe-client-core-java/registration_and_authentication.md). It requires an `X-Initial-Key` header and a validated JSON payload, and responds with a generated machine identity and credentials. This is the same endpoint the Rust-based [OpenFrame Client Core](../reference/architecture/openframe-client-core/openframe-client-core.md) endpoint agent calls on first install — it is not something you typically call by hand outside of agent installer flows, but it is the clearest proof that the full registration-to-delivery path (gateway → client service → MongoDB → NATS) works end to end.
+
+```mermaid
+sequenceDiagram
+    participant Agent as "Endpoint Agent"
+    participant Gateway as "OpenFrame Gateway"
+    participant Client as "Client Service"
+    participant Data as "MongoDB"
+
+    Agent->>Gateway: POST /clients/api/agents/register (X-Initial-Key)
+    Gateway->>Client: Forward to /api/agents/register
+    Client->>Data: Persist machine identity and credentials
+    Client-->>Gateway: Registration response
+    Gateway-->>Agent: Machine identity and credentials
+```
+
+If this call succeeds, every layer of the stack — gateway routing, the client service, and its MongoDB-backed state — is working.
+
+---
+
+## What Just Happened
 
 ```mermaid
 flowchart LR
-    User["Browser, technician, integration, or endpoint agent"] --> Gateway["OpenFrame Gateway"]
+    User["Browser or API Client"] --> Gateway["OpenFrame Gateway"]
     Gateway --> Auth["Authorization Server"]
     Gateway --> Api["OpenFrame API"]
     Gateway --> ExternalApi["External API"]
-    Gateway --> Client["Client Service"]
-    Gateway --> Frontend["Frontend"]
-    Config["Config Server"] -.-> Api
-    Config -.-> Auth
-    Config -.-> Client
-    Config -.-> Gateway
-    Config -.-> Management
-    Config -.-> Stream
-    Client --> Nats["NATS JetStream"]
-    Management --> Nats
-    Api --> Nats
-    Client --> Kafka["Kafka"]
-    Stream["Stream Service"] --> Kafka
-    Stream --> Cassandra["Cassandra"]
-    Stream --> Pinot["Pinot"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> Frontend["OpenFrame Frontend"]
     Api --> Mongo["MongoDB"]
-    Auth --> Mongo
-    Client --> Mongo
-    Management["Management Service"] --> Mongo
     Api --> Redis["Redis Cluster"]
-    Auth --> Redis
-    Client --> Redis
-    Management --> Redis
+    Api --> Cassandra["Cassandra"]
+    Api --> Pinot["Pinot"]
+    ClientService --> Nats["NATS"]
+    ClientService --> Kafka["Kafka"]
 ```
 
-The gateway (see [`configs/base/openframe-gateway.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/openframe-gateway.yml)) routes incoming traffic by path prefix:
+The OpenFrame CLI drove Argo CD, which deployed:
 
-| Prefix | Destination service |
-|---|---|
-| `/sas/**` | `openframe-authorization-server` |
-| `/api/**` | `openframe-api` |
-| `/api-docs/**` | `openframe-external-api` |
-| `/clients/**` | `openframe-client` |
-| `/**` | Frontend workload |
+- **Platform services**: ingress-nginx, the `openframe-config` Spring Cloud Config Server (which every other service pulls its configuration from via `spring.config.import`), and development tools.
+- **Datasources**: MongoDB, Redis Cluster, Cassandra, Kafka, NATS, Pinot, MySQL (for Fleet MDM), and ZooKeeper — all declared under `manifests/datasources`.
+- **The tenant application** (`manifests/tenant`): the nine OpenFrame Maven-module services, plus the Fleet MDM and MeshCentral integrated tools and the OpenFrame frontend, each pulled as a container image (for example `ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-api:latest`).
 
-The Rust `openframe_client` binary is the endpoint agent that registers devices, authenticates, and exchanges commands/results with the `openframe-client` service over NATS JetStream — it is not a server you run as part of the backend stack, but a separate agent binary distributed to managed endpoints.
+This repository (`com.openframe:openframe-parent`, see `pom.xml`) does not implement the business logic for these services itself. Its Maven modules under `openframe/services/*` are thin Spring Boot entry points — see for example `openframe/services/openframe-api/src/main/java/com/openframe/api/ApiApplication.java` — that assemble functionality from the OpenFrame OSS Library (`com.openframe.oss:*`, pinned at `7.0.11`). The Rust `openframe-client` binary under `clients/openframe-client/src/main.rs` is equally thin, delegating to the `openframe-agent-lib` crate pinned at tag `v0.0.5` in `clients/openframe-client/Cargo.toml`.
 
-For the full architecture (data flows, service responsibilities, deployment model), see [Architecture Overview](../reference/architecture/README.md) and [Ecosystem](../reference/architecture/ecosystem.md).
+---
 
-## Running the full platform
+## Next Steps
 
-A single service by itself is not a usable deployment: the platform expects MongoDB, Redis (cluster), Kafka, Cassandra, Pinot, NATS, and (for FleetMDM) MySQL to be present, plus the Config Server to be reachable. This repository ships the Helm charts and Argo CD application definitions for all of this under [`manifests`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main) (platform namespace, datasources namespace, and the `manifests/tenant` chart that deploys the OpenFrame services alongside Fleet MDM and MeshCentral).
+- Read [Introduction](./introduction.md) for the conceptual overview of OpenFrame and Flamingo before diving deeper.
+- Work through [Prerequisites](./prerequisites.md) for the exact tooling and access you need before bootstrapping a tenant.
+- Follow [First Steps](./first-steps.md) for a guided walkthrough beyond this quick start.
+- For local service development instead of a full CLI-provisioned tenant, see [Local Development](../development/setup/local-development.md) and [Environment Setup](../development/setup/environment.md).
+- To understand how the nine services, the Helm charts, and the Argo CD app-of-apps fit together, read the architecture overview at [Architecture](../development/architecture/README.md) and the generated [Ecosystem](../reference/architecture/ecosystem.md) reference, which lists every upstream OpenFrame OSS Library artifact this repository pins and the full delivery chain from CI images to Argo CD applications.
+- Deep dives into individual runtime modules — all implemented in the OpenFrame OSS Library and assembled here — are indexed from [Reference Architecture](../reference/architecture/README.md), including [Registration and Authentication](../reference/architecture/openframe-client-core-java/registration_and_authentication.md), [Telemetry and Delivery](../reference/architecture/openframe-client-core-java/telemetry_and_delivery.md), and [Openframe Client Core](../reference/architecture/openframe-client-core/openframe-client-core.md) for the Rust endpoint agent.
+- Before contributing changes, review [Security](../development/security/README.md), [Testing](../development/testing/README.md), and [Contributing Guidelines](../development/contributing/guidelines.md).
 
-Bringing up that full environment — including Kubernetes cluster setup, Helm installation order, and datasource bootstrap scripts such as [`manifests/datasources/mongodb/scripts/mongo-init.sh`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/manifests/datasources/mongodb/scripts/mongo-init.sh) — is covered step by step in [Local Development](../development/setup/local-development.md) and [Environment Setup](../development/setup/environment.md).
-
-## Using the OpenFrame CLI
-
-Day-to-day operational tasks (bootstrapping a local cluster, managing the tenant deployment) are typically done through the **OpenFrame CLI**, which is maintained in a separate repository: [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli). Refer to that repository's [installation instructions](https://github.com/flamingo-stack/openframe-cli#installation) and [documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs) — it is not bundled inside this repository.
+For questions, troubleshooting, or to connect with other OpenFrame users, join the [OpenMSP Slack community](https://www.openmsp.ai/).
 
 [![Getting Started with OpenFrame - Organization Setup Basics](https://img.youtube.com/vi/-_56_qYvMWk/maxresdefault.jpg)](https://www.youtube.com/watch?v=-_56_qYvMWk)
-
-## Next steps
-
-- Review [Prerequisites](./prerequisites.md) for the full tooling list before a deeper setup.
-- Walk through [First Steps](./first-steps.md) for a guided path after the initial build.
-- Set up a working local environment with [Local Development](../development/setup/local-development.md) and [Environment Setup](../development/setup/environment.md).
-- Read the [Architecture Overview](../reference/architecture/README.md) to understand how the gateway, API, authorization server, client service, management service, and stream service relate to each other and to MongoDB, Redis, Kafka, Cassandra, Pinot, and NATS.
-- Dig into individual subsystems such as [Main Applications](../reference/architecture/main-applications/main-applications.md), [Openframe Client Core](../reference/architecture/openframe-client-core/openframe-client-core.md) (the Rust endpoint agent), or [Client Core Server Controllers](../reference/architecture/client-core-server-controllers/client-core-server-controllers.md).
-- Check [Code Review Guidelines](../development/contributing/guidelines.md) and [Testing](../development/testing/README.md) before submitting changes.
-- For questions or community support, join the [OpenMSP Slack community](https://www.openmsp.ai/) — this project does not use GitHub Issues or Discussions for support.

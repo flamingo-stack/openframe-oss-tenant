@@ -1,6 +1,0 @@
-flowchart TD
-    Candidate["Candidate sequence"] --> Read["Read delivery type and target key"]
-    Read --> Match{"Same machine and stored sequence at least candidate?"}
-    Match -->|"Yes"| Skip["Keep stored high-water mark"]
-    Match -->|"No"| Persist["Persist machine ID and new sequence"]
-    Persist --> Commit["Commit transaction"]

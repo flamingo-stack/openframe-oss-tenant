@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Time entry ticket views"] --> Filter["Keep entries with a ticket identifier"]
+    Filter --> Empty{"Entries remain?"}
+    Empty -->|"no"| Match["Return all match"]
+    Empty -->|"yes"| Load["Load current ticket titles by tenant and ticket identifiers"]
+    Load --> Compare["Compare source title with copied title"]
+    Compare --> SourceExists{"Source ticket exists?"}
+    SourceExists -->|"no"| Ignore["Keep copied title, report no mismatch"]
+    SourceExists -->|"yes"| Equal{"Titles equal?"}
+    Equal -->|"yes"| NoMismatch["Report no mismatch"]
+    Equal -->|"no"| Mismatch["Record reconciliation mismatch"]

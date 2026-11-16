@@ -1,6 +1,6 @@
 flowchart LR
-    ClientBinary["Installed OpenFrame Client binary"] --> Registration["Platform Apps Entry"]
-    Registration --> RegistryKey["HKLM uninstall registry key"]
-    RegistryKey --> WindowsSettings["Windows Apps and Features"]
-    WindowsSettings --> UninstallCommand["Elevated uninstall command"]
-    UninstallCommand --> ClientBinary
+    ClientLifecycle["OpenFrame Client lifecycle"] -->|"register, refresh, or unregister"| AppsEntry["Platform Apps Entry"]
+    AppsEntry -->|"create or remove values"| Registry["Windows machine registry"]
+    Registry -->|"lists installed software"| WindowsUI["Apps and Features"]
+    WindowsUI -->|"runs uninstall command"| ElevatedShell["Elevated PowerShell"]
+    ElevatedShell -->|"invokes uninstall"| ClientBinary["OpenFrame Client binary"]

@@ -1,14 +1,14 @@
-sequenceDiagram
-    participant Updater as Update flow
-    participant Close as Platform App Close
-    participant OS as Operating system
-    participant App as Graphical application
-    Updater->>Close: ask to close process identifiers
-    Close->>OS: send graceful close request
-    OS->>App: deliver close message or SIGTERM
-    Note over App: The app may exit, ignore the request, or already be absent
-    Updater->>Updater: replace application files
-    Updater->>Close: reopen image with session context
-    Close->>OS: launch in supported user context
-    OS->>App: start updated application
-    Close-->>Updater: return launch handoff result
+flowchart TD
+    Start["Update coordinator supplies process IDs"] --> Platform{"Target platform?"}
+    Platform -->|"Windows"| BuildArgs["Convert process IDs to script arguments"]
+    BuildArgs --> RunScript["Run PowerShell as user"]
+    RunScript --> FindProcess["Find each process"]
+    FindProcess --> CloseWindow["Request CloseMainWindow"]
+    CloseWindow --> ScriptResult{"Script returned zero?"}
+    ScriptResult -->|"No"| LogCloseWarning["Log close warning with return code and stderr"]
+    ScriptResult -->|"Yes"| CloseDone["Close request complete"]
+    Platform -->|"Non-Windows"| Refresh["Refresh process information"]
+    Refresh --> SignalTerm["Send SIGTERM to each known process"]
+    SignalTerm --> SignalResult{"Signal request refused?"}
+    SignalResult -->|"Yes"| LogSignalWarning["Log process-specific warning"]
+    SignalResult -->|"No"| CloseDone

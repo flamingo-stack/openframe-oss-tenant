@@ -1,0 +1,16 @@
+flowchart LR
+    TestRunner["JUnit test runner"] --> DeviceTests["DevicesTest"]
+    TestRunner --> DeviceLogTests["DeviceLogsTest"]
+    TestRunner --> LogTests["LogsTest"]
+    TestRunner --> CleanupTest["StaleDeviceCleanupTest"]
+
+    DeviceTests --> DeviceApi["DeviceApi"]
+    DeviceLogTests --> DeviceLogApi["DeviceLogApi"]
+    LogTests --> LogsApi["LogsApi"]
+    CleanupTest --> DeviceApi
+
+    DeviceApi --> Platform["OpenFrame platform APIs"]
+    DeviceLogApi --> Platform
+    LogsApi --> Platform
+    Platform --> DeviceData["Device inventory and integrations"]
+    Platform --> LogData["Device and event log data"]

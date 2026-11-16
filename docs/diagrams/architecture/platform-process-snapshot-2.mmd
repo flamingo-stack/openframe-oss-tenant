@@ -1,12 +1,11 @@
 flowchart TD
-    Snapshot["snapshot()"] --> Refresh["Refresh executable metadata"]
-    Refresh --> ProcessMap["Process map"]
-    ProcessMap --> Image["Readable executable image"]
-    ProcessMap --> Parent["Parent process image"]
-    Image --> Record["RunningProcess"]
-    Parent --> Record
-    Record --> Service["Windows service classification"]
-    Record --> Session["Windows session lookup"]
-    Alive["alive(pids)"] --> Snapshot
-    Snapshot --> Filter["Filter requested PIDs"]
-    Filter --> LivePids["Live PID list"]
+    Start["Caller requests snapshot"] --> Refresh["Create system view and refresh process executable paths"]
+    Refresh --> Iterate["Iterate refreshed processes"]
+    Iterate --> ImageCheck{"Readable executable image?"}
+    ImageCheck -->|"No"| Skip["Exclude process"]
+    ImageCheck -->|"Yes"| Parent["Resolve parent executable image when available"]
+    Parent --> Service["Classify Windows service parent"]
+    Service --> Session["Resolve Windows session when supported"]
+    Session --> Record["Create RunningProcess record"]
+    Record --> Collect["Collect result vector"]
+    Skip --> Collect

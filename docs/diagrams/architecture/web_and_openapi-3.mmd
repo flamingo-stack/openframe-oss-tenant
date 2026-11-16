@@ -1,7 +1,0 @@
-flowchart TD
-    ControllerMappings["REST Controller Mappings"] --> Springdoc["Springdoc Generation"]
-    ContractModels["Request and Response Models"] --> Springdoc
-    OpenApiConfig["OpenApiConfig"] --> Springdoc
-    Springdoc --> ApiDocsEndpoint["API Docs Endpoint"]
-    ApiDocsEndpoint --> SwaggerUi["Swagger UI"]
-    ApiDocsEndpoint --> IntegrationConsumer["Integration Tooling"]

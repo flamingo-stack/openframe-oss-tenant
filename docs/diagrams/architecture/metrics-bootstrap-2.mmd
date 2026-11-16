@@ -1,7 +1,0 @@
-sequenceDiagram
-    participant Startup as OpenFrame Client startup
-    participant Bootstrap as Metrics Bootstrap
-    participant Trace as Tracing subscriber
-    Startup->>Bootstrap: init()
-    Bootstrap->>Trace: info event for metrics initialization
-    Bootstrap-->>Startup: Ok(())

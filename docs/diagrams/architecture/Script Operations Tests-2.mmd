@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Start Suite"] --> PickDevice["Find online Windows device"]
+    PickDevice --> Lifecycle["Create, list, read, edit, archive, and unarchive scripts"]
+    Lifecycle --> CreateEcho["Create marker echo script"]
+    CreateEcho --> SingleRun["Dispatch saved script with environment override"]
+    SingleRun --> BatchRun["Dispatch saved script as a batch"]
+    BatchRun --> RejectUnknown["Reject unknown-device dispatches"]
+    RejectUnknown --> Commands["Dispatch single and batch commands"]
+    Commands --> Cancel["Cancel sleeping command"]
+    Cancel --> Cleanup["Attempt to delete marker echo script"]
+    Cleanup --> Complete["Suite Complete"]

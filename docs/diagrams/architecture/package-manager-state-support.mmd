@@ -1,0 +1,11 @@
+flowchart TD
+    Caller["Package Manager Caller"] --> StateOf["state_of"]
+    StateOf --> PresenceProbe["ManagerId presence probe"]
+    StateOf --> SupportPolicy["is_supported"]
+    Caller --> SessionInput["Console User Present"]
+    SessionInput --> StateOf
+    PresenceProbe --> Resolve["State Resolution"]
+    SupportPolicy --> Resolve
+    Resolve --> ReportState["ManagerState"]
+    ReportState --> Reporting["Package Manager Reporting"]
+    ReportState --> UpdateFlow["Package Update Flow"]

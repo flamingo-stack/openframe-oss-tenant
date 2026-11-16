@@ -1,9 +1,8 @@
 flowchart LR
-    ExternalApi["External API ticket responses"] -->|"JSON payloads"| Jackson["Jackson deserialization"]
-    Jackson -->|"maps fields"| TicketDtos["External Ticket Dto"]
-    TicketDtos --> StatusCount["StatusDefinitionCount"]
-    TicketDtos --> Attachment["TicketAttachmentResponse"]
-    TicketDtos --> Owner["TicketOwnerResponse"]
-    StatusCount --> TestService["External API tests"]
-    Attachment --> TestService
-    Owner --> TestService
+    TestSuite["External ticket integration tests"] --> Client["External API test client"]
+    Client --> TicketApi["External ticket API"]
+    TicketApi --> Payload["JSON ticket response payload"]
+    Payload --> Dtos["External Ticket Dto"]
+    Dtos --> Statistics["Status definition count"]
+    Dtos --> Attachment["Ticket attachment response"]
+    Dtos --> Owner["Ticket owner response"]

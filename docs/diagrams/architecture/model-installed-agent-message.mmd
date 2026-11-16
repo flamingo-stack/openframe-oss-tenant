@@ -1,0 +1,7 @@
+flowchart LR
+    EndpointClient["Endpoint Client"] --> Publisher["Installed Agent Message Publisher"]
+    Publisher --> Message["Model Installed Agent Message"]
+    Message --> NatsPublisher["NATS Message Publisher"]
+    NatsPublisher --> NatsStream["NATS INSTALLED AGENTS Stream"]
+    NatsStream --> Listener["Installed Agent Listener"]
+    Listener --> InstalledAgentService["Installed Agent Service"]

@@ -1,9 +1,14 @@
-flowchart TD
-    Input["Parsed entries"] --> Classify{"Client log?"}
-    Classify -->|"Yes"| Preserve["Append unchanged"]
-    Classify -->|"No"| Seen{"Message seen?"}
-    Seen -->|"No"| First["Store message index and append"]
-    Seen -->|"Yes"| Increment["Increment first entry count"]
-    Preserve --> Output["Ordered output"]
-    First --> Output
-    Increment --> Output
+sequenceDiagram
+    participant Caller
+    participant Parser as Logging Parse
+    participant File as Log File
+    Caller->>Parser: read path, position, maximum count
+    Parser->>File: open and read metadata
+    alt file length is below position
+        Parser->>Parser: use position zero
+    else file has retained position
+        Parser->>Parser: use supplied position
+    end
+    Parser->>File: seek and read lines
+    Parser->>Parser: parse supported lines
+    Parser-->>Caller: entries and new position

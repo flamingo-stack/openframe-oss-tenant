@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Admin as "Technician session"
+    participant Agent as "Client agent session"
+    participant Dialog as "Dialog API"
+    participant Ticket as "Ticket API"
+
+    Agent->>Dialog: Open client dialog
+    Admin->>Dialog: Read linked ticket identifier
+    Admin->>Dialog: Switch mode to DIRECT
+    Admin->>Ticket: Move ticket to TECH_REQUIRED
+    Agent->>Dialog: Send client chat message
+    Admin->>Dialog: Read unread count
+    Admin->>Dialog: Mark messages read
+    Admin->>Dialog: Set ON_HOLD
+    Admin->>Dialog: Set RESOLVED

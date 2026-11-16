@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Loaded
+    Loaded --> RunningUnchanged: "Effective flags match running flags"
+    Loaded --> PendingRestart: "Effective flags differ"
+    RunningUnchanged --> RunningUnchanged: "Persist unchanged effective set"
+    PendingRestart --> Restarted: "Agent restarts"
+    Restarted --> RestartReported: "Clear pending delivery"
+    RestartReported --> Loaded: "Next service load"

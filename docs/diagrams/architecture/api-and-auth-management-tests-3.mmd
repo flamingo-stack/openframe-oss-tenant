@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Created
+    Created --> Listed
+    Listed --> Updated
+    Updated --> Disabled
+    Disabled --> Enabled
+    Enabled --> Regenerated
+    Regenerated --> Deleted
+    Deleted --> [*]

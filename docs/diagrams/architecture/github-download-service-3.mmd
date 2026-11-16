@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Caller
+    participant Service as Github Download Service
+    participant Host as Artifact Host
+    participant Extractor
+    participant Writer as Platform Binary Writer
+    Caller->>Service: download_and_save(config, paths)
+    Service->>Service: Check installation type
+    alt Single binary
+        Service->>Host: HTTP GET configured link
+        Host-->>Service: Archive bytes
+        Service->>Service: Validate archive size
+        Service->>Extractor: Extract target filename
+        Extractor-->>Service: Binary bytes
+        Service->>Service: Validate binary size
+        Service->>Writer: Write binary and set permissions
+        Writer-->>Service: Write complete
+        Service-->>Caller: None
+    else Folder extraction
+        Service->>Host: HTTP GET configured link
+        Host-->>Service: Archive bytes
+        Service->>Extractor: Extract all to tool directory
+        Service->>Writer: Set executable permissions
+        Service-->>Caller: Executable name
+    end

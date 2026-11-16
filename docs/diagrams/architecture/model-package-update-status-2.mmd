@@ -1,7 +1,7 @@
 stateDiagram-v2
     [*] --> Waiting
-    Waiting --> Waiting: Block persists or phase changes
-    Waiting --> Done: Update completes
-    Waiting --> Failed: Update cannot proceed
-    Done --> [*]
-    Failed --> [*]
+    Waiting --> Waiting: blocker or phase changes
+    Waiting --> Done: update completes
+    Waiting --> Failed: update cannot complete
+    [*] --> Done
+    [*] --> Failed

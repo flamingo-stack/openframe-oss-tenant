@@ -1,0 +1,9 @@
+flowchart TD
+    Create["Create DEVICE Tag"] --> Edit["Update Description and Color"]
+    Edit --> List["List DEVICE and SCRIPT Tags"]
+    List --> Suggest["Query Key and Value Suggestions"]
+    Suggest --> Delete["Delete Created Tag"]
+    Delete --> Verify["Verify Tag Is Absent"]
+    Create -.-> Cleanup["After-All Best-Effort Cleanup"]
+    Edit -.-> Cleanup
+    Suggest -.-> Cleanup

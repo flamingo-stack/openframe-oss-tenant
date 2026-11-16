@@ -1,0 +1,5 @@
+flowchart LR
+    Inbound["Inbound Request"] --> Strip["Remove Client Tenant Header"]
+    Strip --> Resolve["Resolve Host to Tenant Domain"]
+    Resolve --> Stamp["Inject Trusted Tenant Header"]
+    Stamp --> Forward["Forward to API Service"]

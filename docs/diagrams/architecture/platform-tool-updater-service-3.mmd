@@ -1,16 +1,15 @@
-sequenceDiagram
-    participant Runner as Update runner
-    participant Updater as Service updater
-    participant Process as Tool kill service
-    participant Files as File and directory helpers
-    participant Download as Download service
-    participant Service as System service
-    Runner->>Updater: prepare(installed tool)
-    Updater->>Process: Stop service and matching processes
-    Updater->>Files: Clear aside binary and create backup
-    Runner->>Updater: apply(installed tool, download configuration)
-    Updater->>Download: Download artifact
-    Updater->>Files: Write executable or extract application bundle
-    Runner->>Updater: finalize(installed tool, update context)
-    Updater->>Service: Start configured service
-    Updater->>Files: Remove backup
+flowchart TD
+    Begin["Begin Finalization"] --> WindowsCheck{"Running on Windows?"}
+    WindowsCheck -->|"no"| StartService["Start Named Service"]
+    WindowsCheck -->|"yes"| ClearOld["Clear Aside Binary"]
+    ClearOld -->|"cleared"| ServiceState{"Service Already Active?"}
+    ClearOld -->|"still locked"| Remediate["Stop Service and Matching Processes"]
+    Remediate --> ProcessAlive{"Tool Process Still Running?"}
+    ProcessAlive -->|"yes"| LeaveStopped["Leave Service Stopped"]
+    ProcessAlive -->|"no"| WaitUnlock["Wait for Executable Unlock"]
+    WaitUnlock --> StartService
+    ServiceState -->|"yes"| StartService
+    ServiceState -->|"no"| WaitReady["Wait for Executable Unlock"]
+    WaitReady --> StartService
+    StartService --> Cleanup["Remove Backup"]
+    LeaveStopped --> Cleanup

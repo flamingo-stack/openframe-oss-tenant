@@ -1,8 +1,11 @@
-flowchart TD
-    Start["Register requested"] --> OpenRoot["Open HKEY LOCAL MACHINE"]
-    OpenRoot --> CreateKey["Create or open uninstall key"]
-    CreateKey --> BuildValues["Build display and uninstall values"]
-    BuildValues --> WriteValues["Write each registry value"]
-    WriteValues --> Success["Log registration success"]
-    CreateKey --> CreateError["Return key creation error"]
-    WriteValues --> WriteError["Return value write error"]
+sequenceDiagram
+    participant Lifecycle as Client Lifecycle
+    participant Entry as Platform Apps Entry
+    participant Registry as Windows Registry
+    Lifecycle->>Entry: register installed binary path
+    Entry->>Entry: resolve version and PowerShell path
+    Entry->>Entry: build metadata and uninstall values
+    Entry->>Registry: create uninstall subkey
+    Entry->>Registry: write display and uninstall values
+    Registry-->>Entry: write success
+    Entry-->>Lifecycle: registration success

@@ -1,118 +1,107 @@
 # Model Tool Version Overrides
 
-Model Tool Version Overrides is a small, compile-time resolver in the OpenFrame Client agent library. Given a tool key, it optionally returns the version string baked into the agent binary for selected integrated tools. It lets a build choose pinned tool versions without introducing runtime configuration, file access, network access, or state.
+Model Tool Version Overrides is a compile-time policy adapter in the OpenFrame client agent. It resolves a replacement version for a small, feature-selected set of integrated tools. When no matching override is compiled into the agent, it returns no value and the installation message's declared version remains authoritative.
 
-The implementation belongs to the `openframe_agent_lib` Cargo artifact from the OpenFrame OSS Library. OpenFrame OSS Tenant consumes that artifact at version `v0.0.5` for its client runtime. The authoritative implementation is [`tool_version_overrides.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/tool_version_overrides.rs).
+The implementation is supplied by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library version `v0.0.5`. Its source is maintained in [tool version overrides](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/tool_version_overrides.rs).
 
-## Purpose and Contract
+## Responsibilities and Boundary
 
-`lookup(tool_key)` returns `Option<&'static str>`:
+The module exposes one function: `lookup(tool_key: &str) -> Option<&'static str>`.
 
-- `Some(version)` means the binary was compiled with a feature that enables an override for the supplied key and with the corresponding build-time environment variable available.
-- `None` means the key has no compiled override. Callers retain their normal version-selection behavior.
+- It compares the supplied tool key with the keys enabled by compile-time feature flags.
+- For a selected match, it returns the corresponding version embedded through Rust's `env!` macro.
+- For a key without an enabled override, it returns `None`.
+- It neither downloads software nor persists configuration; downstream installation logic decides how to use the returned version.
 
-The returned string has a `static` lifetime because Rust's `env!` macro embeds the value into the compiled program. This module does not parse versions, compare them, download assets, or persist an override.
+The current lookup table is deliberately narrow:
 
-## Supported Override Matrix
+| Compile-time feature | Tool key | Embedded environment variable |
+| --- | --- | --- |
+| `openframe-chat-version` | OpenFrame Chat tool agent identifier | `OPENFRAME_CHAT_VERSION` |
+| `meshcentral-agent-version` | `meshcentral-server` | `MESHCENTRAL_AGENT_VERSION` |
+| `fleetmdm-agent-version` | `fleetmdm-server` | `FLEETMDM_AGENT_VERSION` |
+| `osquery-version` | `osqueryd` | `OSQUERY_VERSION` |
 
-Each match arm is present only when its Cargo feature is enabled. The build must define the matching environment variable when that enabled arm invokes `env!`; otherwise compilation fails rather than producing a partially configured runtime override.
-
-| Tool key | Cargo feature | Build-time environment variable | Returned value when enabled |
-| --- | --- | --- | --- |
-| OpenFrame Chat tool agent identifier | `openframe-chat-version` | `OPENFRAME_CHAT_VERSION` | The compiled OpenFrame Chat version |
-| `meshcentral-server` | `meshcentral-agent-version` | `MESHCENTRAL_AGENT_VERSION` | The compiled MeshCentral agent version |
-| `fleetmdm-server` | `fleetmdm-agent-version` | `FLEETMDM_AGENT_VERSION` | The compiled Fleet MDM agent version |
-| `osqueryd` | `osquery-version` | `OSQUERY_VERSION` | The compiled osquery version |
-
-The OpenFrame Chat key is intentionally sourced from the client model constant `CHAT_TOOL_AGENT_ID`, while the other recognized keys are string literals. This preserves a single identifier definition for that tool where the broader client model exposes it.
+Feature-gated match arms do not exist in a build unless their feature is enabled. Conversely, an enabled feature requires its associated environment variable while compiling because `env!` embeds the value into the binary. There is no runtime environment lookup or dynamic override configuration in this module.
 
 ## Architecture
 
-Model Tool Version Overrides is a leaf model utility. It receives a tool key from higher-level client logic, evaluates only feature-compiled match arms, and supplies an optional static version. It has no runtime dependency on a service, datastore, or external API.
-
 ```mermaid
 flowchart LR
-    BuildInputs["Cargo features and build environment"] --> Compile["Rust compiler"]
-    Compile --> AgentBinary["OpenFrame Client agent binary"]
-    Caller["Client tool handling logic"] --> Lookup["Model Tool Version Overrides lookup"]
-    AgentBinary --> Lookup
-    Lookup --> Match["Feature-gated tool key match"]
-    Match --> Result["Optional static version"]
-    Result --> Caller
+    BuildFeatures["Enabled Cargo features"] --> Lookup["Model Tool Version Overrides lookup"]
+    BuildEnvironment["Build environment version variables"] --> Lookup
+    ToolMessage["Tool installation message"] --> EffectiveVersion["Effective version resolution"]
+    Lookup --> EffectiveVersion
+    EffectiveVersion --> DownloadConfig["Download configuration version substitution"]
+    DownloadConfig --> Installer["Tool installation workflow"]
+    ToolMessage --> Installer
 ```
 
-### Component Responsibilities
+Model Tool Version Overrides sits at the model boundary of the Rust client. It provides version selection only; the installation message provides the baseline tool identifier and version, while later layers use the resolved version to prepare an installation artifact.
 
-| Component | Responsibility |
-| --- | --- |
-| Build configuration | Selects which override match arms exist and provides the values consumed by `env!`. |
-| `lookup` | Maps a recognized tool key to its feature-gated, compiled version string. |
-| Client tool handling logic | Uses the optional result when determining the effective tool version. Its policy outside the override is not implemented by this module. |
+## Resolution Semantics
 
-## Resolution Flow
+The installation-message model invokes `lookup` as part of its effective-version calculation:
 
-The lookup is deterministic for a particular binary. A process cannot turn an override on or off after compilation, and the result depends only on the supplied tool key and the features compiled into that binary.
+```text
+resolved version = lookup(tool identifier) when present
+resolved version = message version when no override is present
+```
+
+This creates a clear precedence rule: a compiled override wins for its exact tool key. All other tools, including keys whose features are not included in the build, retain the version supplied by the tool installation message.
 
 ```mermaid
 flowchart TD
-    Start["Receive tool key"] --> ChatCheck{"OpenFrame Chat feature and key match?"}
-    ChatCheck -->|"Yes"| ChatVersion["Return compiled chat version"]
-    ChatCheck -->|"No"| MeshCheck{"MeshCentral feature and key match?"}
-    MeshCheck -->|"Yes"| MeshVersion["Return compiled MeshCentral version"]
-    MeshCheck -->|"No"| FleetCheck{"Fleet MDM feature and key match?"}
-    FleetCheck -->|"Yes"| FleetVersion["Return compiled Fleet MDM version"]
-    FleetCheck -->|"No"| OsqueryCheck{"osquery feature and key match?"}
-    OsqueryCheck -->|"Yes"| OsqueryVersion["Return compiled osquery version"]
-    OsqueryCheck -->|"No"| NoOverride["Return None"]
+    Start["Receive tool identifier and declared version"] --> Query["Call lookup with tool identifier"]
+    Query --> Match{"Enabled override matches?"}
+    Match -->|"Yes"| Embedded["Return embedded override version"]
+    Match -->|"No"| Declared["Keep declared message version"]
+    Embedded --> Resolved["Use resolved version for installation"]
+    Declared --> Resolved
 ```
 
-Feature gating changes the decision tree: when a feature is disabled, Rust excludes its arm entirely. A key that would otherwise be recognized therefore follows the fallback path and returns `None`.
+Matching is exact and string-based. For example, the MeshCentral and Fleet MDM entries match their server-key strings, and the osquery entry matches `osqueryd`. A caller cannot obtain an override by providing an alias, partial name, or differently cased key.
 
-## Integration with Tool Installation Models
+## Integration with Installation Resolution
 
-Within the OpenFrame Client model layer, tool installation and download configuration components expose concepts such as an original version, effective version, and a version override. Model Tool Version Overrides provides the narrowly scoped lookup input for that broader version-selection path. It does not itself modify a tool installation message or a download configuration.
+The surrounding client model exposes an `effective_version` operation that asks this module for an override and otherwise returns the installation message's `version`. A download configuration can then clone itself with `with_version_override`, replacing the original version text in its download link when the two versions differ.
 
 ```mermaid
-flowchart LR
-    ToolMessage["Tool installation message"] --> VersionPolicy["Version selection logic"]
-    ToolKey["Tool key"] --> Lookup["Model Tool Version Overrides lookup"]
-    Lookup --> VersionPolicy
-    VersionPolicy --> EffectiveVersion["Effective tool version"]
-    EffectiveVersion --> Download["Asset selection and installation"]
+sequenceDiagram
+    participant Message as Tool installation message
+    participant Overrides as Model Tool Version Overrides
+    participant Resolver as Effective version resolver
+    participant Download as Download configuration
+    participant Workflow as Installation workflow
+    Message->>Resolver: Provide tool identifier and declared version
+    Resolver->>Overrides: Lookup tool identifier
+    alt override present
+        Overrides-->>Resolver: Embedded version
+    else no override
+        Overrides-->>Resolver: No value
+    end
+    Resolver->>Download: Resolve download link version
+    Download-->>Workflow: Configuration with resolved link
 ```
 
-The diagram describes the responsibility boundary implied by the client model structure. Only the lookup mapping is implemented in this module; orchestration, asset retrieval, and installation belong to surrounding client components.
+The download configuration replaces text only when the declared version is nonempty and differs from the resolved version. If the declared version does not occur in the link, the configuration layer preserves the link and emits a warning. Therefore, a successful lookup selects the intended version but does not by itself guarantee that an artifact URL can be rewritten or downloaded.
 
-## Build and Maintenance Considerations
+## Operational Implications
 
-- **Feature and environment-variable pairing:** Adding or enabling a match arm requires both the Cargo feature and its required build environment variable. The `env!` macro makes missing values a build error.
-- **Key stability:** The tool key is the resolver's public matching input. Change it only with a coordinated update to the code that supplies tool identifiers.
-- **No implicit fallback version:** `None` deliberately communicates that this module has no opinion for the key. It must not be interpreted as an empty version string.
-- **Release reproducibility:** Two binaries built with different enabled features or environment-variable values can resolve the same key differently. Record build inputs wherever reproducible client releases are required.
-- **Testing focus:** Test recognized key and feature combinations, unrecognized keys, and feature-disabled behavior. Build-level checks should validate every enabled `env!` variable.
+- **Reproducible agent behavior:** configured versions are compiled into the produced agent, so agents of the same build resolve the same enabled overrides.
+- **Build-time configuration:** changing an override requires a rebuild with the relevant feature and environment value; no process restart or remote configuration update can alter it.
+- **Safe fallback:** absent features, unmatched keys, and unlisted tools follow the declared version from the incoming message.
+- **Compatibility constraint:** override keys must remain aligned with the `tool_id` values emitted in tool installation messages. Renaming a key silently removes the override path for that tool.
+- **Artifact compatibility:** version substitution expects the declared version to appear in the selected download link. Maintainers should validate message versions and asset URL patterns together.
 
-## Example Outcome Semantics
+## Maintenance Guidance
 
-The following Rust-style example illustrates consumer handling. It shows the module contract rather than a second implementation of the mapping.
+When introducing or changing an override:
 
-```rust
-match lookup(tool_key) {
-    Some(version) => use_compiled_override(version),
-    None => use_standard_version_selection(),
-}
-```
+1. Choose the exact tool identifier used by installation messages.
+2. Add a feature-gated lookup arm and a dedicated build environment variable.
+3. Ensure build pipelines set that variable whenever the feature is enabled.
+4. Confirm the declared version can be substituted in the corresponding download link.
+5. Test both paths: the feature-enabled exact match and the fallback for unmatched or disabled entries.
 
-A caller must preserve the distinction between a configured override and no override. The resolver intentionally exposes this distinction through `Option` instead of manufacturing a default version.
-
-## Scope Boundaries
-
-Model Tool Version Overrides does not:
-
-- accept user input as version data;
-- inspect operating-system compatibility;
-- resolve version precedence or semantic-version ordering;
-- fetch tool artifacts;
-- persist an override; or
-- contact OpenFrame services.
-
-Those concerns belong to the client installation, download, update, and version-comparison capabilities that consume model data outside this module.
+Because this module returns a static string borrowed from compile-time configuration, it contains no mutable state, network dependency, or error result. Failures related to absent artifacts or malformed URLs are intentionally handled by the downstream download and installation layers rather than by Model Tool Version Overrides.

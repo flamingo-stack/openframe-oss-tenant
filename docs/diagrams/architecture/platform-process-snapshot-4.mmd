@@ -1,11 +1,13 @@
-sequenceDiagram
-    participant Caller
-    participant Alive as "alive()"
-    participant Snapshot as "snapshot()"
-    participant ProcessView as "Refreshed process view"
-    Caller->>Alive: requested PIDs
-    Alive->>Snapshot: collect current processes
-    Snapshot->>ProcessView: refresh executable metadata
-    ProcessView-->>Snapshot: RunningProcess records
-    Snapshot-->>Alive: current snapshot
-    Alive-->>Caller: requested PIDs found in snapshot
+flowchart TD
+    Request["Package update request"] --> Resolve["Resolve application identity"]
+    Request --> Gather["Gather process snapshot in blocking task"]
+    Resolve --> Check["Check update gate"]
+    Gather --> Check
+    Check --> Valid{"Identity and snapshot available?"}
+    Valid -->|"No"| Unknown["Block as undetermined"]
+    Valid -->|"Yes"| Filter["Find processes under install directory"]
+    Filter --> Exclude["Exclude service and self-parented records"]
+    Exclude --> Match["Match known main executable names"]
+    Match --> Holders{"Any holders?"}
+    Holders -->|"No"| Clear["Update gate clear"]
+    Holders -->|"Yes"| Blocked["Block with PID image and session"]

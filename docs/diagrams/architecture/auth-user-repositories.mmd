@@ -1,5 +1,0 @@
-flowchart LR
-    Caller["Authentication or user service"] -->|"calls repository method"| Contract["CustomAuthUserRepository"]
-    Contract -->|"implemented by"| Implementation["CustomAuthUserRepositoryImpl"]
-    Implementation -->|"builds query and update"| MongoTemplate["Spring Data MongoTemplate"]
-    MongoTemplate -->|"updateFirst"| AuthUserCollection[("AuthUser collection")]

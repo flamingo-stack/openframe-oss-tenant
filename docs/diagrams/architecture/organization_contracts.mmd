@@ -1,8 +1,0 @@
-flowchart LR
-    OrganizationData["Organization data"] --> Mapper["API service mapping"]
-    Mapper --> Address["Address DTO"]
-    Mapper --> Contact["Contact person DTO"]
-    Mapper --> FilterOption["Organization filter option"]
-    Address --> ApiResponse["API response"]
-    Contact --> ApiResponse
-    FilterOption --> AuditFilter["Audit log filter UI"]

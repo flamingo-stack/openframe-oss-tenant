@@ -1,0 +1,11 @@
+flowchart TD
+    Runner["Test runner"] --> Setup["Admin setup tag"]
+    Setup --> AdminTests["Admin Tests"]
+    AdminTests --> Context["Shared pipeline context"]
+    Context --> CoreTests["Core functional tests"]
+    Context --> AiTests["AI functional tests"]
+    Context --> ExternalTests["External API tests"]
+    CoreTests --> Teardown["Admin teardown tag"]
+    AiTests --> Teardown
+    ExternalTests --> Teardown
+    Teardown --> AdminTests

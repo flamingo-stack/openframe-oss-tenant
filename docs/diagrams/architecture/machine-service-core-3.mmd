@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Caller as "Feature Workflow"
+    participant Service as "AgentVersionService"
+    participant Repository as "InstalledAgentRepository"
+    participant Version as "AgentVersion"
+
+    Caller->>Service: Find reported version by machine identifier
+    Service->>Repository: Find OpenFrame client installed-agent record
+    Repository-->>Service: Installed-agent record or no record
+    Service-->>Caller: Nonblank version or empty result
+    Caller->>Version: Compare reported version with minimum
+    Version-->>Caller: Eligibility result

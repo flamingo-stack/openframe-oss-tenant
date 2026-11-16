@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Worker as "Dispatch worker"
+    participant Repo as "Delivery repository"
+    participant Mongo as "MongoDB primary"
+    participant Agent as "Machine agent"
+
+    Worker->>Repo: Upsert pending delivery with sequence
+    Repo->>Mongo: Conditional upsert for missing or older sequence
+    Mongo-->>Repo: Written or rejected by newer sequence
+    Worker->>Repo: Find oldest due deliveries
+    Repo->>Mongo: Primary read ordered by due time
+    Mongo-->>Repo: Due deliveries
+    Worker->>Agent: Publish dispatch with dispatch identifier
+    Agent->>Repo: Acknowledge or report result
+    Repo->>Mongo: Conditional state update for matching dispatch
+    Mongo-->>Repo: Modified or stale result ignored

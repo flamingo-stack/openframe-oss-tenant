@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Raw bytes and subject"] --> Client["Resolve current NATS client"]
+    Client --> Send["Publish unchanged bytes"]
+    Send --> Flush["Flush client"]
+    Flush --> Success["Return success"]
+    Client --> Failure["Return connection error"]
+    Send --> Failure
+    Flush --> Failure

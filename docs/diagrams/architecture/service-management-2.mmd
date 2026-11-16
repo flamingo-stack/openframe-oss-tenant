@@ -1,0 +1,15 @@
+flowchart TD
+    Start["Install requested"] --> Existing{"Existing service?"}
+    Existing -->|"yes"| Backfill["Backfill persisted machine information when absent"]
+    Backfill --> Reinstall["Run existing binary uninstall with reinstall marker"]
+    Reinstall --> Wait["Wait for cleanup"]
+    Existing -->|"no"| Health["Validate managed directories"]
+    Wait --> Health
+    Health --> Config{"Parameters supplied?"}
+    Config -->|"yes"| SaveConfig["Build and save initial configuration"]
+    Config -->|"no"| Deferred["Defer configuration to authentication command"]
+    SaveConfig --> Copy["Copy executable to standard install path"]
+    Deferred --> Copy
+    Copy --> ServiceConfig["Build service configuration"]
+    ServiceConfig --> Register["Register with platform service manager"]
+    Register --> Complete["Installation complete"]

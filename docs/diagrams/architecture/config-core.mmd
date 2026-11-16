@@ -1,8 +1,11 @@
 flowchart LR
-    ClientService["OpenFrame Client Service"] --> ConfigCore["Config Core"]
-    ConfigCore --> LegacyConfig["Legacy Logging Model"]
-    ConfigCore --> StopBudget["Service Stop Budget"]
-    LegacyConfig --> LoggingSubsystem["Logging Subsystem"]
-    StopBudget --> ToolLifecycle["Tool Lifecycle Operations"]
-    StopBudget --> WindowsService["Windows Service Control"]
-    StopBudget --> BinaryReplacement["Binary Replacement"]
+    ClientRuntime["OpenFrame Client runtime"]
+    ConfigCore["Config Core"]
+    UpdatePaths["Tool and service update paths"]
+    Platform["Platform process and service controls"]
+    LegacyConsumers["Legacy configuration consumers"]
+
+    ClientRuntime -->|"uses"| ConfigCore
+    ConfigCore -->|"timing and retry policy"| UpdatePaths
+    UpdatePaths -->|"invokes"| Platform
+    ConfigCore -->|"default logging shape"| LegacyConsumers

@@ -1,0 +1,9 @@
+flowchart TD
+    Writer["Catalog Synchronizer"] --> Upsert["upsertAll Entries"]
+    Upsert --> Bulk["Unordered Bulk Replace with Upsert"]
+    Bulk --> CatalogCollection["Package Catalog Collection"]
+    Query["Search Request"] --> MatchManager["Match Package Manager"]
+    MatchManager --> Score["Score Exact, Prefix, or Contains"]
+    Score --> Rank["Rank by Score and Requested Order"]
+    Rank --> Cursor["Apply Cursor and Limit Plus One"]
+    Cursor --> Page["Hits, Total, Has More, Cursor"]

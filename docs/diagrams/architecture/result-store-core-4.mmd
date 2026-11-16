@@ -1,0 +1,8 @@
+flowchart TD
+    Restart["Agent starts"] --> LoadJournal["Read journal records"]
+    LoadJournal --> Started{"Record started?"}
+    Started -->|"no"| NotStarted["Create exit code 85 result: not executed"]
+    Started -->|"yes"| Interrupted["Create exit code 85 result: outcome unknown"]
+    NotStarted --> Complete["Atomically outbox result and remove journal"]
+    Interrupted --> Complete
+    Complete --> Flush["Outbox runner retries publication"]

@@ -1,141 +1,135 @@
 # Model Agent Registration Response
 
-Model Agent Registration Response is the Rust data-transfer model returned after an OpenFrame endpoint agent registers or reinstalls with the client service. It carries the server-assigned machine identity and the OAuth-style client credentials that let the agent persist its registration state and participate in later authenticated operations.
+Model Agent Registration Response is the small, security-sensitive response contract returned after an OpenFrame endpoint agent registers or reinstalls. It belongs to the Rust `openframe_client` implementation supplied by the OpenFrame OSS Library and running in this repository's client service. The model carries the durable device identity and OAuth client credentials that let the agent transition from bootstrap enrollment to authenticated operation.
 
-The model is implemented by the `openframe_agent_lib` artifact supplied by [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/agent_registration_response.rs). OpenFrame OSS Tenant consumes version `v0.0.5` of that Cargo artifact when running the endpoint client.
+The implementation is defined in [the OpenFrame OSS Library source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/agent_registration_response.rs). This repository consumes `openframe_agent_lib` version `v0.0.5`; the response model is deserialized from the registration API payload rather than constructed as an independent domain object.
 
 ## Responsibility and Contract
 
-`AgentRegistrationResponse` is a deserialization-only Rust struct. Serde applies `camelCase` naming to the complete type, mapping the JSON response properties to the Rust fields shown below.
+`AgentRegistrationResponse` is a Rust struct derived with `Debug` and `Deserialize`. Its `serde` configuration applies `camelCase` JSON names to its snake case Rust fields.
 
-| Rust field | JSON property | Meaning | Handling after receipt |
-| --- | --- | --- | --- |
-| `machine_id` | `machineId` | Stable server-side identity for the registered machine. | Persisted both as machine information and in the agent configuration. |
-| `client_id` | `clientId` | Client identifier used by subsequent authentication flows. | Saved in the agent configuration. |
-| `client_secret` | `clientSecret` | Secret paired with the client identifier and used for client authentication and reinstall proof. | Saved in agent configuration and persisted with machine information. Treat as sensitive. |
+| Rust field | JSON field | Meaning | Lifecycle use |
+|---|---|---|---|
+| `machine_id` | `machineId` | Server-assigned identity for the managed machine. | Marks the client as registered and identifies the machine on reinstall. |
+| `client_id` | `clientId` | OAuth client identifier assigned to the agent. | Used with the client secret when the agent obtains tokens. |
+| `client_secret` | `clientSecret` | Credential paired with the client identifier. | Persisted locally and also supplied for an authenticated reinstall request. |
 
-All three fields are required `String` values. There are no defaults, optional fields, validation helpers, or behavior on the model itself: malformed JSON or missing required properties causes response deserialization to fail in the registration client.
+All three fields are required strings at deserialization time. A successful HTTP response whose JSON omits a field or provides an incompatible value fails response parsing; the registration client returns that failure instead of silently accepting a partial registration.
 
-```mermaid
-flowchart LR
-    ServerResponse["Registration response JSON"] -->|"deserialize camelCase fields"| ResponseModel["AgentRegistrationResponse"]
-    ResponseModel -->|"machine ID"| MachineInfo["Persisted machine information"]
-    ResponseModel -->|"machine ID, client ID, client secret"| AgentConfig["Agent configuration"]
-    AgentConfig --> AuthFlow["Later authentication flows"]
+```rust
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentRegistrationResponse {
+    pub machine_id: String,
+    pub client_id: String,
+    pub client_secret: String,
+}
 ```
 
 ## Position in the Registration Architecture
 
-The response is the boundary between the server-side registration endpoint and the endpoint agent runtime:
-
-1. The agent gathers hostname, agent version, operating-system type, optional organization and user identifiers, and optional tags into an agent registration request.
-2. The registration client selects a fresh-registration endpoint or a reinstall endpoint based on whether persisted machine information exists.
-3. It sends the request with the initial key and, for reinstall, the previously persisted machine identity and client secret in headers.
-4. On a successful HTTP response, the registration client deserializes the body into Model Agent Registration Response.
-5. The agent registration service persists returned identity and credentials, then returns the same response to its caller.
+The response is the boundary between the remote registration API and local client state. A request contains host, agent version, operating system, and optional organization, user, and tag data. The response supplies the identity and credentials used by subsequent authentication and messaging workflows.
 
 ```mermaid
-flowchart TD
-    AgentRuntime["Endpoint agent runtime"] --> RegistrationService["Agent registration service"]
-    RegistrationService --> RequestModel["Agent registration request"]
-    RegistrationService --> RegistrationClient["Registration client"]
-    RegistrationClient --> FreshDecision{"Saved machine information?"}
-    FreshDecision -->|"No"| RegisterEndpoint["Register endpoint"]
-    FreshDecision -->|"Yes"| ReinstallEndpoint["Reinstall endpoint"]
-    RegisterEndpoint --> ServerProcessor["Client service registration processor"]
-    ReinstallEndpoint --> ServerProcessor
-    ServerProcessor --> ResponseModel["Model Agent Registration Response"]
-    ResponseModel --> RegistrationService
-    RegistrationService --> MachineInfo["Persisted machine information"]
-    RegistrationService --> Configuration["Agent configuration"]
+flowchart LR
+    Agent["OpenFrame endpoint agent"] -->|"registration request"| RegistrationClient["Registration client"]
+    RegistrationClient -->|"HTTPS request"| RegistrationApi["Client registration API"]
+    RegistrationApi -->|"JSON response"| ResponseModel["Agent registration response"]
+    ResponseModel -->|"machine identity"| MachineStore["Persisted machine information"]
+    ResponseModel -->|"registration data"| ConfigStore["Agent configuration"]
+    ConfigStore -->|"client credentials"| AuthService["Agent authentication service"]
+    AuthService -->|"token response"| Agent["OpenFrame endpoint agent"]
 ```
 
-The server implementation contains extension points for agent-registration processing. Its default processor performs no mutation beyond debug logging, so the response contract remains the authoritative hand-off to the endpoint client.
+### Producing the Response
 
-## Component Interaction
+The registration client chooses its endpoint from the presence of persisted machine information:
 
-The response model has no methods and does not initiate network calls. Its consumers determine all operational behavior.
+- A first registration sends the registration request to the agent registration endpoint with the bootstrap initial key in `X-Initial-Key`.
+- A reinstall sends the request to the reinstall endpoint with the same initial key plus `X-Client-Secret` and `X-Machine-Id` from persisted machine information.
+- For either successful response, the client deserializes the JSON body directly into `AgentRegistrationResponse`.
 
-| Component | Relationship to Model Agent Registration Response | Key behavior |
-| --- | --- | --- |
-| Registration client | Produces the model. | Posts the agent registration request, rejects non-success HTTP statuses, and deserializes a successful body. A recognized invalid client-secret response becomes a dedicated registration error. |
-| Agent registration service | Consumes and persists the model. | Chooses fresh registration or reinstall, writes machine ID and client secret to persisted machine information, then saves all three fields to configuration. |
-| Registration processor | Coordinates registration retries. | Skips work if a machine ID is already configured; otherwise retries a failed registration attempt every 60 seconds until it succeeds. |
-| Agent configuration service | Stores the returned registration state. | Serializes read-modify-write operations with a lock so concurrent configuration writes do not discard fields. |
-| Authentication client and services | Indirect consumers through saved configuration. | Use the persisted client credentials in later authentication and token-refresh paths. |
+The request and response are intentionally distinct models: the request reports endpoint facts and enrollment context, while the response establishes the server-issued identity and secrets.
 
 ```mermaid
 sequenceDiagram
-    participant Processor as Registration processor
+    participant Agent as Endpoint agent
     participant Service as Registration service
     participant Client as Registration client
-    participant Server as Client service
-    participant Store as Local configuration
-    Processor->>Service: register agent
-    Service->>Client: register or reinstall
-    Client->>Server: POST request with registration headers
-    Server-->>Client: JSON response
-    Client-->>Service: AgentRegistrationResponse
-    Service->>Store: persist machine information
-    Service->>Store: save registration data
-    Service-->>Processor: success
+    participant Api as Registration API
+    participant Storage as Local secure storage
+    Agent->>Service: Start registration
+    Service->>Client: Register with initial key and device request
+    Client->>Api: POST register or reinstall
+    Api-->>Client: Agent registration response JSON
+    Client-->>Service: Parsed response
+    Service->>Storage: Persist machine ID and client secret
+    Service->>Storage: Save machine ID, client ID, and client secret
+    Service-->>Agent: Registration complete
 ```
 
-## Fresh Registration and Reinstall Flow
+## Processing and Persistence
 
-The response has the same shape for both paths, but the request target and headers differ.
+The registration service obtains an `AgentRegistrationResponse` and performs two persistence operations:
 
-| Scenario | Endpoint selected by the registration client | Required identity material before the request | Response use |
-| --- | --- | --- | --- |
-| Fresh registration | `/clients/api/agents/register` | Initial key | Establishes the first local machine identity and client credentials. |
-| Reinstall | `/clients/api/agents/reinstall` | Initial key, saved machine ID, and saved client secret | Replaces or confirms credentials while retaining the machine association supplied by the service. |
+1. It writes persisted machine information containing the response `machine_id` and `client_secret`; when known, it also retains the resolved user identity. This state enables the reinstall path on a future invocation.
+2. It calls the agent configuration service to save all response fields: `machine_id`, `client_id`, and `client_secret`.
+
+The registration processor protects this workflow from repeated enrollment. It first reads the configured machine ID; a nonempty value means registration has already completed. Otherwise, it retries registration every 60 seconds until it succeeds. This makes the response the state-change payload that ends bootstrap retry behavior.
 
 ```mermaid
 flowchart TD
-    Start["Start registration"] --> Existing{"Saved credentials available?"}
-    Existing -->|"No"| Fresh["Send fresh registration request"]
-    Existing -->|"Yes"| Reinstall["Send reinstall request with prior proof"]
-    Fresh --> Decode["Deserialize Model Agent Registration Response"]
-    Reinstall --> Decode
-    Decode --> PersistMachine["Write machine ID and client secret"]
-    PersistMachine --> PersistConfig["Save machine ID, client ID, and client secret"]
-    PersistConfig --> Complete["Registration complete"]
+    Begin["Registration processor starts"] --> Existing{"Machine ID configured?"}
+    Existing -->|"yes"| Registered["Skip registration"]
+    Existing -->|"no"| Attempt["Call registration service"]
+    Attempt --> Result{"Response parsed and saved?"}
+    Result -->|"yes"| Persist["Persist identity and credentials"]
+    Persist --> Complete["Client is registered"]
+    Result -->|"no"| Wait["Wait 60 seconds"]
+    Wait --> Attempt
 ```
 
-## Persistence and Security Considerations
+## Authentication Handoff
 
-- The registration service only writes configuration after it has received and decoded a successful response. A failure in deserialization or persistence prevents the registration attempt from completing successfully.
-- The machine-information write is logged if it fails, while configuration persistence is propagated as an error. Maintainers should investigate either failure because future reinstall and authentication behavior depends on these values.
-- `client_secret` is credential material. Do not add logging, telemetry, diagnostics, or user-facing representations that reveal it. The same applies to any serialized configuration or persisted machine-information file containing it.
-- Registration requires a nonempty initial key. The service explicitly reports that an initial key cleared after a device obtains a log key cannot be reused for a later registration; a fresh installation command is required.
-- The registration processor treats an existing configured machine ID as already registered and does not request a new response. Clear or alter persisted registration state only through a controlled lifecycle operation.
+The response does not contain access or refresh tokens. Instead, it gives the credentials that the authentication flow later exchanges for the separate agent token response, which contains an access token, refresh token, token type, and optional expiry. Keeping enrollment credentials separate from token material clarifies the transition between registration and ongoing authentication.
 
-## Failure Behavior
+The agent configuration model stores both sets of information:
 
-```mermaid
-flowchart TD
-    Submit["Submit registration request"] --> HttpResult{"HTTP success?"}
-    HttpResult -->|"No"| SecretError{"Invalid client secret?"}
-    SecretError -->|"Yes"| CredentialFailure["Return client secret error"]
-    SecretError -->|"No"| HttpFailure["Return status and response-body error"]
-    HttpResult -->|"Yes"| DecodeResult{"Response JSON decodes?"}
-    DecodeResult -->|"No"| DecodeFailure["Return parsing error"]
-    DecodeResult -->|"Yes"| SaveResult{"Configuration save succeeds?"}
-    SaveResult -->|"No"| SaveFailure["Return persistence error"]
-    SaveResult -->|"Yes"| Success["Registration succeeds"]
-    CredentialFailure --> Retry["Processor waits 60 seconds and retries"]
-    HttpFailure --> Retry
-    DecodeFailure --> Retry
-    SaveFailure --> Retry
-```
+- Registration state: machine ID, client ID, and client secret.
+- Token state: access token and refresh token.
 
-## Maintenance Guidance
+Maintainers changing the response contract should preserve this handoff: registration persistence must complete before authentication attempts rely on the stored client credentials.
 
-The response schema is a compatibility boundary shared by a Java client service and the Rust endpoint agent. Changes to field names, requiredness, or types must be coordinated across the server response producer and this Rust consumer. In particular:
+## Security and Maintenance Considerations
 
-- Preserve the struct-level camel-case mapping when the server continues to emit `machineId`, `clientId`, and `clientSecret`.
-- Additive fields may be ignored by the current model, but newly required Rust fields make older server responses invalid.
-- Renaming a field requires a deliberate Serde mapping and a coordinated server rollout.
-- Test both fresh-registration and reinstall paths, including invalid credential responses, malformed response payloads, and configuration persistence failures.
+`client_secret` is credential material. Treat instances, serialized payloads, and diagnostics as sensitive:
 
-For the broader client model hierarchy, see the OpenFrame client documentation. The neighboring registration request, token response, configuration, registration client, and agent-registration service modules define the request construction, transport, persistence, and follow-on authentication concerns that this response model supports.
+- Do not add logging that prints the complete response, even though the struct derives `Debug`.
+- Do not expose the response through user-facing diagnostics or telemetry.
+- Preserve HTTPS transport and the initial-key header requirement in the registration client.
+- Keep JSON property names stable unless both the registration API and all deployed agents are migrated together.
+- Preserve the write ordering and error handling around configuration persistence. A response that cannot be saved must not be treated as a completed registration.
+
+When extending the contract, add a Rust field and verify the corresponding camel case JSON field. If the new field is required, older servers will cause deserialization failures; if compatibility is required, represent the field as optional and define its fallback behavior explicitly.
+
+## Failure Boundaries
+
+The model itself validates structural compatibility through deserialization, while surrounding services handle operational failures:
+
+| Boundary | Behavior |
+|---|---|
+| Non-success registration status | The registration client returns an error; a recognized invalid client-secret response becomes a dedicated client-secret error. |
+| Invalid or incomplete JSON response | Deserialization into Model Agent Registration Response fails and registration returns an error. |
+| Failed machine-information write | The registration service logs the persistence failure and continues to save the complete registration data through the configuration service. |
+| Failed configuration save | Registration fails, so the processor retries rather than declaring the agent registered. |
+| Existing configured machine ID | The processor does not invoke registration again. |
+
+## Verification Checklist
+
+Changes to Model Agent Registration Response should be validated across the enrollment boundary:
+
+1. Confirm a fresh-registration response with `machineId`, `clientId`, and `clientSecret` deserializes successfully.
+2. Confirm a reinstall response uses the same schema and can update persisted credentials.
+3. Confirm missing required fields and malformed field types fail registration rather than yielding partial local state.
+4. Confirm saved configuration includes all three response values and the authentication workflow can obtain tokens afterward.
+5. Inspect test output and logs to ensure the client secret is never emitted.

@@ -1,0 +1,8 @@
+flowchart TD
+    Begin["Caller invokes update"] --> Encrypt["Encrypt supplied token"]
+    Encrypt --> EncryptOk{"Encryption successful?"}
+    EncryptOk -->|"no"| EncryptError["Return encryption error"]
+    EncryptOk -->|"yes"| Persist["Atomically persist ciphertext"]
+    Persist --> PersistOk{"Persistence successful?"}
+    PersistOk -->|"no"| PersistError["Return filesystem error"]
+    PersistOk -->|"yes"| Complete["Return success"]

@@ -1,0 +1,5 @@
+flowchart LR
+    Input["PackageRef"] --> CheckType{"Package source?"}
+    CheckType -->|"Brew"| Brew["ManagerId.Brew"]
+    CheckType -->|"Choco"| Choco["ManagerId.Choco"]
+    CheckType -->|"WinGet"| Winget["ManagerId.Winget"]

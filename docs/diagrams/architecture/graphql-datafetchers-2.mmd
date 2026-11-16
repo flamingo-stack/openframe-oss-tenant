@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Client
+    participant DGS as "DGS runtime"
+    participant Fetcher as "Graphql Datafetchers"
+    participant Service as "Domain service"
+    participant Loader as "DataLoader"
+    participant Store as "Data store"
+    Client->>DGS: GraphQL operation with global IDs and cursor
+    DGS->>Fetcher: Invoke query mutation or field resolver
+    Fetcher->>Fetcher: Validate input and decode expected ID type
+    Fetcher->>Service: Query or mutate tenant-scoped domain data
+    Service->>Store: Read or update data
+    Store-->>Service: Domain result
+    Service-->>Fetcher: Domain result
+    alt nested fields selected
+        Fetcher->>Loader: Queue related entity key
+        Loader->>Store: Batch related entity lookup
+        Store-->>Loader: Related entities
+        Loader-->>Fetcher: Resolved field value
+    end
+    Fetcher-->>DGS: GraphQL model or connection
+    DGS-->>Client: GraphQL response

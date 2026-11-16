@@ -1,0 +1,11 @@
+flowchart TD
+    Manager["Machine Heartbeat Run Manager"] -->|"owns"| Interval["60 second interval"]
+    Manager -->|"limits to 30 seconds"| Attempt["Publish attempt"]
+    Attempt --> Publisher["Machine Heartbeat Publisher"]
+    Publisher --> Config["Agent configuration service"]
+    Publisher --> Message["Machine heartbeat message"]
+    Publisher --> NatsPublisher["NATS message publisher"]
+    NatsPublisher --> Connection["NATS connection manager"]
+    Connection --> Broker["NATS"]
+    Broker --> Listener["Machine heartbeat listener"]
+    Listener --> StatusService["Machine status service"]

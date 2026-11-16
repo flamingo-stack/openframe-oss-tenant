@@ -1,8 +1,0 @@
-flowchart LR
-    TestCase["Browser test"] -->|"constructs"| UiFlow["Ui Flow"]
-    UiFlow -->|"uses"| BrowserPage["Playwright Page"]
-    UiFlow -->|"starts with"| AuthEntry["Auth Entry Page"]
-    AuthEntry -->|"returns"| Dashboard["Dashboard Page"]
-    UiFlow -->|"waits for"| Dashboard
-    UiFlow -->|"returns"| Sidebar["Navigation Sidebar"]
-    BrowserPage -->|"drives"| OpenFrameUi["OpenFrame web application"]

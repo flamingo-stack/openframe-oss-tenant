@@ -1,0 +1,7 @@
+flowchart LR
+    AgentServices["Agent services"] -->|"typed or raw payload"| Publisher["Nats Message Publisher"]
+    Outbox["Result outbox"] -->|"Result Publisher trait"| Publisher
+    Publisher -->|"get current client"| ConnectionManager["NATS Connection Manager"]
+    ConnectionManager -->|"connection lifecycle"| NatsServer["NATS server"]
+    Publisher -->|"JetStream publish acknowledgement"| JetStream["JetStream"]
+    NatsServer --- JetStream

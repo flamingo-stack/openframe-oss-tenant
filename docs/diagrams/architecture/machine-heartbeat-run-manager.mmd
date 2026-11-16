@@ -1,0 +1,10 @@
+flowchart LR
+    ClientStart["OpenFrame Client startup"] --> Auth["Registration and authentication"]
+    Auth --> NatsConnect["NATS connection manager connects"]
+    NatsConnect --> Watchdog["NATS connection watchdog"]
+    NatsConnect --> Manager["Machine Heartbeat Run Manager"]
+    Manager --> Loop["Detached Tokio interval task"]
+    Loop --> Publisher["Machine Heartbeat Publisher"]
+    Publisher --> Broker["NATS broker"]
+    Broker --> Listener["Machine Heartbeat Listener"]
+    Listener --> Status["Machine status service"]

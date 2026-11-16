@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Message as Tool Installation Message
+    participant Config as Model Download Config
+    participant Download as GitHub Download Service
+    participant Install as Tool Installation Service
+    Message->>Config: Provide candidate configuration
+    Config->>Config: Check current operating system
+    Config->>Config: Apply version override when requested
+    Config->>Config: Determine target path shape
+    Config->>Download: Supply resolved link and artifact details
+    Download->>Install: Provide saved or extracted artifact
+    Config->>Install: Supply installation type and identifiers
+    Install->>Install: Perform installation and record outcome

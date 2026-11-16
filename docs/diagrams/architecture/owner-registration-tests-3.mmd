@@ -1,0 +1,10 @@
+flowchart LR
+    Start["Negative Test"] --> Scenario{"Registration scenario?"}
+    Scenario -->|"Registration closed"| NewRequest["Generate new user request"]
+    Scenario -->|"Existing email"| Owners["Load owner users"]
+    Owners --> ExistingRequest["Generate request with existing email"]
+    NewRequest --> Attempt["Attempt registration"]
+    ExistingRequest --> Attempt
+    Attempt --> Rejected{"Status code at least 400?"}
+    Rejected -->|"Yes"| Pass["Rule enforced"]
+    Rejected -->|"No"| Fail["Test fails"]

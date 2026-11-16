@@ -1,0 +1,12 @@
+flowchart TD
+    RunManager["Machine Timezone Run Manager"] --> Fetcher["Device Data Fetcher"]
+    RunManager --> Publisher["Machine Timezone Publisher"]
+    RunManager --> ConnectionManager["NATS Connection Manager"]
+    Fetcher --> HostTimezone["Host IANA timezone"]
+    ConnectionManager --> ActiveClient["Active NATS client"]
+    ConnectionManager --> ReconnectEvents["Reconnect broadcast receiver"]
+    Publisher --> ConfigService["Agent Configuration Service"]
+    Publisher --> Message["Machine Timezone Message"]
+    Publisher --> NatsPublisher["NATS Message Publisher"]
+    NatsPublisher --> JetStream["NATS JetStream"]
+    ConfigService --> MachineId["Configured machine ID"]

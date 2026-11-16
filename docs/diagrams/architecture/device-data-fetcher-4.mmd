@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Service as Client Service
+    participant Fetcher as Device Data Fetcher
+    participant Host as Host Operating System
+    participant Tz as Timezone Library
+    Service->>Fetcher: Request device facts
+    Fetcher->>Host: Resolve hostname
+    Host-->>Fetcher: Hostname or failure
+    Fetcher->>Tz: Resolve IANA timezone
+    Tz-->>Fetcher: Timezone or failure
+    Fetcher-->>Service: Valid hostname or unavailable result
+    Fetcher-->>Service: Timezone or unavailable result
+    Fetcher-->>Service: Embedded version and operating system type

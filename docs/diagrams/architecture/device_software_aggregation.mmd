@@ -1,0 +1,7 @@
+flowchart TD
+    Observations["Connected device observations"] --> Match["Match tenant and software title"]
+    Match --> Facet["Run summary and version facets"]
+    Facet --> Summary["Title metadata and distinct values"]
+    Facet --> VersionCounts["Devices grouped by version"]
+    Summary --> TitleRollup["Software title rollup"]
+    VersionCounts --> TitleRollup

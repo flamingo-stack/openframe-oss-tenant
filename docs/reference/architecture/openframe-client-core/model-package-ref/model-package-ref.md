@@ -1,51 +1,54 @@
 # Model Package Ref
 
-Model Package Ref defines the small, serializable identity used to name a package managed by the OpenFrame Client. It distinguishes Winget, Homebrew, and Chocolatey packages, preserves the identifier required by each ecosystem, and supplies one deliberately asymmetric comparison rule: Winget identifiers are matched without regard to ASCII letter case, while Homebrew and Chocolatey references retain normal structural equality.
+Model Package Ref defines the compact, serializable identity of a software package managed by the OpenFrame endpoint client. It is implemented in the OpenFrame OSS Library's Rust `openframe_agent_lib` artifact, which this repository runs as part of the OpenFrame client. The model preserves the package-manager namespace and carries the manager-specific identifier needed to recognize the same package across inventory, policy, and update work.
 
-The implementation belongs to the `openframe_agent_lib` Rust artifact supplied by [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/package_ref.rs). This repository consumes that artifact at version `v0.0.5`; the model runs as part of the OpenFrame Client rather than being implemented locally in this repository.
+The implementation is sourced from [the OpenFrame OSS Library package reference model](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/package_ref.rs).
 
 ## Purpose and Scope
 
-A package manager needs more than a package label to locate software reliably. Model Package Ref makes the manager part of the identity and captures the manager-specific key:
+A package name is not globally meaningful on its own: package managers have independent catalogs and identifier rules. Model Package Ref makes that manager context explicit by representing exactly three supported references:
 
-| Package manager | Variant | Identity fields | Comparison behavior |
-|---|---|---|---|
-| Winget | `PackageRef::Winget` | `id` | ASCII case-insensitive identifier comparison |
-| Homebrew | `PackageRef::Brew` | `kind`, `name` | Exact structural equality |
-| Chocolatey | `PackageRef::Choco` | `id` | Exact structural equality |
+| Manager | Variant | Identity fields | Matching rule |
+| --- | --- | --- | --- |
+| Windows Package Manager | `Winget` | `id` | ASCII case-insensitive |
+| Homebrew | `Brew` | `kind`, `name` | Exact equality |
+| Chocolatey | `Choco` | `id` | Exact equality |
 
-`BrewKind` further separates a Homebrew `Formula` from a `Cask`. This prevents a Homebrew reference from treating those package categories as interchangeable when they use the same name.
+This module is intentionally a model layer. It neither runs package-manager commands nor performs installation, download, update scheduling, or persistence. Those responsibilities remain in the package-management services that consume package-update messages.
 
-The model is intentionally limited to package identity. It does not discover installed packages, invoke a package manager, choose update policy, or report update status. Those responsibilities are implemented by the OpenFrame Client's package-management services and the adjacent package-update models.
+## Architecture
 
-## Type Model and Wire Contract
-
-`PackageRef` is a Rust enum with Serde serialization and deserialization. Its `manager` field is an internal tag with uppercase manager values. `BrewKind` is also encoded as an uppercase string. The model derives `Debug`, `Clone`, `PartialEq`, `Eq`, and `Hash`, allowing it to be copied into application data, compared, and used as a key where the default equality semantics are appropriate.
+`PackageRef` is the transport and comparison boundary between a desired package reference and the reference discovered or reported from a device. `BrewKind` disambiguates Homebrew formulae from casks, preventing two distinct Homebrew package categories from being treated as interchangeable.
 
 ```mermaid
-classDiagram
-    class PackageRef {
-        <<enum>>
-        WINGET id String
-        BREW kind BrewKind
-        BREW name String
-        CHOCO id String
-        matches(other) bool
-    }
-    class BrewKind {
-        <<enum>>
-        FORMULA
-        CASK
-    }
-    PackageRef --> BrewKind : "Brew variant uses"
+flowchart LR
+    ControlPlane["Package update instruction"] --> UpdateMessage["Package update message"]
+    UpdateMessage --> PackageRef["Package reference"]
+    PackageRef --> ManagerSelection["Package manager selection"]
+    ManagerSelection --> Winget["Winget identifier"]
+    ManagerSelection --> Brew["Homebrew kind and name"]
+    ManagerSelection --> Choco["Chocolatey identifier"]
+    Inventory["Reported package reference"] --> Match["Reference matching"]
+    PackageRef --> Match
+    Match --> Decision["Same package decision"]
 ```
 
-Representative serialized values follow the type's tagged-enum contract:
+### Core Types
+
+#### `PackageRef`
+
+`PackageRef` is an enum with derived debug, cloning, equality, hashing, serialization, and deserialization support. Each variant keeps only the fields required to identify a package for its package-manager namespace:
+
+- `Winget { id }` identifies a Windows Package Manager package.
+- `Brew { kind, name }` identifies a Homebrew package and whether it is a formula or cask.
+- `Choco { id }` identifies a Chocolatey package.
+
+The enum is tagged with the `manager` field and uses uppercase discriminators. Its wire representation is therefore manager-explicit. The following JSON illustrates the serialized shape:
 
 ```json
 {
   "manager": "WINGET",
-  "id": "Contoso.Editor"
+  "id": "Example.Package"
 }
 ```
 
@@ -53,113 +56,88 @@ Representative serialized values follow the type's tagged-enum contract:
 {
   "manager": "BREW",
   "kind": "CASK",
-  "name": "contoso-editor"
+  "name": "example-app"
 }
 ```
 
 ```json
 {
   "manager": "CHOCO",
-  "id": "contoso.editor"
+  "id": "example-package"
 }
 ```
 
-The model has no custom deserialization fallback or normalization step. Producers and consumers must supply the expected discriminator and fields, and must not assume that `id` and `name` are interchangeable.
+Consumers should retain these uppercase discriminator values. Changing the tag name, a variant name, or a field name is a wire-contract change for serialized messages and stored payloads.
 
-## Architecture and Placement
+#### `BrewKind`
 
-Model Package Ref is a pure domain model within the Rust OpenFrame Client library. It has a direct dependency only on Serde for wire conversion. The package-management domain can construct references from commands or inventory, then use `matches` when correlating two known references. The model itself does not perform input/output, persistence, network calls, or operating-system detection.
+`BrewKind` distinguishes the two Homebrew reference categories:
 
-```mermaid
-flowchart LR
-    PackageDomain["Package management domain"] -->|"constructs and compares"| PackageRef["Model Package Ref"]
-    PackageRef -->|"serializes and deserializes"| Serde["Serde wire format"]
-    PackageRef -->|"encodes manager identity"| Winget["Winget reference"]
-    PackageRef -->|"encodes kind and name"| Brew["Homebrew reference"]
-    PackageRef -->|"encodes manager identity"| Choco["Chocolatey reference"]
-```
+- `Formula` for Homebrew formulae.
+- `Cask` for Homebrew casks.
 
-At the repository level, the OpenFrame Client is one of the services assembled from OpenFrame OSS Library components. This model supports the package-management portion of that client. The code-graph snapshot reports no direct callers for either `PackageRef` or `PackageRef::matches`; that reflects the indexed source relationship, not a guarantee that no runtime payload, deserialized value, or future component uses the model.
+It also serializes as uppercase values, `FORMULA` and `CASK`. Because `BrewKind` participates in normal enum equality, a formula and a cask with the same `name` do not match.
 
 ## Matching Semantics
 
-The `matches` method is the semantic comparison API for package correlation. It applies the following decision process:
+The `matches` method implements domain-specific comparison rather than relying solely on derived equality:
+
+1. When both references are `Winget`, their identifiers are compared with ASCII case ignored.
+2. Every other pair uses exact enum equality. Variants must agree, and every identity field must be equal.
+
+This makes Windows Package Manager identity tolerant of identifier casing while keeping Homebrew and Chocolatey behavior conservative and predictable.
 
 ```mermaid
 flowchart TD
-    Start["Two package references"] --> BothWinget{"Both Winget?"}
-    BothWinget -->|"Yes"| FoldCase["Compare identifiers with ASCII case folding"]
-    BothWinget -->|"No"| Structural["Compare enum variant and all fields exactly"]
-    FoldCase --> Result["Return match result"]
-    Structural --> Result
+    Start["Compare two package references"] --> BothWinget{"Both Winget?"}
+    BothWinget -->|"yes"| WingetCompare["Compare identifiers ignoring ASCII case"]
+    BothWinget -->|"no"| ExactCompare["Compare variants and fields exactly"]
+    WingetCompare --> Result["Return match result"]
+    ExactCompare --> Result
 ```
 
-### Winget
+### Consequences
 
-When both values are `Winget`, `matches` delegates to Rust's `eq_ignore_ascii_case`. Thus `Contoso.Editor` and `contoso.editor` match. The rule is ASCII-only, which is appropriate for the expected package identifiers but does not provide Unicode case folding.
+- `Winget { id: "Vendor.Tool" }` matches `Winget { id: "vendor.tool" }`.
+- A Winget reference never matches a Chocolatey or Homebrew reference, even when identifier text is identical.
+- `Brew { kind: Formula, name: "tool" }` does not match `Brew { kind: Cask, name: "tool" }`.
+- Homebrew names and Chocolatey identifiers retain their written casing for comparison; callers must normalize them before constructing a reference if their domain requires looser comparison.
 
-### Homebrew and Chocolatey
+## Package Update Data Flow
 
-All other pairs use the derived equality implementation:
-
-- Two `Brew` values match only if both have the same `BrewKind` and exactly the same `name`.
-- Two `Choco` values match only if their `id` values are identical as written.
-- References from different managers never match.
-- A `Brew` formula and a `Brew` cask never match solely because their names are equal.
-
-This distinction matters when a package operation correlates a requested package to a discovered or persisted reference. Callers needing manager-aware matching should use `matches`; callers using raw `==` will not receive Winget's case-insensitive behavior.
-
-## Comparison Examples
-
-```rust
-use openframe_agent_lib::models::package_ref::{BrewKind, PackageRef};
-
-let requested = PackageRef::Winget {
-    id: "Contoso.Editor".to_owned(),
-};
-let observed = PackageRef::Winget {
-    id: "contoso.editor".to_owned(),
-};
-assert!(requested.matches(&observed));
-
-let formula = PackageRef::Brew {
-    kind: BrewKind::Formula,
-    name: "contoso-editor".to_owned(),
-};
-let cask = PackageRef::Brew {
-    kind: BrewKind::Cask,
-    name: "contoso-editor".to_owned(),
-};
-assert!(!formula.matches(&cask));
-```
-
-## Data Flow in Package Correlation
-
-The model's contribution to a package workflow is bounded to representing and comparing identity. A higher-level service owns acquisition of data, update execution, and result publication.
+The model is used to express the target of a package-management operation. The reference travels with a package-update instruction, is resolved by the selected package-manager integration, and is compared with package metadata or operation state using `matches`.
 
 ```mermaid
 sequenceDiagram
-    participant Source as Package source
-    participant Service as Package management service
-    participant Ref as Model Package Ref
-    participant Manager as Package manager
-    Source->>Service: Requested or discovered package identity
-    Service->>Ref: Construct package reference
-    Service->>Manager: Obtain comparable package identity
-    Service->>Ref: Construct observed package reference
-    Service->>Ref: Evaluate matches
-    Ref-->>Service: Match result
-    Service-->>Source: Continue higher-level workflow
+    participant Server as "Control plane"
+    participant Client as "Endpoint client"
+    participant Update as "Package update runner"
+    participant Manager as "Selected package manager"
+    Server->>Client: Package update with PackageRef
+    Client->>Update: Submit update target
+    Update->>Manager: Resolve or install reference
+    Manager-->>Update: Report package identity
+    Update->>Update: Compare references with matches
+    Update-->>Client: Record update outcome
 ```
 
-## Maintenance Guidance
+The model itself does not choose a manager or execute the update. It supplies the typed identity required for those operations and avoids accidental cross-manager matches.
 
-- Treat `manager` values and Homebrew `kind` values as part of a wire contract. Renaming variants or changing Serde casing affects serialized payload compatibility.
-- Add manager-specific comparison rules only in `matches`; keep ordinary derived equality intact unless the model's hashing and equality contract is redesigned together.
-- If adding another package manager, define its serialized fields, default equality behavior, and any normalization rule explicitly. Update tests for same-manager, cross-manager, and case-variant comparisons.
-- Do not use a Winget-normalized reference as an interchangeable hash key with the original value: `Hash` follows derived field values, whereas `matches` deliberately applies case-insensitive comparison for Winget.
-- Keep package acquisition, operating-system selection, installation, update gating, and status reporting outside this model to preserve its side-effect-free role.
+## Serialization and Compatibility Guidance
 
-## Source
+Treat Model Package Ref as a protocol type:
 
-The authoritative implementation is [package ref source in OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/package_ref.rs).
+- Preserve the `manager` tag and its uppercase values: `WINGET`, `BREW`, and `CHOCO`.
+- Preserve Homebrew's `kind` field and uppercase values: `FORMULA` and `CASK`.
+- Do not collapse the variants into an unqualified string identifier; that would lose the package-manager boundary.
+- Use `matches` for package identity decisions instead of assuming derived equality reflects the Winget case rule.
+- Add a new manager only as a coordinated protocol change. It requires a new enum variant, serialization compatibility review, manager selection support, and behavior in any consumers that process package references.
+
+## Maintenance Notes
+
+The derived `Hash`, `PartialEq`, and `Eq` implementations remain exact, including the casing of Winget identifiers. In contrast, `matches` intentionally relaxes only Winget comparison. Maintainers should not substitute one for the other:
+
+- Use `matches` for the business question, “do these references identify the same package?”
+- Use equality and hashing only where exact structural identity is required, such as a collection key whose casing behavior is intentionally strict.
+
+At the time this documentation was generated, organization-wide code-graph coverage found no indexed direct consumers for `PackageRef` or `BrewKind`. That absence does not alter the model's wire-contract role in the endpoint client's package-update flow; it means maintainers should validate downstream behavior when changing this shared library type.

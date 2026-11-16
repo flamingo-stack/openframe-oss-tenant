@@ -1,6 +1,11 @@
-flowchart LR
-    InstalledTool["Installed tool record"] --> InstallationType{"Installation type?"}
-    InstallationType -->|"Standard"| Standard["Standard Tool Updater"]
-    InstallationType -->|"Service"| Service["Service Tool Updater"]
-    InstallationType -->|"GUI application on macOS"| Gui["GUI Application Tool Updater"]
-    InstallationType -->|"GUI application elsewhere"| StandardFallback["Standard Tool Updater fallback"]
+flowchart TD
+    Prepare["Prepare update"] --> StopTool["Stop running tool"]
+    StopTool --> StopOk{"Tool stopped?"}
+    StopOk -->|"No"| Abort["Return preparation error"]
+    StopOk -->|"Yes"| Backup["Clear stale aside state and back up executable"]
+    Backup --> Apply["Download and write replacement"]
+    Apply --> ApplyOk{"Write succeeded?"}
+    ApplyOk -->|"Yes"| Finalize["Remove backup"]
+    Finalize --> Restart["Run manager restarts tool"]
+    ApplyOk -->|"No"| Rollback["Restore executable from backup"]
+    Rollback --> Failed["Return application error"]

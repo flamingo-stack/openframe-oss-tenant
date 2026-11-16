@@ -1,11 +1,11 @@
 flowchart TD
-    Received["Received forced update"] --> Countdown{"Countdown supplied?"}
-    Countdown -->|"yes"| Delay["Wait until close time"]
-    Countdown -->|"no"| Gate["Evaluate update gate"]
-    Delay --> Gate
-    Gate --> Decision{"Application clear?"}
-    Decision -->|"yes"| Install["Apply package update"]
-    Decision -->|"no"| Close["Close application"]
-    Close --> Recheck["Recheck update gate"]
-    Recheck --> Install
-    Install --> Relaunch["Relaunch application"]
+    SourceKind["SourceKind"] --> Source["UpdateSource"]
+    SourceOrigin["SourceOrigin"] --> Source
+    Source --> Predicate["is_user()"]
+    PackageRef["PackageRef"] --> Request["PackageUpdateMessage"]
+    Source --> Request
+    UpdateMode["UpdateMode"] --> Request
+    Countdown["Optional countdown seconds"] --> Request
+    Request --> Handler["Package update handler"]
+    Predicate --> Handler
+    Handler --> Status["Status reporter"]

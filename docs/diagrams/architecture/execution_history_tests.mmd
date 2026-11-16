@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Test as "History Test"
+    participant ScriptApi as "Script API"
+    participant Device as "Online Windows Device"
+    participant ScheduleApi as "Schedule API"
+    Test->>ScriptApi: Create and dispatch script
+    ScriptApi->>Device: Send execution request
+    Device->>ScriptApi: Report execution
+    Test->>ScriptApi: Poll execution connection
+    Test->>ScheduleApi: Create future schedule
+    Test->>ScheduleApi: Read empty executions and runs

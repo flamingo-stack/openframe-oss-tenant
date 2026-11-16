@@ -1,0 +1,7 @@
+flowchart TD
+    Release["Release version operation"] --> VersionService["Client version update service"]
+    VersionService --> VersionState["Client version state"]
+    Fallback["Fallback publish scheduler"] --> VersionService
+    VersionService --> Broker["Messaging infrastructure"]
+    Broker --> ClientService["Client service delivery processing"]
+    ClientService --> Agent["OpenFrame Client agent"]

@@ -1,8 +1,0 @@
-flowchart LR
-    ToolManager["Tool Connection Processing Manager"] -->|"reads and saves connections"| ConnectionService["Services Tool Connection"]
-    ConnectionService -->|"uses"| DirectoryManager["Directory Manager"]
-    DirectoryManager -->|"provides"| SecuredDirectory["Secured Directory"]
-    ConnectionService -->|"atomic JSON write"| RegistryFile["tool_connections.json"]
-    ConnectionService -->|"safe JSON read"| RegistryFile
-    ToolManager -->|"publishes connection"| Publisher["Tool Connection Message Publisher"]
-    Publisher -->|"sends"| Nats["NATS"]

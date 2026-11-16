@@ -1,11 +1,9 @@
 flowchart LR
-    InstallArgs["Installation parameters"] --> InstallService["Installation initial config service"]
-    InstallService --> InitialModel["Initial configuration model"]
-    InitialModel --> ConfigService["Initial configuration service"]
+    InstallArgs["Installation arguments"] --> Builder["Installation Initial Config Service"]
+    DeviceTags["Device Tag parser"] --> Builder
+    Builder --> ConfigModel["Initial Configuration"]
+    ConfigModel --> ConfigService["Initial Configuration Service"]
     ConfigService --> ConfigFile["Persisted JSON configuration"]
-    ConfigFile --> AuthProcessor["Initial authentication processor"]
-    ConfigFile --> RegistrationProcessor["Registration processor"]
-    AuthProcessor --> AgentCredentials["Agent credentials"]
-    RegistrationProcessor --> MachineIdentity["Machine identity"]
-    ConfigService --> LogStreaming["Log key lifecycle"]
-    ConfigService --> RemoteAccess["Remote access acknowledgement"]
+    ConfigFile --> AuthFlow["Initial Authentication Processor"]
+    ConfigFile --> RemoteAccess["Remote Access Mode Service"]
+    AuthFlow --> AgentConfig["Agent Configuration Service"]

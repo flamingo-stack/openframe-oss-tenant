@@ -1,0 +1,11 @@
+flowchart LR
+    CommandListener["Command listener"] --> ClientUpdateHandler["Client update handler"]
+    ClientUpdateHandler --> UpdateService["Client update service"]
+    UpdateService --> StateFile["Persisted update state"]
+    UpdateService --> Updater["Platform updater"]
+    Updater --> RestartedClient["Restarted OpenFrame client"]
+    RestartedClient --> Handler["Update Handler Service"]
+    Handler --> ClientInfo["Client version and update status"]
+    Handler --> Lkg["Last-known-good reserve"]
+    Handler --> ResultStore["Deferred delivery result store"]
+    Handler --> Publisher["Installed-agent version publisher"]

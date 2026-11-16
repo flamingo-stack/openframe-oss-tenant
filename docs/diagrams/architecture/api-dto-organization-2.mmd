@@ -1,0 +1,5 @@
+flowchart TD
+    TenantService["OpenFrame API Service"] -->|"depends on"| ServiceCore["OpenFrame API Service Core"]
+    ServiceCore -->|"contains"| ApiDtoOrganization["Api Dto Organization"]
+    ApiDtoOrganization -->|"defines"| SortEnum["OrganizationSortField"]
+    SortEnum -->|"permits"| LastActivity["LAST_ACTIVITY"]

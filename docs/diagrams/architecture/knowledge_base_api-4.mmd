@@ -1,6 +1,0 @@
-flowchart LR
-    ContentChange["Article lifecycle change"] --> Domain["Knowledge base domain"]
-    Domain --> Persist["Persist item state"]
-    Domain --> PublishHook["Publish lifecycle listener"]
-    PublishHook --> Downstream["Registered publication behavior"]
-    Domain --> Response["External API response"]

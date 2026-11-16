@@ -1,8 +1,0 @@
-flowchart LR
-    FleetApi["Fleet MDM API payload"] -->|"JSON"| Jackson["Jackson mapper"]
-    Jackson --> AssignedHost["AssignedHost"]
-    Jackson --> TableSchema["OsqueryTableSchema"]
-    TableSchema --> ColumnSchema["OsqueryColumnSchema list"]
-    AssignedHost --> Consumer["OpenFrame Fleet integration"]
-    TableSchema --> Consumer
-    ColumnSchema --> Consumer

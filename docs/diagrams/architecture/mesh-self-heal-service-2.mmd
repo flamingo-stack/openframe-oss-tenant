@@ -1,0 +1,21 @@
+flowchart TD
+    Start["Watcher starts"] --> ResolveLog["Resolve MeshCentral log path"]
+    ResolveLog --> SeedState["Seed offset and health state from log tail"]
+    SeedState --> Poll["Wait 30 seconds"]
+    Poll --> Suspended{"Tenant suspended?"}
+    Suspended -->|"yes"| Poll
+    Suspended -->|"no"| ResumeCheck{"Resumed or host sleep detected?"}
+    ResumeCheck -->|"yes"| ResetTimers["Reset health and activity timers"]
+    ResumeCheck -->|"no"| ReadLog["Read complete new log lines"]
+    ResetTimers --> ReadLog
+    ReadLog --> UpdateSignals["Update activity, failure, and healthy-marker state"]
+    UpdateSignals --> Busy{"Tool operation active?"}
+    Busy -->|"yes"| ResetBusy["Reset timers and defer"]
+    ResetBusy --> Poll
+    Busy -->|"no"| Cooldown{"Cooldown elapsed?"}
+    Cooldown -->|"no"| Poll
+    Cooldown -->|"yes"| Evaluate["Evaluate configuration and health conditions"]
+    Evaluate --> Unhealthy{"Recovery reason found?"}
+    Unhealthy -->|"no"| Poll
+    Unhealthy -->|"yes"| Heal["Refresh configuration and restart"]
+    Heal --> Poll

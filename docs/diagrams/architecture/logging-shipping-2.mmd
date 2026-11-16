@@ -1,21 +1,16 @@
-sequenceDiagram
-    participant Producer as "Log producer"
-    participant Shipper as "LogShipper sender"
-    participant Worker as "Background worker"
-    participant Endpoint as "Configured HTTP endpoint"
-    Producer->>Shipper: send(raw log string)
-    Shipper->>Worker: enqueue through bounded channel
-    alt "batch reaches 100 logs"
-        Worker->>Worker: create LogBatch with UTC timestamp
-        Worker->>Endpoint: POST JSON batch
-        Endpoint-->>Worker: HTTP response
-    else "timer branch finds a nonempty batch"
-        Worker->>Worker: create LogBatch with UTC timestamp
-        Worker->>Endpoint: POST JSON batch
-        Endpoint-->>Worker: HTTP response
-    end
-    alt "request fails or status is unsuccessful"
-        Worker->>Worker: emit tracing error and clear batch
-    else "request succeeds"
-        Worker->>Worker: clear batch
-    end
+flowchart TD
+    Start["Log producer calls send"] --> Queue["Await queue capacity and enqueue"]
+    Queue --> Receive["Background task receives log"]
+    Receive --> Add["Append log to batch"]
+    Add --> Full{"Batch has 100 entries?"}
+    Full -->|"yes"| Post["Create LogBatch and POST JSON"]
+    Full -->|"no"| Wait["Wait for next log or timeout"]
+    Wait -->|"log"| Receive
+    Wait -->|"timeout"| HasLogs{"Batch is non-empty?"}
+    HasLogs -->|"yes"| Post
+    HasLogs -->|"no"| Wait
+    Post --> Result{"Request succeeded?"}
+    Result -->|"yes"| Clear["Clear in-memory batch"]
+    Result -->|"no"| Report["Emit tracing error"]
+    Report --> Clear
+    Clear --> Wait

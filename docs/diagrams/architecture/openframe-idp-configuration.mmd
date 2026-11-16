@@ -1,0 +1,7 @@
+flowchart LR
+    ManagementService["Openframe Management service"] -->|"runs"| Scheduler["IdpConfigurationScheduler"]
+    Scheduler -->|"reads and writes"| ClientRepository["Registered client repository"]
+    ClientRepository -->|"persists"| ClientStore["Registered client data"]
+    Gateway["Openframe Gateway"] -->|"Basic client authentication"| AuthorizationServer["Authorization server"]
+    AuthorizationServer -->|"looks up client"| ClientStore
+    Scheduler -->|"encodes and verifies"| PasswordEncoder["Password encoder"]

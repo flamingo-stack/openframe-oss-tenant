@@ -1,12 +1,10 @@
 flowchart LR
-    AgentTools["Installed tools on device"] --> ProcessingManager["Tool connection processing manager"]
-    ProcessingManager --> Publisher["Tool connection message publisher"]
-    Publisher --> Message["Tool connection message"]
-    Publisher --> Subject["Machine specific NATS subject"]
-    Message --> Nats["NATS JetStream"]
-    Subject --> Nats
-    Nats --> Listener["Server tool connection listener"]
-    Listener --> Extractor["Machine identifier extractor"]
-    Listener --> Mapper["JSON object mapper"]
-    Extractor --> Service["Server tool connection service"]
-    Mapper --> Service
+    InstalledTools["Installed Tools Service"] --> ProcessingManager["Tool Connection Processing Manager"]
+    Parameters["Tool Command Parameters Resolver"] --> ProcessingManager
+    LocalConnections["Tool Connection Service"] --> ProcessingManager
+    ProcessingManager --> Publisher["Tool Connection Message Publisher"]
+    Publisher --> Message["Model Tool Connection Message"]
+    Message --> Nats["NATS subject: machine.*.tool-connection"]
+    Nats --> Listener["Tool Connection Listener"]
+    Listener --> BackendService["Backend Tool Connection Service"]
+    BackendService --> PlatformState["Machine Tool Connection State"]

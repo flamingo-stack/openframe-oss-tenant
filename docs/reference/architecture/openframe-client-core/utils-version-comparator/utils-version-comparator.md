@@ -1,136 +1,135 @@
 # Utils Version Comparator
 
-Utils Version Comparator is a small, deterministic Rust utility used by the OpenFrame client agent to parse and order Semantic Versioning values. It accepts common release-string formatting such as leading or trailing whitespace and one leading `v` or `V`, then compares the target version with the current version using Semantic Versioning precedence.
+Utils Version Comparator is a small, pure Rust utility in the OpenFrame client agent. It normalizes externally supplied version strings, parses them as Semantic Versioning values, and compares releases according to SemVer *precedence*. Its principal role is to make update decisions deterministic: a target that compares as `Less` than the installed version is a downgrade, `Equal` is equivalent for upgrade selection, and `Greater` is a newer target.
 
-The implementation is supplied by the `openframe_agent_lib` Cargo artifact from the OpenFrame OSS Library at version `v0.0.5`; OpenFrame OSS Tenant assembles and runs that client library. The authoritative implementation is [`version_comparator.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/utils/version_comparator.rs).
+The implementation is supplied by the OpenFrame OSS Library as part of the `openframe_agent_lib` Cargo dependency consumed by this repository. The authoritative source is [version comparator source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/utils/version_comparator.rs).
 
-## Responsibilities
+## Responsibilities and boundaries
 
-- Normalize a raw version string only enough to support operational input: trim surrounding whitespace and remove one leading `v` or `V`.
-- Parse the normalized string into `semver::Version`.
-- Compare versions by Semantic Versioning precedence, rather than by the dependency crate's total ordering.
-- Report whether a proposed target is older, identical in precedence, or newer than the current version.
-- Avoid I/O, persistence, configuration, network calls, and update side effects. Callers decide how to act on the comparison result.
+| Responsibility | Behavior |
+| --- | --- |
+| Input normalization | Trims leading and trailing whitespace and removes at most one leading lowercase `v` or uppercase `V`. |
+| Validation and parsing | Delegates parsing to `semver::Version`; malformed or incomplete versions return `None`. |
+| SemVer precedence | Compares major, minor, patch, and prerelease components while deliberately ignoring build metadata. |
+| Update orientation | Compares the requested target against the current source version, so the result directly describes the proposed transition. |
 
-## Position in the Client Agent
+The module has no I/O, persistence, network calls, mutable shared state, configuration, or platform-specific behavior. It does not choose an update policy or initiate an update; callers must decide how to handle invalid input and each `Ordering` result.
 
-The module is a leaf utility in the Rust client agent. It depends on the `semver` crate and the Rust standard library's `Ordering` type, but has no dependency on client configuration, platform services, or network services. A full organization code-graph snapshot records no callers for `compare_versions`; this describes current indexed references, not a restriction on future use.
+## Position in the client agent
 
-```mermaid
-flowchart LR
-    Tenant["OpenFrame OSS Tenant"] -->|"runs"| Agent["OpenFrame client agent"]
-    Agent -->|"uses"| Module["Utils Version Comparator"]
-    Module -->|"parses"| Semver["semver Version"]
-    Module -->|"returns"| Ordering["std cmp Ordering"]
-```
-
-The implementation belongs to the OpenFrame OSS Library rather than this repository. Its scope remains local to the agent's version-handling path: it transforms supplied strings and returns a value; it does not locate binaries, fetch releases, reserve updates, or install them.
-
-## Public Interface
-
-| Component | Signature | Behavior |
-| --- | --- | --- |
-| `parse_version` | `(&str) -> Option<Version>` | Trims outer whitespace, removes one optional leading `v` or `V`, and parses the remaining input as a Semantic Versioning value. Invalid input produces `None`. |
-| `precedence` | `(&Version, &Version) -> Ordering` | Compares major, minor, patch, and pre-release fields. It deliberately excludes build metadata. |
-| `compare_versions` | `(&str, &str) -> Option<Ordering>` | Parses both inputs and returns the precedence of `to` relative to `from`; if either parse fails, returns `None`. |
-
-`Ordering::Less` means `to` is a downgrade, `Ordering::Equal` means both releases have identical Semantic Versioning precedence, and `Ordering::Greater` means `to` is an upgrade.
-
-## Parsing Contract
-
-`parse_version` is intentionally permissive only at the boundary. It first calls `trim`, then removes one leading lowercase or uppercase version marker. The remaining value must be accepted by `semver::Version::parse`.
-
-| Raw input | Normalized input | Result |
-| --- | --- | --- |
-| `  v1.2.3  ` | `1.2.3` | Parsed |
-| `V2.0.0-rc.1` | `2.0.0-rc.1` | Parsed |
-| `1.4.0+build.8` | `1.4.0+build.8` | Parsed |
-| `vv1.2.3` | `v1.2.3` | Rejected |
-| `1.2` | `1.2` | Rejected |
-| `release-1.2.3` | `release-1.2.3` | Rejected |
-
-The function does not coerce partial versions, remove arbitrary prefixes, or repair malformed version syntax. This makes invalid configuration and malformed messages observable to its caller through `None` rather than silently changing their meaning.
-
-## Precedence Rules
-
-Semantic Versioning precedence is evaluated in this order:
-
-1. Major version.
-2. Minor version.
-3. Patch version.
-4. Pre-release identifier sequence.
-
-A release with no pre-release identifier has higher precedence than the corresponding pre-release. For example, `1.2.3` is later than `1.2.3-rc.1`. Build metadata is excluded: `1.2.3+build.1` and `1.2.3+build.2` compare as equal for update decisions.
-
-This exclusion is important because `semver::Version` provides a total `Ord` implementation that can distinguish build metadata, while Semantic Versioning precedence explicitly says build metadata must not affect ordering. `precedence` constructs its comparison tuple from `major`, `minor`, `patch`, and `pre`, thereby enforcing the agent's update-oriented contract.
-
-```mermaid
-flowchart TD
-    InputA["Raw version input"] --> Trim["Trim surrounding whitespace"]
-    Trim --> Prefix["Remove one v or V prefix"]
-    Prefix --> Parse["Parse with semver Version"]
-    Parse --> Valid{"Valid Semantic Version?"}
-    Valid -->|"No"| None["Return None"]
-    Valid -->|"Yes"| Version["Return Version value"]
-```
-
-## Comparison Flow
-
-`compare_versions(from, to)` compares the desired destination against the installed or current source version. The argument order matters: it parses `to` first and passes it as the left side of `precedence`, then parses `from` as the right side.
+The module belongs to the `utils` area of the OpenFrame client agent. It is intentionally isolated from the installation, download, binary replacement, and update-state mechanisms. Those higher-level components may supply a current and target version, while Utils Version Comparator supplies only the ordering needed to classify their relationship.
 
 ```mermaid
 flowchart LR
-    From["from string"] --> ParseFrom["parse_version"]
-    To["to string"] --> ParseTo["parse_version"]
-    ParseFrom --> FromValid{"Parsed?"}
-    ParseTo --> ToValid{"Parsed?"}
-    FromValid -->|"No"| Invalid["Return None"]
-    ToValid -->|"No"| Invalid
-    FromValid -->|"Yes"| Compare["precedence to against from"]
-    ToValid -->|"Yes"| Compare
-    Compare --> Lower["Less: downgrade"]
-    Compare --> Same["Equal: same precedence"]
-    Compare --> Higher["Greater: upgrade"]
-```
-
-### Examples
-
-| `from` | `to` | Result | Interpretation |
-| --- | --- | --- | --- |
-| `1.2.3` | `1.3.0` | `Some(Greater)` | Upgrade |
-| `v2.0.0` | `1.9.9` | `Some(Less)` | Downgrade |
-| `1.2.3+build.1` | `1.2.3+build.2` | `Some(Equal)` | Same Semantic Versioning precedence |
-| `1.2.3-rc.1` | `1.2.3` | `Some(Greater)` | Promotion from pre-release to release |
-| `1.2.3` | `not-a-version` | `None` | Target cannot be parsed |
-
-## Component Interaction
-
-The three functions form a narrow pipeline. `parse_version` owns input normalization and validation. `compare_versions` invokes it for both textual inputs, and `precedence` owns the ordering semantics after valid versions exist. Keeping these responsibilities separate allows callers that already hold parsed `Version` values to use `precedence` directly.
-
-```mermaid
-flowchart TD
-    Caller["Client update decision code"] --> Compare["compare_versions from to"]
-    Compare --> ParseTarget["parse_version to"]
-    Compare --> ParseCurrent["parse_version from"]
-    ParseTarget --> Precedence["precedence target current"]
-    ParseCurrent --> Precedence
+    Caller["Client update or tool update logic"] -->|"current and target text"| Compare["compare_versions"]
+    Compare --> ParseFrom["parse_version current"]
+    Compare --> ParseTo["parse_version target"]
+    ParseFrom --> SemVer["semver Version values"]
+    ParseTo --> SemVer
+    SemVer --> Precedence["precedence"]
     Precedence --> Result["Option Ordering"]
-    Caller --> Direct["precedence parsed values"]
-    Direct --> Result
+    Result --> Caller
 ```
 
-## Operational Boundaries
+The update-oriented client modules identified in the module tree include Client Update Service, Client Info Service, Tool Agent Update Service, and Update Handler Service. This diagram describes the utility's architectural boundary, rather than asserting direct calls from those modules: the supplied source does not expose its call sites.
 
-The result is a comparison fact, not an update policy. In particular, Utils Version Comparator does not decide whether downgrades are allowed, whether a release is compatible with an operating system, or whether an update should be downloaded and installed. Those concerns remain with the client agent's update, platform, and orchestration services.
+## Public API
 
-When adding a call site:
+```rust
+pub fn parse_version(raw: &str) -> Option<semver::Version>
+pub fn precedence(a: &semver::Version, b: &semver::Version) -> std::cmp::Ordering
+pub fn compare_versions(from: &str, to: &str) -> Option<std::cmp::Ordering>
+```
 
-- Treat `None` as invalid or unsupported version input and handle it explicitly.
-- Interpret the result relative to the documented `from`, `to` argument order.
-- Do not use build metadata to trigger an update; the module intentionally ignores it for precedence.
-- Use `precedence` when versions were parsed earlier, avoiding redundant parsing.
-- Keep policy decisions outside this utility so its Semantic Versioning behavior stays deterministic and reusable.
+### `parse_version`
 
-## Maintenance Notes
+`parse_version` accepts an input string and returns a parsed `semver::Version` when it is valid after lightweight normalization.
 
-Changes to parsing permissiveness or the precedence tuple can change update eligibility across deployed agents. Preserve the distinction between Semantic Versioning precedence and a total sort order, and add tests for any newly accepted input normalization or pre-release comparison rule. The source file includes a dedicated test module, `version_comparator_tests.rs`, compiled only during tests.
+1. It removes surrounding whitespace with `trim`.
+2. It strips one leading `v` or `V`, if present.
+3. It invokes `Version::parse` on the resulting text.
+4. It returns `Some(version)` when parsing succeeds, otherwise `None`.
+
+This permits common release-label forms such as `v1.2.3`, `V1.2.3`, and whitespace-padded equivalents. It does not turn arbitrary labels into versions: a second prefix, a missing version component, or other text remains invalid unless the SemVer parser accepts it.
+
+### `precedence`
+
+`precedence` accepts already parsed versions and returns `std::cmp::Ordering`. It compares the following tuple in order:
+
+1. Major version
+2. Minor version
+3. Patch version
+4. Prerelease identifier sequence
+
+Build metadata is intentionally excluded. This is an important distinction from relying on the `semver` crate's general `Ord` implementation: SemVer specification precedence treats `1.2.3+build.1` and `1.2.3+build.2` as equivalent in precedence, even though their metadata strings differ.
+
+A stable release sorts later than the corresponding prerelease. For example, `1.2.3` has higher precedence than `1.2.3-rc.1`; prerelease values are otherwise ordered by the SemVer version representation.
+
+### `compare_versions`
+
+`compare_versions` is the convenience operation for text inputs. It parses both operands and evaluates `precedence(to, from)`.
+
+| Returned value | Meaning for `compare_versions(from, to)` |
+| --- | --- |
+| `Some(Ordering::Less)` | The target has lower precedence than the source: downgrade. |
+| `Some(Ordering::Equal)` | The target and source have equal SemVer precedence. Build metadata may still differ. |
+| `Some(Ordering::Greater)` | The target has higher precedence than the source: upgrade. |
+| `None` | At least one input could not be parsed after normalization. |
+
+## Comparison process
+
+```mermaid
+flowchart TD
+    Start["Receive source and target strings"] --> ParseSource["Normalize and parse source"]
+    ParseSource --> SourceValid{"Source valid?"}
+    SourceValid -->|"no"| Invalid["Return None"]
+    SourceValid -->|"yes"| ParseTarget["Normalize and parse target"]
+    ParseTarget --> TargetValid{"Target valid?"}
+    TargetValid -->|"no"| Invalid
+    TargetValid -->|"yes"| Compare["Compare target against source"]
+    Compare --> Components["Use major, minor, patch, and prerelease"]
+    Components --> IgnoreBuild["Ignore build metadata"]
+    IgnoreBuild --> Ordered["Return Less, Equal, or Greater"]
+```
+
+## Data flow examples
+
+| Source (`from`) | Target (`to`) | Result | Reason |
+| --- | --- | --- | --- |
+| `1.4.0` | `v1.5.0` | `Some(Greater)` | The target minor version is newer after prefix normalization. |
+| `V2.0.0` | `1.9.9` | `Some(Less)` | The target has a lower major version. |
+| `1.2.3+build.1` | `1.2.3+build.2` | `Some(Equal)` | Build metadata does not affect precedence. |
+| `1.2.3-rc.1` | `1.2.3` | `Some(Greater)` | The stable target is later than its prerelease. |
+| `1.2` | `1.2.3` | `None` | The source is not a complete SemVer value. |
+
+## Maintenance guidance
+
+- Preserve the direction of `compare_versions`: it intentionally evaluates target against source. Reversing its arguments reverses upgrade and downgrade interpretation.
+- Treat `None` as invalid or unsupported input, not as an equal version. Callers should surface or handle the validation failure according to their update policy.
+- Do not replace `precedence` with a direct general ordering comparison unless build metadata is explicitly meant to affect update selection.
+- Keep normalization narrow. The current contract tolerates whitespace and exactly one conventional prefix, avoiding silent acceptance of unrelated version formats.
+- Extend automated tests whenever the normalization or ordering contract changes, particularly for prerelease identifiers, build metadata, malformed inputs, and argument direction.
+
+## Component interaction
+
+```mermaid
+sequenceDiagram
+    participant UpdateLogic as Update Logic
+    participant Comparator as Utils Version Comparator
+    participant SemVer as SemVer Parser
+    UpdateLogic->>Comparator: compare_versions(source, target)
+    Comparator->>SemVer: parse normalized source
+    SemVer-->>Comparator: source version or failure
+    Comparator->>SemVer: parse normalized target
+    SemVer-->>Comparator: target version or failure
+    alt either input is invalid
+        Comparator-->>UpdateLogic: None
+    else both inputs are valid
+        Comparator->>Comparator: compare target precedence to source
+        Comparator-->>UpdateLogic: Some Ordering
+    end
+```
+
+## Source and delivery context
+
+This repository is an OpenFrame OSS Tenant service and consumes the Rust agent library from the OpenFrame OSS Library. The provided component source identifies the comparator as library code executed by the repository's OpenFrame client agent rather than code owned directly by this repository. Changes to the comparator therefore belong in the linked library source and should be evaluated against the client update behavior assembled by this tenant deployment.

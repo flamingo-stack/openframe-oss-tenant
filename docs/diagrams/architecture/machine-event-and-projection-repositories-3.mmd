@@ -1,0 +1,7 @@
+flowchart TD
+    Event["Machine event"] --> HasOrg{{"Machine has organization?"}}
+    HasOrg -->|"no"| Skip["Skip projection"]
+    HasOrg -->|"yes"| Status["Find tenant archived status"]
+    Status --> HasStatus{{"Archived status exists?"}}
+    HasStatus -->|"no"| Warn["Log warning and skip"]
+    HasStatus -->|"yes"| Archive["Archive tickets from other organizations"]

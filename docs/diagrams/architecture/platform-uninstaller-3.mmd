@@ -1,0 +1,11 @@
+flowchart LR
+    DirectoryManager["Directory Manager"] --> InstalledToolsService["Installed Tools Service"]
+    DirectoryManager --> InitialConfig["Initial Configuration Service"]
+    DirectoryManager --> AgentConfig["Agent Configuration Service"]
+    InitialConfig --> ParamsResolver["Tool Command Parameters Resolver"]
+    AgentConfig --> ParamsResolver
+    ToolKillService["Tool Kill Service"] --> ToolUninstallService["Tool Uninstall Service"]
+    InstalledToolsService --> ToolUninstallService
+    ParamsResolver --> ToolUninstallService
+    DirectoryManager --> ToolUninstallService
+    ToolUninstallService --> AllTools["Uninstall all integrated tools"]

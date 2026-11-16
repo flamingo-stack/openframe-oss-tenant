@@ -1,17 +1,25 @@
 # Model Client Update Message
 
-Model Client Update Message is the wire contract that asks an installed OpenFrame client to update itself. It carries the requested client version and a set of operating-system-specific download choices. The contract is implemented by the Rust `OpenFrameClientUpdateMessage` type in the `openframe_agent_lib` crate supplied by OpenFrame OSS Library version `v0.0.5`; the tenant repository runs the client that consumes it.
+Model Client Update Message is the wire model that requests an installed OpenFrame client to move to a specific client release. It belongs to the Rust `openframe_agent_lib` library from the OpenFrame OSS Library and is assembled into this repository's OpenFrame Client service. The model deliberately carries only the desired version and the OS-specific download choices; validation, update coordination, persistence, binary replacement, and post-restart verification remain responsibilities of the receiving client.
 
-The authoritative source is [openframe_client_update_message.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/openframe_client_update_message.rs).
+**Source:** [openframe_client_update_message.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/openframe_client_update_message.rs)
 
-## Purpose and Contract
+## Contract
 
-The message separates update intent from platform delivery details:
+`OpenFrameClientUpdateMessage` is a serializable and deserializable Rust structure with camel-case wire names:
 
-- `version` is the requested OpenFrame client version.
-- `downloadConfigurations` is an ordered list of `DownloadConfiguration` records, from which the client selects the record matching its current operating system.
+| Field | Rust type | Wire name | Meaning |
+|---|---|---|---|
+| `version` | `String` | `version` | Requested client version. The update service trims, validates, parses, and canonicalizes it before beginning an update. |
+| `download_configurations` | `Vec<DownloadConfiguration>` | `downloadConfigurations` | Candidate binaries or bundles. A configuration identifies the target operating system, source link, source filename, installed target filename, installation type, and optional bundle or service metadata. |
 
-The Rust type derives serialization and deserialization with camel-case property names. Consumers must therefore send `downloadConfigurations`, not the Rust field spelling `download_configurations`.
+The model derives `Debug`, `Clone`, `Serialize`, and `Deserialize`. It is therefore suitable for transport decoding, diagnostic logging under the caller's logging policy, and safe ownership transfer into asynchronous update work.
+
+## Message Shape and Compatibility
+
+The camel-case serde policy means that Rust's `download_configurations` is represented as `downloadConfigurations` on the wire. The embedded download configuration model accepts `agentFileName` and `assetFileName` as deserialization aliases for its target filename, preserving compatibility with senders that use either historical name.
+
+A conceptual payload has this shape. Values are illustrative only and are not a prescribed release URL or version.
 
 ```json
 {
@@ -19,167 +27,119 @@ The Rust type derives serialization and deserialization with camel-case property
   "downloadConfigurations": [
     {
       "os": "windows",
-      "fileName": "openframe-client.zip",
+      "fileName": "openframe-client.exe",
       "targetFileName": "openframe-client.exe",
-      "link": "https://example.invalid/releases/openframe-client.zip",
-      "installationType": "standard"
+      "link": "https://release-host.example/client/1.2.3/openframe-client.exe"
     }
   ]
 }
 ```
 
-The example illustrates the shape only. `link` must be an actual artifact location supplied by the platform configuration; this module does not generate or validate a release URL.
+The message itself does not select a download. The update path evaluates each `DownloadConfiguration` against the running operating system. The model recognizes `windows`, `macos`, and `linux` case-insensitively; unsupported build targets do not match. A target filename with more than one path component signals folder extraction rather than a single-file placement.
 
-## Payload Fields
-
-| Field | Type | Meaning | Processing rule |
-|---|---|---|---|
-| `version` | string | Requested release version. | The update service trims it, validates and parses it as a semantic version, then stores its canonical representation in update tracking. |
-| `downloadConfigurations` | array | Platform-specific artifact definitions. | The client selects the first configuration whose `os` matches the running operating system case-insensitively. |
-| `downloadConfigurations[].os` | string | Target operating system. | Supported client build targets are `windows`, `macos`, and `linux`. No matching entry causes the update to fail. |
-| `downloadConfigurations[].fileName` | string | Artifact filename. | Identifies the downloadable release artifact. |
-| `downloadConfigurations[].targetFileName` | string | Installed executable path or filename. | Legacy wire aliases `agentFileName` and `assetFileName` are accepted during deserialization. A path with multiple components indicates folder extraction. |
-| `downloadConfigurations[].link` | string | Artifact download location. | Passed to the client download service. |
-| `downloadConfigurations[].installationType` | enum | Installation form. | Defaults to `standard`; available forms are `standard`, `guiApp`, and `service`. |
-| `downloadConfigurations[].bundleId` | optional string | Application bundle identifier. | Present only when required by the installation form. |
-| `downloadConfigurations[].serviceName` | optional string | System-service identifier. | Present only when required by the installation form. |
-
-## Position in the Update Architecture
-
-The update message is one part of a cross-service workflow. Java services in the OpenFrame OSS Library obtain the current client configuration, create a per-machine or all-machines delivery seed, and submit it to the delivery router. The installed Rust client receives the command, reserves the update, and applies the message through its update service.
+## Architecture and Responsibilities
 
 ```mermaid
 flowchart LR
-    Admin["Operator or registration event"] --> Server["Client core update dispatcher"]
-    Server --> Config["OpenFrame client configuration"]
-    Config --> Message["Model Client Update Message"]
-    Message --> Router["Delivery router"]
-    Router --> Broker["NATS delivery"]
-    Broker --> Listener["Client command listener"]
-    Listener --> Handler["Client update handler"]
-    Handler --> Service["Client update service"]
-    Service --> Artifact["Selected release artifact"]
-    Service --> State["Update state and client info"]
-    Service --> Updater["Platform updater"]
+    ControlPlane["Control Plane"] -->|"client update message"| CommandHandler["Client Update Handler"]
+    CommandHandler -->|"deserializes"| UpdateMessage["Model Client Update Message"]
+    UpdateMessage -->|"version and download configurations"| UpdateService["Client Update Service"]
+    UpdateService -->|"selects current operating system asset"| DownloadService["GitHub Download Service"]
+    UpdateService -->|"records progress"| UpdateState["Update State Service"]
+    UpdateService -->|"sets status"| ClientInfo["Client Info Service"]
+    UpdateService -->|"coordinates"| ToolRuntime["Tool Run Manager and Tool Operations"]
+    UpdateService -->|"launches"| PlatformUpdater["Platform Updater"]
+    PlatformUpdater -->|"next startup verification"| StartupHandler["Update Handler Service"]
 ```
 
-### Server-Side Dispatch
+The message is a boundary model. It has no behavior beyond serde mapping and does not embed policy. The surrounding OpenFrame Client components provide the operational guarantees:
 
-Two server paths issue the same kind of update delivery:
+- **Command handling** receives the update command and delegates it to the client update service.
+- **Client update service** reserves exclusive update work, rejects malformed versions, avoids reapplying the running version, and uses the last-known-good anchor to reject downgrades when downgrades are disabled.
+- **Download configuration** provides the platform-specific artifact metadata used during asset selection and download.
+- **Tool coordination** marks a client update as pending and prevents a binary update from overlapping tool or package upgrade activity.
+- **State and client information services** persist target version and lifecycle state, reporting `Updating`, `Updated`, or `Failed` status separately from the binary operation.
+- **Startup update handling** examines persisted state after process restart. If the running version equals the target version, it treats the update as successful; otherwise it retains verification-related state for a later boot or handles failure according to the recorded phase.
 
-1. During agent registration, `AgentRegistrationClientUpdateService` loads the current OpenFrame client configuration, creates a machine-specific delivery seed, and dispatches it. Errors are logged without failing registration.
-2. The API force-update service loads the latest configuration and dispatches either one seed per requested machine or one all-machines seed. The API controller exposes the `force/client/update` and `force/client/update/all` operations through the API service.
-
-Dispatch means that the delivery router accepted the seed. It does not prove the endpoint has downloaded, installed, or successfully booted the requested version.
-
-### Client Dependencies
-
-The client-side handler and service use the message as a boundary model rather than embedding update logic in the listener.
-
-```mermaid
-flowchart TD
-    Message["Model Client Update Message"] --> Handler["Client update handler"]
-    Handler --> Reserve["Reserve update guard"]
-    Handler --> Apply["Apply update"]
-    Apply --> Select["Select matching download configuration"]
-    Apply --> Info["Client info service"]
-    Apply --> Download["Download service"]
-    Apply --> UpdateState["Update state service"]
-    Apply --> Good["Last known good service"]
-    Apply --> Tools["Tool run manager and tool operations"]
-    Apply --> Recovery["Update handler service"]
-    Download --> Writer["Binary writer and updater launcher"]
-```
-
-The principal runtime dependencies are:
-
-- **Client update handler:** deserializes the command into this model and delegates reservation and execution.
-- **Client update service:** owns validation, concurrency control, platform selection, update orchestration, and status changes.
-- **Download configuration:** describes the selected artifact and whether it is a direct binary replacement or an archive extracted into a directory.
-- **Client information service:** records `Updating` before execution and `Failed` if execution returns an error. Its status vocabulary also includes `Current` and `Updated`.
-- **Update state service:** persists a target version, phase, boot-attempt count, start time, and optional failure detail so a later process start can resolve an incomplete update.
-- **Last known good service:** supplies a version anchor that guards against downgrade and can promote a verified version.
-- **Tool run manager and tool operations:** prevent a client replacement from overlapping tool or package work and mark the client update as pending while it waits.
-
-## Client Processing Flow
-
-The message is applied only after the command layer has accepted it. A reservation protects against concurrent deliveries; it is intentionally held until the updater has completed with the current process, preventing a redelivery from overlapping a live update.
-
-```mermaid
-flowchart TD
-    Receive["Receive update command"] --> Reserve["Acquire update guard"]
-    Reserve --> Busy{"Update or work busy?"}
-    Busy -->|"Yes"| Defer["Reject for later redelivery"]
-    Busy -->|"No"| Validate["Trim and validate version"]
-    Validate --> Valid{"Version valid?"}
-    Valid -->|"No"| Failed["Record failed status"]
-    Valid -->|"Yes"| Running{"Already running?"}
-    Running -->|"Yes"| Skip["Clear pending marker and skip"]
-    Running -->|"No"| Downgrade{"Below last known good?"}
-    Downgrade -->|"Yes"| Skip
-    Downgrade -->|"No"| Mark["Set updating status"]
-    Mark --> Select["Select current OS configuration"]
-    Select --> Stage["Download and stage artifact"]
-    Stage --> Launch["Persist state and launch updater"]
-    Launch --> Restart["Client restarts"]
-    Restart --> Verify["Resolve update on next start"]
-    Verify --> Result{"Target version running?"}
-    Result -->|"Yes"| Complete["Report success and promote version"]
-    Result -->|"No"| Recover["Keep pending state or handle failure"]
-```
-
-### Validation, Idempotency, and Downgrade Protection
-
-Before an update starts, the service validates and parses the requested version. An invalid value produces an error rather than a download attempt. If the request matches the binary's currently running version, the service treats the operation as skipped and clears the client-update pending marker.
-
-The service also checks the persisted last-known-good version when downgrades are disabled. A requested version lower than that anchor is skipped. If the anchor cannot be read or parsed, the client logs the condition and continues without that downgrade check rather than making the anchor store an availability prerequisite.
-
-### Platform Selection and Staging
-
-`find_config_for_current_os` locates the first configuration whose operating-system value matches the compiled client target. Absence of a matching record is an update failure.
-
-The selected configuration determines staging behavior:
-
-- A `targetFileName` containing one path component is treated as a direct executable update. The download service obtains the artifact and writes the executable to the default agent path.
-- A nested `targetFileName` is treated as a folder extraction. The download service extracts the artifact into the tool folder, applies executable permissions to the target path, and reports the relative target path for later use.
-
-The model does not carry checksums, signatures, retry settings, or credentials. Those concerns belong to the surrounding delivery, download, and platform-update services.
-
-## Delivery and Restart Semantics
-
-The command framework distinguishes completed, failed, restart-required, and restarting outcomes. Client update processing can terminate the current agent process, so completion is reconciled after startup rather than assuming that delivery hand-off equals a completed installation.
+## Update Data Flow
 
 ```mermaid
 sequenceDiagram
-    participant Server as Server delivery router
-    participant Broker as NATS
-    participant Client as Client command handler
-    participant Updater as Platform updater
-    participant Startup as Next client startup
-    Server->>Broker: Dispatch update message
-    Broker->>Client: Deliver message
-    Client->>Client: Reserve, validate, and stage update
-    Client->>Updater: Launch replacement workflow
-    Updater->>Startup: Start updated client
-    Startup->>Startup: Load persisted update state
-    alt target version is running
-        Startup->>Startup: Mark successful and promote last known good
-    else verification is pending or fails
-        Startup->>Startup: Retain state or run failure handling
-    end
+    participant Control as Control Plane
+    participant Listener as Command Listener
+    participant Model as Model Client Update Message
+    participant Service as Client Update Service
+    participant Tools as Tool Runtime
+    participant State as Update State Service
+    participant Updater as Platform Updater
+    participant Startup as Startup Handler
+
+    Control->>Listener: Deliver update command
+    Listener->>Model: Deserialize camel-case payload
+    Listener->>Service: Reserve update work
+    Service->>Tools: Mark update pending and check active work
+    Service->>Service: Validate and parse requested version
+    Service->>State: Prepare target version state
+    Service->>Updater: Download selected asset and launch update
+    Updater->>Startup: Restart client
+    Startup->>State: Load pending update state
+    Startup->>Startup: Compare running and target versions
 ```
 
-On startup, pending state is compared with the compiled running version. If it equals the target version, the update handler follows its success path. If the process is not yet verified and the recorded phase is `UpdaterLaunched` or `Verifying`, it keeps the state for a later startup. Other incomplete phases are handled as failures. This makes restart recovery explicit and limits false success reporting.
+A duplicate delivery cannot overlap a live update: the client update service holds an in-progress guard from reservation until the updater completes its work for the process. If another update-related operation is active, reservation fails so the message can be redelivered rather than racing the existing operation. A request for the version already running is skipped and clears the pending update indication.
 
-## Operational Considerations
+## Lifecycle and Failure Semantics
 
-- Supply at least one exact OS match for each platform expected to receive the release. The comparison ignores case but does not infer equivalent names.
-- Use valid semantic versions. The client canonicalizes parsed versions for status and persisted state.
-- Avoid planning a downgrade unless the deployment configuration intentionally permits it; the last-known-good anchor can reject it.
-- Treat a dispatch response as a routing result, not a device-success result. Confirm outcomes through client status, delivery results, and client logs.
-- Expect deferred redelivery while an update, tool operation, or package upgrade is active. This is deliberate coordination, not a request loss.
-- Do not expose private artifact credentials in the message. The contract has no dedicated secret field.
+```mermaid
+stateDiagram-v2
+    [*] --> Received
+    Received --> Reserved: update guard acquired
+    Received --> Deferred: update or tool work active
+    Reserved --> Skipped: running version or downgrade rejected
+    Reserved --> Updating: version and assets accepted
+    Updating --> Launching: state persisted and updater started
+    Updating --> Failed: download or update failure
+    Launching --> Verifying: client restarts
+    Verifying --> Updated: running version equals target
+    Verifying --> Failed: terminal verification failure
+    Deferred --> Received: redelivery
+    Skipped --> [*]
+    Updated --> [*]
+    Failed --> [*]
+```
 
-## Source and Ownership
+Important operational details:
 
-The model is library code, not a type defined directly in this tenant repository. It is compiled into the endpoint client through the `openframe_agent_lib` dependency. The tenant repository publishes and deploys the surrounding OpenFrame client service and its image, while OpenFrame OSS Library owns the Rust message definition and client update implementation.
+1. Version parsing occurs in the update service, not in the message type. A syntactically valid JSON message can still be rejected for an invalid version.
+2. If an update execution error occurs after status tracking begins, the client records `Failed`, clears stale update state, and leaves message retry to the transport flow.
+3. Update state includes the target version, phase, boot-attempt count, start time, and an optional updater-stamped failure reason. This gives restart-time handling enough context to distinguish an in-progress verification from a failed update.
+4. Download configurations must include an artifact that matches the target device OS. The client update implementation owns the final selection and installation behavior.
+
+## Dependencies
+
+| Dependency | Relationship to the model |
+|---|---|
+| `DownloadConfiguration` | Nested asset metadata. It identifies OS applicability and how the selected release artifact is placed or extracted. |
+| Client Update Handler | Transport-side consumer that routes a decoded update request to update orchestration. |
+| OpenFrame Client Update Service | Primary consumer. It reserves the operation, validates the version, coordinates workloads, downloads the asset, and launches replacement. |
+| Client Info Model and Service | Holds current version and update status for reporting. |
+| Update State Model and Service | Persists restart-resilient state for the target version and update phase. |
+| Last Known Good Service | Supplies the downgrade-protection anchor. |
+| Tool Run Manager and Tool Operations | Avoid concurrent client replacement and managed tool or package activity. |
+| Update Handler Service | Performs startup-time success or failure handling after the updater relaunches the client. |
+
+## Maintenance Guidance
+
+Treat this structure as a versioned transport contract:
+
+- Preserve camel-case names and existing download configuration aliases when evolving the payload.
+- Add fields as optional or defaulted where backward compatibility is required, because older client binaries deserialize the message.
+- Do not infer platform behavior from the message alone. Platform selection, extraction, privilege handling, staging, replacement, and restart are implemented by the update and platform services.
+- Keep `version` canonical and semver-compatible with the update service. The service, rather than this DTO, is the enforcement point for version validity and downgrade policy.
+- Changes to the embedded download configuration affect all supported operating systems and should be tested against single-file and folder-extraction releases.
+
+## System Placement
+
+The OpenFrame OSS Tenant repository publishes and deploys the OpenFrame Client alongside platform services. At runtime, the client connects to the tenant's NATS service and is configured with the tenant's Kafka and NATS endpoints. This model is part of the client-side command contract used to request a local agent upgrade; it is not an HTTP endpoint and does not itself publish a NATS subject.
+
+The model is implemented by the OpenFrame OSS Library artifact `openframe_agent_lib` version `v0.0.5`, which this repository consumes. The server-side control-plane services and the local Rust client must remain compatible on the serialized update payload and on its release artifact conventions.

@@ -1,0 +1,13 @@
+flowchart LR
+    Installer["Installer arguments"] --> InstallConfig["Installation Initial Config Service"]
+    InstallConfig --> InitialConfig["Initial Configuration Service"]
+    InitialConfig --> ConfigFile["secured directory: initial_config.json"]
+    ConfigFile --> InitialConfig
+    InitialConfig --> AuthProcessor["Initial Authentication Processor"]
+    InitialConfig --> TlsProvider["Local TLS Config Provider"]
+    InitialConfig --> LogKeyService["Log Key Service"]
+    InitialConfig --> RemoteAccessService["Remote Access Mode Service"]
+    AuthProcessor --> AgentRuntime["Authenticated agent runtime"]
+    TlsProvider --> AgentRuntime
+    LogKeyService --> AgentRuntime
+    RemoteAccessService --> AgentRuntime

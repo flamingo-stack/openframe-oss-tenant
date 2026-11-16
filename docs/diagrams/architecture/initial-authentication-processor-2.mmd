@@ -1,0 +1,9 @@
+flowchart LR
+    Processor["Initial Authentication Processor"] --> ConfigService["Agent Configuration Service"]
+    Processor --> AuthService["Agent Auth Service"]
+    ConfigService --> ConfigFile["Persisted agent configuration"]
+    AuthService --> Credentials["Client ID and client secret"]
+    AuthService --> AuthClient["Auth Client"]
+    AuthClient --> TokenEndpoint["Client token endpoint"]
+    AuthService --> TokenPersistence["Persist access and refresh tokens"]
+    AuthService --> SharedToken["Update encrypted shared token"]

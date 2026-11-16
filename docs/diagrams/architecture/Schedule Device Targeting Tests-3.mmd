@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Test as Schedule Device Targeting Tests
+    participant ScheduleApi as Script Schedule API
+    participant Platform as OpenFrame Platform
+    participant Picker as Schedule Device Picker
+    Test->>ScheduleApi: Create compatible future schedule
+    ScheduleApi->>Platform: Create schedule with supported platform
+    Platform-->>ScheduleApi: Script schedule with zero devices
+    Test->>ScheduleApi: Get schedule devices by hostname
+    ScheduleApi->>Platform: Query assigned and available devices
+    Platform-->>Picker: Build picker state
+    Picker-->>ScheduleApi: Available edge with assigned false
+    Test->>ScheduleApi: Add device
+    ScheduleApi->>Platform: Persist explicit assignment
+    Platform-->>ScheduleApi: Schedule with count one
+    Test->>ScheduleApi: Set device criteria
+    ScheduleApi->>Platform: Persist operating-system rule
+    Platform-->>ScheduleApi: Schedule in CRITERIA mode
+    Test->>ScheduleApi: Get schedule devices
+    ScheduleApi->>Platform: Resolve criteria
+    Platform-->>ScheduleApi: Matching machine in assigned devices

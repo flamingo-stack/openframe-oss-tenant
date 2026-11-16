@@ -1,0 +1,11 @@
+flowchart TD
+    Source["Identity source"] --> Request["UserInfoRequest"]
+    Request --> Mapper["API mapping logic"]
+    Mapper --> Subject["sub from user identity"]
+    Mapper --> Profile["name and profile claims"]
+    Mapper --> Verification["email_verified claim"]
+    Subject --> Output["UserInfo"]
+    Profile --> Output
+    Verification --> Output
+    Mapper -->|"failure details when applicable"| Error["error and error_description"]
+    Error --> Output

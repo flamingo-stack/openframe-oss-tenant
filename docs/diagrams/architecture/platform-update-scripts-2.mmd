@@ -1,16 +1,13 @@
 flowchart TD
-    Begin["Updater starts"] --> Validate["Validate candidate, target, and service"]
-    Validate -->|"validation failure"| PreSwapFailure["Mark failed and restore untouched service"]
-    Validate -->|"valid"| Stop["Stop managed client service"]
-    Stop -->|"stop failure"| PreSwapFailure
-    Stop -->|"stopped"| Preserve["Move installed binary to previous reserve"]
-    Preserve --> Replace["Copy staged binary into target path"]
-    Replace -->|"replacement failure"| Rollback["Restore reserve and restart"]
-    Replace --> Start["Start managed client service"]
-    Start -->|"start failure"| Rollback
-    Start --> Verify["Wait for matching boot marker"]
-    Verify -->|"target version matches"| Verifying["Set phase to verifying"]
-    Verifying --> Cleanup["Remove staged updater artifacts"]
-    Verify -->|"missing or mismatched"| Rollback
-    Rollback -->|"restore succeeds"| RolledBack["Set phase to rolled back"]
-    Rollback -->|"restore fails"| Failed["Set phase to failed"]
+    Start["External updater starts"] --> Validate["Validate paths and staged binary size"]
+    Validate -->|"invalid"| PreSwapFailure["Mark failed and restart untouched service"]
+    Validate -->|"valid"| Stop["Stop client service"]
+    Stop -->|"timeout or error"| PreSwapFailure
+    Stop --> Move["Move installed executable to previous copy"]
+    Move --> Swap["Copy staged executable into target path"]
+    Swap --> StartService["Start client service"]
+    StartService --> Marker["Wait for matching boot marker"]
+    Marker -->|"matching version"| Verifying["Set phase to verifying and clean up"]
+    Marker -->|"missing or wrong version"| Rollback["Restore last known good or previous copy"]
+    Rollback --> Restart["Restart restored service"]
+    Restart --> RolledBack["Set phase to rolled back"]

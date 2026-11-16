@@ -1,0 +1,6 @@
+flowchart LR
+    InstallMode["Install-time remote-access mode"] --> Config["Initial Configuration remote access mode"]
+    Config --> Service["Remote Access Mode Service"]
+    Service --> Backend["Backend acknowledgement"]
+    Backend --> Clear["Clear pending mode"]
+    Clear --> Persisted["Configuration saved without remote access mode"]

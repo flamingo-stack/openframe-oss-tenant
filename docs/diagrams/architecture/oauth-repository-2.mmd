@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Service as "Authentication service"
+    participant Repo as "Oauth Repository"
+    participant Mongo as "MongoDB"
+    Service->>Repo: "findByAccessToken or findByRefreshToken"
+    Repo->>Mongo: "Derived equality query"
+    Mongo-->>Repo: "Matching document or no document"
+    Repo-->>Service: "Optional OAuthToken"
+    Service->>Service: "Validate expiry and authorization policy"

@@ -1,6 +1,0 @@
-flowchart LR
-    InstallConfig["Install-time configuration"] --> ModeService["Remote Access Mode Service"]
-    ModeService -->|"set device mode"| DeviceApi["Remote access API"]
-    DeviceApi --> Broker["NATS broker"]
-    Broker --> Listener["Listener Remote Access"]
-    Listener --> Chat["Chat GUI application"]

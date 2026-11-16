@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client as Client Application
+    participant Register as Registration Processor
+    participant Auth as Authentication Processor
+    participant Http as Server HTTP API
+    participant Token as Shared Token Service
+    participant Nats as NATS Connection
+    Client->>Register: Process registration
+    Register->>Http: Register endpoint and send device data
+    Http-->>Register: Registration credentials
+    Client->>Auth: Process initial authentication
+    Auth->>Http: Authenticate agent
+    Http-->>Auth: Access and refresh tokens
+    Auth->>Token: Encrypt and persist token state
+    Client->>Nats: Connect with authenticated configuration
+    Client->>Auth: Start proactive token refresh

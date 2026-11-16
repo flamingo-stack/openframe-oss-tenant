@@ -1,0 +1,12 @@
+flowchart LR
+    ClientStartup["OpenFrame Client startup"] --> Publisher["Hostname Report Publisher"]
+    Publisher --> Fetcher["Device Data Fetcher"]
+    Fetcher --> HostOs["Host operating system"]
+    Publisher --> Config["Agent Configuration Service"]
+    Config --> MachineId["Persisted machine identifier"]
+    Publisher --> Message["Hostname Report Message"]
+    Message --> NatsPublisher["NATS Message Publisher"]
+    NatsPublisher --> Nats["NATS subject machine.machineId.hostname"]
+    Nats --> Listener["Machine Hostname Listener"]
+    Listener --> Backend["Machine Hostname Service"]
+    Backend --> DeviceRecord["Persistent device record"]

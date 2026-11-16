@@ -1,7 +1,16 @@
 flowchart TD
-    AppClose["Platform App Close"] --> Executor["Script executor"]
-    Executor --> PowerShell["PowerShell on Windows"]
-    AppClose --> Sysinfo["sysinfo process API"]
-    AppClose --> MacSession["macOS user session utilities"]
-    AppClose --> WindowsSession["Windows session launcher"]
-    AppClose --> Tracing["Structured tracing logs"]
+    Begin["Upgrade finishes and supplies image path"] --> Target{"Target platform?"}
+    Target -->|"macOS"| ConsoleUser{"Console user available?"}
+    ConsoleUser -->|"No"| MacNoUser["Log warning and return false"]
+    ConsoleUser -->|"Yes"| MacLaunch["Launch as console user"]
+    MacLaunch --> MacStarted{"Launcher started?"}
+    MacStarted -->|"No"| MacLaunchFail["Log warning and return false"]
+    MacStarted -->|"Yes"| MacWait["Wait up to 10 seconds for launcher"]
+    MacWait --> MacStatus{"Launcher reports nonzero exit?"}
+    MacStatus -->|"Yes"| MacExitFail["Log warning and return false"]
+    MacStatus -->|"No"| MacSuccess["Log relaunch and return true"]
+    Target -->|"Windows"| WinLaunch["Launch in supplied user session"]
+    WinLaunch --> WinResult{"Launcher returned process ID?"}
+    WinResult -->|"Yes"| WinSuccess["Log process ID and return true"]
+    WinResult -->|"No"| WinFailure["Log warning and return false"]
+    Target -->|"Other"| Unsupported["Log unsupported relaunch and return false"]

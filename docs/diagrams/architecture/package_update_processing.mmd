@@ -1,0 +1,10 @@
+flowchart LR
+    Agent["OpenFrame Agent"] -->|"Package update status"| Listener["Status listener"]
+    Listener -->|"Status event"| Processor["Package Update Status Processor"]
+    Processor --> StateStore["Device state repository"]
+    Processor --> RequestStore["Request repository"]
+    Processor --> History["Script execution repository"]
+    Processor --> Dispatcher["Delivery dispatcher"]
+    Dispatcher --> Agent
+    Processor --> Tracker["Delivery tracker"]
+    Processor --> PolicyStore["Auto-update policy repository"]

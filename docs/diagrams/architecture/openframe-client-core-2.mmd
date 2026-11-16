@@ -1,16 +1,17 @@
 sequenceDiagram
-    participant Service as "Client Service"
-    participant Core as "Openframe Client Core"
-    participant Config as "Local Configuration"
-    participant Auth as "Registration and Authentication"
-    participant Nats as "NATS Transport"
-    participant Workers as "Listeners and Managers"
+    participant Service as Service Management
+    participant Client as Client Application
+    participant Registration as Registration Processor
+    participant Auth as Authentication Processor
+    participant Nats as NATS Connection Manager
+    participant Listeners as Runtime Listeners
 
-    Service->>Core: Start agent runtime
-    Core->>Config: Prepare directories and load state
-    Core->>Auth: Register and authenticate agent
-    Auth-->>Core: Credentials and access token
-    Core->>Nats: Connect NATS over WebSocket
-    Nats-->>Core: Active messaging client
-    Core->>Workers: Start listeners and background managers
-    Workers-->>Nats: Publish results, telemetry, and reports
+    Service->>Client: Start endpoint agent
+    Client->>Registration: Register device when needed
+    Registration-->>Client: Registration complete
+    Client->>Auth: Authenticate agent
+    Auth-->>Client: Tokens persisted
+    Client->>Nats: Connect through gateway
+    Nats-->>Client: Active NATS client
+    Client->>Listeners: Start command and execution listeners
+    Listeners-->>Client: Receive endpoint work

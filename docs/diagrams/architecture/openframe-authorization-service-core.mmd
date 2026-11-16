@@ -1,0 +1,15 @@
+flowchart LR
+    Browser["Browser or Mobile Client"] --> Gateway["Openframe Gateway"]
+    Gateway --> AuthServer["Authorization Server Service"]
+    AuthServer --> TenantContext["Tenant Resolution and Forwarded Prefix"]
+    TenantContext --> SecurityChains["Authorization and Login Security Chains"]
+    SecurityChains --> Password["Password Authentication"]
+    SecurityChains --> Sso["External OIDC Providers"]
+    SecurityChains --> Grants["Custom Mobile Grants"]
+    Password --> Tokens["Tenant Scoped JWT Tokens"]
+    Sso --> Tokens
+    Grants --> Tokens
+    Tokens --> Clients["Gateway and Platform Clients"]
+    AuthServer --> Mongo["MongoDB User, Tenant, Client Data"]
+    AuthServer --> Redis["Redis HTTP Sessions"]
+    Sso --> Providers["Google, Microsoft, Apple"]

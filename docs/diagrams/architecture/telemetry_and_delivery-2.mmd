@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Agent as Agent
+    participant Nats as NATS JetStream
+    participant Listener as Durable Listener
+    participant Service as Domain Service
+
+    Agent->>Nats: Publish machine report
+    Nats->>Listener: Deliver report with metadata
+    Listener->>Listener: Extract machine identifier and decode JSON
+    Listener->>Service: Apply installed agent or tool connection
+    alt Processing succeeds
+        Service-->>Listener: Completed
+        Listener->>Nats: Acknowledge message
+    else Processing fails
+        Service-->>Listener: Error
+        Note over Listener,Nats: Message remains unacknowledged for redelivery
+    end

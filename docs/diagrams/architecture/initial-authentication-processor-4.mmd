@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant Client as OpenFrame Client
+    participant Processor as Initial Authentication Processor
+    participant Config as Agent Configuration Service
+    participant Auth as Agent Auth Service
+    participant Http as Auth Client
+    participant Gateway as Client Token Endpoint
+    Client->>Processor: process()
+    Processor->>Config: get_access_token()
+    alt token already present
+        Config-->>Processor: nonempty access token
+        Processor-->>Client: success without request
+    else token missing
+        Config-->>Processor: empty access token
+        Processor->>Auth: authenticate_initial()
+        Auth->>Config: get_client_credentials()
+        Config-->>Auth: client ID and client secret
+        Auth->>Http: authenticate_with_secret()
+        Http->>Gateway: form request with client credentials
+        alt successful response
+            Gateway-->>Http: token response
+            Http-->>Auth: AgentTokenResponse
+            Auth->>Config: persist access and refresh tokens
+            Auth-->>Processor: success
+            Processor-->>Client: startup may continue
+        else failed response or transport error
+            Gateway-->>Http: failure or no response
+            Http-->>Auth: error
+            Auth-->>Processor: contextual error
+            Note over Processor: logs warning and waits 60 seconds
+        end
+    end

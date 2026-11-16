@@ -1,0 +1,8 @@
+flowchart LR
+    RefreshManager["Token Refresh Run Manager"] -->|"reauthenticates"| AuthService["Agent Authentication Service"]
+    AuthService -->|"new access token"| SharedToken["Shared Token Service"]
+    SharedToken -->|"secured_dir()"| DirectoryManager["Directory Manager"]
+    SharedToken -->|"encrypt(token)"| EncryptionService["Encryption Service"]
+    EncryptionService -->|"encoded ciphertext"| SharedToken
+    SharedToken -->|"atomic write"| TokenFile["shared_token.enc"]
+    ToolProcess["Integrated Tool Process"] -->|"reads current artifact"| TokenFile

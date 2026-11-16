@@ -1,0 +1,12 @@
+flowchart LR
+    FleetActivityTopic["Fleet activity topic"] --> ActivityStream["Activity stream"]
+    HostActivityTopic["Fleet host activity topic"] --> HostActivityStream["Host activity stream"]
+    ActivityStream --> Join["Five second left join"]
+    HostActivityStream --> Join
+    Join --> HeaderProcessor["Message header processor"]
+    HeaderProcessor --> FleetEventTopic["Fleet event topic"]
+    MeshTopic["MeshCentral event topic"] --> Listener["Tenant JSON Kafka listener"]
+    FleetEventTopic --> Listener
+    QueryTopic["Fleet query result topic"] --> Listener
+    PolicyTopic["Fleet policy membership topic"] --> Listener
+    Listener --> Processor["Generic JSON message processor"]

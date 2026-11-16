@@ -1,0 +1,8 @@
+flowchart LR
+    RuntimeCheck["Runtime check returns warning"] --> TaggedResult["Check Result with InstallWebview2 remediation"]
+    TaggedResult --> Pending["Collect unique pending remediations"]
+    Pending --> Heal["Run Doctor Healing"]
+    Heal --> Installer["Run WebView2 installer"]
+    Installer --> Outcome{"Installation outcome?"}
+    Outcome -->|"Succeeded"| Healed["Healed outcome"]
+    Outcome -->|"Failed"| Failed["Failure detail"]

@@ -1,0 +1,10 @@
+flowchart TD
+    Tick["Interval tick"] --> StartPublish["Start heartbeat publish"]
+    StartPublish --> Deadline{"Completed within 30 seconds?"}
+    Deadline -->|"yes"| Result{"Publisher returned success?"}
+    Result -->|"yes"| NextTick["Wait for next interval"]
+    Result -->|"no"| LogError["Log publish error"]
+    LogError --> NextTick
+    Deadline -->|"no"| LogTimeout["Log possible NATS disconnection"]
+    LogTimeout --> NextTick
+    NextTick --> Tick

@@ -1,172 +1,163 @@
 # Model Delivery
 
-Model Delivery defines the small, transportable result contract used by the OpenFrame endpoint agent to report the lifecycle of a server-dispatched delivery. It is implemented in the Rust `openframe_agent_lib` library, consumed at runtime by this repository's OpenFrame Client service, and is the boundary between local agent work and the platform's delivery tracking.
+Model Delivery defines the endpoint client result protocol for delivered work. It supplies delivery correlation data, lifecycle outcomes, an optional error, and a machine-scoped result subject.
 
-The module does **not** execute a command, install a tool, or apply an update. Instead, it identifies the dispatched work and expresses whether the agent has accepted it, completed it, or failed it. This makes the same reporting envelope usable for deliveries such as client updates, tool operations, feature-flag changes, and package updates.
+The implementation is supplied by the `openframe_client` Rust crate from the OpenFrame OSS Library. This repository consumes that library as `openframe_agent_lib` version `v0.0.5`. See [`delivery.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/delivery.rs).
 
-**Source:** [`clients/openframe-client/src/models/delivery.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/delivery.rs) in OpenFrame OSS Library.
+## Purpose
 
-## Responsibilities
+Model Delivery is a transport contract rather than an instruction handler. Endpoint listeners and operation handlers use it to report that work was accepted, completed, or failed. The `CLIENT_UPDATE` constant identifies the client-update delivery category.
 
-- Preserve the identity of a dispatch with its delivery type, target, dispatch identifier, and optional ordering sequence.
-- Model the three terminal or progress outcomes: acknowledgement, completion, and failure.
-- Attach a human-readable failure reason only when an operation fails.
-- Produce the NATS subject used to publish results for an individual machine.
-- Provide constructors that prevent callers from mismatching a normal acknowledgement or completion with an error payload.
+- **Acknowledged** means the client accepted a delivery.
+- **Done** means delivery work completed successfully.
+- **Failed** means delivery work could not complete and may include an error reason.
 
-## Contract Types
-
-| Component | Role | Wire behavior |
-|---|---|---|
-| `DeliveryRef` | Identifies one delivery instance. | Serializes field names in camel case; `delivery_type` is emitted as `type`. The optional `sequence` is omitted when absent. |
-| `DeliveryResult` | Outcome enum. | Serializes as screaming snake case: `ACKED`, `DONE`, or `FAILED`. |
-| `DeliveryResultMessage` | Envelope returned by the agent. | Contains the delivery reference, outcome, and optional error text. |
-| `delivery_result_subject` | Addressing function. | Builds the per-machine result subject `machine.{machineId}.delivery.result`. |
-
-`CLIENT_UPDATE` is a declared delivery-type constant. Other delivery types can use the same data model because `DeliveryRef.delivery_type` is a string rather than a closed Rust enum.
-
-## Architecture and Dependencies
-
-The module is deliberately model-only: it depends on Serde for serialization and deserialization, but it has no network, persistence, or platform dependency. The surrounding client runtime supplies those capabilities:
-
-- Command and execution listeners receive and act on deliveries.
-- The result store records outbound results and tracks their delivery state.
-- The result outbox manager publishes retained results through the agent's NATS publisher.
-- The server-side client core receives results and reconciles the matching platform delivery record.
+## Architecture
 
 ```mermaid
 flowchart LR
-    ServerCore["OpenFrame Client Core"] -->|"dispatches work"| Nats["NATS"]
-    Nats -->|"delivery message"| Agent["OpenFrame Client Agent"]
-    Agent -->|"creates DeliveryRef"| Model["Model Delivery"]
-    Model -->|"DeliveryResultMessage"| Store["Result Store and Ledger"]
-    Store -->|"queued result"| Outbox["Result Outbox Manager"]
-    Outbox -->|"machine result subject"| Nats
-    Nats -->|"delivery result"| ServerCore
+    Platform["Platform Delivery Services"] --> Broker["NATS Broker"]
+    Broker --> Listener["Endpoint Delivery Listener"]
+    Listener --> Handler["Operation Handler"]
+    Handler --> Model["Model Delivery"]
+    Model --> Store["Result Store and Ledger"]
+    Store --> Outbox["Result Outbox"]
+    Outbox --> Broker
+    Broker --> ResultListener["Platform Result Listener"]
 ```
 
-The model comes from the `openframe_agent_lib` Cargo artifact supplied by OpenFrame OSS Library. The tenant repository consumes that library at version `v0.0.5`; the source revision above is the implementation documented here.
+The endpoint client includes command listeners, result-store services, and a result outbox around this model. The OpenFrame client service contains complementary dispatch and result-listener components. Model Delivery stays focused on the common wire data exchanged between these components.
 
-## Delivery Identity
+## Core Contract
 
-A `DeliveryRef` binds a result to the server-side dispatch that originated the work:
+### Delivery Reference
 
-| Field | Meaning | Presence |
-|---|---|---|
-| `type` | Delivery category, such as `CLIENT_UPDATE`. | Required |
-| `targetId` | Identifier for the target operation or resource. | Required |
-| `dispatchId` | Identifier for this individual dispatch attempt. | Required |
-| `sequence` | Optional sequence supplied for ordered processing or deduplication. | Optional |
+`DeliveryRef` identifies the delivery represented by every result. Its fields serialize in camel case.
 
-The identity is nested inside every result instead of being inferred from the NATS subject. The subject selects the machine channel, while the reference lets the platform correlate the response to a particular delivery on that machine.
+| Field | Serialized name | Meaning |
+| --- | --- | --- |
+| `delivery_type` | `type` | Delivery category, such as `CLIENT_UPDATE`. |
+| `target_id` | `targetId` | Identifier of the delivery target. |
+| `dispatch_id` | `dispatchId` | Identifier of the originating dispatch. |
+| `sequence` | `sequence` | Optional ordering or deduplication sequence; omitted when absent. |
 
-## Result Lifecycle
+The explicit `type` rename is a protocol requirement: consumers read and write `type`, not `deliveryType`.
 
-The three result values form a concise lifecycle contract:
+### Result Values
 
-1. **`ACKED`** means the agent accepted the delivery for processing. Create it with `DeliveryResultMessage::acked`.
-2. **`DONE`** means processing completed successfully. Create it with `DeliveryResultMessage::done`.
-3. **`FAILED`** means processing could not complete. Create it with `DeliveryResultMessage::failed`, which records the supplied reason in `error`.
+`DeliveryResult` uses screaming-snake-case serialization and accepts exactly these values:
 
-The general `new` constructor remains available for callers that must build an explicit combination. The specialized constructors encode the normal invariant: acknowledgement and completion carry no error, while failure carries an error string.
+| Wire value | Meaning |
+| --- | --- |
+| `ACKED` | The client accepted the delivery. |
+| `DONE` | The work completed successfully. |
+| `FAILED` | The work failed. |
+
+`DeliveryResultMessage` pairs the reference with a result and an optional `error`. The `error` field is omitted when no error exists. Its `acked`, `done`, and `failed` constructors create the conventional messages; `new` permits direct construction when necessary.
+
+## Result Publication
+
+`delivery_result_subject(machine_id)` creates the following subject. The fixed result kind is `delivery.result`.
+
+```text
+machine.<machine-id>.delivery.result
+```
+
+```mermaid
+sequenceDiagram
+    participant Platform as Platform Service
+    participant Broker as NATS Broker
+    participant Client as Endpoint Client
+    participant Store as Result Store
+    Platform->>Broker: Publish delivery
+    Broker->>Client: Deliver machine instruction
+    Client->>Store: Record acknowledgement result
+    Store->>Broker: Publish ACKED result
+    Client->>Client: Execute delivery work
+    Client->>Store: Record DONE or FAILED result
+    Store->>Broker: Publish final result
+    Broker->>Platform: Deliver machine result message
+```
+
+The machine identifier scopes a result to the endpoint that emitted it. The complete `DeliveryRef` correlates lifecycle messages with a specific platform dispatch.
+
+## Lifecycle and Recovery
+
+An acknowledgment is not completion: it precedes the eventual `DONE` or `FAILED` result. The operation handler determines transitions; Model Delivery represents their outputs.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Received
-    Received --> Acked: "accepted"
-    Acked --> Done: "completed"
-    Acked --> Failed: "processing error"
-    Received --> Failed: "cannot accept"
+    [*] --> Pending
+    Pending --> Acked: Client accepts delivery
+    Acked --> Done: Work completes
+    Pending --> Failed: Acceptance fails
+    Acked --> Failed: Work fails
     Done --> [*]
     Failed --> [*]
 ```
 
-The model itself does not enforce sequencing between messages. Callers decide whether to emit an acknowledgement, and persistence and outbox services provide recovery and retransmission behavior around the resulting messages.
-
-## Result Publication Flow
-
-The agent builds a message after it handles a delivery, stores it durably when the result store is available, then publishes it through the outbox. This separation means result publication can be retried after a temporary transport failure rather than coupling the local operation's outcome to immediate NATS availability.
+The endpoint result-store ledger accepts a delivery with a subject and ledger state before settlement. Settlement records a `DeliveryResultMessage` and prunes excess entries. Recovery identifies deliveries left in flight by a restart and settles them as failed with an interruption reason.
 
 ```mermaid
-sequenceDiagram
-    participant Server as Server Delivery Dispatcher
-    participant Broker as NATS
-    participant Agent as Endpoint Agent
-    participant Store as Result Store
-    participant Outbox as Result Outbox
-    Server->>Broker: Dispatch work for machine
-    Broker->>Agent: Deliver work
-    Agent->>Store: Enqueue ACKED result
-    Store->>Outbox: Pending result available
-    Outbox->>Broker: Publish machine result subject
-    Agent->>Agent: Perform delivery work
-    Agent->>Store: Enqueue DONE or FAILED result
-    Store->>Outbox: Pending result available
-    Outbox->>Broker: Publish final result
-    Broker->>Server: Deliver correlated result
+flowchart TD
+    Received["Delivery Received"] --> Accepted["Ledger Accepts Delivery"]
+    Accepted --> Working["Handler Performs Work"]
+    Working --> Success{"Work Succeeded?"}
+    Success -->|"yes"| Completed["Create DONE Result"]
+    Success -->|"no"| Failed["Create FAILED Result"]
+    Completed --> Settled["Settle Result in Ledger"]
+    Failed --> Settled
+    Restart["Client Restart"] --> Recover["Recover In Flight Deliveries"]
+    Recover --> Interrupted["Settle Interrupted Delivery as FAILED"]
 ```
 
-For deliveries requiring a process restart, the client result ledger also recognizes an `AwaitingRestart` state before it settles a `DeliveryResultMessage`. That state belongs to the surrounding result-store implementation, not to `DeliveryResult`; the public model remains limited to `ACKED`, `DONE`, and `FAILED`.
+This path avoids silently losing an in-flight delivery when a client restarts and supports later result publication through the result outbox.
 
-## NATS Addressing
+## Integration Boundaries
 
-`delivery_result_subject(machine_id)` returns a machine-scoped subject:
+| Boundary | Role |
+| --- | --- |
+| Endpoint command and update listeners | Interpret incoming work and construct lifecycle results. |
+| Result store ledger | Records acceptance and settlement for recovery. |
+| Result outbox manager | Publishes durable queued results. |
+| NATS message publisher | Sends serialized results to the machine-scoped subject. |
+| Platform delivery listeners | Correlate results to server-side delivery records. |
 
-```text
-machine.{machineId}.delivery.result
-```
+## Serialization Examples
 
-The fixed `delivery.result` suffix is the protocol kind, represented by `DELIVERY_RESULT_KIND`. Machine scoping isolates results by endpoint while the nested `DeliveryRef` identifies the exact delivery. Callers should use this function rather than duplicating subject formatting so that all publishers follow the same protocol.
-
-## Serialization Example
-
-A successful completion with an ordering sequence is represented as JSON equivalent to the following:
+A completed client-update result:
 
 ```json
 {
   "delivery": {
     "type": "CLIENT_UPDATE",
-    "targetId": "client-release-42",
-    "dispatchId": "dispatch-8f31",
-    "sequence": 12
+    "targetId": "client-update-42",
+    "dispatchId": "dispatch-983",
+    "sequence": 7
   },
   "result": "DONE"
 }
 ```
 
-A failure retains the same identity and includes an `error` field:
+A failure retains the same reference and adds an error:
 
 ```json
 {
   "delivery": {
     "type": "CLIENT_UPDATE",
-    "targetId": "client-release-42",
-    "dispatchId": "dispatch-8f31"
+    "targetId": "client-update-42",
+    "dispatchId": "dispatch-983"
   },
   "result": "FAILED",
-  "error": "download verification failed"
+  "error": "download could not be completed"
 }
 ```
 
-Because `sequence` and `error` are optional and use `skip_serializing_if`, they are absent rather than serialized as `null` when not applicable. Consumers should therefore treat their absence as meaningful.
-
-## Integration Boundaries
-
-| Boundary | Relationship to Model Delivery |
-|---|---|
-| Endpoint command handlers | Create result messages as they accept, complete, or reject incoming deliveries. |
-| Result store and ledger | Persist pending results, recover delivery state, and settle results once publishing succeeds. |
-| Result outbox manager | Pulls queued messages and delegates actual publication to a result publisher. |
-| NATS message publisher | Transmits the serialized message on the derived machine result subject. |
-| Server delivery listeners | Consume result messages and update platform-side delivery state. |
-
-When changing this model, maintain wire compatibility across the Rust endpoint client and the Java server components. In particular, changing field names, enum spelling, subject construction, or omission rules changes a messaging contract shared by independently deployed services.
-
 ## Maintenance Guidance
 
-- Preserve `type` as the serialized name for `DeliveryRef.delivery_type`; it is an intentional protocol mapping.
-- Keep outcome values stable and uppercase on the wire unless all result consumers are migrated together.
-- Add a new delivery category as a string value only after its producer and server-side processing are defined.
-- Include a useful, non-sensitive reason when creating `FAILED` results; do not embed credentials, tokens, or raw command secrets in `error`.
-- Use the helper constructors for ordinary outcomes, reserving `new` for cases that need full control of the optional error value.
-- Treat `dispatchId` as the primary correlation key for a particular attempt, and preserve the optional sequence where the dispatcher provides it.
+- Treat serialized field names, result values, and the subject suffix as compatibility boundaries.
+- Preserve the `type` rename on `DeliveryRef`.
+- Add outcomes only with coordinated changes to client handlers, durable storage, and platform consumers.
+- Use `failed` to preserve a consistent failure reason.
+- Reuse the original `DeliveryRef` for every report about an existing delivery.
+- Keep error text useful for operators and free of credentials, tokens, or other sensitive material.

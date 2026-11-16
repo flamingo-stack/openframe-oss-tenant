@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Caller as Tool Update Service
+    participant Core as Platform Tool Updater Core
+    participant Updater as Selected Tool Updater
+    participant Files as Endpoint Files
+    Caller->>Core: run_update(tool, configuration, dependencies)
+    Core->>Updater: prepare(tool)
+    Updater->>Files: Stop, inspect, and back up as needed
+    Updater-->>Core: Update context
+    Core->>Updater: apply(tool, configuration, context)
+    Updater->>Files: Download and replace artifacts
+    alt Apply succeeds
+        Updater-->>Core: Optional new installation
+        Core->>Updater: finalize(updated tool, context)
+        Updater->>Files: Clean up and restart as needed
+        Updater-->>Core: Complete
+        Core-->>Caller: Optional new installation
+    else Apply fails
+        Updater-->>Core: Error
+        Core->>Updater: rollback(tool, context)
+        Updater->>Files: Restore backed-up state when available
+        Core-->>Caller: Update error
+    end

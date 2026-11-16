@@ -1,0 +1,7 @@
+flowchart LR
+    FleetMdm["FleetMDM JSON payload"] --> Jackson["Jackson deserialization"]
+    Jackson --> AssignedHost["AssignedHost"]
+    Jackson --> TableSchema["OsqueryTableSchema"]
+    TableSchema --> ColumnSchema["OsqueryColumnSchema"]
+    AssignedHost --> Consumer["Tenant service or integration"]
+    ColumnSchema --> Consumer

@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Runner as "Test Runner"
+    participant JUnit as "JUnit Platform"
+    participant Listener as "Slack Listener"
+    participant Client as "Slack Client"
+    participant Slack as "Slack Transport"
+    Runner->>JUnit: Execute test plan
+    JUnit->>Listener: Test plan started
+    JUnit->>Listener: Test outcomes from worker threads
+    Runner->>Listener: Send results with environment metadata
+    Listener->>Listener: Sort details and build report
+    Listener->>Client: Post threaded report
+    alt Bot configuration available
+        Client->>Slack: Post summary
+        Slack->>Client: Return message timestamp
+        Client->>Slack: Post detail chunks as replies
+    else Webhook configuration available
+        Client->>Slack: Post combined report chunks
+    else No Slack configuration
+        Client->>Client: Log summary and details
+    end

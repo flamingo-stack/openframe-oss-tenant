@@ -1,0 +1,6 @@
+flowchart TD
+    Privilege["Requested privilege"] --> Agent{"Agent?"}
+    Agent -->|"yes"| Normal["Run in agent context"]
+    Agent -->|"no"| User{"Elevated user?"}
+    User -->|"no"| LoggedOn["Run as logged-on user"]
+    User -->|"yes"| Elevated["Run as elevated logged-on user"]

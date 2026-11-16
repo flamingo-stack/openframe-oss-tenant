@@ -1,0 +1,7 @@
+flowchart TD
+    Request["Package Request"] --> Lookup["Search or Detail Lookup"]
+    Lookup --> Found{"Package Found?"}
+    Found -->|"no"| Missing["PackageNotFoundException"]
+    Found -->|"yes"| Source{"Source Available?"}
+    Source -->|"no"| Unavailable["PackageSourceUnavailableException"]
+    Source -->|"yes"| Response["Normalized API Response"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Manageable["Manageability requested"] --> Decision{{"Manageable?"}}
+    Decision -->|"yes"| Managed["Manager source or matched package"]
+    Decision -->|"no"| Unmanaged["Not manager source and not matched"]
+    Manageable --> NoFilter["No manageability filter"]

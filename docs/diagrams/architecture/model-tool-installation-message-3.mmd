@@ -1,15 +1,10 @@
-sequenceDiagram
-    participant Control as Control Plane
-    participant Listener as Command Listener
-    participant Handler as Tool Installation Handler
-    participant Message as Tool Installation Message
-    participant Service as Tool Installation Service
-    participant Platform as Platform Facilities
-    Control->>Listener: Deliver installation instruction
-    Listener->>Handler: Route installation request
-    Handler->>Message: Deserialize and inspect payload
-    Message-->>Handler: Effective versions and matching filenames
-    Handler->>Service: Request reserved installation
-    Service->>Platform: Perform platform-specific work
-    Platform-->>Service: Installation outcome
-    Service-->>Handler: Installation outcome
+flowchart TD
+    Start["Resolve requested version"] --> Kind{"Asset request?"}
+    Kind -->|"no"| ToolLookup["Look up override by tool ID"]
+    ToolLookup --> ToolFound{"Override found?"}
+    ToolFound -->|"yes"| ToolOverride["Use override version"]
+    ToolFound -->|"no"| ToolOriginal["Use message version"]
+    Kind -->|"yes"| AssetLookup["Look up override by asset ID"]
+    AssetLookup --> AssetFound{"Override found?"}
+    AssetFound -->|"yes"| AssetOverride["Use override version"]
+    AssetFound -->|"no"| AssetOriginal["Use asset version or empty string"]

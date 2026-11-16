@@ -1,7 +1,12 @@
 flowchart TD
-    Request["Spawn request"] --> SelectPlatform{"Supported platform?"}
-    SelectPlatform -->|"macOS"| MacLaunch["Create child in a new session"]
-    SelectPlatform -->|"Windows"| WindowsLaunch["Create detached child with no window"]
-    SelectPlatform -->|"Other"| Unsupported["Return unsupported platform error"]
-    MacLaunch --> Child["Return child handle"]
-    WindowsLaunch --> Child
+    Caller["Platform Caller"] -->|"install path and subcommand"| PublicApi["spawn_detached"]
+    PublicApi --> TargetCheck{"Supported target?"}
+    TargetCheck -->|"macOS"| MacLauncher["macOS Launcher"]
+    TargetCheck -->|"Windows"| WindowsLauncher["Windows Launcher"]
+    TargetCheck -->|"other"| Unsupported["Unsupported Platform Error"]
+    MacLauncher --> Session["Create New Session"]
+    Session --> MacChild["Detached Child"]
+    WindowsLauncher --> Flags["Apply Detached Creation Flags"]
+    Flags --> WindowsChild["Detached Child"]
+    MacChild --> ChildHandle["Child Handle"]
+    WindowsChild --> ChildHandle

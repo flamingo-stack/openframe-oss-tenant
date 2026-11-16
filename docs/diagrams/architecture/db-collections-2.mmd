@@ -1,10 +1,10 @@
 sequenceDiagram
-    participant Test as "Test Case"
-    participant Collection as "Collection Helper"
-    participant Mongo as "MongoDB"
-
+    participant Test as "Integration Test"
+    participant Collection as "Db Collections"
+    participant Helper as "MongoDB Helper"
+    participant Database as "MongoDB"
     Test->>Collection: Request organization or tenant lookup
-    Collection->>Mongo: Get typed collection
-    Collection->>Mongo: Execute exact-match filter
-    Mongo-->>Collection: First document or matching documents
-    Collection-->>Test: DTO, identifier list, or null
+    Collection->>Helper: Get typed collection
+    Helper->>Database: Run equality filter
+    Database-->>Collection: First document or matching documents
+    Collection-->>Test: Typed DTO, ID list, or null

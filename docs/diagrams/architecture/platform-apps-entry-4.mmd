@@ -1,8 +1,15 @@
-flowchart TD
-    Start["Refresh requested"] --> ResolveCurrent["Canonicalize current executable"]
-    ResolveCurrent --> ResolveInstalled["Canonicalize supplied install path"]
-    ResolveInstalled --> Match{"Paths match?"}
-    Match -->|"No"| Skip["Return without registry changes"]
-    Match -->|"Yes"| Register["Call register"]
-    Register --> Registered["Registration updated"]
-    Register --> Warn["Log warning and continue"]
+sequenceDiagram
+    participant Update as Client Update Flow
+    participant Entry as Platform Apps Entry
+    participant FileSystem as File System
+    participant Registry as Windows Registry
+    Update->>Entry: refresh installed binary path
+    Entry->>FileSystem: canonicalize current executable
+    Entry->>FileSystem: canonicalize supplied path
+    alt paths match
+        Entry->>Registry: update uninstall metadata
+        Registry-->>Entry: success or error
+        Entry-->>Update: completion, errors logged
+    else paths do not match or cannot resolve
+        Entry-->>Update: no registry change
+    end

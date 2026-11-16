@@ -1,0 +1,11 @@
+flowchart LR
+    Source["Integrated tool event source"] --> Debezium["Debezium change event"]
+    Debezium --> Stream["OpenFrame Stream service"]
+    Stream --> Deserialized["Deserialized Debezium message"]
+    Deserialized --> Validator["Tenant ID validator"]
+    Enrichment["Integrated tool enriched data"] --> Mapper["Log event mapper"]
+    Validator -->|"valid event"| Mapper
+    Mapper --> CassandraHandler["Cassandra log event handler"]
+    Mapper --> LokiHandler["Loki log event handler"]
+    CassandraHandler --> Cassandra["Cassandra event log"]
+    LokiHandler --> Loki["Loki event log"]

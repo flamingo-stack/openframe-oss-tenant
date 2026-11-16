@@ -1,18 +1,13 @@
-sequenceDiagram
-    participant Test as "Integration Test"
-    participant Helper as "Invitation API Helper"
-    participant Gateway as "Gateway"
-    participant Controller as "Invitation Controller"
-    participant Service as "Invitation Service"
-    participant Store as "Invitation Repository"
-    Test->>Helper: listInvitations(page, size)
-    Helper->>Gateway: GET /api/invitations
-    Gateway->>Controller: Forward request
-    Controller->>Service: listInvitations(page, size)
-    Service->>Service: Normalize page and clamp size
-    Service->>Store: Find non accepted and non revoked page
-    Store-->>Service: Invitation page
-    Service-->>Controller: Items and page metadata
-    Controller-->>Gateway: HTTP 200 JSON response
-    Gateway-->>Helper: HTTP 200 JSON response
-    Helper-->>Test: Invitation Dto
+classDiagram
+    class InvitationPageResponse {
+        List~Invitation~ items
+        int page
+        int size
+        long totalElements
+        int totalPages
+        boolean hasNext
+    }
+    class Invitation {
+        Individual invitation test DTO
+    }
+    InvitationPageResponse --> "many" Invitation : "items"

@@ -1,10 +1,18 @@
-flowchart TD
-    Start["Pre-install diagnostics"] --> RuntimeCheck["Check WebView2 runtime"]
-    RuntimeCheck --> RuntimeState{"Machine-wide runtime present?"}
-    RuntimeState -->|"Yes"| Pass["Report runtime available"]
-    RuntimeState -->|"No"| Warning["Attach InstallWebview2 remediation"]
-    Warning --> Pending["Doctor Healing pending()"]
-    Pending --> Install["Run WebView2 installer"]
-    Install --> InstallState{"Installer completed?"}
-    InstallState -->|"Yes"| Healed["Return Healed"]
-    InstallState -->|"No"| Failed["Return Failed with error"]
+sequenceDiagram
+    participant Heal as "Doctor Healing"
+    participant Installer as "WebView2 Installer"
+    participant Microsoft as "Microsoft Download"
+    participant PowerShell
+    participant RuntimeCheck as "Runtime Check"
+
+    Heal->>Installer: Run InstallWebview2 remediation
+    Installer->>Microsoft: Download Evergreen bootstrapper
+    Installer->>Installer: Stream bytes to secured temporary file
+    Installer->>PowerShell: Verify Authenticode signature
+    PowerShell-->>Installer: Microsoft signature status
+    Installer->>Installer: Run silent machine-wide installer
+    loop "Up to 12 verification attempts"
+        Installer->>RuntimeCheck: Check WebView2 registration
+        RuntimeCheck-->>Installer: Pass or not yet available
+    end
+    Installer-->>Heal: Healed or Failed

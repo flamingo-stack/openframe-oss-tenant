@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Runtime as "Client runtime"
+    participant Listener as "Command Listener"
+    participant Context as "Command context"
+    participant Nats as "NATS layer"
+    Runtime->>Listener: start
+    Listener->>Context: recover once
+    Context-->>Listener: recovery complete
+    Listener->>Nats: report restart completion
+    loop Listener lifetime
+        Listener->>Nats: listen for handler subject
+        alt Listen completes
+            Nats-->>Listener: rebind
+        else Listen errors
+            Nats-->>Listener: error
+        end
+        Listener->>Listener: wait reconnection delay
+    end

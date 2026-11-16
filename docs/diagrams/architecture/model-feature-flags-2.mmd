@@ -1,10 +1,12 @@
 flowchart TD
-    Start["Resolve a compiled-in feature"] --> Found{"Matching flag record?"}
-    Found -->|"No"| Default["Use feature default: disabled"]
-    Found -->|"Yes"| Dev{"Development client version?"}
-    Dev -->|"Yes"| Enabled["Use record enabled value"]
-    Dev -->|"No"| Valid{"Both versions are valid semver?"}
-    Valid -->|"No"| Default
-    Valid -->|"Yes"| Eligible{"Running version meets minimum?"}
-    Eligible -->|"No"| Default
-    Eligible -->|"Yes"| Enabled
+    Start["Resolve a known feature"] --> Present{"Flag present?"}
+    Present -->|"no"| DefaultMissing["Use disabled default"]
+    Present -->|"yes"| Dev{"Development client version?"}
+    Dev -->|"yes"| DevValue["Use enabled value"]
+    Dev -->|"no"| Versions{"Both versions parse and running version meets minimum?"}
+    Versions -->|"yes"| EligibleValue["Use enabled value"]
+    Versions -->|"no"| DefaultIneligible["Use disabled default"]
+    DefaultMissing --> Result["Store feature only when true"]
+    DevValue --> Result
+    EligibleValue --> Result
+    DefaultIneligible --> Result

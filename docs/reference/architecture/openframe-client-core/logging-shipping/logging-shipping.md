@@ -1,136 +1,175 @@
 # Logging Shipping
 
-Logging Shipping is an in-process, asynchronous HTTP batching helper in the OpenFrame client agent. It accepts individual log strings, buffers them on a Tokio channel, and posts batches to a configured endpoint. The implementation is supplied by the `openframe_agent_lib` Rust dependency from OpenFrame OSS Library, version `v0.0.5`, and runs as part of this repository's OpenFrame client deployment.
+Logging Shipping is an asynchronous HTTP batching utility in the OpenFrame Client agent library. It accepts individual log strings through `LogShipper`, buffers them in memory, and posts serialized `LogBatch` payloads to a configured endpoint. The implementation is supplied by the `openframe_agent_lib` artifact from the OpenFrame OSS Library and runs as part of this repository's OpenFrame Client deployment.
 
-This component is intentionally separate from the client’s NATS-based log streaming path. It is marked as retained for future shipping use in the source and is not the acknowledged NATS pipeline used by the current client log streaming manager.
+> **Current integration status:** the `LogShipper` fields that retain the endpoint and agent identifier are explicitly marked as retained for future use. This module implements the transport primitive, but the supplied implementation does not itself discover log files, parse logs, rotate files, manage delivery acknowledgements, or configure a call site.
 
-## Responsibilities and boundaries
+## Responsibilities
 
-Logging Shipping provides a narrow producer interface:
+- Create a bounded asynchronous ingestion queue for log strings.
+- Run a background Tokio task that aggregates queue entries.
+- Flush a batch when it reaches 100 entries or after 30 seconds without another selected message.
+- Attach the agent identifier and a UTC transmission timestamp to each outgoing payload.
+- Send the payload as JSON with an HTTP POST request and treat non-success HTTP statuses as errors.
+- Record shipping failures through the agent's tracing pipeline while keeping the background task alive.
 
-- `LogShipper::new` creates a bounded queue and starts a background shipping task.
-- `LogShipper::send` asynchronously queues one raw log line.
-- `LogBatch` is the JSON payload sent over HTTP, containing `logs`, `agent_id`, and a UTC `timestamp`.
-- The background worker flushes when it has 100 queued logs or when its 30-second wait expires with a nonempty batch.
-- `send_batch` uses a fresh `reqwest` client created for the worker and rejects non-successful HTTP status codes.
-
-The helper does **not** parse log lines, track file offsets, discover log sources, rotate files, add request authentication, retry HTTP failures, or persist an outbox. Those concerns belong to other client logging components or to the configured HTTP receiver.
-
-The implementation is defined in [the OpenFrame OSS Library shipping source](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/logging/shipping.rs).
+The source implementation is maintained in the OpenFrame OSS Library: [shipping.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/logging/shipping.rs).
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    Producer["Agent code producing raw log strings"] -->|"send(log)"| Queue["Tokio bounded channel, capacity 1000"]
-    Queue --> Worker["LogShipper background task"]
-    Worker -->|"accumulate up to 100"| Batch["LogBatch"]
-    Batch -->|"HTTP POST as JSON"| Receiver["Configured log endpoint"]
-    Receiver -->|"successful HTTP status"| Done["Batch request completes"]
-    Receiver -->|"transport or status error"| ErrorLog["Tracing error"]
+    Producer["OpenFrame Client component"] -->|"send log string"| Sender["LogShipper sender"]
+    Sender -->|"bounded queue, capacity 1000"| Receiver["Background shipping task"]
+    Receiver -->|"accumulate"| Buffer["In-memory batch"]
+    Buffer -->|"100 entries or quiet timeout"| Payload["LogBatch JSON payload"]
+    Payload -->|"HTTP POST"| Endpoint["Configured log endpoint"]
+    Endpoint -->|"success status"| Delivered["Batch accepted"]
+    Endpoint -->|"transport or status error"| ErrorLog["Tracing error event"]
 ```
 
-A `LogShipper` retains its sender, endpoint, and agent identifier. Construction clones the endpoint and agent identifier into the spawned worker so the returned handle can continue to enqueue logs. The worker owns the receiving end of the channel and serially performs all outbound HTTP requests.
+`LogShipper::new` creates a Tokio multi-producer, single-consumer channel with capacity 1,000. It preserves one sender in the returned shipper and moves the receiver, endpoint copy, and agent identifier copy into a spawned task. Consequently, construction must occur while a Tokio runtime is active.
 
-## Component model
+## Core Types and Operations
 
-| Component | Role | Key behavior |
-|---|---|---|
-| `LogShipper` | Producer-facing handle and worker owner | Queues strings through a bounded sender; its endpoint and agent identifier are retained on the structure for future shipping use. |
-| `LogBatch` | HTTP request model | Serializes a list of raw strings, one agent identifier, and the UTC time at which the batch is assembled. |
-| `new` | Lifecycle entry point | Creates the channel with capacity 1000 and spawns the shipping loop. |
-| `send` | Ingestion operation | Awaits channel capacity, providing natural backpressure; returns an error if the receiver is no longer available. |
-| `ship_logs` | Private worker loop | Collects records, checks the size threshold, and attempts timed flushing. |
-| `send_batch` | Private transport operation | Builds `LogBatch`, posts JSON to the endpoint, and treats unsuccessful responses as errors. |
+| Component | Role | Behavior |
+| --- | --- | --- |
+| `LogBatch` | Wire payload | Contains `logs`, `agent_id`, and a UTC `timestamp`; it derives serialization for JSON encoding. |
+| `LogShipper` | Producer-facing handle | Owns the bounded channel sender and retains the configured endpoint and agent identifier. |
+| `new` | Initializer | Builds the queue, clones task inputs, spawns the persistent shipping loop, and returns a sender handle. |
+| `send` | Ingestion API | Awaits queue capacity and enqueues one log string. It returns an error if the receiver is no longer available. |
+| Background shipping loop | Batch coordinator | Receives logs, checks the batch limit, or sends a non-empty batch after the timeout branch wins. |
+| Batch sender | HTTP adapter | Constructs `LogBatch`, posts JSON, awaits the response, and rejects non-success statuses. |
 
-## Batch and transport contract
+## Batch Payload
 
-The HTTP body is a serialized `LogBatch`. It has this conceptual shape:
+Every successful send attempt uses one logical payload:
 
-```json
-{
-  "logs": ["first raw log line", "second raw log line"],
-  "agent_id": "agent identifier",
-  "timestamp": "UTC batch creation time"
-}
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `logs` | Array of strings | The queued raw log strings in their receive order. |
+| `agent_id` | String | The identifier supplied when the shipper was created. |
+| `timestamp` | UTC date-time | The time the batch is created for transmission, not a per-entry event time. |
+
+The module does not add sequence identifiers, tenant information, compression, signatures, or a per-log schema. Those concerns must be handled by the supplied strings, endpoint contract, or surrounding client configuration.
+
+## Shipping Flow
+
+```mermaid
+flowchart TD
+    Start["Log producer calls send"] --> Queue["Await queue capacity and enqueue"]
+    Queue --> Receive["Background task receives log"]
+    Receive --> Add["Append log to batch"]
+    Add --> Full{"Batch has 100 entries?"}
+    Full -->|"yes"| Post["Create LogBatch and POST JSON"]
+    Full -->|"no"| Wait["Wait for next log or timeout"]
+    Wait -->|"log"| Receive
+    Wait -->|"timeout"| HasLogs{"Batch is non-empty?"}
+    HasLogs -->|"yes"| Post
+    HasLogs -->|"no"| Wait
+    Post --> Result{"Request succeeded?"}
+    Result -->|"yes"| Clear["Clear in-memory batch"]
+    Result -->|"no"| Report["Emit tracing error"]
+    Report --> Clear
+    Clear --> Wait
 ```
 
-`timestamp` identifies when the batch is built, not when an individual log was emitted or enqueued. The component preserves incoming strings as received; it does not attach per-line metadata or normalize their content.
+### Flush Triggers
 
-The receiver address is supplied when constructing the shipper. The worker sends an HTTP `POST`, serializes the body as JSON, waits for the response, and invokes status validation. A completed request therefore establishes only that the receiver responded with a successful status; the module exposes no application-level acknowledgement, idempotency key, or retry state.
+- **Size trigger:** receipt of the 100th pending entry immediately initiates a send.
+- **Timeout trigger:** the loop creates a 30-second sleep alongside each receive operation. Because a new sleep is created after each handled log, continuous arrivals reset the timer. In practice, a partial batch flushes after approximately 30 seconds of inactivity rather than at a fixed interval from its first entry.
+- **Empty timeout:** no request is sent when the timeout occurs and the batch is empty.
 
-## Shipping flow
+## Dependencies and Boundaries
+
+```mermaid
+flowchart LR
+    subgraph Library["OpenFrame OSS Library artifact"]
+        Shipping["Logging Shipping"]
+        Parser["Logging Parse"]
+        Sources["Logging Sources"]
+        Rotation["Logging Rotation"]
+        Streaming["Logging NATS Streaming"]
+        KeyService["Log Key Service"]
+    end
+    Parser -->|"parsed entries"| Sources
+    Sources -->|"source reads"| Rotation
+    Shipping -->|"HTTP JSON batches"| HttpEndpoint["Configured endpoint"]
+    Streaming -->|"NATS publish path"| Nats["NATS"]
+    KeyService -->|"retrieves log key"| HttpEndpoint
+```
+
+Logging Shipping has a deliberately narrow boundary: it only accepts strings and performs HTTP delivery. It has no direct dependency in its source file on the adjacent parsing, source registry, rotation, NATS streaming, or log-key components.
+
+Within the wider client library, those adjacent components address separate concerns:
+
+- **Logging Parse** reads a log file from an offset, detects truncation by resetting an offset that exceeds the current file length, and parses accepted lines into entries.
+- **Logging Sources** provides a registry of log sources with read, commit, and rollback operations.
+- **Logging Rotation** persists offsets and controls rotation readiness.
+- **Logging NATS Streaming** has its own run manager, NATS connection, stream key, and publishing path.
+- **Log Key Service** retrieves and maintains log-key material for the client.
+
+These components are related at the system level, but they are not invoked by this HTTP shipper as currently implemented. Keep this distinction when adding integration: do not assume the HTTP endpoint shares the NATS transport's delivery semantics or credentials.
+
+## Failure and Delivery Semantics
+
+The module is best-effort, in-memory delivery rather than durable shipping.
+
+| Situation | Observed behavior | Operational consequence |
+| --- | --- | --- |
+| Queue reaches capacity | `send` waits until the worker receives an entry. | Callers can be back-pressured rather than dropping immediately. |
+| Receiver unavailable | `send` returns the channel error. | Caller decides how to handle logging failure. |
+| HTTP connection, serialization, or response failure | The worker records a tracing error. | The batch is cleared afterward; no retry occurs in this module. |
+| Non-success HTTP response | `error_for_status` turns the response into an error. | The batch is cleared afterward; no retry occurs in this module. |
+| Process exits or task is aborted | Pending channel entries and the in-memory batch are not persisted. | Unsent logs can be lost. |
+| All senders are dropped | The receive branch no longer yields a log, while the loop continues through timeout waits. | There is no explicit shutdown or final flush protocol. |
+
+A batch is cloned before each send attempt and then cleared irrespective of success. This prevents the worker from being blocked by retry behavior, but means delivery is **at most once from this module's perspective**, with no durable replay guarantee.
+
+## Component Interaction Sequence
 
 ```mermaid
 sequenceDiagram
-    participant Producer as "Log producer"
-    participant Shipper as "LogShipper sender"
-    participant Worker as "Background worker"
-    participant Endpoint as "Configured HTTP endpoint"
-    Producer->>Shipper: send(raw log string)
+    participant Producer as Log producer
+    participant Shipper as LogShipper
+    participant Worker as Shipping task
+    participant Http as Log endpoint
+    Producer->>Shipper: send log string
     Shipper->>Worker: enqueue through bounded channel
-    alt "batch reaches 100 logs"
-        Worker->>Worker: create LogBatch with UTC timestamp
-        Worker->>Endpoint: POST JSON batch
-        Endpoint-->>Worker: HTTP response
-    else "timer branch finds a nonempty batch"
-        Worker->>Worker: create LogBatch with UTC timestamp
-        Worker->>Endpoint: POST JSON batch
-        Endpoint-->>Worker: HTTP response
+    Worker->>Worker: add log to current batch
+    alt Batch reaches 100 entries
+        Worker->>Http: POST LogBatch JSON
+        Http-->>Worker: success or error response
+    else No new log for 30 seconds
+        Worker->>Http: POST non-empty LogBatch JSON
+        Http-->>Worker: success or error response
     end
-    alt "request fails or status is unsuccessful"
+    alt Request failure
         Worker->>Worker: emit tracing error and clear batch
-    else "request succeeds"
+    else Request success
         Worker->>Worker: clear batch
     end
 ```
 
-### Flush behavior
+## Configuration and Integration Guidance
 
-The worker reserves a vector sized for 100 records. On each received string it appends the item, then immediately sends a clone of the batch if the threshold is reached. The timer branch posts any nonempty batch after the 30-second duration.
+The constructor takes two values:
 
-An important implementation detail is that the timeout future is created within each iteration of the `select` loop. Receiving another message wins the selection and starts a new 30-second wait in the next iteration. Consequently, a continuous low-volume stream that never reaches 100 entries can continually reset the wait rather than being flushed 30 seconds after the first entry. Maintainers should account for this behavior when interpreting the timeout as a maximum batch age.
+- **Endpoint:** a complete HTTP destination accepted by the `reqwest` client. The module applies no URL transformation, authentication header, timeout policy, or retry policy.
+- **Agent identifier:** a string copied into every `LogBatch` payload.
 
-## Failure, loss, and backpressure semantics
+The code constructs a default `reqwest::Client`; it does not expose client configuration from `LogShipper`. If an integration needs custom certificates, proxy behavior, authentication, request timeouts, payload limits, or retries, those capabilities require an implementation change or an endpoint that accepts the existing client behavior.
 
-| Condition | Observed behavior | Delivery implication |
-|---|---|---|
-| Queue has 1000 pending messages | `send` waits for capacity | Producer tasks are backpressured rather than the queue growing without bound. |
-| Receiver task is unavailable | `send` returns an error | The caller must decide whether to log, retry, or drop the record. |
-| Connection, serialization, or HTTP status validation fails | Worker emits a tracing error | The attempted batch is cleared afterward. |
-| Process exits with queued records | No durable queue is present | Pending in-memory records are not recoverable through this module. |
-| Receiver accepts a request | Worker clears its local batch | No receiver-side processing acknowledgement is modeled. |
+When integrating a source pipeline, only advance a durable source offset after choosing the desired delivery contract. The shipper itself does not acknowledge persistence at the destination, and it discards failed batches. A source registry's commit or rollback operations should therefore be coordinated by a higher-level run manager, not inferred from `send` returning successfully: `send` only confirms local queue admission.
 
-Because the worker clears the batch after either success or failure, this is best-effort delivery rather than at-least-once delivery. The endpoint must be reachable and ready to receive unauthenticated JSON requests unless a caller supplies an endpoint that independently enforces a suitable transport or access policy.
+## Maintenance Considerations
 
-## Relationship to the client logging pipeline
+1. **Define delivery guarantees before adding retries.** Retrying a request after an uncertain network failure can duplicate an already accepted batch. Add an idempotency key or server-side deduplication if at-least-once delivery is required.
+2. **Avoid unbounded producer tasks.** Backpressure is intentional. Callers should not spawn unlimited tasks that all await `send` when the endpoint is slow.
+3. **Plan graceful shutdown explicitly.** A shutdown signal should flush a non-empty batch within a bounded deadline and terminate the worker, rather than relying on sender drop.
+4. **Treat payload size independently of entry count.** The current limit is 100 entries, not a byte limit. Very large log strings can still produce oversized HTTP requests.
+5. **Add observability around drops and latency.** The module currently emits failures through tracing but does not expose counters for queued, shipped, failed, or discarded logs.
 
-The adjacent NATS log streaming facility is the richer operational pipeline. It waits for a log key, connects through the client gateway WebSocket path, sends tenant, machine, and key headers, serializes parsed `LogBatchMessage` data, and waits for JetStream publish acknowledgement. It also combines source discovery, log source registration, offsets, and rotation handling. Logging Shipping does not call that facility and must not be treated as a replacement for its authentication or acknowledgement guarantees.
+## Source Ownership
 
-```mermaid
-flowchart TD
-    RawFile["Client log file"] --> Parser["Log parsing and source registry"]
-    Parser --> NatsManager["NATS log streaming manager"]
-    NatsManager -->|"authenticated publish with acknowledgement"| Nats["NATS JetStream"]
-    RawString["Raw log string"] --> Shipper["Logging Shipping"]
-    Shipper -->|"best effort HTTP POST"| HttpEndpoint["Configured HTTP endpoint"]
-```
-
-The tenant deployment includes NATS as a datasource for the OpenFrame client, and the stream service contains a Kafka listener for inbound log events. These are platform-level integration points downstream of the agent flow; no direct HTTP-to-stream-service route is established by Logging Shipping itself.
-
-## Operational guidance for maintainers
-
-- Construct one shipper for a stable endpoint and agent identity rather than constructing a new worker per log record.
-- Await `send` and handle its error. Ignoring it hides receiver shutdown and can make loss invisible to the producer.
-- Treat the endpoint as a sensitive configuration boundary: log strings can contain operational detail, and the module does not redact content or attach authentication headers.
-- Monitor the tracing error emitted for failed batch sends. The module has no built-in retry, failure backoff, or durable recovery.
-- If bounded-age flush is required under steady low-volume traffic, revise the worker to preserve a deadline across receives rather than recreating the timeout on every loop iteration.
-- If delivery guarantees are required, introduce a durable outbox and explicit acknowledgement protocol before clearing sent data. Avoid adding retries without considering duplicate delivery and receiver idempotency.
-
-## Source and integration references
-
-- [Logging Shipping implementation](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/logging/shipping.rs)
-- [NATS log streaming implementation](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/logging/nats_streaming.rs)
-- [Log parsing implementation](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/logging/log_parser.rs)
-
-All three referenced sources are provided by the OpenFrame OSS Library dependency, rather than being implemented directly in this repository.
+Although this documentation belongs to OpenFrame OSS Tenant, the Rust implementation is owned by the OpenFrame OSS Library and consumed here through the `openframe_agent_lib` cargo artifact, pinned to version `v0.0.5`. Changes to `LogBatch` serialization, batching behavior, or request semantics should be reviewed in the library source and validated against the receiving endpoint contract.

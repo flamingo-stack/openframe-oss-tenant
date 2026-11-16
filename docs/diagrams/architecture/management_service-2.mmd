@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Spring as Spring Boot
+    participant App as Management Application
+    participant Core as Management Core
+    participant Provider as OSS Stream Provider
+    participant Nats as NATS JetStream
+    Spring->>App: Start application
+    App->>Core: Discover management components
+    Core->>Core: Initialize keys, secrets, tools, client defaults
+    Core->>Provider: Request additional stream configurations
+    Provider-->>Core: Return empty configuration list
+    Core->>Nats: Apply core stream configuration
+    Core-->>Spring: Application ready

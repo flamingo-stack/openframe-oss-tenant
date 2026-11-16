@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Create Run Owned Ticket"] --> Add["Add Ticket Note"]
+    Add --> VerifyCreated["Verify ID, Ticket Link, Content and Author"]
+    VerifyCreated --> ReadCreated["Read Ticket Details"]
+    ReadCreated --> Edit["Update Note Content"]
+    Edit --> VerifyEdit["Verify Same ID and Updated Timestamp"]
+    VerifyEdit --> Delete["Delete Note"]
+    Delete --> ReadDeleted["Read Ticket Details"]
+    ReadDeleted --> Finish["Verify Note Is Absent"]

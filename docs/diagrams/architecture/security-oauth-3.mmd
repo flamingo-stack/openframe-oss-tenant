@@ -1,8 +1,0 @@
-flowchart TD
-    Callback["Successful callback"] --> Create["Create dev ticket"]
-    Create --> Store["OAuthDevTicketStore"]
-    Store --> Redirect["Redirect with devTicket"]
-    Client["Mobile or developer client"] --> Exchange["GET /oauth/dev-exchange"]
-    Exchange --> Consume["Consume one-time ticket"]
-    Consume --> Headers["Return token headers"]
-    Consume --> Missing["404 when absent or already consumed"]

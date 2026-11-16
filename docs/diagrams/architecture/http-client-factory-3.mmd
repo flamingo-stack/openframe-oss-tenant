@@ -1,8 +1,13 @@
-flowchart TD
-    Start["A higher-level client starts an HTTP request"] --> Defaults["Reqwest applies default machine header and timeout"]
-    Defaults --> Proxy["Client bypasses proxy usage"]
-    Proxy --> Connection["No idle connection is reused"]
-    Connection --> Dns["A fresh connection performs DNS lookup"]
-    Dns --> Tls["TLS policy follows the configured certificate setting"]
-    Tls --> Send["Request is sent to the selected base URL"]
-    Send --> Result["Response or transport error returns to caller"]
+sequenceDiagram
+    participant Service as Agent Service
+    participant Factory as Http Client Factory
+    participant Client as reqwest Client
+    participant Api as OpenFrame Endpoint
+    Service->>Factory: build_agent_http_client(machine ID, timeout, TLS mode)
+    Factory->>Factory: validate machine ID header value
+    Factory->>Client: build with default transport policy
+    Factory-->>Service: configured client or error
+    Service->>Client: create API request
+    Client->>Api: request with machine ID header
+    Api-->>Client: HTTP response or transport failure
+    Client-->>Service: response or error

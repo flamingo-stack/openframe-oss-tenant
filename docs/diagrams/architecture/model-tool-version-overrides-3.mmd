@@ -1,6 +1,15 @@
-flowchart LR
-    ToolMessage["Tool installation message"] --> VersionPolicy["Version selection logic"]
-    ToolKey["Tool key"] --> Lookup["Model Tool Version Overrides lookup"]
-    Lookup --> VersionPolicy
-    VersionPolicy --> EffectiveVersion["Effective tool version"]
-    EffectiveVersion --> Download["Asset selection and installation"]
+sequenceDiagram
+    participant Message as Tool installation message
+    participant Overrides as Model Tool Version Overrides
+    participant Resolver as Effective version resolver
+    participant Download as Download configuration
+    participant Workflow as Installation workflow
+    Message->>Resolver: Provide tool identifier and declared version
+    Resolver->>Overrides: Lookup tool identifier
+    alt override present
+        Overrides-->>Resolver: Embedded version
+    else no override
+        Overrides-->>Resolver: No value
+    end
+    Resolver->>Download: Resolve download link version
+    Download-->>Workflow: Configuration with resolved link

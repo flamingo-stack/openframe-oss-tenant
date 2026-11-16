@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Save connection"] --> Lock["Acquire writer lock"]
+    Lock --> Load["Read registry collection"]
+    Load --> Exists{"Matching tool agent ID?"}
+    Exists -->|"Yes"| Replace["Replace existing record"]
+    Exists -->|"No"| Append["Append new record"]
+    Replace --> Serialize["Serialize complete collection"]
+    Append --> Serialize
+    Serialize --> Atomic["Atomically replace registry file"]
+    Atomic --> Finish["Return success or error"]

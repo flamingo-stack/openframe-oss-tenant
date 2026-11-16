@@ -1,11 +1,12 @@
 sequenceDiagram
-    participant Coordinator
-    participant Latch
-    participant Observer
-    Coordinator->>Latch: view()
-    Latch-->>Coordinator: LatchView
-    Observer->>Latch: is_set()
-    Latch-->>Observer: false
-    Coordinator->>Latch: set()
-    Observer->>Latch: is_set()
-    Latch-->>Observer: true
+    participant Owner as Latch owner
+    participant Latch as Latch
+    participant Worker as Background worker
+    Owner->>Latch: view()
+    Latch-->>Owner: LatchView
+    Owner->>Worker: provide LatchView
+    Worker->>Worker: view.is_set()
+    Owner->>Latch: set()
+    Latch->>Latch: store true with SeqCst
+    Worker->>Worker: view.is_set()
+    Worker->>Worker: stop or change behavior

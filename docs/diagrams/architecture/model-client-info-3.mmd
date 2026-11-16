@@ -1,18 +1,24 @@
 sequenceDiagram
-    participant Command as Update command
-    participant Update as Client update service
-    participant Info as Client info service
-    participant State as Update state service
-    participant Tools as Tool run manager
-    Command->>Update: Request target version
-    Update->>Tools: Mark client update pending
-    Update->>Info: Read current client info
-    Update->>Info: Set updating and target version
-    Update->>State: Create update attempt state
-    Update->>Update: Download and launch updater
-    alt update launch fails
-        Update->>Info: Set failed and target version
-        Update->>State: Clear update attempt state
-    else updater launches
-        Update-->>Command: Report launch accepted
+    participant Listener as Command Listener
+    participant Update as Client Update Service
+    participant Info as Client Information Service
+    participant State as Update State Service
+    participant Handler as Update Handler Service
+    participant Binary as Client Binary
+
+    Listener->>Update: Reserve update request
+    Update->>Update: Reject duplicate or defer around busy tools
+    Update->>Update: Validate and canonicalize requested version
+    Update->>Info: Set Updating and target version
+    Update->>State: Create and persist update phase state
+    Update->>Binary: Launch updater process
+    Binary->>Handler: Start updated client
+    Handler->>State: Load pending update state
+    alt Running version matches target
+        Handler->>Info: Reconcile and record successful running version
+    else Update failed
+        Handler->>Info: Set Failed and target version
+        Handler->>State: Clear update state after cleanup
+    else Verification pending
+        Handler->>State: Retain state for later boot handling
     end

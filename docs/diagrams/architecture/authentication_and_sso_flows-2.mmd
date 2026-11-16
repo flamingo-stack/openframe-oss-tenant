@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant User as User
+    participant Browser as Browser
+    participant Auth as Authorization Server
+    participant IdP as OIDC Provider
+    participant Handler as Login SSO Handler
+    participant Store as User and Tenant Services
+
+    User->>Browser: Choose SSO provider
+    Browser->>Auth: GET /oauth/login/sso
+    Auth->>Auth: Create login flow cookie
+    Auth-->>Browser: 303 provider authorization redirect
+    Browser->>IdP: Authenticate
+    IdP-->>Auth: Authorization callback with state
+    Auth->>Auth: Match state to login flow handler
+    Auth->>Handler: Handle authenticated OIDC session
+    Handler->>Store: Look up subject identity link
+    alt Existing linked identity
+        Store-->>Handler: Platform user
+    else First association
+        Handler->>Handler: Require trusted provider email
+        Handler->>Store: Find active user by email
+    end
+    Handler->>Store: Validate provider and tenant status
+    Handler->>Store: Persist subject identity link
+    Handler->>Auth: Bind platform user to session
+    Auth-->>Browser: Redirect to OAuth continue

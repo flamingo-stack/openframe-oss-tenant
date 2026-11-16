@@ -1,7 +1,8 @@
 flowchart LR
-    TestCase["Integration Test"] --> DbCollections["Db Collections"]
-    DbCollections --> MongoHelper["MongoDB Collection Helper"]
-    MongoHelper --> Organizations["organizations Collection"]
-    MongoHelper --> Tenants["tenants Collection"]
-    Organizations --> OrganizationDto["Organization DTO"]
-    Tenants --> TenantDto["Tenant DTO"]
+    TestCase["Integration Test"] -->|"calls lookup helper"| Collections["Db Collections"]
+    Collections -->|"gets typed collection"| MongoHelper["MongoDB getCollection"]
+    MongoHelper -->|"queries"| Mongo["MongoDB"]
+    Mongo -->|"maps BSON documents"| OrgDto["Organization DTO"]
+    Mongo -->|"maps BSON documents"| TenantDto["Tenant DTO"]
+    OrgDto --> TestCase
+    TenantDto --> TestCase

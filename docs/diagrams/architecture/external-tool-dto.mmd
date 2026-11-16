@@ -1,7 +1,7 @@
 flowchart LR
-    Contract["External API OpenAPI Contract"] -->|"generates"| Dtos["External Tool Dto Models"]
-    Dtos --> ApiKey["Tool API Key Response"]
-    Dtos --> Credentials["Tool Credentials Response"]
-    Dtos --> Url["Tool Url Response"]
-    Credentials -->|"contains"| ApiKey
-    TestService["OpenFrame Test Service"] -->|"deserializes responses into"| Dtos
+    ExternalApi["External API tool endpoint"] -->|"JSON response"| Jackson["Jackson deserialization"]
+    Jackson --> Credentials["Tool Credentials Response"]
+    Jackson --> Endpoint["Tool Url Response"]
+    Credentials --> ApiKey["Tool API Key Response"]
+    TestService["OpenFrame test service"] -->|"uses"| Credentials
+    TestService -->|"uses"| Endpoint

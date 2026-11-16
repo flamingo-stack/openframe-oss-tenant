@@ -1,0 +1,7 @@
+flowchart TD
+    ClientStart["OpenFrame Client start"] --> Deactivation["Start deactivation supervision"]
+    Deactivation --> Registration["Process registration"]
+    Registration --> InitialAuth["Process initial authentication"]
+    InitialAuth --> RefreshManager["Start Token Refresh Run Manager"]
+    RefreshManager --> Nats["Connect to NATS"]
+    Nats --> ClientServices["Start listeners and tool services"]

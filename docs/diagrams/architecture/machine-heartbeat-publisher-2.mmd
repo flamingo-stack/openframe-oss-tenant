@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Runner as Machine Heartbeat Run Manager
+    participant Publisher as Machine Heartbeat Publisher
+    participant Config as Agent Configuration Service
+    participant NatsPublisher as NATS Message Publisher
+    participant Nats as NATS
+    participant Listener as Machine Heartbeat Listener
+    Runner->>Publisher: publish_heartbeat()
+    Publisher->>Config: get_machine_id()
+    Config-->>Publisher: machine identifier
+    Publisher->>Publisher: create empty heartbeat message
+    Publisher->>NatsPublisher: publish subject and payload
+    NatsPublisher->>Nats: publish and flush
+    Nats-->>Listener: machine identifier in subject
+    Listener->>Listener: assign receipt timestamp
+    Listener-->>Publisher: no response required

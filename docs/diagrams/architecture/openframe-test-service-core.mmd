@@ -1,0 +1,18 @@
+flowchart TD
+    Runner["Test Runner Core"] --> Suites["Functional Test Suites"]
+    Runner --> Reporting["Slack Listener"]
+
+    Suites --> Auth["Authentication Flows"]
+    Suites --> ApiDtos["API and GraphQL DTOs"]
+    Suites --> Database["Database Collection Helpers"]
+    Suites --> UiPages["UI Page Objects"]
+    Suites --> Retry["Test Retry Filters"]
+
+    Auth --> Tenant["OpenFrame Tenant"]
+    ApiDtos --> Tenant
+    Database --> Mongo["MongoDB"]
+    UiPages --> Frontend["OpenFrame Frontend"]
+    Frontend --> Tenant
+    Retry --> Gateway["OpenFrame Gateway"]
+    Gateway --> Tenant
+    Reporting --> Slack["Slack Transport"]

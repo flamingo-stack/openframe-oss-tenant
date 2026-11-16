@@ -1,0 +1,10 @@
+flowchart LR
+    CommandListener["Package Update Command Handler"] -->|"submit command"| OrderStore["Order Store"]
+    OrderStore -->|"atomic JSON persistence"| OrderFile["Local Orders File"]
+    OrderStore -->|"change notification"| UpdateWorker["Package Update Worker"]
+    UpdateWorker -->|"pending orders"| OrderStore
+    UpdateWorker -->|"validate execution"| UpdateGate["Package Update Gate"]
+    UpdateWorker -->|"run update"| PackageManager["Platform Package Manager"]
+    CommandListener -->|"rejected or superseded"| StatusReporter["Package Update Status Reporter"]
+    UpdateWorker -->|"progress and outcome"| StatusReporter
+    StatusReporter -->|"status message"| Messaging["Client Messaging Transport"]

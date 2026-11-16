@@ -1,124 +1,137 @@
 # Model Tool Connection Message
 
-Model Tool Connection Message is the small wire-contract module that reports an OpenFrame client tool's identity to the server. It belongs to the Rust `openframe_agent_lib` library, supplied by OpenFrame OSS Library version `v0.0.5` and run by this repository's OpenFrame client deployment. The contract is intentionally limited to the identifiers needed to associate a device-local tool with its server-side tool-agent record.
+Model Tool Connection Message is the compact, cross-language event payload used by the OpenFrame client to report that a locally installed tool is connected to a machine. It belongs to the Rust `openframe_client` library supplied by OpenFrame OSS Library and is run by this repository’s client deployment. The model establishes the wire-level link between a tool category and the platform-specific tool-agent identifier; the machine identity is carried by the NATS subject rather than by the payload.
 
-The source definition is maintained in [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/tool_connection_message.rs).
+The authoritative Rust definition is [`tool_connection_message.rs`](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/tool_connection_message.rs).
 
-## Purpose and Contract
+## Purpose and Scope
 
-`ToolConnectionMessage` is a Rust struct with Serde serialization and deserialization enabled. Its `camelCase` serialization policy produces this JSON contract:
+A tool connection must allow the backend to associate an OpenFrame machine with an integrated tool. Model Tool Connection Message contains exactly the two values needed for that association:
+
+| Wire property | Rust field | Meaning |
+|---|---|---|
+| `toolType` | `tool_type` | Non-empty category of the connected tool. The client-side processing manager skips tools that do not provide a type because the backend rejects an empty value. |
+| `agentToolId` | `agent_tool_id` | Identifier assigned to the tool agent that is connected to the machine. |
+
+The Rust structure derives `Serialize` and `Deserialize` and applies Serde’s `camelCase` rename policy. Therefore, the Rust field names are implementation details; JSON producers and consumers exchange `toolType` and `agentToolId`.
 
 ```json
 {
-  "toolType": "string",
-  "agentToolId": "string"
+  "toolType": "example-tool-type",
+  "agentToolId": "example-agent-tool-id"
 }
 ```
 
-| Rust field | Wire field | Meaning |
-|---|---|---|
-| `tool_type` | `toolType` | The tool's type. The client-side connection processing manager skips publication when this value is empty because the backend rejects empty tool types. |
-| `agent_tool_id` | `agentToolId` | The identifier assigned to the tool agent, used by the server to associate the tool connection with the originating machine. |
-
-The machine identifier is deliberately not embedded in the payload. It is carried by the NATS subject, which keeps the message body scoped to tool information while allowing the receiving service to derive the machine from routing metadata.
+This model does not include the machine identifier, a timestamp, delivery status, credentials, endpoint information, or a result. Those responsibilities belong to the NATS routing envelope, connection-processing workflow, local connection state, and backend service respectively.
 
 ## Architecture
 
-The message sits between the device-resident OpenFrame client and the server-side client-core listener. The publisher creates a machine-specific subject, serializes the message through the generic NATS publisher, and sends it to JetStream. The server listener extracts the machine identifier from the subject, deserializes the same contract, and delegates persistence or reconciliation to its tool-connection service.
+The model is part of the OpenFrame client’s tool-connection path. The Rust client discovers installed tools, resolves their command parameters, and uses the message publisher to serialize and publish the connection event. The Java client service consumes the event and records the machine-to-tool relationship.
 
 ```mermaid
 flowchart LR
-    AgentTools["Installed tools on device"] --> ProcessingManager["Tool connection processing manager"]
-    ProcessingManager --> Publisher["Tool connection message publisher"]
-    Publisher --> Message["Tool connection message"]
-    Publisher --> Subject["Machine specific NATS subject"]
-    Message --> Nats["NATS JetStream"]
-    Subject --> Nats
-    Nats --> Listener["Server tool connection listener"]
-    Listener --> Extractor["Machine identifier extractor"]
-    Listener --> Mapper["JSON object mapper"]
-    Extractor --> Service["Server tool connection service"]
-    Mapper --> Service
+    InstalledTools["Installed Tools Service"] --> ProcessingManager["Tool Connection Processing Manager"]
+    Parameters["Tool Command Parameters Resolver"] --> ProcessingManager
+    LocalConnections["Tool Connection Service"] --> ProcessingManager
+    ProcessingManager --> Publisher["Tool Connection Message Publisher"]
+    Publisher --> Message["Model Tool Connection Message"]
+    Message --> Nats["NATS subject: machine.*.tool-connection"]
+    Nats --> Listener["Tool Connection Listener"]
+    Listener --> BackendService["Backend Tool Connection Service"]
+    BackendService --> PlatformState["Machine Tool Connection State"]
 ```
 
-## Publishing Side
+### Component Responsibilities
 
-The OpenFrame client library's `ToolConnectionProcessingManager` owns the discovery and repeat-publication behavior:
+- **Model Tool Connection Message** is a transport DTO. It owns field names and JSON serialization compatibility, but contains no behavior or validation logic.
+- **Tool Connection Processing Manager** coordinates connection publication for installed tools. At startup it iterates installed tools; for a newly installed tool it can trigger processing immediately. It prevents simultaneous work for the same tool and can wake an existing processing loop for a prompt re-publication.
+- **Tool Connection Message Publisher** builds a machine-specific topic and publishes the model through the client’s NATS publisher. Its public `publish` operation accepts the machine ID separately from `agentToolId` and `toolType`, reinforcing that machine identity is encoded in routing rather than in the body.
+- **Tool Connection Service** persists local `ToolConnection` records. A record holds the tool-agent ID, agent-tool ID, and whether it has been published; records are keyed for replacement by tool-agent ID.
+- **Tool Connection Listener** in the Java client service subscribes to `machine.*.tool-connection`, extracts the machine ID from the subject, deserializes the two JSON properties, and delegates association to its backend `ToolConnectionService`.
 
-1. At startup, it loads installed tools through `InstalledToolsService`.
-2. It ignores tools whose tool type is empty.
-3. It ensures only one connection-processing loop per local tool is active.
-4. For each eligible tool, it resolves the connection and invokes `ToolConnectionMessagePublisher` with the machine ID, agent tool ID, and tool type.
-5. It re-resolves and republishes on each client start. This handles server-side tool-agent ID changes, such as re-keying or loss of server state.
-6. When a newly installed tool is already being processed, it signals the existing loop for immediate publication rather than starting a duplicate loop.
-
-The publisher builds the subject from the machine ID and constructs the payload from the agent tool ID and tool type. It forwards the payload through `NatsMessagePublisher`. A publication error is returned with context that names the target topic. The current publisher code notes that acknowledgement waiting and retry after a failed acknowledgement are not yet implemented at this layer.
+## Dependencies and Boundaries
 
 ```mermaid
 flowchart TD
-    Start["Client starts or a tool is installed"] --> Load["Load installed tools"]
-    Load --> Available{"Any installed tools?"}
-    Available -->|"No"| Complete["Finish without publication"]
-    Available -->|"Yes"| TypePresent{"Tool type present?"}
-    TypePresent -->|"No"| Skip["Log warning and skip tool"]
-    TypePresent -->|"Yes"| Active{"Processing loop already active?"}
-    Active -->|"Yes"| Wake["Signal existing loop for prompt publication"]
-    Active -->|"No"| Build["Build subject and message"]
-    Build --> Publish["Publish JSON through NATS"]
-    Publish --> Result{"Publish succeeds?"}
-    Result -->|"Yes"| Complete
-    Result -->|"No"| Error["Return contextual publication error"]
+    Model["Model Tool Connection Message"] --> Serde["Serde Serialize and Deserialize"]
+    Model --> Publisher["Tool Connection Message Publisher"]
+    Publisher --> NatsPublisher["NATS Message Publisher"]
+    Processing["Tool Connection Processing Manager"] --> Publisher
+    Processing --> ConnectionState["Tool Connection Service"]
+    Listener["Java Tool Connection Listener"] --> ModelContract["Camel Case JSON Contract"]
+    Listener --> SubjectIdentity["Machine ID From NATS Subject"]
+    Listener --> Backend["Backend Tool Connection Service"]
 ```
 
-## Receiving Side and Delivery Semantics
+The model has a deliberately narrow dependency surface: it imports only Serde traits. It must remain compatible with the Java-side `ToolConnectionMessage` consumer from OpenFrame OSS Library because the listener maps the same camel-case properties before invoking backend connection handling.
 
-The Java `ToolConnectionListener`, supplied by the OpenFrame OSS Library `openframe-client-core` Maven artifact, consumes the `TOOL_CONNECTIONS` JetStream stream. It subscribes to the `machine.*.tool-connection` subject pattern using the `tool-connection-processor-v2` durable consumer and the `tool-connection` delivery group. Messages are delivered locally through `machine.tool-connection.delivery`.
+The broader runtime assembly is supplied by the OpenFrame OSS Library at version `7.0.11` for Maven components and `v0.0.5` for the `openframe_agent_lib` Cargo artifact. This repository deploys the OpenFrame client service alongside the NATS datasource used for message transport.
 
-For every delivery, the listener:
+## Publication and Consumption Flow
 
-1. Reads the UTF-8 message body and its NATS subject.
-2. Extracts the machine ID from the subject.
-3. Uses Jackson to deserialize the body as `ToolConnectionMessage`.
-4. Reads `toolType` and `agentToolId` from the parsed contract.
-5. Determines whether the current delivery is the last permitted attempt.
-6. Calls `ToolConnectionService.addToolConnection` with the machine ID, tool type, agent tool ID, and last-attempt indicator.
-7. Acknowledges only after the service call completes successfully.
-
-An exception during extraction, decoding, or processing leaves the message unacknowledged. JetStream can therefore redeliver it according to the consumer's configuration. The server implementation is maintained in the OpenFrame OSS Library; it is the consumer counterpart of this module's message model.
+The normal connection-reporting process is asynchronous and subject-routed.
 
 ```mermaid
 sequenceDiagram
-    participant Client as OpenFrame Client
-    participant Nats as NATS JetStream
+    participant Manager as Tool Connection Processing Manager
+    participant Publisher as Tool Connection Message Publisher
+    participant Nats as NATS
     participant Listener as Tool Connection Listener
-    participant Service as Tool Connection Service
-    Client->>Nats: Publish machine scoped JSON message
-    Nats->>Listener: Deliver matching subject
+    participant Service as Backend Tool Connection Service
+
+    Manager->>Manager: Load installed tools
+    Manager->>Manager: Skip tool with empty tool type
+    Manager->>Publisher: Publish machine ID, agent tool ID, tool type
+    Publisher->>Nats: Publish camel case JSON on machine-specific subject
+    Nats->>Listener: Deliver message on machine.*.tool-connection
     Listener->>Listener: Extract machine ID and deserialize payload
-    Listener->>Service: Add tool connection with delivery state
-    alt processing succeeds
-        Service-->>Listener: Complete
-        Listener->>Nats: Acknowledge message
-    else processing fails
-        Listener-->>Nats: Leave message unacknowledged
-        Nats-->>Listener: Redeliver under consumer policy
-    end
+    Listener->>Service: Add tool connection
+    Service-->>Listener: Processing completes
+    Listener->>Nats: Acknowledge successful delivery
 ```
 
-## Relationship to Adjacent Models and Services
+### Delivery Semantics
 
-The message is a transport DTO, not the client-side persistence record. The nearby `ToolConnection` model contains `tool_agent_id`, `agent_tool_id`, and a `published` flag; it represents local tracking state. `ToolConnectionMessage` exposes only the two values that cross the broker boundary. The machine ID is retained as subject metadata rather than duplicated in either model's payload.
+The Java listener uses the `TOOL_CONNECTIONS` stream and the `tool-connection-processor-v2` consumer with the `tool-connection` delivery group. It reads NATS delivery metadata to determine whether the current delivery is the final attempt and passes that information to the backend service.
 
-The message model also has no behavior beyond Serde-derived JSON conversion. Validation and lifecycle decisions occur in the processing manager and server-side service. This separation keeps the cross-language contract stable while allowing both the device client and backend to evolve their persistence and retry logic independently.
+A message is acknowledged only after backend processing completes successfully. If subject extraction, JSON deserialization, or backend handling throws an exception, the listener leaves the message unacknowledged so NATS can redeliver it. The Rust publisher currently reports a publication error to its caller; its implementation notes that publisher acknowledgement and retry remain future work.
 
-## Integration Considerations
+## Processing Lifecycle
 
-- **Field names are compatibility-critical.** The `camelCase` Serde annotation must remain aligned with the Java listener's `getToolType()` and `getAgentToolId()` accessors.
-- **Both identifiers are strings.** Consumers should not impose a numeric interpretation or normalize values unless the authoritative tool-agent service requires it.
-- **Subject and payload form one logical record.** A consumer cannot reconstruct a complete connection from the JSON alone because it also needs the machine ID extracted from the NATS subject.
-- **Do not publish a blank tool type.** The client processing manager treats this as invalid for backend processing and skips the message.
-- **Consumers should preserve acknowledgement ordering.** A message is acknowledged only after server-side handling succeeds, providing at-least-once delivery behavior at the listener boundary. Server-side processing should therefore tolerate redelivery.
+```mermaid
+flowchart TD
+    Start["Client starts or tool is installed"] --> Load["Load installed tools"]
+    Load --> TypeCheck{"Tool type present?"}
+    TypeCheck -->|"No"| Skip["Skip connection publication"]
+    TypeCheck -->|"Yes"| LockCheck{"Processing already running?"}
+    LockCheck -->|"Yes"| Wake["Wake active loop or skip"]
+    LockCheck -->|"No"| Resolve["Resolve tool parameters"]
+    Resolve --> Build["Build Model Tool Connection Message"]
+    Build --> Publish["Publish through NATS"]
+    Publish --> Persist["Update local connection state"]
+    Persist --> Finish["Connection processing completes"]
+```
 
-## Source and Runtime Ownership
+On every client start, the processing manager re-resolves and republishes installed tool connections. This supports cases where an agent identifier changed outside the client, such as a tool re-key or backend data reset. A new installation uses the same workflow but requests immediate processing instead of waiting for a later periodic pass.
 
-This repository publishes and deploys the OpenFrame client as part of the tenant platform, while the implementation documented here is supplied by OpenFrame OSS Library. The Rust message type is in the `openframe_agent_lib` crate, and the Java consumer is in `com.openframe.oss:openframe-client-core`. The client configuration for this repository connects its service to NATS at the tenant datasource endpoint, enabling the broker leg shown in the diagrams.
+## Compatibility Requirements
+
+Changes to this model affect an asynchronous integration boundary. Maintain the following invariants:
+
+1. Keep the Serde camel-case policy or preserve the resulting `toolType` and `agentToolId` JSON names explicitly.
+2. Treat both fields as required strings at the producer boundary. In particular, do not publish an empty tool type.
+3. Do not move machine identity into the body without coordinating a change to the NATS subject contract and the Java listener’s subject-based extraction.
+4. Preserve compatibility with persisted local `ToolConnection` state, which tracks publication independently from this payload.
+5. Test producer serialization and Java consumer deserialization together when adding fields or changing types. The model itself has no observed direct test references in the indexed organization, so interoperability verification is especially important.
+
+## Operational Notes
+
+For a failed association, inspect these boundaries in order:
+
+1. Confirm the installed tool has a non-empty tool type; otherwise the processing manager intentionally skips it.
+2. Confirm the client can publish to the machine-specific NATS tool-connection subject.
+3. Confirm the payload uses camel-case `toolType` and `agentToolId` keys.
+4. Confirm the listener can derive the machine ID from the subject and then process the payload.
+5. Check whether delivery remains unacknowledged, which indicates the listener encountered an error and NATS may redeliver the event.
+
+Model Tool Connection Message is intentionally small. Its value is not local computation, but a stable contract that lets the client and server independently evolve their tool-management workflows while retaining a shared machine-to-tool association event.

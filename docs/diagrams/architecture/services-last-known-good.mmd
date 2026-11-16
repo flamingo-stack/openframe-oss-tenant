@@ -1,8 +1,0 @@
-flowchart LR
-    ClientUpdate["Client update workflow"] -->|"load or promote"| Lkg["LastKnownGoodService"]
-    UpdateHandler["Update handler"] -->|"prune transcripts"| Lkg
-    DirectoryManager["DirectoryManager"] -->|"secured and log directories"| Lkg
-    Lkg --> Anchor["last known good JSON"]
-    Lkg --> Reserve["Executable reserve with .lkg suffix"]
-    Lkg --> Marker["Boot marker"]
-    Lkg --> Logs["Updater transcripts"]

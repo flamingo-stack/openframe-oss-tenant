@@ -1,127 +1,103 @@
 # Model Agent Config
 
-Model Agent Config is the persisted credential model used by the OpenFrame endpoint client. It is a small Rust data contract from the `openframe_agent_lib` library, consumed at runtime by this repository’s OpenFrame Client service. It brings together the device identity, OAuth client credentials, and the current token pair required to register and authenticate an installed agent.
+Model Agent Config defines the persisted credential record used by the OpenFrame endpoint client. It is a Rust data model supplied by the `openframe_agent_lib` artifact from OpenFrame OSS Library and assembled at runtime by this repository's client deployment. The record binds a locally installed agent to its machine identity, OAuth client credentials, and current token pair.
 
-The implementation is defined in the OpenFrame OSS Library: [agent_configuration.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/models/agent_configuration.rs).
+**Implementation:** [agent_configuration.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/models/agent_configuration.rs)
 
-## Purpose and Scope
+## Responsibilities
 
-`AgentConfiguration` is a serializable, deserializable, cloneable Rust structure with a default value. Its five string fields form one persisted credential record:
+`AgentConfiguration` is deliberately a small transport and persistence model. It provides:
 
-| Field | Meaning | Written by | Read by |
-|---|---|---|---|
-| `machine_id` | Identifier for the enrolled device. | Agent registration | Registration credential lookup and machine identity lookup |
-| `client_id` | OAuth client identifier assigned to the agent. | Agent registration | Initial and fallback client-credential authentication |
-| `client_secret` | OAuth client secret assigned during registration. | Agent registration | Registration lookup and client-credential authentication |
-| `access_token` | Current access token. | Initial authentication and token refresh | Authenticated client operations that need the stored token |
-| `refresh_token` | Current refresh token. | Initial authentication and token refresh | Reauthentication, before the client-credential fallback |
+- A stable, serializable representation of agent registration and authentication state.
+- Fields for the platform-issued machine identity and OAuth client credentials.
+- Fields for the short-lived access token and renewable refresh token.
+- Cloneable, comparable values for service orchestration and tests.
+- A default empty instance, allowing the configuration service to initialize a record before registration data and tokens are available.
 
-The structure itself contains no validation, encryption, I/O, token-expiry calculation, or refresh policy. Those concerns are deliberately provided by the surrounding client services. Treat it as the stable payload at the boundary between credential lifecycle logic and secure local persistence.
+It does **not** perform encryption, validate token expiry, make network requests, or manage file permissions. Those responsibilities reside in the surrounding client services and platform directory layer.
 
-## System Position
+## Data Contract
 
-The tenant repository publishes the `openframe_client` Cargo package, while the model implementation is supplied by the OpenFrame OSS Library artifact. The OpenFrame Client assembles the model with configuration, registration, authentication, and secure-directory services.
+The model derives `Serialize` and `Deserialize` without field-renaming attributes. Its serialized JSON therefore uses the Rust field names shown below.
+
+| Field | Type | Role | Written by | Read by |
+|---|---|---|---|---|
+| `machine_id` | `String` | Identifier assigned to the endpoint machine during registration. | Registration flow | Configuration consumers needing the machine identity. |
+| `client_id` | `String` | OAuth client identifier for the installed agent. | Registration flow | Initial and fallback client-credential authentication. |
+| `client_secret` | `String` | OAuth client secret paired with `client_id`. | Registration flow | Initial and fallback client-credential authentication. |
+| `access_token` | `String` | Current bearer access token. | Initial authentication and successful token refresh. | Components that need the active access token. |
+| `refresh_token` | `String` | Token used to obtain a replacement access token. | Initial authentication and successful token refresh. | Reauthentication flow. |
+
+All five fields are plain `String` values. The derived `Default` implementation initializes them to empty strings; an empty value is therefore an unconfigured or incomplete state rather than a validated credential value.
+
+## Ownership and Persistence Boundary
+
+The model is owned by the OpenFrame client library, while OpenFrame OSS Tenant consumes that library through the `openframe_agent_lib` Cargo dependency. The client-side `AgentConfigurationService` establishes the persistence boundary:
+
+- It places the record in `agent_config.json` under the client `DirectoryManager` secured directory.
+- It ensures the directory structure exists before use.
+- It serializes concurrent read-modify-write operations with an asynchronous mutex so registration writes and token writes cannot overwrite one another's fields.
+- Registration updates only `machine_id`, `client_id`, and `client_secret`.
+- Authentication updates only `access_token` and `refresh_token`.
 
 ```mermaid
 flowchart LR
-    ClientApp["OpenFrame Client runtime"] -->|"constructs and uses"| ConfigService["Agent Configuration Service"]
-    RegistrationService["Agent Registration Service"] -->|"saves registration fields"| ConfigService
-    AuthService["Agent Authentication Service"] -->|"reads credentials and updates tokens"| ConfigService
-    ConfigService -->|"serializes"| AgentConfig["Agent Configuration"]
-    ConfigService -->|"stores in"| SecureFile["secured directory agent_config.json"]
-    AgentConfig -->|"deserializes from"| SecureFile
-    RegistrationService -->|"calls"| RegistrationApi["Registration client"]
-    AuthService -->|"calls"| AuthApi["Authentication client"]
+    Registration["Registration Service"] -->|"registration data"| ConfigService["Agent Configuration Service"]
+    Authentication["Authentication Service"] -->|"token pair"| ConfigService
+    ConfigService -->|"read and write"| ConfigFile["agent_config.json"]
+    ConfigFile -->|"deserialize"| AgentConfig["Agent Configuration"]
+    AgentConfig --> Identity["Machine and OAuth credentials"]
+    AgentConfig --> Tokens["Access and refresh tokens"]
 ```
 
-### Ownership Boundaries
+## Registration and Authentication Flow
 
-- **Model Agent Config** defines only the fields and Serde-compatible representation.
-- **Agent Configuration Service** owns the `agent_config.json` location under the managed secured directory, reads the record, and serializes writes with an asynchronous mutex so independent read-modify-write operations do not overwrite each other.
-- **Agent Registration Service** receives the machine and OAuth client identity from registration, then persists `machine_id`, `client_id`, and `client_secret`.
-- **Agent Authentication Service** exchanges stored client credentials for tokens, tries refresh-token authentication during reauthentication, and persists replacement tokens.
-- **The OpenFrame Client runtime** owns service construction and starts the broader agent workflow.
-
-## Credential Lifecycle
-
-A fresh enrollment creates the identity portion first, then establishes the token portion. Later authentication attempts preserve the same configuration record while replacing only the token fields.
+The configuration becomes complete in stages. Registration receives durable identity and client credentials, then authentication obtains the renewable token state. The registration operation preserves existing token fields, while token updates preserve registration fields.
 
 ```mermaid
 sequenceDiagram
-    participant Runtime as OpenFrame Client
-    participant Registration as Agent Registration Service
-    participant Config as Agent Configuration Service
-    participant Auth as Agent Authentication Service
-    participant Server as OpenFrame services
-    Runtime->>Registration: register agent
-    Registration->>Server: submit registration request
-    Server-->>Registration: machine and client credentials
-    Registration->>Config: save registration data
-    Config->>Config: write identity fields atomically
-    Runtime->>Auth: authenticate initially
-    Auth->>Config: get client credentials
-    Config-->>Auth: client identifier and secret
-    Auth->>Server: authenticate with client credentials
-    Server-->>Auth: access and refresh tokens
-    Auth->>Config: update tokens
-    Config->>Config: write token fields atomically
+    participant Installer
+    participant RegistrationService
+    participant ConfigService
+    participant AuthService
+    participant AuthClient
+    participant ConfigFile
+
+    Installer->>RegistrationService: Start registration
+    RegistrationService->>ConfigService: Save machine ID and client credentials
+    ConfigService->>ConfigFile: Persist merged configuration
+    RegistrationService->>AuthService: Request initial authentication
+    AuthService->>ConfigService: Read client ID and client secret
+    AuthService->>AuthClient: Request client credentials token
+    AuthClient-->>AuthService: Access and refresh tokens
+    AuthService->>ConfigService: Update token fields
+    ConfigService->>ConfigFile: Persist merged configuration
 ```
 
-### Reauthentication Flow
+During later reauthentication, the authentication service first attempts the refresh-token grant. If that request fails, it falls back to the stored client ID and client secret. On a successful response, it persists both replacement tokens and makes the new access token available to the shared token service.
 
-```mermaid
-flowchart TD
-    Start["Authentication required"] --> Refresh["Load refresh token"]
-    Refresh --> Attempt["Attempt refresh token authentication"]
-    Attempt --> Success{"Refresh succeeds?"}
-    Success -->|"Yes"| SaveRefresh["Persist replacement tokens"]
-    Success -->|"No"| Credentials["Load client identifier and secret"]
-    Credentials --> ClientAuth["Authenticate with client credentials"]
-    ClientAuth --> SaveClient["Persist replacement tokens"]
-    SaveRefresh --> Ready["Continue with current credentials"]
-    SaveClient --> Ready
-```
+## Component Interactions
 
-The fallback path means the configuration must retain both the refresh token and client credentials. A failed refresh does not by itself prevent recovery if the registered client credentials remain usable.
+| Participant | Interaction with Model Agent Config |
+|---|---|
+| `AgentRegistrationService` | Saves the platform response's machine ID, client ID, and client secret after registration. It also persists a separate subset of machine information for reinstall handling. |
+| `AgentConfigurationService` | Reads and writes the JSON record, exposes token and credential getters, and protects partial updates with a write lock. |
+| `AgentAuthService` | Reads registered credentials for initial authentication, refreshes or reacquires tokens, and writes the resulting token pair. |
+| `AuthClient` | Sends form-encoded requests to the client OAuth token endpoint using either client credentials or a refresh token. It returns an `AgentTokenResponse`; it does not directly persist Model Agent Config. |
+| `SharedTokenService` | Receives newly authenticated token material from the authentication workflow for in-memory use. |
 
-## Persistence Semantics
+## Security and Operational Considerations
 
-The configuration service initializes its file path as `agent_config.json` beneath the `DirectoryManager` secured directory and ensures the required directories exist during construction. Its write lock covers both registration-data updates and token updates. Each operation reads the current record, changes only its owned fields, and saves the resulting complete record.
+Model Agent Config contains authentication material and must be treated as secret-bearing state.
 
-This behavior is important because registration and token updates are logically separate operations:
-
-1. Registration updates `machine_id`, `client_id`, and `client_secret`.
-2. Authentication updates `access_token` and `refresh_token`.
-3. Serialized read-modify-write prevents either update from discarding the other group of fields when concurrent tasks save configuration.
-
-The default-derived model permits an empty in-memory value, but a default record is not evidence that an agent has been enrolled or authenticated. Callers should use the lifecycle services and their error handling rather than interpreting empty strings as valid credentials.
-
-## Data Classification and Security Considerations
-
-Every field in Model Agent Config is identity or credential material. In particular, `client_secret`, `access_token`, and `refresh_token` must be handled as secrets.
-
-- Do not emit the complete structure, tokens, or client secret in logs, diagnostics, telemetry, command output, or support artifacts.
-- Keep persistence within the configured secured directory and preserve the directory and file permission model supplied by the platform layer.
-- Use the configuration service rather than writing the JSON file directly. Direct writes can bypass locking and lose fields written by another lifecycle step.
-- Registration data and refresh data have different renewal behavior, but they share one file. Changes to serialization shape must therefore be backward-compatible with previously persisted records or be accompanied by an explicit migration strategy.
-- Clearing or rotating credentials should be implemented as a coordinated lifecycle operation; this model has no intrinsic revocation behavior.
+- Do not log, display, or include any field values in diagnostics, support bundles, or tests.
+- Preserve the atomicity expectations of the configuration service. New writers must merge the latest record under its write lock rather than writing a partial independent representation.
+- Keep registration credentials and token updates separate. Replacing the entire record from a stale in-memory copy can erase a newly refreshed token or newly registered identity.
+- Handle empty default fields as not-yet-configured values. The model itself does not enforce registration completeness.
+- Changes to field names, serde behavior, or required fields are persisted-data compatibility changes. Provide a migration path for existing `agent_config.json` files before changing the contract.
 
 ## Maintenance Guidance
 
-When changing Model Agent Config, assess the whole producer-consumer path:
+When extending Model Agent Config, first determine whether the value is durable registration identity, renewable authentication state, or transient runtime state. Only durable data belongs in this model. Update the configuration service's read, save, and merge paths together, and ensure each producer preserves fields owned by other workflows.
 
-1. **Wire compatibility:** The type derives `Serialize` and `Deserialize`; a field rename, removal, or type change changes the on-disk JSON contract.
-2. **Partial writes:** Preserve the separation between registration fields and token fields, and retain serialized updates in the configuration service.
-3. **Authentication recovery:** Verify both refresh-token and client-credential paths still have the data they require.
-4. **Secret hygiene:** Check debug logging and error reporting around callers, because the model’s derived `Debug` implementation can expose fields if logged indiscriminately.
-5. **Fresh and existing installations:** Test first enrollment, restart with persisted credentials, successful token refresh, refresh failure with client-credential fallback, and malformed or unavailable persisted configuration.
-
-## Related Runtime Components
-
-The following components are part of the same OpenFrame Client module tree and define the behavior around this model. They are named here rather than linked because their documentation files were not generated with this module.
-
-- **Agent Configuration Service** persists and retrieves the model fields.
-- **Agent Registration Service** populates the identity and client credential fields after registration.
-- **Agent Authentication Service** obtains and rotates access and refresh tokens.
-- **Agent Registration Request**, **Agent Registration Response**, and **Agent Token Response** define the adjacent wire-level registration and authentication payloads.
-- **Initial Configuration Service** supplies initial enrollment inputs, such as the registration key, to the registration process.
+The model's scope is intentionally narrow: it is the shared record at the junction of endpoint registration and agent authentication, not a general client settings object. Configuration unrelated to identity or credentials should remain in its owning configuration or service module.

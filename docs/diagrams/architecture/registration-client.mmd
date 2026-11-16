@@ -1,8 +1,0 @@
-flowchart LR
-    Installer["Installer or agent startup"] --> Processor["Registration Processor"]
-    Processor --> Service["Agent Registration Service"]
-    Service --> Client["Registration Client"]
-    Client --> Gateway["OpenFrame Gateway"]
-    Gateway --> Server["Client service Agent Controller"]
-    Server --> Platform["Registration and uninstall services"]
-    Service --> Store["Local credential and configuration storage"]

@@ -1,21 +1,31 @@
 sequenceDiagram
-    participant Caller as Client lifecycle caller
-    participant Module as Platform System Service
-    participant Pool as Timed permit pool
-    participant Scm as Windows Service Control Manager
-    participant Process as Agent process
-    Caller->>Module: stop_service(name, allow delete)
-    Module->>Pool: request bounded SCM operation
-    Pool->>Scm: stop service
-    Scm-->>Pool: stop result
-    Pool-->>Module: result or timeout
-    Module->>Scm: query state
-    alt service does not stop
-        Module->>Process: terminate process tree or matching path
-        Module->>Scm: query state again
+    participant Caller
+    participant ServiceModule
+    participant PermitPool
+    participant SCM
+    participant ProcessControl
+    Caller->>ServiceModule: stop service with deletion policy
+    ServiceModule->>PermitPool: run timed SCM stop call
+    PermitPool->>SCM: request stop
+    SCM-->>PermitPool: stop result
+    PermitPool-->>ServiceModule: result or timeout
+    alt service reaches stopped state
+        ServiceModule-->>Caller: success
+    else stop fails or remains active
+        ServiceModule->>PermitPool: run timed SCM status query
+        PermitPool->>SCM: query state and process ID
+        SCM-->>PermitPool: status
+        PermitPool-->>ServiceModule: status
+        alt process ID available
+            ServiceModule->>ProcessControl: terminate process tree
+        else image path fallback
+            ServiceModule->>PermitPool: query service configuration
+            PermitPool->>SCM: read executable path
+            SCM-->>PermitPool: executable path
+            PermitPool-->>ServiceModule: executable path
+            ServiceModule->>ProcessControl: terminate exact path matches
+        end
+        ServiceModule->>SCM: recheck stopped or absent state
+        SCM-->>ServiceModule: current state
+        ServiceModule-->>Caller: success or policy constrained error
     end
-    alt still active and deletion allowed
-        Module->>Scm: delete service
-        Module->>Scm: confirm service absent
-    end
-    Module-->>Caller: success or contextual error

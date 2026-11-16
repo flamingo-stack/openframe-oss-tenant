@@ -1,0 +1,7 @@
+flowchart LR
+    Serde["Serde serialization traits"] --> Configuration["Configuration and LoggingConfig"]
+    ConfigCore["Config Core"] --> Configuration
+    ConfigCore --> StopPolicy["service_stop policy"]
+    StopPolicy --> Updater["Tool update implementation"]
+    StopPolicy --> ServiceManager["Operating-system service management"]
+    StopPolicy --> BinaryWriter["Executable replacement implementation"]

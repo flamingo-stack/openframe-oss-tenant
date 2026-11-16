@@ -1,12 +1,13 @@
 flowchart TD
-    Start["Rotation check"] --> Metadata["Read active log metadata"]
-    Metadata --> Exists{"Metadata available?"}
-    Exists -->|"No"| Return["Return without changes"]
-    Exists -->|"Yes"| Ready{"Offset at or beyond file size and size at least 10 MiB?"}
-    Ready -->|"No"| Wait["Keep active log and offset"]
-    Ready -->|"Yes"| RemoveArchive["Remove existing gzip archive when present"]
-    RemoveArchive --> Compress["Read active file and write gzip archive"]
-    Compress --> Success{"Archive creation and compression succeed?"}
-    Success -->|"No"| Error["Log error and retain current offset"]
-    Success -->|"Yes"| Truncate["Create active file to truncate it"]
-    Truncate --> Reset["Set in-memory offset to zero and save zero"]
+    Start["Streaming loop checks rotation"] --> Metadata["Read active-file metadata"]
+    Metadata --> MetadataOk{"Metadata available?"}
+    MetadataOk -->|"no"| Return["Return without changes"]
+    MetadataOk -->|"yes"| Ready{"Offset at end and size at least 10 MiB?"}
+    Ready -->|"no"| Return
+    Ready -->|"yes"| Remove["Remove prior archive when present"]
+    Remove --> Read["Read active log bytes"]
+    Read --> Compress["Write gzip archive"]
+    Compress --> Truncate["Create empty active log"]
+    Truncate --> Reset["Set memory offset and saved offset to zero"]
+    Reset --> Done["Continue streaming"]
+    Compress --> Failure["Log error and keep current offset"]

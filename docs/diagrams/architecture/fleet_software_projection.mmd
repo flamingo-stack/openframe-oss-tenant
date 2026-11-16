@@ -1,0 +1,12 @@
+flowchart LR
+    FleetDb["Fleet MDM database"] --> Debezium["Debezium change event"]
+    Debezium --> Deserializer["Fleet Host Software Deserializer"]
+    Deserializer --> StreamRouter["Stream message routing"]
+    StreamRouter --> Handler["Device Software Handler"]
+    Handler --> Resolver["Fleet Host Resolver"]
+    Resolver --> Connections["Tool connection repository"]
+    Handler --> Cache["Fleet Host Software Cache"]
+    Cache --> FleetApi["Fleet MDM API"]
+    Handler --> Inventory["Device software repository"]
+    Handler --> Trigger["Software projection trigger"]
+    Trigger --> ReadModels["Title and CVE read models"]

@@ -1,7 +1,0 @@
-flowchart LR
-    Client["OAuth Client"] --> Access["Access Token Generator"]
-    Access --> JWT["Signed Access JWT"]
-    Client --> Refresh["Refresh Token Generator"]
-    Refresh --> Initial["Refresh Count Zero"]
-    Initial --> Rotate["Generate Next Refresh Token"]
-    Rotate --> Incremented["Refresh Count Incremented"]

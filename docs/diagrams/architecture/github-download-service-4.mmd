@@ -1,0 +1,18 @@
+flowchart TD
+    Configs["Download configuration list"] --> Selector["Find configuration for current OS"]
+    Selector --> Selected["Selected download configuration"]
+    Selected --> Download["Download with retry"]
+    HttpClient["Injected HTTP client"] --> Download
+    Download --> SizeCheck["Validate minimum archive size"]
+    SizeCheck --> Format{"Archive format and installation mode?"}
+    Format -->|"single ZIP on Windows"| ZipExtract["Find matching ZIP entry"]
+    Format -->|"single tar-gzip off Windows"| TarExtract["Find matching tar entry"]
+    Format -->|"macOS folder tar-gzip"| TarAll["Safely extract all entries"]
+    Format -->|"macOS folder DMG"| DmgExtract["Mount and copy DMG content"]
+    ZipExtract --> BinaryCheck["Validate minimum binary size"]
+    TarExtract --> BinaryCheck
+    BinaryCheck --> WriteBinary["Write executable"]
+    TarAll --> SetPermissions["Set executable permissions"]
+    DmgExtract --> SetPermissions
+    WriteBinary --> BinaryWriter["Platform binary writer"]
+    SetPermissions --> BinaryWriter

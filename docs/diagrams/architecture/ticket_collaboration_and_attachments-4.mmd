@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Live
+    Live --> TechRequired: Take over
+    Live --> Resolved: Transition
+    TechRequired --> Resolved: Transition
+    Resolved --> Archived: Transition
+    Live --> Archived: Rejected
+    TechRequired --> Archived: Rejected

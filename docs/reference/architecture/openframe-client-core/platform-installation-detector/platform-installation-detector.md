@@ -1,158 +1,135 @@
 # Platform Installation Detector
 
-Platform Installation Detector is a small, synchronous discovery component in the OpenFrame Client agent library. Before installation or update logic decides how to manage an integrated tool, it can use `detect_actual_installation` to recognize an already-installed **service** from operating-system evidence and represent that evidence as the shared `Installation` model.
+Platform Installation Detector determines whether a requested integrated tool is already installed as a **service** on the current endpoint. It is a small, synchronous, platform-specific adapter in the Rust OpenFrame client runtime. Its single public function, `detect_actual_installation`, returns installation metadata only when the operating-system service registration can be positively identified; it does not install, start, stop, or modify software.
 
-The implementation is supplied by the `openframe_agent_lib` Cargo dependency from OpenFrame OSS Library, version `v0.0.5` in this repository. Its source is [installation_detector.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/installation_detector.rs).
+The implementation is supplied by the `openframe_agent_lib` Cargo dependency from the OpenFrame OSS Library, pinned by this repository at version `v0.0.5`. The OpenFrame client assembles and runs that library code. The implementation source is [installation_detector.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/installation_detector.rs).
 
-## Purpose and Scope
+## Purpose and Contract
 
-The module answers a deliberately narrow question: given a tool identifier, its selected download configuration, and the agent directory layout, is there evidence that the configured service is already installed on the local machine?
+The module exposes this conceptual operation:
 
-It does not install, start, stop, update, or remove services. It also does not inspect standard executable or GUI application installations. The supported detection behavior is platform-specific:
+```rust
+fn detect_actual_installation(
+    tool_id: &str,
+    config: &DownloadConfiguration,
+    directory_manager: &DirectoryManager,
+) -> Option<Installation>
+```
 
-| Installation type | Result |
-| --- | --- |
-| Service on macOS | Detects a LaunchDaemon property-list file named from the configured service name. |
-| Service on Windows | Asks the system-service layer whether the configured Windows service exists. |
-| Service on other Unix platforms | Returns no detection result. |
-| GUI application | Returns no detection result. |
-| Standard installation | Returns no detection result. |
+Its inputs have distinct responsibilities:
 
-A missing `service_name` is treated as insufficient information, so service detection returns no result rather than guessing a service identity.
+| Input | Role in detection |
+|---|---|
+| `tool_id` | Identifies the tool for structured diagnostic logging and for resolving its managed executable path. |
+| `DownloadConfiguration` | Supplies the installation classification, optional service name, and target file name. |
+| `DirectoryManager` | Resolves the expected executable location in the client-managed tool directory. |
 
-## Public Interface
+A successful result is `Some(Installation::Service { service_name, executable_path })`. Every unsupported installation type, absent service name, unsupported platform, or failed registration check results in `None`.
 
-`detect_actual_installation` accepts three inputs:
+The detector recognizes only the `Service` installation variant. `Standard` and `GuiApp` are deliberate no-result paths, rather than generic filesystem scans. This keeps the function narrowly focused on validating service registration.
 
-| Input | Role |
-| --- | --- |
-| `tool_id` | Identifies the tool for structured diagnostic logging and for resolving its managed executable location. |
-| `DownloadConfiguration` | Supplies the declared installation type, target file name, and optional service name. |
-| `DirectoryManager` | Resolves the executable path within the agent-managed directory layout. |
+## Architectural Position
 
-The function returns `Option<Installation>`:
-
-- `Some(Installation::Service)` means platform evidence confirms the configured service exists.
-- `None` means the configuration is unsupported by this detector, lacks a service name, or has no matching local evidence.
-
-When detection succeeds, the `Installation::Service` record includes the configured service name and an executable path calculated from `DirectoryManager`. The path is metadata derived from the agent layout; it is not independently validated by this module.
-
-## Architecture
-
-Platform Installation Detector sits between declarative tool download metadata and platform-specific service probes. It normalizes a positive probe into the common installation representation used by the client agent.
+Platform Installation Detector sits between tool download metadata and host-specific service inspection. It reuses the platform directory abstraction to report a predictable executable path but does not alter the service manager or the filesystem.
 
 ```mermaid
 flowchart LR
-    ToolConfig["Download Configuration"] --> Detector["Platform Installation Detector"]
-    ToolId["Tool Identifier"] --> Detector
-    Directories["Directory Manager"] --> Detector
-    Detector -->|"macOS service"| LaunchDaemon["LaunchDaemon plist probe"]
-    Detector -->|"Windows service"| SystemService["System Service probe"]
-    LaunchDaemon --> Detector
-    SystemService --> Detector
-    Detector --> Result["Optional Installation record"]
+    ToolWorkflow["Tool workflow"] --> Detector["Platform Installation Detector"]
+    DownloadConfig["DownloadConfiguration"] --> Detector
+    DirectoryManager["DirectoryManager"] --> Detector
+    Detector --> InstallType{"Service installation type?"}
+    InstallType -->|"no"| NoResult["None"]
+    InstallType -->|"yes"| ServiceName{"Service name present?"}
+    ServiceName -->|"no"| NoResult
+    ServiceName -->|"yes"| PlatformCheck["Platform-specific registration check"]
+    PlatformCheck -->|"detected"| ServiceResult["Installation Service metadata"]
+    PlatformCheck -->|"not detected"| NoResult
 ```
 
-### Model and Platform Dependencies
+### Collaborating Types
 
-The detector uses these library components:
-
-- `DownloadConfiguration` identifies the target operating system, desired installation type, target file name, source link, optional bundle identifier, and optional service name.
-- `InstallationType` selects the detection branch. Its variants are `Standard`, `GuiApp`, and `Service`.
-- `Installation` is the common result type. This module emits only the `Service` variant.
-- `DirectoryManager::get_tool_executable_path` resolves an absolute target file name unchanged. For a relative target file name, it resolves beneath the per-tool application-support directory.
-- On Windows, `system_service::service_exists` delegates to the Windows service-status query and interprets a successful query as existence.
-
-## Detection Flow
+- **DownloadConfiguration** carries `installation_type`, `service_name`, and `target_file_name`, alongside download metadata such as the source file and target operating system. Platform Installation Detector uses the first three fields; it does not evaluate the configuration's operating-system field.
+- **InstallationType** distinguishes `Standard`, `GuiApp`, and `Service`. Only `Service` is eligible for detection.
+- **Installation** is the return model. The service variant preserves a service name and supports an optional executable path.
+- **DirectoryManager** computes the expected per-tool executable path using the tool identifier and configured target filename.
+- **System Service** supplies the Windows `service_exists` check. That helper treats a successful Windows service-status query as evidence that the named service exists.
 
 ```mermaid
 flowchart TD
-    Start["Receive tool identifier, configuration, and directories"] --> TypeCheck{"Installation type is Service?"}
-    TypeCheck -->|"No"| NoSupport["Return no result"]
-    TypeCheck -->|"Yes"| NameCheck{"Service name configured?"}
-    NameCheck -->|"No"| NoName["Return no result"]
-    NameCheck -->|"Yes"| PlatformCheck{"Supported platform?"}
-    PlatformCheck -->|"macOS"| MacProbe["Check LaunchDaemon plist"]
-    PlatformCheck -->|"Windows"| WindowsProbe["Check Windows service existence"]
-    PlatformCheck -->|"Other Unix"| Unsupported["Return no result"]
-    MacProbe --> ExistsCheck{"Service evidence exists?"}
-    WindowsProbe --> ExistsCheck
-    ExistsCheck -->|"No"| Missing["Return no result"]
-    ExistsCheck -->|"Yes"| ResolvePath["Resolve tool executable path"]
-    ResolvePath --> ServiceRecord["Return Service installation record"]
+    Detector["Platform Installation Detector"] --> ConfigModel["DownloadConfiguration"]
+    Detector --> InstallModel["Installation"]
+    Detector --> DirectoryApi["DirectoryManager"]
+    Detector --> MacRegistration["LaunchDaemon plist check"]
+    Detector --> WindowsService["Windows service existence check"]
+    DirectoryApi --> ExecutablePath["Expected tool executable path"]
+    MacRegistration --> InstallModel
+    WindowsService --> InstallModel
+    ExecutablePath --> InstallModel
 ```
 
-### macOS Evidence
+## Detection Rules by Platform
 
-On macOS, the service name is used to construct a path under `/Library/LaunchDaemons` with a `.plist` suffix. If that file exists, the module logs the discovery at information level and returns an `Installation::Service` result.
+| Build target | Service-registration evidence | Result when evidence exists | Result otherwise |
+|---|---|---|---|
+| macOS | A plist exists at `/Library/LaunchDaemons/{service name}.plist` | Service installation with the configured service name and computed executable path | `None` |
+| Windows | The system-service helper can query the configured service successfully | Service installation with the configured service name and computed executable path | `None` |
+| Unix other than macOS | No probe is implemented | `None` | `None` |
+| Any platform for `Standard` or `GuiApp` | Not applicable | `None` | `None` |
 
-This is a presence check only. The module does not parse the property-list contents, confirm that the service is loaded, or verify that its configured executable matches the resolved tool path.
+The macOS implementation emits an informational tracing event that includes the tool identifier and plist path. Windows emits an analogous event with the service name. These logs record positive detection only.
 
-### Windows Evidence
+## Detection Process
 
-On Windows, the detector calls the platform system-service helper with the configured service name. A positive response logs the discovery at information level, resolves the managed executable path, and returns an `Installation::Service` result.
-
-The detector relies on the platform helper for Windows service lookup details. It does not start a service or inspect its configuration.
-
-## Result Construction and Data Flow
+The decision sequence is intentionally short and has no side effects:
 
 ```mermaid
 sequenceDiagram
-    participant Caller as Caller
-    participant Detector as Platform Installation Detector
-    participant Probe as Platform Service Probe
-    participant Dirs as Directory Manager
-    Caller->>Detector: detect actual installation
-    Detector->>Detector: Check installation type and service name
-    Detector->>Probe: Probe configured service
-    alt Service exists
-        Probe-->>Detector: Existing service evidence
-        Detector->>Dirs: Resolve tool executable path
-        Dirs-->>Detector: Executable path
-        Detector-->>Caller: Service installation record
-    else No service or unsupported path
-        Probe-->>Detector: No matching evidence
-        Detector-->>Caller: No result
+    participant Caller
+    participant Detector as "Platform Installation Detector"
+    participant Directories as "DirectoryManager"
+    participant Host as "Operating system"
+    Caller->>Detector: detect_actual_installation(tool ID, config, directories)
+    Detector->>Detector: Inspect installation type
+    alt Service configuration
+        Detector->>Detector: Read service name
+        alt Service name missing
+            Detector-->>Caller: None
+        else Service name available
+            Detector->>Host: Check platform service registration
+            alt Registration found
+                Detector->>Directories: Resolve tool executable path
+                Directories-->>Detector: Expected executable path
+                Detector-->>Caller: Service installation metadata
+            else Registration absent or unsupported platform
+                Detector-->>Caller: None
+            end
+        end
+    else Standard or GUI application configuration
+        Detector-->>Caller: None
     end
 ```
 
-The resulting service record has two fields:
+## Result Semantics and Limitations
 
-| Field | Source | Meaning |
-| --- | --- | --- |
-| `service_name` | `DownloadConfiguration.service_name` | The configured service identity that matched the platform probe. |
-| `executable_path` | `DirectoryManager` and `target_file_name` | The expected managed executable location associated with the tool identifier. |
+A positive result establishes that a matching **service registration artifact** was found. It does not independently prove that the executable returned by `DirectoryManager` exists, is runnable, or is the binary registered with the service. The path is derived from client-managed directory conventions and `target_file_name` after registration is detected.
 
-## Integration Boundaries
+Likewise, a `None` result means only that this module did not establish a recognized service installation. It must not be treated as universal proof that the tool is absent, because:
 
-The detector belongs to the Rust OpenFrame Client runtime, while this repository packages the runtime as part of the tenant platform. It is relevant to tool lifecycle behavior because tools can be represented as service, GUI application, or standard installations.
+- standard and GUI application installation types are intentionally not detected;
+- non-macOS Unix builds intentionally have no service probe;
+- macOS checks only the expected LaunchDaemon plist location; and
+- Windows delegates to the service-status query through the system-service helper.
 
-The surrounding client library also contains platform service controls, directory management, tool update strategies, and installed-tool persistence. Those components are separate responsibilities:
-
-- Platform service controls manage service lifecycle operations.
-- Directory management owns filesystem layout and path calculation.
-- Tool update code determines update and migration behavior.
-- Installed-tool services retain lifecycle state.
-
-Platform Installation Detector contributes only an observed installation classification. Callers must decide whether and how to persist the result or take a lifecycle action.
-
-The code-graph snapshot used for this documentation reports no indexed direct callers or tests for `detect_actual_installation`. That means its behavior should be preserved and exercised with focused tests before expanding or changing its detection contract.
-
-## Operational Characteristics
-
-- **Synchronous and local:** Detection performs only local filesystem or operating-system service checks; it makes no network calls.
-- **Conservative:** A result is produced only for an explicitly configured service on macOS or Windows with positive platform evidence.
-- **Safe fallback:** Unsupported installation types and platforms return no result rather than attempting heuristics.
-- **Observable success path:** Positive macOS and Windows detections create information-level log entries tagged with the tool identifier.
-- **No state mutation:** The function does not write configuration, alter service state, or create directories.
+Callers that need process liveness, executable integrity, service state, or discovery of non-service applications should use the appropriate platform, process, directory, or tool-management capabilities rather than widening this detector's contract.
 
 ## Maintenance Guidance
 
-When extending Platform Installation Detector:
+When extending Platform Installation Detector, preserve the separation between **evidence collection** and **installation lifecycle management**:
 
-1. Keep `InstallationType` dispatch explicit so each installation mode has an intentional contract.
-2. Require configuration data that is necessary for a trustworthy probe, especially service identity.
-3. Ensure a positive probe produces a result compatible with the shared `Installation` model.
-4. Preserve the distinction between discovered platform evidence and executable-path verification.
-5. Add platform-gated tests for positive, absent, missing-service-name, and unsupported-type cases.
-6. If support is added for standard or GUI applications, use platform evidence appropriate to that installation mode instead of inferring it from the managed directory alone.
+1. Add an installation-type branch only when the returned `Installation` model can accurately describe its evidence.
+2. Make each platform probe conditional at compile time so unsupported hosts retain a safe `None` result.
+3. Require the minimum configuration needed by the probe before querying host state. For service detection, that is `service_name`.
+4. Keep executable-path resolution delegated to `DirectoryManager`; avoid duplicating platform directory conventions in this module.
+5. Document whether any new probe verifies a registration record, a file, a running process, or another distinct kind of evidence.
+
+This approach lets higher-level tool installation and update workflows distinguish an observed service registration from an assumed or requested installation without performing destructive checks.

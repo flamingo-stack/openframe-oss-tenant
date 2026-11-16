@@ -1,0 +1,15 @@
+flowchart LR
+    Caller["Caller"] --> FolderQuery["Folder query methods"]
+    Caller --> ArticleQuery["Article query methods"]
+    Caller --> ArchiveQuery["Archive query methods"]
+    Caller --> LinkQuery["Folder link query"]
+    FolderQuery --> ParentFilter["Parent filter"]
+    FolderQuery --> FolderCursor["Folder cursor"]
+    ArticleQuery --> ParentFilter
+    ArticleQuery --> ArticleStatus["Article status filter"]
+    ArticleQuery --> ArticleCursor["Article cursor"]
+    ArchiveQuery --> ArchiveCursor["Archive cursor"]
+    FolderQuery --> KnowledgeItem["KnowledgeBaseItem"]
+    ArticleQuery --> KnowledgeItem
+    ArchiveQuery --> KnowledgeItem
+    LinkQuery --> KnowledgeItem

@@ -1,0 +1,10 @@
+flowchart LR
+    ConfigFile["Initial configuration"] --> ConfigService["Initial Configuration Service"]
+    ConfigService --> Provider["Local Tls Config Provider"]
+    ConfigService --> Manager["NATS Connection Manager"]
+    Provider --> CertFile["Configured PEM CA file"]
+    CertFile --> Provider
+    Provider --> RustlsConfig["Rustls ClientConfig"]
+    Manager --> RustlsConfig
+    Manager --> ConnectOptions["NATS connect options"]
+    ConnectOptions --> NatsServer["NATS server"]

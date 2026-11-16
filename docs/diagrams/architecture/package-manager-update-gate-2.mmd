@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Listener as "Package Update Handler"
+    participant Runner as "Update Run Manager"
+    participant Gate as "Update Gate"
+    participant OS as "Operating System"
+    participant Status as "Status Reporter"
+
+    Listener->>Runner: Submit package update
+    Runner->>Gate: Resolve package identity
+    Gate->>OS: Query package installation
+    Runner->>Gate: Capture process snapshot
+    Gate->>OS: List running processes
+    Runner->>Gate: Check identity and processes
+    alt application is active or state is unknown
+        Gate-->>Runner: Blocked decision
+        Runner->>Status: Report waiting or rejected update
+    else application is not active
+        Gate-->>Runner: Clear decision
+        Runner->>Runner: Continue package update
+    end

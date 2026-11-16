@@ -1,9 +1,0 @@
-stateDiagram-v2
-    [*] --> Unlocked
-    Unlocked --> Locked: try lock succeeds
-    Unlocked --> Contended: try lock returns busy
-    Contended --> [*]
-    Locked --> Updating: mark busy
-    Locked --> Unlocked: tool lock dropped
-    Updating --> Released: guard drops
-    Released --> Unlocked: mutex released

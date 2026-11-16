@@ -1,0 +1,6 @@
+flowchart LR
+    Startup["Client startup"] --> Invocation["Invoke init()"]
+    Invocation --> Event["Initialization log event"]
+    Event --> Trace["Tracing pipeline"]
+    Trace --> Observability["Configured log destinations"]
+    Invocation --> Result["Successful result"]

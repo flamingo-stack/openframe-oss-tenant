@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Test as "DevicesTest"
+    participant API as "DeviceApi"
+    participant Client as "Enrolled client"
+    participant Platform as "Platform"
+
+    Test->>API: Select pipeline-scoped online or offline device
+    API->>Platform: Read device
+    Test->>API: Force client uninstall
+    API->>Platform: Request uninstall
+    Platform->>Client: Deliver uninstall request
+    Client->>Platform: Uninstall and deregister
+    Test->>API: Poll device state
+    API->>Platform: Read device
+    Platform->>API: DELETED or absent
+    Test->>API: Verify device is not listed

@@ -1,12 +1,17 @@
-flowchart TD
-    Event["Tracing Event"] --> Visit["Visit Fields"]
-    Visit --> Supported{{"Supported Field?"}}
-    Supported -->|"No"| Ignore["No Store Update"]
-    Supported -->|"Yes"| Lock["Acquire Write Lock"]
-    Lock --> Type{{"Metric Type?"}}
-    Type -->|"Counter"| Counter["Replace Counter"]
-    Type -->|"Gauge"| Gauge["Replace Gauge"]
-    Type -->|"Histogram"| Histogram["Create or Append Sample"]
-    Counter --> Read["Metric Available to Readers"]
-    Gauge --> Read
-    Histogram --> Read
+sequenceDiagram
+    participant Emitter as "Tracing event emitter"
+    participant Layer as "MetricsLayer"
+    participant Visitor as "MetricVisitor"
+    participant Store as "MetricsStore"
+    Emitter->>Layer: Emit event
+    Layer->>Visitor: Record event fields
+    Visitor->>Visitor: Recognize counter, gauge, or histogram
+    Visitor->>Visitor: Attach eligible debug fields as labels
+    Layer->>Store: Acquire blocking write lock
+    alt Counter value
+        Layer->>Store: Replace counter record
+    else Gauge value
+        Layer->>Store: Replace gauge record
+    else Histogram value
+        Layer->>Store: Append histogram sample
+    end

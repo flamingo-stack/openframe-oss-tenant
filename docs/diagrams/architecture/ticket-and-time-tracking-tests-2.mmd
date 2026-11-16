@@ -1,0 +1,9 @@
+flowchart TD
+    SeedTag["Create idempotent ticket tag"] --> CreateTicket["Create ticket for scoped device"]
+    CreateTicket --> LiveStatus["Verify non-terminal status"]
+    LiveStatus --> Transition["Transition to resolved status"]
+    Transition --> Archive["Transition to archived status"]
+    CreateTicket --> TakeOver["Assign caller and move to TECH REQUIRED"]
+    TakeOver --> RefuseArchive["Reject direct archive transition"]
+    CreateTicket --> BulkPrepare["Create resolved assigned and unassigned tickets"]
+    BulkPrepare --> BulkArchive["Archive only filtered assigned ticket"]

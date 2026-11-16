@@ -1,9 +1,8 @@
 flowchart LR
-    Caller["Tool management service or repository caller"] --> Contract["Custom Integrated Tool Repository"]
-    Contract --> Implementation["Custom Integrated Tool Repository Implementation"]
-    Implementation --> QueryBuilder["Query and criteria builder"]
-    Implementation --> MongoTemplate["Spring Data MongoTemplate"]
-    QueryBuilder --> MongoTemplate
-    MongoTemplate --> Collection[("IntegratedTool collection")]
-    Collection --> Results["IntegratedTool records or distinct values"]
-    Results --> Caller
+    ManagementService["Management Service"] --> RepositoryContract["Custom Integrated Tool Repository"]
+    RepositoryContract --> RepositoryImplementation["Custom Integrated Tool Repository Implementation"]
+    RepositoryImplementation --> QueryBuilder["Mongo Query Builder"]
+    QueryBuilder --> MongoTemplate["Spring MongoTemplate"]
+    MongoTemplate --> ToolCollection[("Integrated Tool Collection")]
+    RepositoryImplementation --> FacetQueries["Distinct Metadata Queries"]
+    FacetQueries --> MongoTemplate

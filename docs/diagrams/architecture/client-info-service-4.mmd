@@ -1,0 +1,12 @@
+flowchart LR
+    Request["Update Request"] --> UpdateService["Client Update Service"]
+    UpdateService --> StatusUpdating["Record Updating Status"]
+    StatusUpdating --> InfoService["Client Info Service"]
+    UpdateService --> Launch["Reserve and Launch Update"]
+    Launch --> Handler["Update Handler Service"]
+    Handler --> Reconcile["Reconcile Running Version"]
+    Reconcile --> InfoService
+    Handler --> Publish["Publish Running Version"]
+    Failure["Update Failure"] --> Handler
+    Handler --> StatusFailed["Record Failed Status"]
+    StatusFailed --> InfoService

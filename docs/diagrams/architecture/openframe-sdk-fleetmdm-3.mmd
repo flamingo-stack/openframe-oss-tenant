@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Integration as "Tenant integration"
+    participant Fleet as "FleetMDM"
+    participant Mapper as "Jackson mapper"
+    participant Schema as "Openframe Sdk Fleetmdm"
+
+    Integration->>Fleet: Request host or schema metadata
+    Fleet->>Integration: Return JSON payload
+    Integration->>Mapper: Deserialize payload
+    Mapper->>Schema: Populate model fields
+    Schema->>Integration: Return typed host or table schema
+    Integration->>Integration: Validate and use typed metadata

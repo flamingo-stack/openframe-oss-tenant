@@ -1,5 +1,24 @@
 flowchart LR
-    TestService["OpenFrame Test Service"] -->|"uses"| ScriptDto["Script Dto"]
-    ScriptDto -->|"serializes requests"| ScriptApi["Script and Schedule API"]
-    ScriptApi -->|"returns JSON"| ScriptDto
-    ScriptDto -->|"supplies test assertions"| TestCases["Script Workflow Tests"]
+    TestCase["Script-focused test"] --> RequestDtos["Request DTOs"]
+    RequestDtos --> ScriptApi["Script and schedule API"]
+    ScriptApi --> ResponseDtos["Response DTOs"]
+    ResponseDtos --> TestCase
+
+    subgraph request_models["Request Models"]
+        RunRequest["Run Script Request"]
+        CreateSchedule["Create Script Schedule Request"]
+    end
+
+    subgraph response_models["Response Models"]
+        ScheduleSummary["Script Schedule"]
+        AssignmentSummary["Schedule Assign Device Response"]
+        History["Schedule Execution History"]
+        Author["Script Author"]
+    end
+
+    RequestDtos --> RunRequest
+    RequestDtos --> CreateSchedule
+    ResponseDtos --> ScheduleSummary
+    ResponseDtos --> AssignmentSummary
+    ResponseDtos --> History
+    ResponseDtos --> Author

@@ -1,0 +1,6 @@
+flowchart LR
+    Query["Software title query"] --> Criteria["Build tenant-scoped criteria"]
+    Criteria --> Count["Count all matching titles"]
+    Criteria --> Page["Apply pageable to matching query"]
+    Count --> Result["Page of software titles"]
+    Page --> Result

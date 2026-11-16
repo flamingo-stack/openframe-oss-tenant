@@ -1,11 +1,17 @@
-flowchart TD
-    Start["Read requested"] --> Read["Read file bytes"]
-    Read --> Exists{"File exists?"}
-    Exists -->|"No"| Missing["Return missing outcome"]
-    Exists -->|"Read error"| ReadError["Return contextual error"]
-    Exists -->|"Yes"| Parse["Deserialize JSON"]
-    Parse --> Valid{"Valid JSON for requested type?"}
-    Valid -->|"Yes"| Parsed["Return parsed outcome"]
-    Valid -->|"No"| Move["Rename file with corrupt suffix"]
-    Move --> Warn["Log size, zero-byte signal, and parse error"]
-    Warn --> Corrupt["Return corrupt outcome"]
+sequenceDiagram
+    participant Owner as State-owning service
+    participant Fs as Utils Fs
+    participant Disk as Local filesystem
+    Owner->>Fs: read_json_or_quarantine(path)
+    Fs->>Disk: read(path)
+    alt file missing
+        Fs-->>Owner: JsonFile::Missing
+    else valid JSON
+        Fs-->>Owner: JsonFile::Parsed(value)
+    else invalid JSON
+        Fs->>Disk: rename(path, path.corrupt)
+        Fs-->>Owner: JsonFile::Corrupt
+    end
+    Owner->>Fs: atomic_write(path, serialized state)
+    Fs->>Disk: create temp, write, sync, replace
+    Fs-->>Owner: success or contextual error

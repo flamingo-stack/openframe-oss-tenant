@@ -1,16 +1,10 @@
-flowchart TD
-    Start["Cleanup helper starts"] --> WaitLoop["Poll originating process every 500 milliseconds"]
-    WaitLoop --> ProcessGone{"Process gone?"}
-    ProcessGone -->|"Yes"| Verify["Verify process is absent"]
-    ProcessGone -->|"No, under 30 seconds"| WaitLoop
-    ProcessGone -->|"No, timeout"| ForceStop["Attempt forced process stop"]
-    ForceStop --> Verify
-    Verify --> StillRunning{"Process still running?"}
-    StillRunning -->|"Yes"| DeleteSelfFailure["Delete helper and exit with failure"]
-    StillRunning -->|"No"| DeleteBinary["Try forced binary deletion up to five times"]
-    DeleteBinary --> BinaryRemoved{"Binary removed?"}
-    BinaryRemoved -->|"No"| PermissionRecovery["Take ownership, grant access, retry deletion"]
-    BinaryRemoved -->|"Yes"| DeleteSelf["Delete helper script"]
-    PermissionRecovery --> DeleteSelf
-    DeleteSelf --> PruneDirectories["Remove empty eligible directories"]
-    PruneDirectories --> Finish["Exit successfully"]
+flowchart LR
+    Uninstaller["Windows uninstaller"] --> Executor["execute binary cleanup script"]
+    Executor --> StagingDirectory["Update staging directory"]
+    Executor --> ScriptGenerator["generate binary cleanup script"]
+    ScriptGenerator --> PowerShellScript["Unique PowerShell cleanup script"]
+    Executor --> PowerShellResolver["PowerShell path resolver"]
+    PowerShellResolver --> PowerShell["Windows PowerShell process"]
+    PowerShell --> ProcessWait["Wait for client process"]
+    ProcessWait --> BinaryRemoval["Delete client executable"]
+    BinaryRemoval --> EmptyDirectoryRemoval["Remove empty binary and staging directories"]

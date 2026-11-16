@@ -1,8 +1,0 @@
-flowchart LR
-    Services["OpenFrame OSS Tenant services"] --> CoreLibrary["OpenFrame Core library"]
-    CoreLibrary --> Disconnect["Client Disconnect Classifier"]
-    CoreLibrary --> PlainTextUtility["Plain Text"]
-    CoreLibrary --> StringsUtility["Strings"]
-    Disconnect --> ReactiveErrors["Reactive and Netty errors"]
-    PlainTextUtility --> NotificationText["Notification and push text"]
-    StringsUtility --> NormalizedValues["Normalized comparison values"]

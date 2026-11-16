@@ -1,7 +1,0 @@
-flowchart LR
-    Bytes["Replacement bytes"] --> Stage["Write hidden sibling .name.new"]
-    Stage --> Rename["Rename staged file over target"]
-    Rename --> Done["Replacement complete"]
-    Stage -->|"failure"| Cleanup["Best effort staged cleanup"]
-    Rename -->|"failure"| Cleanup
-    Cleanup --> Report["Return original error"]

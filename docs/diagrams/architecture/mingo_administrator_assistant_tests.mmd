@@ -1,0 +1,11 @@
+flowchart TD
+    TestClass["Mingo test class"] --> Base["MingoBaseTest"]
+    Base --> Fixture["DialogFixture"]
+    Base --> Runner["AssistantRunner"]
+    Runner --> AdminChat["Administrator AI chat"]
+    AdminChat --> Approval["Approval policy"]
+    Approval --> Tools["Mingo tools"]
+    Tools --> Product["OpenFrame product services"]
+    Product --> Verification["Independent verification channel"]
+    Verification --> Assertion["JUnit assertion"]
+    Base --> Cleanup["AfterEach dialog cleanup"]

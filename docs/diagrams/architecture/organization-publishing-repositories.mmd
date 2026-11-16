@@ -1,0 +1,10 @@
+flowchart LR
+    Organization["Organization source record"] --> Aggregate["OrganizationAggregateSpec"]
+    Aggregate --> Event["OrganizationEvent"]
+    Event --> Projection["OrganizationOnTicketsProjection"]
+    Projection --> TicketRepository["TicketProjectionRepository"]
+    TicketRepository --> Tickets["Tenant ticket records"]
+    Tickets --> View["TicketOrganizationView"]
+    Organization --> OrganizationRepository["OrganizationRepository"]
+    OrganizationRepository --> Projection
+    View --> Projection

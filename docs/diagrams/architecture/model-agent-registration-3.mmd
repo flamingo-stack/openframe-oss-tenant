@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Processor as Registration Processor
+    participant Service as Agent Registration Service
+    participant Client as Registration Client
+    participant Api as Client Service API
+    participant Store as Local Credential Store
+    Processor->>Service: register agent
+    Service->>Store: read persisted machine credentials
+    alt fresh installation
+        Service->>Client: register request with initial key
+        Client->>Api: POST register with JSON request
+    else reinstallation
+        Service->>Client: register request with initial key and credentials
+        Client->>Api: POST reinstall with JSON request
+    end
+    Api-->>Client: machine ID, client ID, and client secret
+    Client-->>Service: registration response
+    Service->>Store: persist machine credentials and registration data
+    Service-->>Processor: registration complete

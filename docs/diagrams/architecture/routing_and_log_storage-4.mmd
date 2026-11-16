@@ -1,0 +1,11 @@
+flowchart TD
+    LokiSave["Save Loki log event"] --> Attempt{"Push accepted?"}
+    Attempt -->|"yes"| Complete["Complete"]
+    Attempt -->|"retryable failure"| Retry{"Attempts remain?"}
+    Retry -->|"yes"| Backoff["Exponential backoff"]
+    Backoff --> LokiSave
+    Retry -->|"no"| Fail["Propagate retry exhaustion"]
+    Attempt -->|"push rejected"| Lookup["Query event identity in Loki"]
+    Lookup --> Exists{"Event already stored?"}
+    Exists -->|"yes"| Duplicate["Log debug and complete"]
+    Exists -->|"no"| Lost["Log lost event details"]

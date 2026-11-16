@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant Watcher
+    participant Registry as Installed Tools Service
+    participant Config as Configuration Services
+    participant Server as MeshCentral Server
+    participant Files as Endpoint Filesystem
+    participant Restart as Tool Restart Service
+    participant Agent as MeshCentral Agent
+    Watcher->>Registry: Resolve installed tool and MSH path
+    Watcher->>Config: Read server URL and access token
+    Watcher->>Server: Request generated MSH configuration
+    Server-->>Watcher: Configuration response
+    Watcher->>Files: Compare MeshID and ServerID
+    alt Configuration changed
+        Watcher->>Files: Write temporary MSH file
+        Watcher->>Files: Rename temporary file into place
+    else Configuration current
+        Watcher->>Files: Retain existing MSH file
+    end
+    Watcher->>Restart: Request guarded restart
+    alt Restart succeeds
+        Restart->>Agent: Stop and relaunch through lifecycle
+    else Tool absent from registry
+        Watcher->>Agent: Request fallback process stop
+    else Tool operation busy or restart error
+        Restart-->>Watcher: Defer or report failure
+    end

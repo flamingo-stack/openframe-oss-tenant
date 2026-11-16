@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Client as "API Client"
+    participant Gateway as "OpenFrame Gateway"
+    participant Api as "OpenFrame API Service"
+    participant Boundary as "Controller or Data Fetcher"
+    participant Service as "Domain Service"
+    participant Store as "Tenant Data Store"
+
+    Client->>Gateway: Send authenticated request
+    Gateway->>Api: Forward API request
+    Api->>Boundary: Route REST or GraphQL operation
+    Boundary->>Boundary: Bind input and resolve principal
+    Boundary->>Service: Delegate tenant scoped work
+    Service->>Store: Read or update domain data
+    Store-->>Service: Return domain result
+    Service-->>Boundary: Return result
+    Boundary-->>Client: Return API response

@@ -1,6 +1,6 @@
 stateDiagram-v2
     [*] --> Unset
-    Unset: false
-    Set: true
+    Unset: AtomicBool is false
+    Set: AtomicBool is true
     Unset --> Set: set()
     Set --> Set: set()

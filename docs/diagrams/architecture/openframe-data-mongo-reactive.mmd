@@ -1,0 +1,6 @@
+flowchart LR
+    WebFlux["WebFlux Application"] -->|"uses reactive repository"| Repositories["Reactive Repository Interfaces"]
+    Config["Mongo Reactive Config"] -->|"enables repository scan"| Repositories
+    Repositories -->|"returns Mono values"| Driver["Spring Data Reactive MongoDB"]
+    Driver -->|"non-blocking database operations"| MongoDB[("MongoDB")]
+    Repositories -->|"maps documents"| Documents["OAuth Client, Tenant, User, Onboarding Progress"]

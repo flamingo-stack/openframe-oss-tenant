@@ -1,0 +1,15 @@
+flowchart TD
+    Services["OpenFrame service applications"] --> MongoConfig["Mongo configuration and conversion"]
+    Services --> Repositories["Synchronous Mongo repositories"]
+    Services --> Projectors["Publishing projections"]
+    Services --> RmmServices["RMM persistence services"]
+
+    MongoConfig --> MongoTemplate["MongoTemplate or tenant-aware MongoTemplate"]
+    Repositories --> MongoTemplate
+    Projectors --> MongoTemplate
+    RmmServices --> MongoTemplate
+
+    MongoTemplate --> MongoDb["MongoDB"]
+    Repositories --> SharedModels["Shared Mongo document models"]
+    Projectors --> SharedModels
+    RmmServices --> SharedModels

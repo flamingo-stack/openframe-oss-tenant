@@ -1,6 +1,0 @@
-flowchart LR
-    ToolDefinition["Tool URL path with client.serverUrl token"] --> Resolver["Services Tool Url Params Resolver"]
-    Resolver --> ConfigService["Initial Configuration Service"]
-    ConfigService --> ConfigFile["initial_config.json in secured directory"]
-    ConfigService --> Resolver
-    Resolver --> ResolvedUrl["Resolved tool URL string"]

@@ -1,171 +1,115 @@
 # Platform Tool Updater Migration
 
-Platform Tool Updater Migration is the OpenFrame client subsystem that changes an installed tool from one installation representation to another. It is part of the `openframe_agent_lib` Cargo artifact supplied by the OpenFrame OSS Library and run by the OpenFrame client. Its current supported migration is **Standard to GUI App**, and it is compiled only on macOS and Windows.
+## Purpose
 
-The module deliberately separates migration from a normal in-place update. A migration is selected when the recorded installation type differs from the desired `InstallationType`; it creates a platform-specific migrator, executes a three-phase lifecycle, and returns the resulting `Installation` record for the caller to persist and use.
+Platform Tool Updater Migration is the OpenFrame Client capability that changes an installed integrated tool from one installation form to another. It is implemented by the `openframe_agent_lib` artifact from the OpenFrame OSS Library and runs in this repository's OpenFrame Client. The current supported path is **Standard** to **GUI application** on macOS and Windows.
 
-Source implementation: [migration module](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/platform/tool_updater/migration/mod.rs).
+This is a migration rather than an ordinary binary update: the target installation representation changes, platform-specific files may be replaced or extracted, and the migrated GUI application is started in the logged-in user's session when possible.
 
-## Scope and Responsibilities
+The implementation sources are maintained in the OpenFrame OSS Library:
 
-The module owns the following decisions and contracts:
+- [Migration orchestration source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/tool_updater/migration/mod.rs)
+- [Standard to GUI application source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/platform/tool_updater/migration/standard_to_gui_app.rs)
 
-- Maps an existing `Installation` value to its type: Standard, GUI App, or Service.
-- Detects whether the existing and requested installation types differ.
-- Selects a compatible `ToolMigrator` implementation or rejects the requested transition.
-- Defines a consistent asynchronous lifecycle: prepare, migrate, finalize, and rollback.
-- Carries limited cross-phase state in `MigrationContext`.
-- Logs selection and lifecycle progress, including rollback warnings and failures.
+## Scope and Supported Transitions
 
-It does not decide when a tool should be updated, download a tool asset itself, or persist the returned installation metadata. Those responsibilities remain with the enclosing tool update orchestration and its injected dependencies.
+An installation is classified as Standard, GUI application, or Service. `needs_migration` compares the persisted installation form with the requested target form. If they match, no migration is needed. `create_migrator` selects an implementation only when the forms differ.
 
-## Installation Model
-
-An installed tool has exactly one of these representations:
-
-| Installation variant | Stored identity | Migration relevance |
-| --- | --- | --- |
-| Standard | Optional executable path | The only supported source representation for migration. |
-| GUI App | Required executable path and optional bundle identifier | The supported target representation. |
-| Service | Service name and optional executable path | Recognized for comparison, but no migration path is registered. |
-
-`needs_migration` compares the type inferred from the stored `Installation` with the requested `InstallationType`. It does not inspect versions, files, or platform state. Therefore, type equality means no migration is needed even if a separate ordinary update may still be necessary.
+At present, the factory accepts Standard to GUI application only, and only in macOS and Windows builds. Any other differing source and target combination is rejected as unsupported. This deliberate factory boundary prevents a generic update request from silently applying an unimplemented installation conversion.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    Caller["Tool update orchestration"] -->|"calls run_migration"| MigrationModule["Platform Tool Updater Migration"]
-    InstalledTool["Installed tool and current installation"] --> MigrationModule
-    DownloadConfig["Download configuration and target type"] --> MigrationModule
-    Dependencies["Updater dependencies"] --> MigrationModule
-    MigrationModule -->|"selects"| MigratorContract["Tool Migrator contract"]
-    MigratorContract -->|"macOS and Windows only"| StandardGuiMigrator["Standard to GUI App migrator"]
-    StandardGuiMigrator -->|"returns"| NewInstallation["New installation metadata"]
-    MigrationModule -->|"returns result to"| Caller
+    ToolUpdateCore["Tool Updater Core"] -->|"requests migration"| MigrationFactory["Migration Factory"]
+    InstalledTool["Installed Tool"] -->|"current installation"| MigrationFactory
+    TargetType["Target Installation Type"] -->|"requested type"| MigrationFactory
+    MigrationFactory -->|"selects supported path"| StandardToGui["Standard to GUI Application Migrator"]
+    MigrationFactory -->|"rejects unsupported path"| Unsupported["Migration Error"]
+    StandardToGui -->|"stops old tool"| ToolKill["Tool Kill Service"]
+    StandardToGui -->|"downloads and installs"| DownloadService["Download Service"]
+    StandardToGui -->|"resolves arguments"| CommandResolver["Command Parameters Resolver"]
+    StandardToGui -->|"launches in user session"| GuiSession["GUI User Session"]
+    StandardToGui -->|"returns"| NewInstallation["GUI Application Installation"]
 ```
 
-The public factory, `create_migrator`, is the policy boundary. It derives the source type from the stored installation, returns no migrator when source and target types match, and otherwise selects a concrete implementation. At present, only Standard to GUI App is accepted on macOS and Windows. Any other differing pair fails explicitly as an unsupported migration path.
-
-## Core Components
-
-### Migration Context
-
-`MigrationContext` is a cloneable, defaultable value that lets a migrator communicate cleanup and startup requirements across lifecycle phases:
-
-| Field | Meaning |
-| --- | --- |
-| `old_cleaned` | Records whether the old installation has been cleaned up. |
-| `needs_start` | Records whether the resulting tool needs to be started. |
-
-The migration framework transports this context unchanged. Concrete migrators determine how the flags are set and interpreted.
-
-### Tool Migrator Contract
-
-`ToolMigrator` is an asynchronous, thread-safe trait. Every implementation identifies its source and destination installation types and implements the following operations:
-
-1. `prepare` validates or stages the existing tool and produces a `MigrationContext`.
-2. `migrate` receives the installed tool, download configuration, and context, then creates a new `Installation`.
-3. `finalize` completes work after a successful migration using the original tool, new installation, and context.
-4. `rollback` is invoked when `migrate` fails after preparation.
-
-The trait supplies a default rollback that logs a warning and succeeds without compensating changes. A new migrator should override this method whenever preparation or migration can leave externally visible state that must be restored.
-
-### Standard to GUI App Migrator
-
-The Standard to GUI App implementation is conditionally available on macOS and Windows. The factory constructs it with `ToolUpdaterDeps`. The provided module surface establishes that it owns the concrete implementation of the migration contract; its constructor stores those dependencies for its lifecycle operations.
-
-### Dependency Bundle
-
-`ToolUpdaterDeps` provides the facilities used by concrete migrations:
-
-| Dependency | Role supplied to a migrator |
-| --- | --- |
-| GitHub download service | Obtains tool content described by the download configuration. |
-| Tool kill service | Stops a running tool when migration requires it. |
-| Directory manager | Resolves and manages tool, asset, and staging locations. |
-| Tool command parameters resolver | Resolves command parameters needed by tool operations. |
+The migration module depends on the parent tool updater's dependency bundle. Its concrete implementation uses the tool-kill, download, directory, command-parameter, and platform user-session capabilities supplied through that bundle. The parent tool updater owns phase orchestration and invokes `prepare`, `migrate`, and `finalize` in sequence.
 
 ## Migration Lifecycle
 
 ```mermaid
 sequenceDiagram
-    participant Caller as Tool Update Orchestrator
-    participant Module as Migration Module
-    participant Migrator as Selected Tool Migrator
-    Caller->>Module: run_migration(tool, config, target type, dependencies)
-    Module->>Module: Create migrator for source and target types
-    Module->>Migrator: prepare(tool)
-    Migrator-->>Module: Migration context
-    Module->>Migrator: migrate(tool, config, context)
+    participant Core as "Tool Updater Core"
+    participant Factory as "Migration Factory"
+    participant Migrator as "Tool Migrator"
+    participant Platform as "Platform Services"
+
+    Core->>Factory: Request migrator for source and target types
+    Factory->>Core: Supported migrator or error
+    Core->>Migrator: Prepare installed tool
+    Migrator->>Platform: Stop current tool
+    Core->>Migrator: Migrate with download configuration
+    Migrator->>Platform: Install target GUI application
     alt migration succeeds
-        Migrator-->>Module: New installation
-        Module->>Migrator: finalize(tool, new installation, context)
-        Migrator-->>Module: Complete
-        Module-->>Caller: New installation
+        Core->>Migrator: Finalize new installation
+        Migrator->>Platform: Launch in user session
+        Migrator->>Core: New installation record
     else migration fails
-        Migrator-->>Module: Error
-        Module->>Migrator: rollback(tool, context)
-        Migrator-->>Module: Rollback result or error
-        Module-->>Caller: Migration error
+        Core->>Migrator: Roll back
+        Migrator->>Core: Original migration error
     end
 ```
 
-`run_migration` enforces the lifecycle in order:
+`run_migration` in the parent tool updater establishes the execution contract:
 
-1. It calls `create_migrator`. If the types are identical, the factory returns no migrator and `run_migration` reports that migration was not needed.
-2. It calls `prepare` and wraps failures with the tool identifier and preparation context.
-3. It calls `migrate`. On success, the new installation is passed to `finalize`.
-4. If `migrate` fails, it attempts rollback. A rollback failure is logged but does not replace the original migration error.
-5. It returns the new installation only after finalization succeeds.
+1. It obtains a migrator for the current and target installation types. A request that needs no migration is treated as an error at this layer because callers should not invoke the lifecycle unnecessarily.
+2. It calls `prepare` and attaches the tool identifier to failures.
+3. It calls `migrate`. On success, the returned `Installation` represents the new persisted form.
+4. It calls `finalize` with that new installation, which performs post-install launch behavior.
+5. If the migration step fails, it attempts rollback and returns the original migration error. A rollback failure is logged but does not replace the original failure.
 
-A finalization failure is returned directly after a successful migration. The orchestration does not automatically invoke rollback in that case, so concrete implementations must make finalization safe to retry or otherwise account for partially finalized state.
+## Core Components
 
-## Decision and Failure Flow
+| Component | Responsibility |
+| --- | --- |
+| `MigrationContext` | Carries migration state between lifecycle phases. The current implementation marks whether old content was cleaned and whether the target application should be started. |
+| `ToolMigrator` | Asynchronous extension point defining source and target types plus prepare, migrate, finalize, and rollback phases. Implementations must be thread-safe. |
+| `create_migrator` | Derives the source type from the persisted installation and returns the supported platform-specific migration implementation, no implementation for an unchanged type, or an error for an unsupported transition. |
+| `needs_migration` | Predicate that compares the current derived installation type with the requested target type. |
+| `StandardToGuiAppMigrator` | macOS and Windows implementation of Standard to GUI application conversion. |
 
-```mermaid
-flowchart TD
-    Start["Requested target installation type"] --> Compare{"Types differ?"}
-    Compare -->|"No"| NoMigration["No migrator returned"]
-    Compare -->|"Yes"| Select{"Supported source and target?"}
-    Select -->|"Standard to GUI App on macOS or Windows"| Prepare["Prepare migration"]
-    Select -->|"No"| Unsupported["Return unsupported migration error"]
-    Prepare --> Migrate["Migrate tool"]
-    Migrate -->|"Success"| Finalize["Finalize migration"]
-    Finalize --> Completed["Return new installation"]
-    Migrate -->|"Failure"| Rollback["Attempt rollback"]
-    Rollback --> Failed["Return original migration error"]
-```
+## Detailed Submodule
 
-The platform gate is compile-time conditional. On platforms other than macOS and Windows, Standard to GUI App is not registered, so a differing migration request is unsupported. Similarly, Service transitions and GUI App transitions are not implemented by this module regardless of whether their types can be recognized.
+- [Standard to GUI Application Migration](platform_tool_updater_migration/standard_to_gui_application_migration/standard_to_gui_application_migration.md) details the only currently supported installation-form conversion, including its macOS and Windows behavior, user-session launch rules, and recovery boundaries.
 
-## Relationship to the Tool Update System
+## Platform Behavior
 
-The enclosing tool updater has two distinct flows:
+### Shared Preparation and Finalization
 
-- A normal update selects an updater based on the existing installation representation and performs its own prepare, apply, finalize, and rollback lifecycle.
-- A migration receives a desired target installation type, selects a `ToolMigrator`, and returns a replacement `Installation` representation.
+Preparation stops the running tool by tool agent identifier and waits two seconds before changing its installed form. The context requests a subsequent application start. Finalization exits without launching when that flag is unset or when the resulting installation is not a GUI application.
 
-This distinction prevents an updater for the old representation from silently changing the tool into a different installation model. The caller should use migration only when the target installation type differs and should treat the returned installation as the authoritative result of the transition.
+The implementation treats launch and preferences failures as warnings after a successful install. Therefore, a successful migration can return a GUI application installation even if the immediate post-migration launch could not be completed. Operators should use the client logs to distinguish installation success from launch success.
 
-## Operational Guidance
+### macOS
 
-### Logging and Diagnosis
+On macOS, migration removes the legacy standard binary when it exists, downloads and extracts the configured artifact into `/Applications`, and derives the executable or application-bundle path. The returned installation retains the configured bundle identifier.
 
-The module emits informational events when a migration is required and at each lifecycle phase. It emits warnings when the default rollback is used and errors when migration or rollback fails. Include the tool agent identifier, source type, target type, phase, and original error when diagnosing failures.
+During finalization, the migrator resolves configured command arguments where possible. When a bundle identifier is available, it converts those arguments into application preferences and attempts to write them. It then finds the console user and launches the application as that user. A chat tool with a bundle identifier starts with the `--background` argument; a bundle-based non-chat application starts without command-line arguments, while a non-bundle application uses its configured arguments.
 
-### Adding a Migration Path
+### Windows
 
-To support another transition:
+On Windows, migration downloads and writes the target binary to the tool's agent path and returns that path as the GUI application executable. Finalization resolves run arguments, falling back to the stored arguments if resolution fails. It adds `--background` for the chat tool and launches the executable in the interactive user session so that a tray application can be visible.
 
-1. Implement `ToolMigrator` with precise `from_type` and `to_type` values.
-2. Make `prepare`, `migrate`, and `finalize` idempotent or safely recoverable where possible.
-3. Implement rollback if any operation can alter the existing installation before migration completes.
-4. Add the type pair to `create_migrator`, applying platform guards if the implementation is platform-specific.
-5. Test equal-type detection, unsupported paths, preparation failure, migration failure with rollback, successful finalization, and finalization failure.
+## Failure Semantics and Operational Considerations
 
-Avoid treating `InstallationType` recognition as support for a transition. The explicit factory match is the source of truth for supported migrations.
+- Unsupported conversions fail before preparation. No fallback installer is selected.
+- The default trait rollback is a no-op that logs a warning. The Standard to GUI application implementation also logs that the binary may be lost and that reinstallation is required; it does not reconstruct the removed Standard installation.
+- macOS removal of the old binary intentionally ignores an individual removal error before attempting target installation. A failure later in the process can therefore require a fresh installation.
+- The migration API returns an `Installation` only after the platform migration step succeeds. The caller is responsible for persisting the returned installation representation through the wider tool update workflow.
+- Because user-session availability is required for immediate GUI startup, a device without an active console user can complete the file migration but not launch the GUI application immediately.
 
-## Source and Runtime Ownership
+## Relationship to the OpenFrame Client
 
-This repository consumes `openframe_agent_lib` version `v0.0.5` from the OpenFrame OSS Library. The code documented here resides in that library, while the OpenFrame OSS Tenant repository runs the client as part of its deployed platform. The library source is pinned in the link at the start of this document.
+This module is one narrow part of the Rust OpenFrame Client's platform tool updater. The client consumes `openframe_agent_lib` version `v0.0.5` from the OpenFrame OSS Library. The broader platform deploys the client as part of the tenant services and uses tool update commands to manage integrated tooling on endpoint devices.
+
+The migration module does not receive commands, persist tool records, or publish update outcomes itself. Those responsibilities belong to adjacent client services and the parent tool updater. Its responsibility is to safely select and execute the installation-form conversion requested by that workflow.

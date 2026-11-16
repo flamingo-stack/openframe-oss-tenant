@@ -1,7 +1,0 @@
-flowchart LR
-    Listener["Execution Listener"] -->|"execution message"| Service["Execution Service"]
-    Service -->|"ExecutionRequest"| Resolve["Resolve timeout and privilege"]
-    Resolve -->|"ScriptParams"| Windows["Executor Windows"]
-    Windows -->|"ExecResult"| Service
-    Service -->|"RmmResult"| ResultFlow["Result storage and publishing"]
-    Windows -->|"Windows only"| Process["Windows process or interactive user runner"]

@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Delete by tool agent ID"] --> Lock["Acquire writer lock"]
+    Lock --> Load["Read registry collection"]
+    Load --> Filter["Remove matching records"]
+    Filter --> Changed{"Collection changed?"}
+    Changed -->|"Yes"| Persist["Persist filtered collection"]
+    Persist --> TrueResult["Return true"]
+    Changed -->|"No"| FalseResult["Return false"]

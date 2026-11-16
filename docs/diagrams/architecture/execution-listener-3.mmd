@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Nats as NATS
+    participant Listener as Execution Listener
+    participant Config as Agent Configuration Service
+    participant Executor as Execution Service
+    participant Store as Result Store
+    participant Outbox as Result Outbox
+
+    Listener->>Config: Read machine ID
+    Listener->>Nats: Subscribe to machine-specific subject
+    Nats->>Listener: Execution message
+    Listener->>Listener: Parse message and normalize requests
+    Listener->>Store: Queue execution acknowledgement
+    Listener->>Outbox: Notify flush worker
+    Listener->>Executor: Execute each request
+    Executor-->>Listener: RMM result
+    Listener->>Store: Queue result payload
+    Listener->>Outbox: Notify flush worker
+    Outbox->>Nats: Publish acknowledgement and results

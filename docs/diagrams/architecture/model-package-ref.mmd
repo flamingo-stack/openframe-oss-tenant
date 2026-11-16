@@ -1,15 +1,10 @@
-classDiagram
-    class PackageRef {
-        <<enum>>
-        WINGET id String
-        BREW kind BrewKind
-        BREW name String
-        CHOCO id String
-        matches(other) bool
-    }
-    class BrewKind {
-        <<enum>>
-        FORMULA
-        CASK
-    }
-    PackageRef --> BrewKind : "Brew variant uses"
+flowchart LR
+    ControlPlane["Package update instruction"] --> UpdateMessage["Package update message"]
+    UpdateMessage --> PackageRef["Package reference"]
+    PackageRef --> ManagerSelection["Package manager selection"]
+    ManagerSelection --> Winget["Winget identifier"]
+    ManagerSelection --> Brew["Homebrew kind and name"]
+    ManagerSelection --> Choco["Chocolatey identifier"]
+    Inventory["Reported package reference"] --> Match["Reference matching"]
+    PackageRef --> Match
+    Match --> Decision["Same package decision"]

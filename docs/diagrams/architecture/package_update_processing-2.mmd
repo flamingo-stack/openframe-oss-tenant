@@ -1,0 +1,16 @@
+flowchart TD
+    Incoming["Incoming status event"] --> MachineLookup["Find machine by machine ID"]
+    MachineLookup --> MachineKnown{"Machine found?"}
+    MachineKnown -->|"No"| Ignore["Log and ignore"]
+    MachineKnown -->|"Yes"| LoadState["Load or create device state"]
+    LoadState --> Duplicate{"Duplicate event ID?"}
+    Duplicate -->|"Yes"| Recheck["Recompute request roll-up"]
+    Duplicate -->|"No"| Stale{"Older event timestamp?"}
+    Stale -->|"Yes"| Skip["Log and skip"]
+    Stale -->|"No"| LoadRequest["Load update request"]
+    LoadRequest --> Reduce["Reduce device state"]
+    Reduce --> Deadline["Manage deadline force"]
+    Deadline --> Retry["Evaluate automatic retry"]
+    Retry --> History["Record execution history"]
+    History --> SaveState["Save device state"]
+    SaveState --> Rollup["Roll up request status"]

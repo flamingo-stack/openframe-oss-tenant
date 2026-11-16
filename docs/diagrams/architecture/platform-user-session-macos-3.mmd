@@ -1,18 +1,13 @@
 flowchart TD
-    Begin["Tool requires graphical user context"] --> FindUser["Discover console user"]
-    FindUser --> ValidUser{"Regular user found?"}
-    ValidUser -->|"No"| Defer["Defer user-session launch"]
-    ValidUser -->|"Yes"| Ready["Check Dock and Finder"]
-    Ready --> DesktopReady{"GUI session ready?"}
-    DesktopReady -->|"No"| Wait["Wait for usable desktop"]
-    DesktopReady -->|"Yes"| Running["Check matching executable"]
-    Running --> AlreadyRunning{"Process already running?"}
-    AlreadyRunning -->|"Yes"| Reuse["Avoid duplicate launch"]
-    AlreadyRunning -->|"No"| Exists["Verify executable exists"]
-    Exists --> Present{"Executable exists?"}
-    Present -->|"No"| Failure["Return launch error"]
-    Present -->|"Yes"| Preferred["Try launchctl asuser"]
-    Preferred --> PreferredOk{"Launch succeeded?"}
-    PreferredOk -->|"Yes"| Started["Return child process"]
-    PreferredOk -->|"No"| Fallback["Try sudo as user"]
-    Fallback --> Started
+    Request["Launch Request"] --> Exists{"Executable exists?"}
+    Exists -->|"no"| Missing["Return executable not found error"]
+    Exists -->|"yes"| Bundle{"Path is inside an app bundle?"}
+    Bundle -->|"yes"| OpenBundle["Launch with launchctl and open"]
+    Bundle -->|"no"| LaunchBinary["Launch executable with launchctl"]
+    OpenBundle --> LaunchctlResult{"Launchctl spawned?"}
+    LaunchBinary --> LaunchctlResult
+    LaunchctlResult -->|"yes"| Started["Return child process"]
+    LaunchctlResult -->|"no"| Fallback["Launch with sudo as username"]
+    Fallback --> FallbackResult{"Fallback spawned?"}
+    FallbackResult -->|"yes"| Started
+    FallbackResult -->|"no"| LaunchError["Return contextual launch error"]

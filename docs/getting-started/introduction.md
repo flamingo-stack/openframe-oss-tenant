@@ -3,124 +3,102 @@
 
 ## What is OpenFrame OSS Tenant?
 
-**OpenFrame OSS Tenant** ([flamingo-stack/openframe-oss-tenant](https://github.com/flamingo-stack/openframe-oss-tenant)) is the deployable, tenant-oriented distribution of [OpenFrame](https://openframe.ai) ([www.flamingo.run/openframe](https://www.flamingo.run/openframe)) — the unified, AI-driven MSP operations platform built by [Flamingo](https://flamingo.run). It assembles Spring Boot services, a Rust endpoint agent, shared configuration, Helm charts, and Argo CD application definitions into one runnable platform.
+**OpenFrame OSS Tenant** is the deployable, self-hosted tenant distribution for [OpenFrame](https://openframe.ai), the unified, AI-driven MSP (Managed Service Provider) platform built by [Flamingo](https://flamingo.run). It assembles Spring Boot services (Java), a Rust endpoint agent, shared configuration, and Kubernetes/Helm manifests into one running platform that integrates multiple IT management tools behind a single gateway and a single operational surface.
 
-Rather than reimplementing OpenFrame's domain logic, this repository is the **composition and delivery layer**: it pins and assembles the OpenFrame OSS Library (`com.openframe.oss:*` at version `7.0.11`, plus the `openframe_agent_lib` Rust crate at `v0.0.5`) into runnable Spring Boot applications and a Rust endpoint agent, packages them as container images, and deploys them with Helm/Argo CD. If you are looking to stand up an MSP operations platform that unifies identity, device management, remote tooling, automation, and event processing behind one gateway, this is the repository that builds and ships it.
+Rather than reimplementing platform behavior, this repository owns the **tenant-specific composition**: thin service entry points, runtime configuration, Helm charts, Argo CD application definitions, and the release pipeline that publishes container images and Maven artifacts. Most of the domain logic it runs — authentication, GraphQL and REST APIs, RMM orchestration, stream processing, and more — is consumed from the **OpenFrame OSS Library** (`flamingo-stack/openframe-oss-lib`), pinned at version `7.0.11` for Java modules and `v0.0.5`/`0.1.0` for the Rust client agent.
 
-Flamingo replaces expensive proprietary MSP tooling with open-source alternatives enhanced by AI automation — Mingo AI for technicians and Fae for clients. OpenFrame is the platform that brings multiple MSP tools together behind a single AI-driven interface.
+Flamingo replaces expensive proprietary MSP tooling with open-source alternatives enhanced by AI automation, and OpenFrame is the integration layer that brings those tools — RMM, remote access, ticketing, and more — into one AI-assisted interface for technicians and clients.
 
-[![Getting Started with OpenFrame - Organization Setup Basics](https://img.youtube.com/vi/-_56_qYvMWk/maxresdefault.jpg)](https://www.youtube.com/watch?v=-_56_qYvMWk)
+## Key Features and Benefits
 
-## Key features and benefits
+- **Unified gateway entry point.** `openframe-gateway` is the single edge router for browser, API, and managed-endpoint traffic, enforcing JWT and API-key boundaries before forwarding to backend services.
+- **OAuth 2.0 / OpenID Connect authorization server.** `openframe-authorization-server` provides tenant-aware login, SSO (Google, Microsoft, Apple), invitation acceptance, password reset, and signed JWT issuance.
+- **Managed-endpoint platform.** `openframe-client` (server-side) coordinates registration, telemetry, delivery, and RMM commands with the Rust `openframe-client` agent running on each managed device.
+- **GraphQL and REST APIs.** `openframe-api` exposes the main operational API (devices, tickets, RMM, software, knowledge base); `openframe-external-api` exposes an API-key-protected integration surface for third parties.
+- **Event-driven data pipeline.** `openframe-stream` consumes Kafka events for enrichment, log routing, execution history, and software projections, backed by Cassandra, Pinot, and MongoDB.
+- **Centralized configuration.** `openframe-config` is a Spring Cloud Config Server distributing shared settings to every service.
+- **Platform reconciliation.** `openframe-management` handles startup reconciliation, NATS stream provisioning, Fleet MDM setup, and package catalog synchronization.
+- **Kubernetes-native delivery.** An Argo CD app-of-apps structure under `manifests/` deploys platform services, datasources (MongoDB, Redis Cluster, Cassandra, Kafka, NATS, Pinot, ZooKeeper, MySQL), and tenant workloads (Fleet MDM, MeshCentral, OpenFrame services, frontend) in ordered sync waves.
+- **Open-source foundation.** Built on Spring Boot, Spring Cloud, and a Rust agent, with integrated upstream MSP tools such as Fleet (osquery-based device management) and MeshCentral (remote access).
 
-- **Unified API and gateway surface** — a single [OpenFrame Gateway](../reference/architecture/gateway-core/gateway-core.md) routes browser, technician, integration, and endpoint-agent traffic to the right backend service, enforcing JWT/API-key security, CORS, and client-version policy at the edge.
-- **Tenant-aware identity** — an OAuth 2.1 / OpenID Connect [Authorization Server](../reference/architecture/authorization-service-core/authorization-service-core.md) handles login, invitations, SSO, and password recovery per tenant.
-- **GraphQL and REST product API** — the [OpenFrame API](../reference/architecture/api-service-backend/api-service-backend.md) service exposes devices, organizations, tickets, knowledge base, and RMM (remote monitoring and management) workflows; the [External API](../reference/architecture/external-api-service-core/external-api-service-core.md) exposes an integration-oriented REST surface with API-key auth.
-- **Endpoint agent and device management** — a Rust-based agent (published as the `openframe_client` Cargo artifact) registers devices, ships logs, executes commands/scripts, manages installed tools, and keeps itself and managed tools up to date, communicating over NATS JetStream.
-- **Event processing pipeline** — the [Stream Service](../reference/architecture/stream-service-core/stream-service-core.md) consumes Kafka and CDC events into Cassandra-backed logs and Pinot analytics projections.
-- **Background operations** — the [Management Service](../reference/architecture/management-core/management-core.md) initializes NATS streams, synchronizes package catalogs, and runs scheduled maintenance.
-- **Integrated MSP tooling** — the tenant Helm chart ([`manifests/tenant`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/manifests)) deploys Fleet MDM and MeshCentral alongside the OpenFrame services for endpoint management and remote access.
-- **GitOps-native deployment** — Argo CD application definitions ([`manifests/apps/values.yaml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/manifests/apps/values.yaml)) deploy platform prerequisites (ingress, config) and datasources (MongoDB, Redis Cluster, Kafka, NATS, Cassandra, Pinot, Zookeeper, Debezium Connect) before tenant workloads.
-
-## Target audience
+## Target Audience
 
 This repository is for:
 
-- **Platform operators and DevOps engineers** deploying or operating a self-hosted OpenFrame tenant on Kubernetes using Helm and Argo CD.
-- **Backend engineers** working on the Spring Boot services (`openframe-api`, `openframe-gateway`, `openframe-authorization-server`, `openframe-client`, `openframe-external-api`, `openframe-management`, `openframe-stream`, `openframe-config`) that make up the platform.
-- **MSP technicians and administrators** who will ultimately use the deployed OpenFrame platform to manage endpoints, tickets, and automation — though day-to-day product usage is best learned from the OpenFrame product itself and the OpenMSP community.
-- **Contributors** who want to understand how this tenant repository composes the OpenFrame OSS Library into a deployable stack.
+- **Platform operators and MSPs** who want to self-host the OpenFrame stack to manage client devices, tickets, and RMM operations.
+- **Backend engineers** working on the Java services that compose OpenFrame OSS Library modules into deployable Spring Boot applications.
+- **Platform/DevOps engineers** maintaining the Helm charts, Argo CD application definitions, and release pipeline that deliver OpenFrame to Kubernetes.
+- **Contributors** extending tenant-specific configuration, service wiring, or deployment topology, as distinct from the shared domain logic maintained upstream in the OpenFrame OSS Library.
 
-> This repository does not implement most domain logic itself. Business rules for identity, API resolvers, device data, RMM, and stream processing live in the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib), consumed here as pinned Maven and Cargo dependencies. See [`../reference/architecture/README.md`](../reference/architecture/README.md) for the full architectural breakdown.
-
-## Quick overview
+## Quick Overview
 
 ```mermaid
 flowchart LR
-    User["Browser, technician, integration, or endpoint agent"] --> Gateway["OpenFrame Gateway"]
+    User["Browser, API Client, or Managed Endpoint"] --> Gateway["OpenFrame Gateway"]
 
     Gateway --> Auth["Authorization Server"]
     Gateway --> Api["OpenFrame API"]
     Gateway --> ExternalApi["External API"]
-    Gateway --> Client["Client Service"]
-    Gateway --> Frontend["Frontend"]
-
-    Config["Config Server"] -.-> Api
-    Config -.-> Auth
-    Config -.-> Client
-    Config -.-> Gateway
-    Config -.-> Management["Management Service"]
-    Config -.-> Stream["Stream Service"]
-
-    Client --> Nats["NATS JetStream"]
-    Management --> Nats
-    Api --> Nats
-
-    Client --> Kafka["Kafka"]
-    Stream --> Kafka
-    Stream --> Cassandra["Cassandra"]
-    Stream --> Pinot["Pinot"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> Frontend["OpenFrame Frontend"]
 
     Api --> Mongo["MongoDB"]
-    Auth --> Mongo
-    Client --> Mongo
-    Management --> Mongo
-
     Api --> Redis["Redis Cluster"]
-    Auth --> Redis
-    Client --> Redis
+    Api --> Cassandra["Cassandra"]
+    Api --> Pinot["Pinot"]
+
+    ClientService --> Nats["NATS"]
+    ClientService --> Kafka["Kafka"]
+    ClientService --> Mongo
+
+    Management["Management Service"] --> Nats
+    Management --> Mongo
     Management --> Redis
 
-    Client --> Fleet["Fleet MDM"]
-    Gateway --> Mesh["MeshCentral"]
+    Stream["Stream Service"] --> Kafka
+    Stream --> Cassandra
+    Stream --> Pinot
+    Stream --> Mongo
+
+    Config["Config Service"] --> Api
+    Config --> ClientService
+    Config --> Gateway
+    Config --> Stream
+
+    TenantTools["Fleet MDM and MeshCentral"] --> Mongo
 ```
 
-The gateway routes the platform's public prefixes: `/sas/**` to the authorization server, `/api/**` to the OpenFrame API, `/api-docs/**` to the external API, `/clients/**` to the client service, and everything else (`/**`) to the frontend. These routes are defined in [`configs/base/openframe-gateway.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/openframe-gateway.yml).
+The gateway routes `/sas/**` to the authorization server, `/api/**` to the main API, `/api-docs/**` to the External API's documentation surface, `/clients/**` to the client service, and all remaining browser traffic to the OpenFrame frontend, as defined in `configs/base/openframe-gateway.yml`.
 
-### What this repository publishes
+At the code level, this repository owns nine Maven modules under `openframe/services/` (`openframe-api`, `openframe-authorization-server`, `openframe-client`, `openframe-config`, `openframe-external-api`, `openframe-gateway`, `openframe-management`, `openframe-stream`, `openframe-test`), each a thin Spring Boot application — see for example `openframe/services/openframe-api/src/main/java/com/openframe/api/ApiApplication.java` and `openframe/services/openframe-gateway/src/main/java/com/openframe/gateway/GatewayApplication.java` — plus the Rust agent entry point at `clients/openframe-client/src/main.rs`, which delegates all logic to the `openframe-agent-lib` crate pinned in `clients/openframe-client/Cargo.toml`.
 
-| Ecosystem | Artifact | Version |
-|---|---|---|
-| maven | `com.openframe:openframe-api` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-authorization-server` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-client` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-config` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-external-api` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-gateway` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-management` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-stream` | 1.0.0-SNAPSHOT |
-| maven | `com.openframe:openframe-test` | 1.0.0-SNAPSHOT |
-| cargo | `openframe_client` | 0.1.0 |
+> The OpenFrame ecosystem graph shows this repository has no recorded downstream consumers in the organization: it is a leaf service that pulls in the OpenFrame OSS Library and publishes deployable artifacts and container images, rather than being consumed as a library by other repositories.
 
-The repository graph records no other managed repository as consuming these artifacts: they are terminal, deployable build outputs rather than libraries consumed elsewhere in the organization. Everything this repository runs is built on top of the [OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib), pinned at version `7.0.11` for the Java libraries and `v0.0.5` for the `openframe_agent_lib` Rust crate (see [`pom.xml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/pom.xml) and [`clients/openframe-client/Cargo.toml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/Cargo.toml)).
+## Watch: Getting Started with OpenFrame
 
-### Repository layout
+[![Getting Started with OpenFrame - Organization Setup Basics](https://img.youtube.com/vi/-_56_qYvMWk/maxresdefault.jpg)](https://www.youtube.com/watch?v=-_56_qYvMWk)
 
-| Area | Purpose |
-|---|---|
-| [`openframe/services`](https://github.com/flamingo-stack/openframe-oss-tenant/tree/main/openframe/services) | The eight runnable Spring Boot applications (`openframe-api`, `openframe-authorization-server`, `openframe-client`, `openframe-config`, `openframe-external-api`, `openframe-gateway`, `openframe-management`, `openframe-stream`), plus `openframe-test`. |
-| [`clients/openframe-client`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/Cargo.toml) | The Rust endpoint-agent binary, a thin entry point over the `openframe_agent_lib` library. |
-| [`configs/base`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/configs/base/application.yml) | Shared service configuration, datasource settings, and gateway routes. |
-| [`manifests`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/manifests/apps/values.yaml) | Helm charts and Argo CD application definitions for platform, datasource, and tenant workloads. |
-| [`.github/workflows/release.yml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/.github/workflows/release.yml) | Builds and publishes service container images and the `app-of-apps` Helm chart. |
+## Where to Go Next
 
-## Where to go next
+- [Prerequisites](./prerequisites.md) — what you need installed before working with this repository.
+- [Quick Start](./quick-start.md) — the fastest path to running the platform.
+- [First Steps](./first-steps.md) — initial orientation after setup.
+- [Local Development Setup](../development/setup/local-development.md) — running services locally.
+- [Environment Configuration](../development/setup/environment.md) — configuring runtime settings.
+- [Architecture Overview](../development/architecture/README.md) — how the services, data stores, and manifests fit together.
+- [Testing](../development/testing/README.md) — how test coverage is organized.
+- [Contributing Guidelines](../development/contributing/guidelines.md) — how to propose changes.
+- [Security](../development/security/README.md) — security posture and practices.
+- [Development Overview](../development/README.md) — the development documentation index.
+- [Ecosystem Reference](../reference/architecture/ecosystem.md) — published artifacts, upstream dependencies, and delivery chain in full detail.
+- [Architecture Reference](../reference/architecture/README.md) — the detailed repository structure and module-by-module breakdown.
 
-- [Prerequisites](./prerequisites.md) — what you need before working with this repository.
-- [Quick Start](./quick-start.md) — the fastest path to a running instance.
-- [First Steps](./first-steps.md) — what to do once things are running.
-- [Development environment setup](../development/setup/environment.md) and [local development](../development/setup/local-development.md) — for contributors building services locally.
-- [Architecture overview](../development/architecture/README.md) and the deeper [reference architecture](../reference/architecture/README.md) — for the full service and module breakdown.
-- [Security](../development/security/README.md) and [Contributing guidelines](../development/contributing/guidelines.md) — before submitting changes.
+For the OpenFrame command-line tooling, see the separate [OpenFrame CLI repository](https://github.com/flamingo-stack/openframe-cli) and its [installation guide](https://github.com/flamingo-stack/openframe-cli#installation); it is maintained outside this repository.
 
-For MSP tooling needed to work with a deployed OpenFrame tenant, see the external [OpenFrame CLI](https://github.com/flamingo-stack/openframe-cli) repository ([installation](https://github.com/flamingo-stack/openframe-cli#installation), [documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs)) — it is maintained separately from this repository.
-
-## Community
-
-This project does not use GitHub Issues or GitHub Discussions. All community support, questions, and discussion happen in the [OpenMSP Slack community](https://www.openmsp.ai/) ([join link](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)).
+For questions, support, and community discussion, this project does not use GitHub Issues or Discussions — join the [OpenMSP Slack community](https://www.openmsp.ai/) or use the [direct Slack invite](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA).
 
 ## License
 
-This repository is licensed under **The Flamingo AI Unified License v1.1** (see [`LICENSE.md`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/LICENSE.md)). The license covers the Flamingo-authored source code in this repository and across the `flamingo-stack` organization, including OpenFrame. It does not govern the hosted OpenFrame service, OpenMSP, or the Flamingo website — those are covered by the [Flamingo AI Terms of Service](https://www.flamingo.run/terms-of-service).
+This repository is licensed under **The Flamingo AI Unified License v1.1** (Copyright © 2025 Flamingo AI, Inc.), as stated in `LICENSE.md`. The license governs the source code Flamingo AI publishes in this repository; it does not govern the hosted OpenFrame service, OpenMSP, or the Flamingo website, which are covered separately by the Flamingo AI Terms of Service.
 
-The Rust endpoint-agent crate declares `MIT` in its own [`clients/openframe-client/Cargo.toml`](https://github.com/flamingo-stack/openframe-oss-tenant/blob/main/clients/openframe-client/Cargo.toml) package metadata. The license file at the repository root, however, is the Flamingo AI Unified License v1.1, and its Appendix lists upstream components incorporated into Flamingo Software that remain under their own original licenses (for example Fleet under MIT with documentation under CC BY-SA 4.0, Osquery dual-licensed Apache-2.0 OR GPL-2.0-only, and the MeshCentral Agent under Apache-2.0). Review `LICENSE.md` directly for the authoritative terms before redistributing or building a commercial managed service on this code.
+The license requires that forks, modifications, and redistributions — including via network use — remain licensed under the same terms, and it restricts offering this software as a competing commercial managed service without a separate commercial license from Flamingo AI. Upstream components incorporated into the platform, such as Fleet (MIT) and MeshCentral Agent (Apache-2.0), remain under their own original licenses as listed in the Appendix of `LICENSE.md`.

@@ -1,0 +1,6 @@
+flowchart LR
+    PendingUpdate["Client update pending"] --> ToolBusy{"Tool operation busy?"}
+    ToolBusy -->|"no"| WaitUpdate["Wait for update to clear"]
+    WaitUpdate --> PendingUpdate
+    ToolBusy -->|"yes"| Continue["Continue to restart notification"]
+    PendingUpdate -->|"cleared"| Continue

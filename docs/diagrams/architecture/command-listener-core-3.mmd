@@ -1,0 +1,15 @@
+flowchart TD
+    Start["NATS message arrives"] --> Decode["Decode handler command type"]
+    Decode --> Begin["Call handler begin"]
+    Begin --> Accepted{"Accepted?"}
+    Accepted -->|"no"| Busy["Return busy delivery result"]
+    Accepted -->|"yes"| Run["Run handler with guard"]
+    Run --> Result{"Outcome"}
+    Result -->|"done"| Complete["Record and publish completion"]
+    Result -->|"restart required"| RestartRequest["Coordinate requested restart"]
+    Result -->|"restarting"| RestartRecover["Settle on next agent start"]
+    Result -->|"failed"| Failure["Record and publish failure"]
+    Complete --> Finish["Delivery settled"]
+    RestartRequest --> Finish
+    RestartRecover --> Finish
+    Failure --> Finish

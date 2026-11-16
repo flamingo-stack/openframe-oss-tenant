@@ -1,0 +1,16 @@
+flowchart TD
+    Receive["Receive Package Update Message"] --> MachineMatch{"Machine identity matches?"}
+    MachineMatch -->|"no"| Reset["Discard prior machine queue"]
+    MachineMatch -->|"yes"| Lookup["Find request in pending or finished memory"]
+    Reset --> Lookup
+    Lookup --> SequenceCheck{"Sequence is newer?"}
+    SequenceCheck -->|"no"| Stale["Return Stale"]
+    SequenceCheck -->|"yes"| Existing{"Same request is pending?"}
+    Existing -->|"yes"| Refresh["Replace intent fields and increment revision"]
+    Existing -->|"no"| SamePackage{"Queued matching package not installing?"}
+    SamePackage -->|"yes"| Replace["Remove older queued order"]
+    SamePackage -->|"no"| Add["Append new order"]
+    Replace --> Add
+    Refresh --> Persist["Persist and notify worker"]
+    Add --> Persist
+    Persist --> Result["Return Accepted or Superseded"]

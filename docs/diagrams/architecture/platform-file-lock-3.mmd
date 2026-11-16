@@ -1,12 +1,13 @@
 flowchart TD
-    Start["I O operation fails"] --> CheckError{{"Sharing violation?"}}
-    CheckError -->|"No"| Ignore["Return false without lock log"]
-    CheckError -->|"Yes"| Query["Query locking processes"]
-    Query --> HasHolders{{"Holders returned?"}}
-    HasHolders -->|"Yes"| Format["Format name and PID list"]
-    Format --> KnownLog["Log known locking holders"]
-    HasHolders -->|"No"| UnknownLog["Log locked file with unknown holder"]
-    Query -->|"Query error"| FailureLog["Log lock query failure"]
-    KnownLog --> Completed["Return true"]
-    UnknownLog --> Completed
-    FailureLog --> Completed
+    Start["Directory query requested"] --> Collect["Recursively collect filesystem entries"]
+    Collect --> Limit{"Reached 1,024 paths?"}
+    Limit -->|"No"| More["Continue traversing entries"]
+    More --> Collect
+    Limit -->|"Yes"| Query["Register collected paths in one session"]
+    Collect --> Empty{"Any paths collected?"}
+    Empty -->|"Yes"| Query
+    Empty -->|"No"| Directory["Register directory path"]
+    Directory --> Query
+    Query --> Holders["Query Restart Manager holders"]
+    Holders --> Dedupe["Sort and deduplicate by process ID"]
+    Dedupe --> Result["Return LockHolder records"]

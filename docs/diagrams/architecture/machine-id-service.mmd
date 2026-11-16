@@ -1,0 +1,7 @@
+flowchart LR
+    ClientRuntime["OpenFrame Client Runtime"] -->|"constructs"| MachineIdService["Machine Id Service"]
+    DirectoryManager["Directory Manager"] -->|"app support directory"| MachineIdService
+    MachineIdService -->|"reads and writes"| MachineIdFile["machine_id file"]
+    MachineIdService -->|"keeps"| MemoryCache["Process Memory Cache"]
+    MachineIdService -->|"shares local identity with"| ToolAgents["Integrated Tool Agents"]
+    AgentConfig["Agent Configuration Service"] -->|"reads separate server identifier"| ServerMachineId["Server Assigned Machine Id"]

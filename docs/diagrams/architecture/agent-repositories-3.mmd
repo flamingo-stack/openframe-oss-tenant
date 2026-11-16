@@ -1,8 +1,0 @@
-sequenceDiagram
-    participant Service as Agent Log Key Service
-    participant Repository as Agent Log Key Repository
-    participant Mongo as MongoDB
-    Service->>Repository: findFirstByOrderByCreatedAtDesc()
-    Repository->>Mongo: Query sorted by createdAt descending
-    Mongo-->>Repository: First record or no record
-    Repository-->>Service: Optional AgentLogKey

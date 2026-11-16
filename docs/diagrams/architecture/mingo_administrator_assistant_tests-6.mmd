@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Potentially mutating prompt"] --> PolicyCheck["Apply approval policy"]
+    PolicyCheck -->|"Rejected"| NoAction["No side effect"]
+    PolicyCheck -->|"Approved"| Intent["Assistant interprets request"]
+    Intent -->|"Hypothetical or untrusted content"| NoAction
+    Intent -->|"Authorized explicit action"| ToolCall["Tool invocation"]
+    ToolCall --> Verify["Verify external state"]
+    NoAction --> Verify

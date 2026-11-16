@@ -1,0 +1,10 @@
+flowchart LR
+    ClientStartup["Client startup"] --> Processor["Registration Processor"]
+    Processor --> ConfigService["Agent Configuration Service"]
+    Processor --> RegistrationService["Agent Registration Service"]
+    ConfigService --> AgentConfig["Local agent configuration"]
+    RegistrationService --> InitialConfig["Initial Configuration Service"]
+    RegistrationService --> MachineStore["Persisted machine information"]
+    RegistrationService --> RegistrationClient["Registration Client"]
+    RegistrationClient --> ClientApi["Client registration API"]
+    RegistrationService --> AgentConfig

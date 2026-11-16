@@ -1,0 +1,9 @@
+flowchart TD
+    Incoming["Incoming Command"] --> TryRead["Attempt read-lock admission"]
+    TryRead --> LockAvailable{"Lock available?"}
+    LockAvailable -->|"no"| RejectLock["Reject command admission"]
+    LockAvailable -->|"yes"| Closing{"Closing latch set?"}
+    Closing -->|"yes"| RejectClosing["Reject command admission"]
+    Closing -->|"no"| Guard["Return owned read guard"]
+    Guard --> Execute["Caller performs command work"]
+    Execute --> Release["Guard releases on completion"]

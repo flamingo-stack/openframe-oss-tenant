@@ -1,0 +1,8 @@
+flowchart TD
+    Controller["OAuth BFF Controller"] --> BffService["OAuth BFF Service"]
+    Controller --> CookieService["Cookie Service"]
+    Controller --> TicketStore["OAuth Dev Ticket Store"]
+    Controller --> RedirectResolver["Redirect Target Resolver"]
+    TicketStore --> MemoryStore["In-memory default implementation"]
+    RedirectResolver --> DefaultResolver["Default implementation"]
+    HeaderContract["Forwarded Headers Contributor"] --> NoopHeaders["No-op default implementation"]

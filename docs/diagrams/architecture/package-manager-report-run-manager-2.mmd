@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Owner as Client Startup Owner
+    participant Manager as Report Run Manager
+    participant Wake as Notify Handle
+    participant Publisher as Report Publisher
+    participant Nats as NATS Publisher
+    Owner->>Manager: new(publisher)
+    Owner->>Manager: start()
+    Manager->>Manager: spawn background task
+    Wake->>Manager: notified()
+    Manager->>Publisher: publish within timeout
+    Publisher->>Nats: publish report
+    Nats-->>Publisher: result
+    Publisher-->>Manager: success or error
+    Manager->>Manager: continue waiting

@@ -1,0 +1,18 @@
+flowchart TD
+    TestService["OpenFrame test service"] --> TestModule["Ai Settings And Dialogs Tests"]
+    TestModule --> AiTest["AiSettingsTest"]
+    TestModule --> DialogTest["DialogsTest"]
+
+    AiTest --> AiApi["AiSettingsApi"]
+    AiTest --> OrganizationApi["OrganizationApi"]
+    DialogTest --> DialogApi["DialogApi"]
+    DialogTest --> MessageApi["MessageApi"]
+    DialogTest --> TicketApi["TicketApi"]
+    DialogTest --> DeviceApi["DeviceApi"]
+
+    AiApi --> Platform["Tenant APIs"]
+    OrganizationApi --> Platform
+    DialogApi --> Platform
+    MessageApi --> Platform
+    TicketApi --> Platform
+    DeviceApi --> Platform

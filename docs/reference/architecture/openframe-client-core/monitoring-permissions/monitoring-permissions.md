@@ -1,101 +1,81 @@
 # Monitoring Permissions
 
-Monitoring Permissions is a background reliability component in the OpenFrame Client. It periodically verifies that the agent's managed directories exist and remain accessible with the expected permissions, then attempts remediation when verification fails. The implementation is supplied by the `openframe_agent_lib` Cargo dependency from the OpenFrame OSS Library and runs within this repository's client deployment.
+Monitoring Permissions is a background resilience component in the Rust OpenFrame Client. It periodically verifies that the agent's managed directories exist and have usable permissions. When a check fails, it attempts corrective permission changes and records local monitoring values for the attempt.
 
-The module is implemented in [permissions.rs](https://github.com/flamingo-stack/openframe-oss-lib/blob/7a766f00e4f58b5d89db007b878ac8d6e0c344f4/clients/openframe-client/src/monitoring/permissions.rs).
+The implementation is supplied by the `openframe_agent_lib` crate from the [OpenFrame OSS Library source](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/monitoring/permissions.rs). This repository consumes that library as part of the OpenFrame Client runtime.
 
-## Responsibilities
+## Scope and Responsibilities
 
-- Construct a `PermissionMonitor` around a shared `DirectoryManager`.
-- Run directory health checks on a configurable interval, defaulting to one hour.
-- Record a timestamp for each permission-check attempt.
-- Log successful checks, health-check failures, and remediation failures.
-- Attempt permission repair after a failed health check.
-- Maintain in-process metric entries for check errors and successful repairs.
+The `PermissionMonitor` owns three concerns:
 
-This module monitors filesystem state only. It does not send metrics to a remote endpoint, decide agent privileges, or define the target directory policy. Directory validation and repair are delegated to the platform directory component.
+- retaining a shared `DirectoryManager`, which is the platform abstraction for agent-managed paths;
+- scheduling recurring directory health checks; and
+- holding a local `MetricsStore` for check timestamps, failures, and successful remediation attempts.
+
+It does not expose a network endpoint, publish its metrics itself, or determine operating-system-specific access-control rules. The directory layer owns those details, while the client application decides when to construct and run the monitor.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    ClientRuntime["OpenFrame Client runtime"] -->|"starts"| PermissionMonitor["PermissionMonitor"]
-    PermissionMonitor -->|"performs health check"| DirectoryManager["DirectoryManager"]
-    DirectoryManager -->|"ensures and validates"| ManagedDirectories["Logs, application support, secured, user logs"]
-    PermissionMonitor -->|"records local metrics"| MetricsStore["MetricsStore"]
-    PermissionMonitor -->|"writes operational events"| Tracing["Tracing logs"]
-    DirectoryManager -->|"reports failure"| PermissionMonitor
-    PermissionMonitor -->|"attempts remediation"| DirectoryManager
+    ClientRuntime["OpenFrame Client runtime"] --> Monitor["PermissionMonitor"]
+    Monitor -->|"perform health check"| DirectoryManager["DirectoryManager"]
+    DirectoryManager -->|"ensure directories"| ManagedPaths["Managed agent directories"]
+    DirectoryManager -->|"validate permissions"| ManagedPaths
+    Monitor -->|"record local values"| MetricsStore["MetricsStore"]
+    Monitor -->|"on check failure"| Remediation["Permission remediation"]
+    Remediation -->|"fix permissions"| DirectoryManager
 ```
 
-`PermissionMonitor` owns an `Arc<DirectoryManager>`, allowing the same directory manager to be shared safely with the rest of the client. Its metrics store is independently protected by an asynchronous read-write lock.
+`DirectoryManager` is provided by the platform-directory layer of the same library. It tracks the logs directory, application-support directory, secured directory, and optionally per-user logs. Its health check ensures directories exist and validates their permissions. Its repair path reapplies standard directory permissions to normal directories and admin-only permissions to the secured directory.
 
-## Components and Interfaces
+## Core API
 
-| Component | Role |
+| Component | Responsibility |
 |---|---|
-| `PermissionMonitor` | Coordinates periodic validation, failure handling, repair, logging, and local metric recording. |
-| `new` | Creates a monitor with a one-hour check interval and an empty `MetricsStore`. |
-| `with_interval` | Builder-style override for the interval, useful when embedding the monitor or testing it. |
-| `start_monitoring` | Asynchronous, non-terminating monitoring loop. It owns the monitor and awaits every interval tick before executing a check. |
-| `get_metrics` | Returns the three supported metric names, but currently returns `0.0` for every value rather than reading the internal metric store. |
-| `DirectoryManager.perform_health_check` | Creates missing managed directories and validates their permissions. |
-| `DirectoryManager.fix_permissions` | Repairs permissions for logs and application-support directories, applies restricted permissions to the secured directory, and repairs optional user-log directories. |
-| `MetricsStore` | In-memory map keyed by metric name. Recording a metric inserts or replaces the entry for that name. |
+| `PermissionMonitor::new` | Creates a monitor for a shared `DirectoryManager`, with a one-hour default interval and an empty local `MetricsStore`. |
+| `PermissionMonitor::with_interval` | Overrides the interval before the monitor is started; useful for integration or accelerated verification scenarios. |
+| `PermissionMonitor::start_monitoring` | Logs startup, creates a Tokio interval, and runs checks indefinitely. The first Tokio interval tick is awaited before the first check. |
+| `PermissionMonitor::get_metrics` | Returns the three metric names that this module defines, each paired with `0.0`. This is a name catalog rather than a snapshot of values held by the internal store. |
 
-## Monitoring Cycle
+The monitor takes ownership of itself in `start_monitoring`. Callers therefore configure the interval before starting it and normally run it in a long-lived asynchronous task.
+
+## Check and Remediation Flow
 
 ```mermaid
 flowchart TD
-    Start["Monitor started"] --> Wait["Wait for interval tick"]
-    Wait --> Timestamp["Record check timestamp"]
-    Timestamp --> HealthCheck["Run directory health check"]
-    HealthCheck --> Healthy{"Health check successful?"}
-    Healthy -->|"Yes"| SuccessLog["Log successful check"]
-    SuccessLog --> Wait
-    Healthy -->|"No"| ErrorLog["Log health check failure"]
-    ErrorLog --> ErrorMetric["Record permission error metric"]
-    ErrorMetric --> Repair["Attempt permission repair"]
-    Repair --> Repaired{"Repair successful?"}
-    Repaired -->|"Yes"| RepairLog["Log successful repair"]
-    RepairLog --> RepairMetric["Record permission fix metric"]
-    RepairMetric --> Wait
-    Repaired -->|"No"| RepairErrorLog["Log repair failure"]
-    RepairErrorLog --> Wait
+    Start["Monitoring task starts"] --> Wait["Wait for interval tick"]
+    Wait --> Timestamp["Record check timestamp gauge"]
+    Timestamp --> Check["Run directory health check"]
+    Check --> Decision{"Health check passed?"}
+    Decision -->|"yes"| Success["Log successful check"]
+    Success --> Wait
+    Decision -->|"no"| ErrorMetric["Record permission error"]
+    ErrorMetric --> Fix["Attempt permission repair"]
+    Fix --> Fixed{"Repair succeeded?"}
+    Fixed -->|"yes"| FixMetric["Record repair count"]
+    Fixed -->|"no"| FixError["Log repair failure"]
+    FixMetric --> Wait
+    FixError --> Wait
 ```
 
-The monitor performs no retry inside a single cycle. A failed repair is logged and the next scheduled cycle performs validation again. A successful repair is not followed by an immediate second health check; confirmation occurs during a later scheduled check.
+For every scheduled execution, the monitor first writes `openframe_last_permission_check_timestamp` using Unix epoch seconds. It then calls `DirectoryManager::perform_health_check`, which creates missing managed directories and validates permissions.
 
-## Directory Health and Repair Scope
+When validation fails, the monitor logs the error and records `openframe_permission_errors_total`. It then calls `DirectoryManager::fix_permissions`. A successful repair is logged and records `openframe_permission_fixes_total`; a failed repair is only logged. The loop continues after either result, so a temporary or unrepaired condition can be retried on later ticks.
 
-The delegated health check first ensures managed directories exist, then validates their permissions. When remediation is needed, the directory manager repairs the following locations according to the platform policy:
+## Metrics Semantics and Concurrency
 
-- Logs directory.
-- Application-support directory.
-- Secured directory, with an administrative-only permission policy.
-- Per-user logs directory when one is configured.
+The internal `MetricsStore` is protected by an asynchronous reader-writer lock. The monitoring path uses non-blocking `try_write` calls. Consequently, a metric update can be skipped if another task holds the write lock; health checking and remediation still continue. Metric writes use no labels.
 
-The monitor treats any error from the complete health check as a permission-monitoring failure. Consequently, its error metric indicates that the delegated health check failed; it is not a per-directory or per-capability breakdown.
+| Metric | Type recorded | Meaning |
+|---|---|---|
+| `openframe_last_permission_check_timestamp` | Gauge | Unix timestamp for the most recent check whose timestamp write acquired the lock. |
+| `openframe_permission_errors_total` | Counter | A value of `1` recorded for a health-check failure when the lock is available. |
+| `openframe_permission_fixes_total` | Counter | A value of `1` recorded after a successful repair when the lock is available. |
 
-## Metrics and Observability
+The underlying store's `record_counter` method inserts a metric by name. Based on the supplied implementation, repeated writes replace the stored metric entry rather than incrementing a previously stored value. Consumers must therefore not assume these local values are cumulative totals without reviewing the metric-export integration.
 
-The monitor records all metrics without labels.
-
-| Metric | Type | Recorded when | Meaning |
-|---|---|---|---|
-| `openframe_last_permission_check_timestamp` | Gauge | Before every health check | Unix timestamp in seconds for the most recent check attempt. |
-| `openframe_permission_errors_total` | Counter entry | A health check returns an error | Most recently recorded error value. |
-| `openframe_permission_fixes_total` | Counter entry | A repair succeeds | Most recently recorded successful-repair value. |
-
-### Important implementation details
-
-`MetricsStore.record_counter` stores a metric entry by name; it does not add the supplied value to a previous value. The monitor always supplies `1`, so the internal entries act as last-recorded indicators rather than process-lifetime totals.
-
-Metric writes use `try_write`. If the metrics lock is temporarily unavailable, the monitoring and remediation path continues and that metric update is skipped. This prevents metric contention from blocking filesystem repair.
-
-Although the module exposes `get_metrics`, its current implementation returns the metric names with zero values and does not read the internal store. Consumers requiring live values must not treat that method as a metrics snapshot without a corresponding implementation change.
-
-## Runtime and Failure Behavior
+## Component Interaction
 
 ```mermaid
 sequenceDiagram
@@ -104,38 +84,35 @@ sequenceDiagram
     participant Directories as Directory Manager
     participant Metrics as Metrics Store
     Runtime->>Monitor: start monitoring
-    loop At configured interval
-        Monitor->>Metrics: record check timestamp
+    loop Every configured interval
+        Monitor->>Metrics: record timestamp gauge
         Monitor->>Directories: perform health check
         alt Check succeeds
             Directories-->>Monitor: success
-            Monitor->>Monitor: log success
         else Check fails
             Directories-->>Monitor: error
-            Monitor->>Monitor: log failure
-            Monitor->>Metrics: record error entry
+            Monitor->>Metrics: record error counter
             Monitor->>Directories: fix permissions
             alt Repair succeeds
                 Directories-->>Monitor: success
-                Monitor->>Metrics: record repair entry
+                Monitor->>Metrics: record repair counter
             else Repair fails
                 Directories-->>Monitor: error
-                Monitor->>Monitor: log repair failure
             end
         end
     end
 ```
 
-The loop has no built-in shutdown signal and `start_monitoring` consumes `self`. The caller should run it in a task whose lifecycle is managed by the broader client runtime. Because directory operations are synchronous calls inside an asynchronous method, their duration occupies the task while each check or repair runs.
+## Operational Considerations
 
-## Configuration and Integration Guidance
+- **Default cadence:** checks run hourly unless `with_interval` is used before startup.
+- **Repair boundaries:** repair only targets paths already managed by `DirectoryManager`: logs, application support, secured storage, and configured user logs. It does not scan arbitrary filesystem paths.
+- **Privileges:** remediation depends on the client process having sufficient operating-system privileges for the relevant paths. A failed repair is logged but does not stop the monitoring loop.
+- **Observability:** startup, successful checks, check failures, successful repairs, and repair failures are written through the client's tracing configuration. The monitor itself does not export its local metric store.
+- **Lifecycle:** there is no built-in cancellation or shutdown handle in this component. The task must be managed by the surrounding client runtime.
 
-- The default interval is `Duration::from_secs(3600)`.
-- Call `with_interval` before `start_monitoring` to select a different cadence.
-- Supply a fully configured `DirectoryManager`; it determines the directory locations, optional user-log directory, validation criteria, and repair policy.
-- Treat tracing output as the primary operational evidence for individual failures and repair outcomes.
-- If exported counters or a metrics endpoint are required, update metric retrieval or integrate the monitor with the client-wide metrics publication path. The current API does not expose the recorded store values.
+## Relationship to the OpenFrame Client
 
-## Maintenance Considerations
+Monitoring Permissions is one subsystem within the `openframe_agent_lib` used by the OpenFrame Client. It complements platform-directory management by repeatedly enforcing the health expectations established during installation and runtime. In the broader tenant deployment, the OpenFrame Client service image is delivered by this repository and communicates with the configured platform services; permission monitoring remains local to each managed endpoint and does not alter gateway routing or server-side authorization.
 
-When changing this module, preserve the ordering of timestamp recording, validation, error recording, and remediation so operational signals remain interpretable. If counters are expected to be cumulative, change the metric-store update semantics or read-modify-write the stored value under the lock. If a repair must be verified immediately, explicitly add a post-repair health check and define its metric and logging behavior.
+For the source-level implementation, see [permissions.rs in the OpenFrame OSS Library](https://github.com/flamingo-stack/openframe-oss-lib/blob/16e7c1cbd9664e7d10ec5ebca7d53c9bd314decf/clients/openframe-client/src/monitoring/permissions.rs).

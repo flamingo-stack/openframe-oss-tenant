@@ -1,11 +1,10 @@
-flowchart LR
-    DoctorCommand["doctor command"] --> Privileges["Check administrator privileges"]
-    Privileges --> Config["Read installed configuration"]
-    Config --> Decision{{"Configuration available?"}}
-    Decision -->|"No"| Awaiting["Report awaiting authentication"]
-    Decision -->|"Yes"| Network["Run network checks"]
-    Network --> Report["Print diagnostic report"]
-    Report --> Pending{{"Remediation pending?"}}
-    Pending -->|"Yes"| Heal["Attempt automatic healing"]
-    Pending -->|"No"| Complete["Complete"]
-    Heal --> Complete
+flowchart TD
+    Cli["Cli Entrypoint"] --> Agent["Agent workflow"]
+    Cli --> Install["Install workflow"]
+    Cli --> Auth["Authentication workflow"]
+    Cli --> Doctor["Doctor workflow"]
+    Cli --> Uninstall["Uninstall workflow"]
+    Cli --> Permissions["Permission workflow"]
+    Cli --> Restart["Restart workflow"]
+    Cli --> Platform["Platform console configuration"]
+    Cli --> Logging["Logging initialization"]

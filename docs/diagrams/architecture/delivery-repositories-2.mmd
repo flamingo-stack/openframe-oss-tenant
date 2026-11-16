@@ -1,15 +1,13 @@
 stateDiagram-v2
-    [*] --> PENDING
-    PENDING --> DISPATCHED: Publish delivery
-    DISPATCHED --> ACKED: Acknowledgement
-    DISPATCHED --> PENDING: Schedule rerun
-    ACKED --> DONE: Completion
-    DISPATCHED --> DONE: Completion
-    PENDING --> CANCELLED: Cancel
-    DISPATCHED --> CANCELLED: Cancel
-    PENDING --> FAILED: Failure
-    DISPATCHED --> FAILED: Failure
-    ACKED --> FAILED: Failure
-    DONE --> [*]
-    CANCELLED --> [*]
-    FAILED --> [*]
+    [*] --> Pending
+    Pending --> Acked: acknowledge matching dispatch
+    Pending --> Failed: failure or terminal error
+    Pending --> Cancelled: cancellation
+    Acked --> Done: completion matching dispatch
+    Acked --> Failed: reported failure
+    Pending --> Pending: postpone or republish
+    Acked --> Pending: schedule rerun
+    Failed --> Pending: schedule rerun
+    Done --> [*]
+    Cancelled --> [*]
+    Failed --> [*]

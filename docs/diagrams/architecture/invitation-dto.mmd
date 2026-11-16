@@ -1,10 +1,7 @@
 flowchart LR
-    TestCase["User Invitations Test"] -->|"calls"| ApiHelper["Invitation API helper"]
-    ApiHelper -->|"GET /api/invitations"| Gateway["OpenFrame Gateway"]
-    Gateway -->|"routes request"| ApiService["OpenFrame API service"]
-    ApiService -->|"delegates to"| InvitationService["Invitation service"]
-    InvitationService -->|"loads page"| Repository["Invitation repository"]
-    InvitationService -->|"builds response"| ServerPage["Server invitation page response"]
-    ServerPage -->|"JSON response"| ApiHelper
-    ApiHelper -->|"deserializes"| InvitationDto["Invitation Dto"]
-    InvitationDto -->|"asserted by"| TestCase
+    TestCase["Invitation-focused test"] --> ApiClient["Test API client"]
+    ApiClient --> Endpoint["GET /invitations"]
+    Endpoint --> Response["Invitation page JSON"]
+    Response --> Dto["InvitationPageResponse"]
+    Dto --> Items["List of Invitation items"]
+    Dto --> Metadata["Pagination metadata"]

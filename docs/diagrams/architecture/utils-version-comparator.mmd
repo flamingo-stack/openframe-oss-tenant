@@ -1,5 +1,9 @@
 flowchart LR
-    Tenant["OpenFrame OSS Tenant"] -->|"runs"| Agent["OpenFrame client agent"]
-    Agent -->|"uses"| Module["Utils Version Comparator"]
-    Module -->|"parses"| Semver["semver Version"]
-    Module -->|"returns"| Ordering["std cmp Ordering"]
+    Caller["Client update or tool update logic"] -->|"current and target text"| Compare["compare_versions"]
+    Compare --> ParseFrom["parse_version current"]
+    Compare --> ParseTo["parse_version target"]
+    ParseFrom --> SemVer["semver Version values"]
+    ParseTo --> SemVer
+    SemVer --> Precedence["precedence"]
+    Precedence --> Result["Option Ordering"]
+    Result --> Caller

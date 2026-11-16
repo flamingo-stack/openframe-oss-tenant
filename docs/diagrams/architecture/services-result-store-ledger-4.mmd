@@ -1,9 +1,0 @@
-flowchart TD
-    Startup["Agent startup"] --> Recover["recover deliveries()"]
-    Recover --> Scan["Select in-flight ledger entries"]
-    Scan --> AnyInFlight{"Matching entries?"}
-    AnyInFlight -->|"No"| Complete["Return zero recovered entries"]
-    AnyInFlight -->|"Yes"| FailedResult["Create failed result with restart interruption error"]
-    FailedResult --> Queue["Write result to outbox"]
-    Queue --> Settled["Persist settled ledger state"]
-    Settled --> CompleteRecovered["Return recovered delivery references count"]

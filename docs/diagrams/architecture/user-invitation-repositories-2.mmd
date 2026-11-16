@@ -1,9 +1,7 @@
-flowchart TD
-    Start["Build common pending invitation criteria"] --> Filter["Apply expiration, role, and email filters"]
-    Filter --> CursorCheck{"Cursor supplied?"}
-    CursorCheck -->|"No"| Sort["Sort by createdAt descending, then id descending"]
-    CursorCheck -->|"Yes"| After["Add records after cursor in descending order"]
-    After --> Sort
-    Sort --> Limit["Apply requested page limit"]
-    Limit --> Query["Execute MongoDB query"]
-    Query --> Page["Return invitation page"]
+flowchart LR
+    Request["Invitation list request"] --> Pending["Require pending status"]
+    Pending --> Filters["Apply expiry role and email filters"]
+    Filters --> Cursor["Apply created time and identifier boundary"]
+    Cursor --> Sort["Sort created time descending then identifier descending"]
+    Sort --> Result["Return limited invitation page"]
+    Filters --> Count["Count matching invitations"]

@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Published: Publish
+    Published --> Draft: Unpublish
+    Draft --> Archived: Archive
+    Published --> Archived: Archive
+    Archived --> Draft: Unarchive

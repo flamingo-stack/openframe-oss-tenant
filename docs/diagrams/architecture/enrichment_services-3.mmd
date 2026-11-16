@@ -1,0 +1,18 @@
+flowchart TD
+    Receive["Receive native RMM result message"] --> Machine["Resolve agent ID as OpenFrame machine ID"]
+    Machine --> Cache{"Machine found in cache?"}
+    Cache -->|"yes"| MachineFields["Add machine ID, hostname, and nickname"]
+    MachineFields --> Org["Resolve cached organization"]
+    Org --> Execution["Read tenant ID and execution ID from payload after image"]
+    Cache -->|"no"| Warn["Log unknown machine warning"]
+    Warn --> Execution
+    Execution --> Keys{"Tenant ID and execution ID present?"}
+    Keys -->|"no"| Tenant["Resolve tenant context"]
+    Keys -->|"yes"| LoadExecution["Find script execution by tenant ID and execution ID"]
+    LoadExecution --> Origin["Add initiator and execution source"]
+    Origin --> TestRun{"Execution is a test run?"}
+    TestRun -->|"yes"| Exclude["Exclude Cassandra, Loki, and Pinot destinations"]
+    TestRun -->|"no"| Script["Resolve script ID and creation source"]
+    Exclude --> Script
+    Script --> Tenant
+    Tenant --> Return["Return enriched data"]

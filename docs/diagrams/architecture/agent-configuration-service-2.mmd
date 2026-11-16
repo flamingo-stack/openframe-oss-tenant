@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Registration as Agent Registration Service
+    participant Config as Agent Configuration Service
+    participant File as agent_config.json
+    participant Auth as Agent Auth Service
+    participant Server as Authorization Service
+    Registration->>Config: save_registration_data(machine ID, client ID, secret)
+    Config->>File: read current configuration
+    Config->>Config: merge registration fields under write lock
+    Config->>File: atomically replace JSON
+    Auth->>Config: get_client_credentials()
+    Config->>File: read JSON
+    Config-->>Auth: client ID and secret
+    Auth->>Server: authenticate with client credentials
+    Server-->>Auth: access token and refresh token
+    Auth->>Config: update_tokens(access token, refresh token)
+    Config->>File: read, merge, and atomically replace JSON

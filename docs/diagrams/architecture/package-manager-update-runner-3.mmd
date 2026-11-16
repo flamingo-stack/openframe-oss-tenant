@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Store as Order Store
+    participant Runner as Package Manager Update Runner
+    participant Config as Agent Configuration Service
+    participant Signals as Restart Signals
+    participant Worker as Worker
+    participant Status as Status Reporter
+
+    Runner->>Config: Read machine identifier
+    alt machine identifier unavailable
+        Runner->>Runner: Wait for polling interval
+    else machine identifier available
+        Runner->>Store: Load pending orders
+        alt no pending orders
+            Runner->>Store: Wait for change notification
+        else orders available
+            Runner->>Signals: Check client update and restart state
+            alt restart pending
+                Runner->>Runner: Pause further installs
+            else clear to proceed
+                Runner->>Store: Re-read current order
+                Runner->>Worker: Evaluate order and perform eligible work
+                Worker->>Status: Report state changes
+                alt order finished
+                    Runner->>Store: Mark order finished
+                else deferred
+                    Runner->>Runner: Store next evaluation time
+                end
+            end
+        end
+    end

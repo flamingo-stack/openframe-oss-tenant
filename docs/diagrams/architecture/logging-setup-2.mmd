@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Runtime as Client Runtime
+    participant Setup as Logging Setup
+    participant Directories as Directory Manager
+    participant Subscriber as Tracing Subscriber
+    participant File as Log File
+    participant Metrics as Metrics Store
+    Runtime->>Setup: init(endpoint, agentId)
+    Setup->>Directories: construct development or system manager
+    Setup->>Directories: perform health check
+    Directories-->>Setup: log directory available
+    Setup->>File: open append handle for manual fallback
+    Setup->>Metrics: create metrics layer and store global handle
+    Setup->>Subscriber: install configured global subscriber
+    Setup->>Subscriber: emit initialized event
+    Subscriber->>File: append formatted event
+    Subscriber->>Metrics: record event metrics
+    Setup-->>Runtime: initialization result
