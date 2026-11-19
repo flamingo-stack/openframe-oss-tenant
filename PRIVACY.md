@@ -1,7 +1,7 @@
 # Flamingo AI Privacy Policy
 
-**Version:** 2.2  
-**Effective date:** December 1, 2026  
+**Version:** 2.3  
+**Effective date:** [go-live date]  
 **Applies to:** All Flamingo AI products, including OpenFrame, OpenFrame SaaS, OpenMSP, and the Flamingo Website
 
 
@@ -35,6 +35,7 @@ This Privacy Policy explains how Flamingo AI, Inc. (“Flamingo AI”) collects,
 - **Analytics and advertising measurement.** The Website loads Google Tag Manager when you open a page. It loads Google Analytics, PostHog, HubSpot tracking, the Meta pixel, the Reddit pixel, the LinkedIn Insight tag, Ahrefs Analytics and Snitcher. They collect IP address, device and browser data, the pages you view, your clicks and scrolling, the referring page and campaign parameters, and they set cookies or similar identifiers (section 16). A booked meeting is also reported to Google Ads.  
 - **Session recording.** PostHog records visits to the Website: pages, mouse movement, clicks, what is shown on the screen, and messages in the browser console. It also builds heatmaps.  
 - **Company identification.** Snitcher (on flamingo.run) and Leadsy (on openmsp.ai) use your IP address to identify the company you are visiting from.  
+- **Person identification.** On flamingo.run we use GetLeads, which works with its data partners, to identify some visitors from the United States as individuals. The GetLeads script loads only for visitors from the United States. It records the pages you view, your clicks, including the text of what you click, and the contents of forms you submit on the Website, except passwords, payment details and similar fields. When a visitor is identified, we receive their work email address and professional profile URL. We use this information to contact business visitors about our products. GetLeads and its partners may also use this data for their own purposes (section 15).  
 - **Sign-up pages.** When you type an email address on a sign-up or sign-in page, we link it to your earlier visits in PostHog, including when you do not submit the form.  
 - **Identifiers passed between our sites.** When you follow a link from one of our sites to another, we pass analytics and advertising identifiers in the link so that the visit is counted as one.  
 - **Forms.** When you submit a form (contact, demo or meeting booking, waitlist, community sign-up) we collect what you enter: typically name, work email, company, job title, company size, LinkedIn URL, phone number if you give one, and your message. We also record your IP address, country, browser user agent, the referring page, campaign parameters and advertising click identifiers. We store the submission, share it with our team and may send it to HubSpot, our customer relationship system.  
@@ -140,7 +141,7 @@ Flamingo AI processes personal data only when:
 - You have given consent (e.g., submitting community contributions to OpenMSP).  
 - Processing is necessary for the performance of a contract (e.g., account creation, support requests).  
 - Processing is required by law.  
-- Processing is necessary for legitimate interests (e.g., community moderation, improving security and services, following up on enquiries, measuring how the Website and our advertising perform).  
+- Processing is necessary for legitimate interests (e.g., community moderation, improving security and services, following up on enquiries, measuring how the Website and our advertising perform, contacting business visitors identified on the Website about our products).  
 
 
 ## 8. Data Subject Rights
@@ -155,7 +156,7 @@ Depending on your location (EU/UK under GDPR, California under CCPA, or similar 
 - Opt out of sale or sharing of personal data (CCPA).  
 - Lodge a complaint with a supervisory authority (for EU/UK residents).  
 
-Requests can be submitted to **privacy@flamingo.run**.  
+Requests can be submitted to **privacy@flamingo.run**. To object to being identified or contacted after visiting the Website, email privacy@flamingo.run. We will stop contacting you, delete the identification record and ask GetLeads to remove you from its database.  
 
 An OpenFrame SaaS user can delete their own account in Settings. We then remove the user's name, email address, password, profile picture and sign-in links from the account. Tickets, conversations and activity records the user created remain with the customer's workspace, and the user's contact record remains in HubSpot until you ask us to delete it.
 
@@ -217,6 +218,7 @@ We use service providers that process personal data on our behalf, each under a 
 | Tag management | Google |
 | Advertising measurement | Google Ads, Meta, Reddit, LinkedIn |
 | Identifying the company a Website visitor comes from | Snitcher, Leadsy |
+| Identifying some US Website visitors as individuals, and recording their clicks and form entries on the Website | GetLeads and its data partners |
 | Internal notifications; community | Slack |
 | Meeting recording | Google Workspace (Google Meet), Fireflies |
 | Transcription and video processing of recorded calls | AssemblyAI, Shotstack, Vizard |
@@ -228,7 +230,7 @@ The current list of subprocessors is published in our [Trust Center](https://www
 ## 16. Cookies
 
 - **Necessary cookies** keep you signed in, hold the random identifier for the Website chat described in section 3.1, and remember a meeting you booked. The chat cookie is not readable by scripts and expires after one year.  
-- **Analytics and advertising cookies** are set by PostHog, HubSpot, Google, Meta, Reddit, LinkedIn, Ahrefs, Snitcher and Leadsy, as described in section 3.1. The Website also keeps advertising attribution data in your browser's local storage for 90 days.  
+- **Analytics and advertising cookies** are set by PostHog, HubSpot, Google, Meta, Reddit, LinkedIn, Ahrefs, Snitcher, Leadsy, and GetLeads and its partners, as described in section 3.1. The Website also keeps advertising attribution data in your browser's local storage for 90 days.  
 
 Analytics and advertising cookies are set when you open the Website. You can block or delete cookies in your browser settings or through the opt-out tools each provider offers. Blocking necessary cookies may stop sign-in or chat history from working.
 
