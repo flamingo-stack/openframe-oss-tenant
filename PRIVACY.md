@@ -1,7 +1,7 @@
 # Flamingo AI Privacy Policy
 
 **Version:** 2.3  
-**Effective date:** [go-live date]  
+**Effective date:** December 1, 2026  
 **Applies to:** All Flamingo AI products, including OpenFrame, OpenFrame SaaS, OpenMSP, and the Flamingo Website
 
 
