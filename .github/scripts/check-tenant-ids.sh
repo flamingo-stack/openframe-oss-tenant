@@ -10,7 +10,7 @@ dir="$2"
 patterns="$(mktemp)"
 trap 'rm -f "$patterns"' EXIT
 if [ -r "$denylist" ]; then
-  tr -d '\r' < "$denylist" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | { grep -v '^$' || true; } > "$patterns"
+  sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$denylist" | { grep -v '^$' || true; } > "$patterns"
 fi
 
 if [ ! -s "$patterns" ]; then
