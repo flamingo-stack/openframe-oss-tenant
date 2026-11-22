@@ -68,4 +68,17 @@ run "/nonexistent/denylist" "$repo"
 if [ "$status" -ne 1 ]; then fail "T6 missing denylist: expected exit 1, got $status"
 else pass "T6 missing denylist fails"; fi
 
+# T10: CRLF line endings and spaces around values still match (a hand-filled secret)
+crlf="$(mktemp)"
+printf '  %s  \r\n' "$LISTED_ID" "$LISTED_PREFIX" > "$crlf"
+repo="$(make_repo src/Test.java "String id = \"$LISTED_ID\";")"
+run "$crlf" "$repo"
+if [ "$status" -ne 1 ]; then fail "T10 CRLF denylist: expected exit 1, got $status"
+else pass "T10 CRLF denylist still matches"; fi
+
+# T11: a git grep error fails the check instead of reading as "no matches"
+run "$list" "$(mktemp -d)"
+if [ "$status" -ne 1 ]; then fail "T11 not a git repo: expected exit 1, got $status"
+else pass "T11 git grep error fails"; fi
+
 [ "$failures" -eq 0 ] && echo "all passed" || { echo "$failures failed"; exit 1; }
