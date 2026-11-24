@@ -124,6 +124,19 @@ nats-ws-url: ws://nats.datasources.svc.cluster.local:8080
 
 # Rate limiting configuration
 openframe:
+  tools:
+    meshcentral:
+      api:
+        url: http://meshcentral.tenant.svc.cluster.local
+        port: "8383"
+      websocket:
+        url: ws://meshcentral.tenant.svc.cluster.local
+        port: "8383"
+      # The gateway signs in to the control channel itself, so the browser does not carry the account.
+      # Both empty (a pod without the meshcentral Secret, or an image older than the lib that reads this): relayed as before.
+      credentials:
+        username: ${MESHCENTRAL_USER:}
+        password: ${MESHCENTRAL_PASSWORD:}
   device:
     aspect:
       enabled: false

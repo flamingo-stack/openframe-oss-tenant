@@ -3,8 +3,6 @@ package com.openframe.management;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import com.openframe.data.cassandra.health.CassandraHealthIndicator;
 
 @SpringBootApplication
 @ComponentScan(
@@ -12,12 +10,6 @@ import com.openframe.data.cassandra.health.CassandraHealthIndicator;
         "com.openframe.management",
         "com.openframe.data",
         "com.openframe.core"
-    },
-    excludeFilters = {
-        @ComponentScan.Filter(
-            type = FilterType.ASSIGNABLE_TYPE,
-            classes = CassandraHealthIndicator.class
-        )
     }
 )
 public class ManagementApplication {

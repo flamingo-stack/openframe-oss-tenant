@@ -5,7 +5,6 @@ import org.apache.pinot.client.Connection;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.cassandra.core.CassandraTemplate;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -40,12 +39,6 @@ public class TestConfig {
     @Primary
     public KafkaTemplate<String, Object> kafkaTemplate() {
         return mock(KafkaTemplate.class);
-    }
-
-    @Bean
-    @Primary
-    public CassandraTemplate cassandraTemplate() {
-        return mock(CassandraTemplate.class);
     }
 
     @Bean

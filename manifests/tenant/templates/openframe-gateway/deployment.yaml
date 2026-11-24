@@ -63,6 +63,19 @@ spec:
           env:
             - name: RELEASE_VERSION
               value: "{{ default $saas.image.tag $svc.image.tag }}"
+            {{- if .Values.meshcentral.enabled }}
+            {{- $meshCreds := .Values.meshcentral.credentials }}
+            - name: MESHCENTRAL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $meshCreds.existingSecret }}
+                  key: {{ $meshCreds.meshUserKey }}
+            - name: MESHCENTRAL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $meshCreds.existingSecret }}
+                  key: {{ $meshCreds.meshPassKey }}
+            {{- end }}
             {{- if .Values.deployment.ingress.ngrok.enabled }}
             - name: TENANT_HOST_URL
               value: {{ printf "https://%s" (required "deployment.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.ingress.ngrok.url) | quote }}
