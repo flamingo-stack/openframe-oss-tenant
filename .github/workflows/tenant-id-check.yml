@@ -1,0 +1,37 @@
+name: Tenant id check
+
+# Fails when the tree contains a real tenant id. The denylist lives in the org secret
+# TENANT_ID_DENYLIST, kept in sync from openframe-saas-fleet. pull_request_target runs this file
+# and the script from the base branch, so a pull request cannot change the check; the PR head
+# is checked out without credentials and only read, never run.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+  merge_group:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tenant-ids:
+    name: Tenant id check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          path: base
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: tree
+          persist-credentials: false
+      - name: Check for real tenant ids
+        env:
+          DENYLIST: ${{ secrets.TENANT_ID_DENYLIST }}
+        run: |
+          printf '%s\n' "$DENYLIST" > "$RUNNER_TEMP/denylist"
+          bash base/.github/scripts/check-tenant-ids.sh "$RUNNER_TEMP/denylist" tree
