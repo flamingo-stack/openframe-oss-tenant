@@ -1,6 +1,6 @@
 # Flamingo AI Privacy Policy
 
-**Version:** 2.3  
+**Version:** 2.4  
 **Effective date:** December 1, 2026  
 **Applies to:** All Flamingo AI products, including OpenFrame, OpenFrame SaaS, OpenMSP, and the Flamingo Website
 
@@ -41,7 +41,8 @@ This Privacy Policy explains how Flamingo AI, Inc. (“Flamingo AI”) collects,
 - **Forms.** When you submit a form (contact, demo or meeting booking, waitlist, community sign-up) we collect what you enter: typically name, work email, company, job title, company size, LinkedIn URL, phone number if you give one, and your message. We also record your IP address, country, browser user agent, the referring page, campaign parameters and advertising click identifiers. We store the submission, share it with our team and may send it to HubSpot, our customer relationship system.  
 - **Information from public sources.** We may add publicly available information about you and your company to the record, such as your professional profile, your employer and its size. We use an automated web search through Anthropic (Claude API) for this.  
 - **Unfinished forms.** While you fill in a form, the Website saves what you have entered. Only identifying fields are saved (name, email, company, job title, company size, LinkedIn URL); for free-text and phone fields we record only that they were filled. Passwords and payment details are never saved. If you gave an email address and left before submitting, we handle what was saved in the same way as a submission, so that our team can follow up.  
-- **Meeting bookings.** When you book a meeting from a landing page we send the booking event to Meta's Conversions API with your email address and name in hashed (SHA-256) form, the Meta browser identifiers if present, and your IP address and browser user agent, to measure advertising.  
+- **Meeting bookings.** If you give a phone number when you book a meeting, we may call you to confirm the booking and send you a text message reminder before it, through Salesmsg. When you book a meeting from a landing page we send the booking event to Meta's Conversions API with your email address and name in hashed (SHA-256) form, the Meta browser identifiers if present, and your IP address and browser user agent, to measure advertising.  
+- **Events and webinars.** You register for our events on Luma and for our webinars on Livestorm, which collect what you enter on their registration pages. For each Luma event we copy into our records the name of each registered guest, a partly masked email address, the registration date and whether the guest checked in.  
 - **Website chat.** The assistant on the Website stores the messages you send and its answers, together with your IP address, country, browser user agent, the page you were on and, if you are signed in, your email address. Visitors who are not signed in receive a cookie holding a random identifier so that earlier conversations can be shown to them again. Your messages are sent to Anthropic (Claude API) to generate the answer and to OpenAI to search our documentation.  
 - **Calls and meetings.** Calls and video meetings with our team may be recorded and transcribed with Google Meet, which shows every participant that recording is on, or with Fireflies, a notetaker that joins the meeting visibly. Recordings and transcripts are stored by us and processed by the providers listed in section 15 to transcribe, summarize and edit them. Tell us at the start of the call if you do not want it recorded.  
 - **Abuse prevention.** We use automated bot detection on forms, which processes IP address and browser signals, and we limit how many chat and form requests one IP address can make.  
@@ -49,15 +50,16 @@ This Privacy Policy explains how Flamingo AI, Inc. (“Flamingo AI”) collects,
 
 ## 4. OpenFrame SaaS
 
-Where a customer uses OpenFrame SaaS, Flamingo AI processes the data below. Operational data, remote session recordings, AI requests and connected directory data are processed on the customer’s behalf. Account, sign-up, customer relationship, product analytics and billing data are also used by Flamingo AI for its own purposes: managing accounts and billing, communicating with customers, measuring advertising and understanding how the product is used.
+Where a customer uses OpenFrame SaaS, Flamingo AI processes the data below. Operational data, remote session recordings, AI requests and connected directory data are processed on the customer’s behalf. Account, sign-up, bot protection, customer relationship, product analytics and billing data are also used by Flamingo AI for its own purposes: protecting the service from abuse, managing accounts and billing, communicating with customers, measuring advertising and understanding how the product is used.
 
 - **Account data** — for each user: name, email address, role, account status and the time of the most recent sign-in. For a user who signs in through Google, Microsoft or Apple: the identifier that provider uses for the account and whether the provider reported the address as verified. Where a user signs in with Google, we also store the profile picture URL that Google supplies. Where a user signs in with Apple, we store the refresh token Apple issues, in encrypted form. Where a user signs in with a password, we store a bcrypt hash of it. Where a user installs the mobile app, we store the device's push notification token.  
 - **Sign-up data** — when an organization first registers we record the IP address and browser user agent used, how you heard about us, the page you arrived on, campaign parameters and advertising click identifiers (Google, Meta, Reddit, LinkedIn), the Meta and Reddit browser identifiers, and the HubSpot visitor cookie. We send the sign-up to Meta's and Reddit's Conversions APIs with the email address in hashed (SHA-256) form (and, for Meta, the name in hashed form), a hashed user identifier, the IP address, the browser user agent and those browser and click identifiers, to measure advertising. Reddit also receives the identifier of the new workspace. We send Meta a further event when the status of the account in our sales records changes.  
+- **Bot protection** — the OpenFrame SaaS sign-in, sign-up, invitation, password reset and download-link pages load Google reCAPTCHA Enterprise for anyone who opens them. It collects information about your device, your browser and how you use the page, and sends it to Google, which rates whether a request comes from a person. Password sign-up, password reset and download-link requests are refused unless reCAPTCHA rates them as coming from a person, so they fail if your browser blocks Google's script. Google's Privacy Policy and Terms of Service apply to reCAPTCHA.  
 - **Customer relationship records** — we keep in HubSpot each user's name, email address and status, the sign-up data above, the organization's name, workspace address, billing email, subscription and device counts, and events such as a device being added or the dashboard being used.  
-- **Operational data** — data collected by the OpenFrame agent from the customer’s managed endpoints (device identity and inventory, installed software, vulnerabilities, query results, script and command output, agent logs), remote access session events, support conversations, tickets, and records of administrative actions performed in the product.  
+- **Operational data** — data collected by the OpenFrame agent from the customer’s managed endpoints (device identity and inventory, installed software, vulnerabilities, query results, script and command output, agent logs), remote access session events, support conversations, tickets, files users upload, such as attachments to tickets and knowledge base articles, and records of administrative actions performed in the product.  
 - **Remote session recordings** — where recording is on, the screen of each remote desktop session is recorded. Recordings are kept for 90 days unless a user of the customer places a hold on one.  
 - **AI requests** — the content of each request an OpenFrame user makes to the AI assistant, the data the assistant retrieves to answer it, and the response, sent to AI providers as described in section 5. We keep a count of the tokens used for billing. We store the conversations, and for the technician assistant we also store facts derived from them so that later conversations can use them. Flamingo AI records and reviews requests and responses as described in section 5.  
-- **Notifications** — push notifications are delivered through Google Firebase Cloud Messaging and Apple. A notification can contain up to the first 200 characters of a message.  
+- **Notifications** — push notifications are delivered through Google Firebase Cloud Messaging and Apple. A notification can contain up to the first 200 characters of a message. It also carries the details the app needs to show it, which can include the names of people, customers, devices and tickets and, for an approval request, the command waiting for approval.  
 - **Product analytics** — the OpenFrame SaaS web and desktop applications load Google Tag Manager and PostHog, on sign-in pages and inside the signed-in product. They receive the user's identifier and email address and record how the product is used.  
 - **Billing data** — the plan, the daily count of managed devices, token purchases and usage, and invoices. Payments are processed by Stripe, which also collects and holds the billing address, any tax ID and the card details; Flamingo AI does not store them.  
 - **Email** — account email (verification, password reset, invitations, billing) is sent through HubSpot.  
@@ -93,7 +95,7 @@ The consent request also includes the OpenID and email scopes, so that we can co
 - create, update or delete a group;  
 - add a group member as member, manager or owner, or remove a group member.  
 
-OpenFrame does not assign or remove licences, delete user accounts, grant administrative roles, or perform any action on a device. It does not reset the password of an existing account. Google may assign a licence itself when a user is created or moved, under the customer's own settings. Changes are made only in response to a request from an OpenFrame user: no scheduled or background process modifies your users, groups, group memberships or organizational units. Where OpenFrame registers notification channels with Google to receive directory updates, a background job maintains them; those channels are OpenFrame's own subscriptions, and they are stopped when the connection is deleted. OpenFrame records each change with the identity of the OpenFrame user who requested it. Google's own administrative audit log records the same action under the administrator who granted consent.
+OpenFrame does not assign or remove licences, delete user accounts, grant administrative roles, or perform any action on a device. It does not reset the password of an existing account. Google may assign a licence itself when a user is created or moved, under the customer's own settings. Changes are made only in response to a request from an OpenFrame user: no scheduled or background process modifies your users, groups, group memberships or organizational units. Where OpenFrame registers notification channels with Google to receive directory updates, a background job maintains them; those channels are OpenFrame's own subscriptions, and they are stopped when the connection is deleted. OpenFrame logs each change with the identity of the OpenFrame user who requested it. This log is best effort: if it cannot be written, the change still goes ahead and may be missing from OpenFrame's log. Google's own administrative audit log records the same action under the administrator who granted consent.
 
 **Who we share it with.** To generate a response to an administrator's request, the relevant data is sent to the AI provider selected for the assistant: Anthropic (Claude API) or OpenAI. Whichever provider is selected, some supporting functions use a fixed provider. Anthropic is used to shorten long conversations, to name conversations and to search the web. OpenAI is used to extract facts the assistant should remember, to review the quality of the assistant's answers, to check commands before they run, and to decide when an end-user conversation should be handed to a technician. Conversation content, which can include directory data the assistant retrieved, is therefore sent to both providers. Under those providers' commercial API terms, customer content is not used to train their models. Each provider may retain requests and responses for up to 30 days to detect abuse and misuse, and OpenAI may review retained content for that purpose.
 
@@ -126,7 +128,7 @@ We do not access Exchange Online mailboxes, OneDrive or SharePoint files, calend
 - create, update or delete a group;  
 - add or remove group members.  
 
-OpenFrame does not change licence assignments, reset passwords for existing accounts, delete user accounts, perform any action on a device, or assign administrative roles. Changes are made only in response to a request from an OpenFrame user; no scheduled or background process modifies your users, groups or group memberships. Where OpenFrame registers change-notification subscriptions with Microsoft to receive directory updates, a background job maintains them. OpenFrame records each change with the identity of the OpenFrame user who requested it. Microsoft's own audit log records the same action under the OpenFrame application.
+OpenFrame does not change licence assignments, reset passwords for existing accounts, delete user accounts, perform any action on a device, or assign administrative roles. Changes are made only in response to a request from an OpenFrame user; no scheduled or background process modifies your users, groups or group memberships. Where OpenFrame registers change-notification subscriptions with Microsoft to receive directory updates, a background job maintains them. OpenFrame logs each change with the identity of the OpenFrame user who requested it. This log is best effort: if it cannot be written, the change still goes ahead and may be missing from OpenFrame's log. Microsoft's own audit log records the same action under the OpenFrame application.
 
 **Who we share it with.** As described in section 5 for Google Workspace data: the relevant data is sent to the AI providers named there, is retained by them and recorded in Flamingo AI's operational logs as described there, and is not sold, transferred to advertising platforms, data brokers or resellers, or otherwise shared with any third party except where an administrator asks us to include information in a support request.
 
@@ -165,19 +167,19 @@ An OpenFrame SaaS user can delete their own account in Settings. We then remove 
 
 - Flamingo AI does not transfer customer data from self-hosted deployments.  
 - For OpenFrame SaaS, customer data may be transmitted to the AI providers named in section 5 and may be retained by them for up to 30 days to detect abuse and misuse.  
-- If personal data must cross borders (e.g., for support or OpenMSP account services), Flamingo AI uses safeguards such as Standard Contractual Clauses.  
+- OpenFrame SaaS and our product analytics are hosted in the United States, and other providers listed in section 15 may also process personal data there. Our staff and contractors may access personal data from the countries where they work, for example to provide support or investigate a fault. Where personal data is transferred from the EEA, the UK or Switzerland, Flamingo AI uses safeguards such as Standard Contractual Clauses or the provider's certification under the Data Privacy Framework.  
 
 
 ## 10. Data Retention
 
 - Customer-controlled data in OpenFrame remains under customer control.  
-- For OpenFrame SaaS, customer data is kept until it is deleted as described below, with these shorter periods: operational logs, including AI requests and responses, 90 days; logs from managed devices, 30 days or 90 days depending on the device; remote session recordings, 90 days unless a hold is placed on one; notifications, 30 days.  
+- For OpenFrame SaaS, customer data is kept until it is deleted as described below, with these shorter periods: operational logs, including AI requests and responses, 90 days; logs from managed devices, 30 days; the event history of managed devices, 90 days; remote session recordings, 90 days unless a hold is placed on one; notifications, 30 days.  
 - Conversations with the AI assistant, facts derived from them, review findings and tickets have no fixed period and are kept until the customer's data is deleted.  
 - A customer can ask us to delete its data at any time, including after the subscription ends. Invoices and records of purchases and usage are kept for as long as tax and accounting law requires, including after an account is closed.  
 - Support requests, and any logs or files sent with them, are kept in our support system for as long as needed to handle the request and to keep a record of it. You can ask us to delete them.  
 - Website analytics data is held by the analytics providers listed in section 15 and is kept no longer than necessary for the purposes in section 3.1.  
-- Form submissions, unfinished-form data, waitlist entries, Website chat conversations and recordings of calls with our team are kept until you ask us to delete them. The chat cookie expires after one year.  
-- Backups: database backups of OpenFrame SaaS are kept for up to 120 days, and backups of the device management database for 30 days. Deleted remote session recordings can be restored for 30 days. Data deleted from the service remains in backups until those periods end.  
+- Form submissions, unfinished-form data, waitlist entries, event guest records, Website chat conversations and recordings of calls with our team are kept until you ask us to delete them. The chat cookie expires after one year.  
+- Backups: database backups of OpenFrame SaaS are kept for up to 120 days. Deleted remote session recordings and uploaded files can be restored for 30 days. Data deleted from the service remains in backups until those periods end.  
 - OpenMSP contributions remain public unless removed by you or as part of community moderation. Account data may be deleted upon request. The record of pages viewed by signed-in OpenMSP users is kept for 365 days.  
 
 
@@ -209,17 +211,22 @@ We use service providers that process personal data on our behalf, each under a 
 | --- | --- |
 | Hosting of OpenFrame SaaS, encryption key management | Google Cloud |
 | Single sign-on | Google, Microsoft, Apple |
+| Protection of sign-up, password reset and download-link requests against automated abuse | Google (reCAPTCHA Enterprise) |
 | Push notifications | Google Firebase, Apple |
 | Hosting and database of the Website and of the OpenFrame help centre | Vercel, Supabase |
+| Rate limiting of the Website and its API | Upstash |
 | AI responses, AI supporting functions, web search | Anthropic, OpenAI |
 | Payments and invoicing | Stripe |
 | Customer relationship management, marketing and account email, support tickets, meeting booking | HubSpot |
+| Calls and text message reminders for booked meetings | Salesmsg |
 | Product and Website analytics, session recording | PostHog, Google Analytics, Ahrefs |
 | Tag management | Google |
 | Advertising measurement | Google Ads, Meta, Reddit, LinkedIn |
 | Identifying the company a Website visitor comes from | Snitcher, Leadsy |
 | Identifying some US Website visitors as individuals, and recording their clicks and form entries on the Website | GetLeads and its data partners |
 | Internal notifications; community | Slack |
+| Security and compliance monitoring | Vanta |
+| Event and webinar registration | Luma, Livestorm |
 | Meeting recording | Google Workspace (Google Meet), Fireflies |
 | Transcription and video processing of recorded calls | AssemblyAI, Shotstack, Vizard |
 | Video hosting | Mux |
@@ -229,8 +236,8 @@ The current list of subprocessors is published in our [Trust Center](https://www
 
 ## 16. Cookies
 
-- **Necessary cookies** keep you signed in, hold the random identifier for the Website chat described in section 3.1, and remember a meeting you booked. The chat cookie is not readable by scripts and expires after one year.  
-- **Analytics and advertising cookies** are set by PostHog, HubSpot, Google, Meta, Reddit, LinkedIn, Ahrefs, Snitcher, Leadsy, and GetLeads and its partners, as described in section 3.1. The Website also keeps advertising attribution data in your browser's local storage for 90 days.  
+- **Necessary cookies** keep you signed in, hold the random identifier for the Website chat described in section 3.1, and remember a meeting you booked. The chat cookie is not readable by scripts and expires after one year. On the OpenFrame SaaS pages described under Bot protection in section 4, Google reCAPTCHA sets a cookie and uses your browser's storage to tell people from automated traffic.  
+- **Analytics and advertising cookies** are set by PostHog, HubSpot, Google, Meta, Reddit, LinkedIn, Ahrefs, Snitcher, Leadsy, and GetLeads and its partners, as described in section 3.1. The Website also keeps advertising attribution data in your browser's local storage and in a first-party cookie for 90 days.  
 
 Analytics and advertising cookies are set when you open the Website. You can block or delete cookies in your browser settings or through the opt-out tools each provider offers. Blocking necessary cookies may stop sign-in or chat history from working.
 
